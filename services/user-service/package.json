@@ -1,0 +1,12 @@
+{
+  "name": "@services/user-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'user-service dev scaffold pending'",
+    "build": "echo 'user-service build scaffold pending'",
+    "test": "echo 'user-service test scaffold pending'",
+    "lint": "echo 'user-service lint scaffold pending'"
+  }
+}

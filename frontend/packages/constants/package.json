@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/constants",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'constants package build scaffold pending'",
+    "test": "echo 'constants package test scaffold pending'",
+    "lint": "echo 'constants package lint scaffold pending'"
+  }
+}

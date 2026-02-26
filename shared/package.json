@@ -1,0 +1,11 @@
+{
+  "name": "@shared/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'contracts build scaffold pending'",
+    "test": "echo 'contracts test scaffold pending'",
+    "lint": "echo 'contracts lint scaffold pending'"
+  }
+}

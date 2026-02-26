@@ -1,0 +1,14 @@
+version: '3.9'
+
+# Root compose is the default local entrypoint.
+# Keep this file small and environment-neutral.
+services:
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    env_file:
+      - ./.env.example
+      - ./services/api-gateway/.env.dev
+    ports:
+      - '3000:3000'
+    restart: unless-stopped

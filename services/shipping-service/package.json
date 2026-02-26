@@ -1,0 +1,12 @@
+{
+  "name": "@services/shipping-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'shipping-service dev scaffold pending'",
+    "build": "echo 'shipping-service build scaffold pending'",
+    "test": "echo 'shipping-service test scaffold pending'",
+    "lint": "echo 'shipping-service lint scaffold pending'"
+  }
+}

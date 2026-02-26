@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'api-client package build scaffold pending'",
+    "test": "echo 'api-client package test scaffold pending'",
+    "lint": "echo 'api-client package lint scaffold pending'"
+  }
+}

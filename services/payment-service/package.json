@@ -1,0 +1,12 @@
+{
+  "name": "@services/payment-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'payment-service dev scaffold pending'",
+    "build": "echo 'payment-service build scaffold pending'",
+    "test": "echo 'payment-service test scaffold pending'",
+    "lint": "echo 'payment-service lint scaffold pending'"
+  }
+}

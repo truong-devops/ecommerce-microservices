@@ -1,0 +1,12 @@
+{
+  "name": "@services/inventory-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'inventory-service dev scaffold pending'",
+    "build": "echo 'inventory-service build scaffold pending'",
+    "test": "echo 'inventory-service test scaffold pending'",
+    "lint": "echo 'inventory-service lint scaffold pending'"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@services/notification-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'notification-service dev scaffold pending'",
+    "build": "echo 'notification-service build scaffold pending'",
+    "test": "echo 'notification-service test scaffold pending'",
+    "lint": "echo 'notification-service lint scaffold pending'"
+  }
+}

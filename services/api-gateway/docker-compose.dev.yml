@@ -1,0 +1,11 @@
+version: '3.9'
+
+services:
+  api-gateway:
+    build:
+      context: .
+    env_file:
+      - ./.env.dev
+    ports:
+      - '3000:3000'
+    command: npm run dev

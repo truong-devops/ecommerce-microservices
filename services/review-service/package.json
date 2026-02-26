@@ -1,0 +1,12 @@
+{
+  "name": "@services/review-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'review-service dev scaffold pending'",
+    "build": "echo 'review-service build scaffold pending'",
+    "test": "echo 'review-service test scaffold pending'",
+    "lint": "echo 'review-service lint scaffold pending'"
+  }
+}

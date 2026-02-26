@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/stores",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'stores package build scaffold pending'",
+    "test": "echo 'stores package test scaffold pending'",
+    "lint": "echo 'stores package lint scaffold pending'"
+  }
+}

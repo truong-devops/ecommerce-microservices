@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/types",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'types package build scaffold pending'",
+    "test": "echo 'types package test scaffold pending'",
+    "lint": "echo 'types package lint scaffold pending'"
+  }
+}

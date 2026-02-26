@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/seller-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'seller app scaffold pending'",
+    "build": "echo 'seller app build scaffold pending'",
+    "test": "echo 'seller app test scaffold pending'",
+    "lint": "echo 'seller app lint scaffold pending'"
+  }
+}

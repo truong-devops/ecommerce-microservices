@@ -1,0 +1,5 @@
+version: '3.9'
+
+# Production compose placeholder.
+# Production should primarily deploy via K3s manifests.
+services: {}

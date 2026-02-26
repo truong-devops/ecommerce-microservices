@@ -1,0 +1,12 @@
+{
+  "name": "@services/auth-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'auth-service dev scaffold pending'",
+    "build": "echo 'auth-service build scaffold pending'",
+    "test": "echo 'auth-service test scaffold pending'",
+    "lint": "echo 'auth-service lint scaffold pending'"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/utils",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'utils package build scaffold pending'",
+    "test": "echo 'utils package test scaffold pending'",
+    "lint": "echo 'utils package lint scaffold pending'"
+  }
+}

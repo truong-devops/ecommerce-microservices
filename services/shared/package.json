@@ -1,0 +1,12 @@
+{
+  "name": "@services/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "echo 'services/shared build scaffold pending'",
+    "test": "echo 'services/shared test scaffold pending'",
+    "lint": "echo 'services/shared lint scaffold pending'"
+  }
+}

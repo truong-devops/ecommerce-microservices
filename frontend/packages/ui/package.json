@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'ui package build scaffold pending'",
+    "test": "echo 'ui package test scaffold pending'",
+    "lint": "echo 'ui package lint scaffold pending'"
+  }
+}

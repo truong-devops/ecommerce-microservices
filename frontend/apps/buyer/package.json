@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/buyer-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'buyer app scaffold pending'",
+    "build": "echo 'buyer app build scaffold pending'",
+    "test": "echo 'buyer app test scaffold pending'",
+    "lint": "echo 'buyer app lint scaffold pending'"
+  }
+}

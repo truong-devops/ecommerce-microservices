@@ -1,0 +1,5 @@
+version: '3.9'
+
+# Staging compose placeholder.
+# Add managed service dependencies only when needed.
+services: {}

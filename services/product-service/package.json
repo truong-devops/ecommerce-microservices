@@ -1,0 +1,12 @@
+{
+  "name": "@services/product-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'product-service dev scaffold pending'",
+    "build": "echo 'product-service build scaffold pending'",
+    "test": "echo 'product-service test scaffold pending'",
+    "lint": "echo 'product-service lint scaffold pending'"
+  }
+}

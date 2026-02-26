@@ -1,0 +1,12 @@
+{
+  "name": "@services/analytics-service",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "echo 'analytics-service dev scaffold pending'",
+    "build": "echo 'analytics-service build scaffold pending'",
+    "test": "echo 'analytics-service test scaffold pending'",
+    "lint": "echo 'analytics-service lint scaffold pending'"
+  }
+}

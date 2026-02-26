@@ -1,0 +1,11 @@
+{
+  "name": "@frontend/hooks",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "echo 'hooks package build scaffold pending'",
+    "test": "echo 'hooks package test scaffold pending'",
+    "lint": "echo 'hooks package lint scaffold pending'"
+  }
+}

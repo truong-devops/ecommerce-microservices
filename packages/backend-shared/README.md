@@ -1,4 +1,4 @@
-# services/shared
+# packages/backend-shared
 
 Runtime utilities for backend services.
 

@@ -17,7 +17,7 @@ This document defines one coding style and one project organization style so the
 
 - MUST keep backend runtime code inside `services/*`.
 - MUST keep cross-platform contracts inside `shared/*`.
-- MUST keep backend shared runtime helpers inside `services/shared/*`.
+- MUST keep backend shared runtime helpers inside `packages/backend-shared/*`.
 - MUST NOT import runtime code directly from another service.
 - MUST communicate across services only via REST/gRPC/Kafka.
 

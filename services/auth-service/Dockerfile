@@ -1,6 +1,24 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+
+COPY package.json package-lock.json* ./
 RUN npm install
-COPY . .
-CMD ["npm", "run", "dev"]
+
+COPY tsconfig.json tsconfig.build.json jest.config.ts ./
+COPY src ./src
+COPY migrations ./migrations
+
+RUN npm run build
+
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json* ./
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/migrations ./migrations
+
+EXPOSE 3001
+CMD ["node", "dist/main.js"]

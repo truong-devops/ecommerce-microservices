@@ -9,7 +9,8 @@ Most business modules are still placeholders and should be implemented increment
 
 ## Repository layout
 
-- `services/`: backend microservices and `services/shared` runtime library.
+- `services/`: backend microservices.
+- `packages/backend-shared`: backend runtime shared library.
 - `shared/`: cross-service contracts and schemas (proto, Kafka event contracts, shared types).
 - `frontend/`: buyer/seller apps and reusable frontend packages.
 - `infrastructure/`: Docker, K3s, Kafka, monitoring, logging, Terraform.
@@ -19,7 +20,7 @@ Most business modules are still placeholders and should be implemented increment
 
 ## Shared code boundaries
 
-- `services/shared`: backend runtime helpers for NestJS services (guards, pipes, interceptors, config, DTOs).
+- `packages/backend-shared`: backend runtime helpers for NestJS services (guards, pipes, interceptors, config, DTOs).
 - `shared`: neutral contracts to be consumed by backend, frontend, and tooling.
 
 ## Monorepo tooling

@@ -2,11 +2,45 @@
   "name": "@services/cart-service",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/index.js",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "echo 'cart-service dev scaffold pending'",
-    "build": "echo 'cart-service build scaffold pending'",
-    "test": "echo 'cart-service test scaffold pending'",
-    "lint": "echo 'cart-service lint scaffold pending'"
+    "start": "node dist/main.js",
+    "start:dev": "ts-node --transpile-only src/main.ts",
+    "dev": "npm run start:dev",
+    "build": "tsc -p tsconfig.build.json",
+    "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
+    "docker:down": "docker compose -f docker-compose.dev.yml down --remove-orphans",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f cart-service",
+    "test": "jest --config jest.config.ts --watchman=false --runInBand --passWithNoTests",
+    "test:e2e": "jest --config jest.config.ts --runInBand --testRegex app\\.e2e-spec\\.ts$",
+    "lint": "echo 'lint scaffold pending'"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.8",
+    "@nestjs/config": "^3.2.3",
+    "@nestjs/core": "^10.4.8",
+    "@nestjs/platform-express": "^10.4.8",
+    "@nestjs/typeorm": "^10.0.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "ioredis": "^5.4.1",
+    "joi": "^17.13.3",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.20"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^10.4.8",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.16.5",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
   }
 }

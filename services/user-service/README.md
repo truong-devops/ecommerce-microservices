@@ -27,6 +27,22 @@ From repository root:
 - `npm run build --workspace services/user-service`
 - `npm run start --workspace services/user-service`
 
+## Docker
+
+Run `user-service` + PostgreSQL in isolation:
+
+- `docker compose -f services/user-service/docker-compose.dev.yml up --build -d`
+- Health check: `curl http://localhost:3100/api/v1/health`
+- Stop: `docker compose -f services/user-service/docker-compose.dev.yml down`
+- Stop + remove DB volume: `docker compose -f services/user-service/docker-compose.dev.yml down -v`
+
+Build production image:
+
+- `docker build -f services/user-service/Dockerfile.prod -t user-service:prod services/user-service`
+- `docker run --rm -p 3000:3000 --env-file services/user-service/.env.dev user-service:prod`
+
+When running container with local PostgreSQL container, set `DB_HOST` to that container name (not `localhost`).
+
 ## Migration
 
 - `npm run migration:run --workspace services/user-service`

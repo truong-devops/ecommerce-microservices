@@ -1,0 +1,44 @@
+services:
+  user-service-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_user
+    ports:
+      - '5434:5432'
+    volumes:
+      - user_service_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ecommerce_user']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env.dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_TYPE: postgres
+      DB_HOST: user-service-db
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ecommerce_user
+      DB_SSL: 'false'
+      DB_MIGRATIONS_RUN: 'true'
+      KAFKA_ENABLED: 'false'
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+    ports:
+      - '3100:3000'
+    restart: unless-stopped
+
+volumes:
+  user_service_pg_data:

@@ -5,6 +5,7 @@
   "packageManager": "npm@10",
   "workspaces": [
     "services/*",
+    "packages/*",
     "shared",
     "frontend/apps/*",
     "frontend/packages/*"

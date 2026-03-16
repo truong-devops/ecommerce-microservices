@@ -1,0 +1,12 @@
+{
+  "name": "@packages/backend-shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "echo 'packages/backend-shared build scaffold pending'",
+    "test": "echo 'packages/backend-shared test scaffold pending'",
+    "lint": "echo 'packages/backend-shared lint scaffold pending'"
+  }
+}

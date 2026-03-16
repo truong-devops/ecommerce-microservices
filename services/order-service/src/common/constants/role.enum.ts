@@ -1,0 +1,10 @@
+export enum Role {
+  CUSTOMER = 'CUSTOMER',
+  ADMIN = 'ADMIN',
+  SUPPORT = 'SUPPORT',
+  WAREHOUSE = 'WAREHOUSE',
+  SELLER = 'SELLER',
+  SUPER_ADMIN = 'SUPER_ADMIN'
+}
+
+export const STAFF_ROLES: Role[] = [Role.ADMIN, Role.SUPPORT, Role.WAREHOUSE, Role.SELLER, Role.SUPER_ADMIN];

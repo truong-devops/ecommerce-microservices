@@ -1,4 +1,4 @@
-export const KAFKA_TOPICS = {
+﻿export const KAFKA_TOPICS = {
   ORDER_CREATED: 'order.created',
   ORDER_CANCELLED: 'order.cancelled',
   ORDER_STATUS_UPDATED: 'order.status-updated',
@@ -11,11 +11,16 @@ export const KAFKA_TOPICS = {
   SHIPMENT_CANCELLED: 'shipment.cancelled',
   INVENTORY_RESERVED: 'inventory.reserved',
   USER_REGISTERED: 'user.registered',
+  PRODUCT_CREATED: 'product.created',
+  PRODUCT_UPDATED: 'product.updated',
+  PRODUCT_STATUS_CHANGED: 'product.status-changed',
+  PRODUCT_DELETED: 'product.deleted',
   ORDER_EVENTS: 'order.events',
   SHIPPING_EVENTS: 'shipping.events',
   INVENTORY_EVENTS: 'inventory.events',
   PAYMENT_EVENTS: 'payment.events',
   USER_EVENTS: 'user.events',
+  PRODUCT_EVENTS: 'product.events',
   NOTIFICATION_EVENTS: 'notification.events',
   ANALYTICS_EVENTS: 'analytics.events',
   AUDIT_EVENTS: 'audit.events'

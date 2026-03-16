@@ -17,22 +17,22 @@ touch .github/ISSUE_TEMPLATE/{bug_report.md,feature_request.md}
 touch .github/PULL_REQUEST_TEMPLATE/pull_request_template.md
 touch .github/dependabot.yml
 
-# ===== packages/backend-shared (backend-runtime-shared package) =====
-mkdir -p packages/backend-shared/src/{database/{entities,migrations,seeders},decorators,filters,guards,interceptors,pipes,middlewares,utils,constants,dto,types,config}
-touch packages/backend-shared/src/database/entities/{base.entity.ts,audit.entity.ts}
-touch packages/backend-shared/src/decorators/{api-response.ts,auth.ts,cache.ts}
-touch packages/backend-shared/src/filters/{http-exception.filter.ts,grpc-exception.filter.ts}
-touch packages/backend-shared/src/guards/{auth.guard.ts,role.guard.ts,rate-limit.guard.ts}
-touch packages/backend-shared/src/interceptors/{logging.interceptor.ts,metrics.interceptor.ts,timeout.interceptor.ts,transform.interceptor.ts}
-touch packages/backend-shared/src/pipes/{validation.pipe.ts,parse-uuid.pipe.ts}
-touch packages/backend-shared/src/middlewares/{request-id.middleware.ts,logging.middleware.ts}
-touch packages/backend-shared/src/utils/{logger.util.ts,pagination.util.ts,date.util.ts,error.util.ts}
-touch packages/backend-shared/src/constants/{error-codes.const.ts,pagination.const.ts,regex.const.ts}
-touch packages/backend-shared/src/dto/{pagination.dto.ts,api-response.dto.ts,error.dto.ts}
-touch packages/backend-shared/src/types/{pagination.type.ts,common.type.ts}
-touch packages/backend-shared/src/config/{app.config.ts,database.config.ts,cache.config.ts}
-touch packages/backend-shared/src/index.ts
-touch packages/backend-shared/{package.json,tsconfig.json,README.md}
+# ===== services/shared (service-shared-code as a package) =====
+mkdir -p services/shared/src/{database/{entities,migrations,seeders},decorators,filters,guards,interceptors,pipes,middlewares,utils,constants,dto,types,config}
+touch services/shared/src/database/entities/{base.entity.ts,audit.entity.ts}
+touch services/shared/src/decorators/{api-response.ts,auth.ts,cache.ts}
+touch services/shared/src/filters/{http-exception.filter.ts,grpc-exception.filter.ts}
+touch services/shared/src/guards/{auth.guard.ts,role.guard.ts,rate-limit.guard.ts}
+touch services/shared/src/interceptors/{logging.interceptor.ts,metrics.interceptor.ts,timeout.interceptor.ts,transform.interceptor.ts}
+touch services/shared/src/pipes/{validation.pipe.ts,parse-uuid.pipe.ts}
+touch services/shared/src/middlewares/{request-id.middleware.ts,logging.middleware.ts}
+touch services/shared/src/utils/{logger.util.ts,pagination.util.ts,date.util.ts,error.util.ts}
+touch services/shared/src/constants/{error-codes.const.ts,pagination.const.ts,regex.const.ts}
+touch services/shared/src/dto/{pagination.dto.ts,api-response.dto.ts,error.dto.ts}
+touch services/shared/src/types/{pagination.type.ts,common.type.ts}
+touch services/shared/src/config/{app.config.ts,database.config.ts,cache.config.ts}
+touch services/shared/src/index.ts
+touch services/shared/{package.json,tsconfig.json,README.md}
 
 # ===== 12+ services (skeleton only) =====
 SERVICES=(api-gateway auth-service user-service product-service inventory-service cart-service order-service payment-service shipping-service notification-service review-service analytics-service livestream-service)

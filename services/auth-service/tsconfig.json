@@ -1,26 +1,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "target": "ES2021",
     "rootDir": "src",
-    "outDir": "dist",
-    "declaration": true,
-    "sourceMap": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "Node",
-    "types": ["node", "jest"],
-    "baseUrl": ".",
-    "paths": {
-      "src/*": ["src/*"]
-    }
+    "outDir": "dist"
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"]
 }

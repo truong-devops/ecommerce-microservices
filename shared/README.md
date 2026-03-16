@@ -8,4 +8,4 @@ This package should contain only transport-neutral definitions:
 - Kafka event schemas and topic contracts
 - DTO/type contracts shared by backend and frontend
 
-Avoid service runtime code here. Runtime helpers belong in `packages/backend-shared`.
+Avoid service runtime code here. Runtime helpers belong in `services/shared`.

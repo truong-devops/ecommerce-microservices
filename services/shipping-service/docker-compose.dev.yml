@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - shipping_service_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  shipping-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env.example
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3008:3008'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  shipping_service_pg_data:

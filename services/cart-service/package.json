@@ -11,7 +11,7 @@
     "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
     "docker:down": "docker compose -f docker-compose.dev.yml down --remove-orphans",
     "docker:logs": "docker compose -f docker-compose.dev.yml logs -f cart-service",
-    "test": "jest --config jest.config.ts --watchman=false --runInBand --passWithNoTests",
+    "test": "jest --config jest.config.ts --watchman=false --runInBand",
     "test:e2e": "jest --config jest.config.ts --runInBand --testRegex app\\.e2e-spec\\.ts$",
     "lint": "echo 'lint scaffold pending'"
   },

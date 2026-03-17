@@ -1,0 +1,32 @@
+services:
+  mongo:
+    image: mongo:7
+    command: ['--bind_ip_all']
+    ports:
+      - '27019:27017'
+    volumes:
+      - review_service_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand({ ping: 1 })']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  review-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env.example
+    environment:
+      APP_ENV: development
+      MONGODB_URI: mongodb://mongo:27017/ecommerce_review
+    ports:
+      - '3009:3009'
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  review_service_mongo_data:

@@ -50,6 +50,8 @@ func New(cfg *config.Config, logger *zap.Logger, metrics *observability.Metrics)
 
 		public.Method(http.MethodGet, "/api/reviews", proxies[config.ServiceReview])
 		public.Method(http.MethodGet, "/api/reviews/*", proxies[config.ServiceReview])
+		public.Method(http.MethodGet, "/api/v1/reviews", proxies[config.ServiceReview])
+		public.Method(http.MethodGet, "/api/v1/reviews/*", proxies[config.ServiceReview])
 	})
 
 	r.Group(func(private chi.Router) {
@@ -74,6 +76,10 @@ func New(cfg *config.Config, logger *zap.Logger, metrics *observability.Metrics)
 		mountMethodPrefix(private, http.MethodPut, "/api/reviews", proxies[config.ServiceReview])
 		mountMethodPrefix(private, http.MethodPatch, "/api/reviews", proxies[config.ServiceReview])
 		mountMethodPrefix(private, http.MethodDelete, "/api/reviews", proxies[config.ServiceReview])
+		mountMethodPrefix(private, http.MethodPost, "/api/v1/reviews", proxies[config.ServiceReview])
+		mountMethodPrefix(private, http.MethodPut, "/api/v1/reviews", proxies[config.ServiceReview])
+		mountMethodPrefix(private, http.MethodPatch, "/api/v1/reviews", proxies[config.ServiceReview])
+		mountMethodPrefix(private, http.MethodDelete, "/api/v1/reviews", proxies[config.ServiceReview])
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

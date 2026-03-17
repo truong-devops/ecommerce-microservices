@@ -14,6 +14,7 @@ ANOTHER_SELLER_EMAIL="${ANOTHER_SELLER_EMAIL:-another-seller@example.com}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@example.com}"
 KEEP_UP="${KEEP_UP:-0}"
 RUN_JEST="${RUN_JEST:-1}"
+JEST_MAX_OLD_SPACE_SIZE_MB="${JEST_MAX_OLD_SPACE_SIZE_MB:-4096}"
 
 RESPONSE_STATUS=""
 RESPONSE_BODY=""
@@ -47,26 +48,6 @@ detect_node_bin() {
   fi
 
   echo "Missing required command: node (or node.exe)" >&2
-  exit 1
-}
-
-detect_npm_bin() {
-  if command -v npm >/dev/null 2>&1; then
-    echo "npm"
-    return
-  fi
-
-  if command -v npm.cmd >/dev/null 2>&1; then
-    echo "npm.cmd"
-    return
-  fi
-
-  if [[ -x "/c/Program Files/nodejs/npm.cmd" ]]; then
-    echo "/c/Program Files/nodejs/npm.cmd"
-    return
-  fi
-
-  echo "Missing npm executable (npm or npm.cmd)." >&2
   exit 1
 }
 
@@ -193,7 +174,7 @@ call_api() {
     exit 1
   fi
 
-  RESPONSE_BODY="$(cat "$tmp_file")"
+  RESPONSE_BODY="$(<"$tmp_file")"
   rm -f "$tmp_file"
 }
 
@@ -248,7 +229,6 @@ trap teardown EXIT
 require_cmd docker
 require_cmd curl
 NODE_BIN="$(detect_node_bin)"
-NPM_BIN="$(detect_npm_bin)"
 
 print_step "Starting product-service stack (mongo + redis + product-service)"
 docker compose -f "$COMPOSE_FILE" up --build -d mongo redis product-service
@@ -436,7 +416,17 @@ echo "Not found guard OK"
 if [[ "$RUN_JEST" == "1" ]]; then
   print_step "Running workspace Jest tests"
   cd "$REPO_ROOT"
-  "$NPM_BIN" run test --workspace services/product-service
+  JEST_CLI_JS="$REPO_ROOT/node_modules/jest/bin/jest.js"
+  if [[ ! -f "$JEST_CLI_JS" ]]; then
+    echo "Cannot find Jest CLI at $JEST_CLI_JS" >&2
+    exit 1
+  fi
+
+  "$NODE_BIN" --max-old-space-size="$JEST_MAX_OLD_SPACE_SIZE_MB" "$JEST_CLI_JS" \
+    --watchman=false \
+    --runInBand \
+    --passWithNoTests \
+    --config "$REPO_ROOT/services/product-service/jest.config.ts"
 fi
 
 echo

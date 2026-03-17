@@ -5,6 +5,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ecommerce_user
+    restart: unless-stopped
     ports:
       - '5434:5432'
     volumes:
@@ -25,7 +26,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       DB_TYPE: postgres
-      DB_HOST: user-service-db
+      DB_HOST: ${DB_HOST:-user-service-db}
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
@@ -33,6 +34,8 @@ services:
       DB_SSL: 'false'
       DB_MIGRATIONS_RUN: 'true'
       KAFKA_ENABLED: 'false'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     depends_on:
       user-service-db:
         condition: service_healthy

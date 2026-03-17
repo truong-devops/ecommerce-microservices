@@ -35,13 +35,18 @@ Run `user-service` + PostgreSQL in isolation:
 - Health check: `curl http://localhost:3100/api/v1/health`
 - Stop: `docker compose -f services/user-service/docker-compose.dev.yml down`
 - Stop + remove DB volume: `docker compose -f services/user-service/docker-compose.dev.yml down -v`
+- Check running services: `docker compose -f services/user-service/docker-compose.dev.yml ps`
 
 Build production image:
 
 - `docker build -f services/user-service/Dockerfile.prod -t user-service:prod services/user-service`
 - `docker run --rm -p 3000:3000 --env-file services/user-service/.env.dev user-service:prod`
 
-When running container with local PostgreSQL container, set `DB_HOST` to that container name (not `localhost`).
+DB host mode:
+
+- Default (DB in same compose): `DB_HOST=user-service-db`
+- DB outside compose (host machine): run with `DB_HOST=host.docker.internal`:
+  - `DB_HOST=host.docker.internal docker compose -f services/user-service/docker-compose.dev.yml up --build -d user-service`
 
 ## Migration
 

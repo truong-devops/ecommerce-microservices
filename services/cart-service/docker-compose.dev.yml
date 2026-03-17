@@ -1,0 +1,42 @@
+﻿services:
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - cart_service_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  cart-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env.dev
+    ports:
+      - '3004:3004'
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  cart_service_postgres_data:

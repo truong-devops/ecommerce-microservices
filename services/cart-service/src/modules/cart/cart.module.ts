@@ -1,5 +1,6 @@
 ﻿import { DynamicModule, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CommonModule } from '../../common/common.module';
 import { CartController } from './controllers/cart.controller';
 import { CartItemRecordEntity } from './entities/cart-item-record.entity';
 import { CartRecordEntity } from './entities/cart-record.entity';
@@ -16,6 +17,7 @@ export class CartModule {
     return {
       module: CartModule,
       imports: [
+        CommonModule,
         ...(persistenceEnabled
           ? [
               TypeOrmModule.forFeature([CartRecordEntity, CartItemRecordEntity])

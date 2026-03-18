@@ -1,0 +1,428 @@
+version: '3.9'
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - '2181:2181'
+    healthcheck:
+      test: ['CMD', 'zkServer.sh', 'status']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: bitnami/kafka:latest
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - '9092:9092'
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ['CMD', 'kafka-topics.sh', '--bootstrap-server', 'kafka:9092', '--list']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --appendonly no
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:6
+    command: ['--bind_ip_all']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  auth-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    ports:
+      - '5433:5432'
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d auth_db']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  user-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_user
+    ports:
+      - '5434:5432'
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ecommerce_user']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    environment:
+      CLICKHOUSE_DB: ecommerce_analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ''
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    env_file:
+      - ./services/api-gateway/.env.example
+    environment:
+      APP_NAME: api-gateway
+      APP_ENV: development
+      PORT: 8080
+      JWT_SECRET: change-me
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001
+      AUTH_SERVICE_URL: http://auth-service:3001
+      USER_SERVICE_URL: http://user-service:3000
+      PRODUCT_SERVICE_URL: http://product-service:3003
+      CART_SERVICE_URL: http://cart-service:3004
+      ORDER_SERVICE_URL: http://order-service:3002
+      PAYMENT_SERVICE_URL: http://payment-service:3006
+      INVENTORY_SERVICE_URL: http://inventory-service:3007
+      SHIPPING_SERVICE_URL: http://shipping-service:3008
+      REVIEW_SERVICE_URL: http://review-service:3009
+      NOTIFICATION_SERVICE_URL: http://notification-service:3011
+      ANALYTICS_SERVICE_URL: http://analytics-service:3010
+      AUTH_SERVICE_TIMEOUT: 8s
+      USER_SERVICE_TIMEOUT: 8s
+      PRODUCT_SERVICE_TIMEOUT: 8s
+      CART_SERVICE_TIMEOUT: 8s
+      ORDER_SERVICE_TIMEOUT: 10s
+      PAYMENT_SERVICE_TIMEOUT: 10s
+      INVENTORY_SERVICE_TIMEOUT: 8s
+      SHIPPING_SERVICE_TIMEOUT: 8s
+      REVIEW_SERVICE_TIMEOUT: 8s
+      NOTIFICATION_SERVICE_TIMEOUT: 8s
+      ANALYTICS_SERVICE_TIMEOUT: 8s
+    ports:
+      - '8080:8080'
+    depends_on:
+      - auth-service
+      - user-service
+      - product-service
+      - cart-service
+      - order-service
+      - payment-service
+      - inventory-service
+      - shipping-service
+      - review-service
+      - notification-service
+      - analytics-service
+      - kafka
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    env_file:
+      - ./services/auth-service/.env.example
+    environment:
+      APP_NAME: auth-service
+      APP_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
+      DB_SSL: false
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+    ports:
+      - '3001:3001'
+    depends_on:
+      - auth-postgres
+      - redis
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./services/user-service
+    env_file:
+      - ./services/user-service/.env.dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: user-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ecommerce_user
+      DB_SSL: false
+      DB_MIGRATIONS_RUN: true
+      KAFKA_ENABLED: false
+    ports:
+      - '3000:3000'
+    depends_on:
+      - user-postgres
+    restart: unless-stopped
+
+  product-service:
+    build:
+      context: ./services/product-service
+    env_file:
+      - ./services/product-service/.env.dev
+    environment:
+      DATABASE_URL: mongodb://mongo:27017
+      DATABASE_NAME: ecommerce_product
+      REDIS_URL: redis://redis:6379
+      REDIS_ENABLED: true
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+      SEARCH_ENABLED: false
+      OPENSEARCH_URL: http://opensearch:9200
+    ports:
+      - '3003:3003'
+    depends_on:
+      - mongo
+      - redis
+    restart: unless-stopped
+
+  review-service:
+    build:
+      context: ./services/review-service
+    env_file:
+      - ./services/review-service/.env.example
+    environment:
+      APP_NAME: review-service
+      APP_ENV: development
+      PORT: 3009
+      MONGODB_URI: mongodb://mongo:27017/ecommerce_review
+      JWT_ACCESS_SECRET: change-me-review-access-secret-min-32
+    ports:
+      - '3009:3009'
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  cart-service:
+    build:
+      context: ./services/cart-service
+    env_file:
+      - ./services/cart-service/.env.dev
+    environment:
+      APP_NAME: cart-service
+      APP_ENV: development
+      PORT: 3004
+      REDIS_ENABLED: true
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DB_SSL: false
+      JWT_ACCESS_SECRET: change-me-cart-access-secret-min-32chars
+      KAFKA_ENABLED: false
+    ports:
+      - '3004:3004'
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ./services/order-service
+    env_file:
+      - ./services/order-service/.env.example
+    environment:
+      APP_ENV: development
+      PORT: 3002
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+    ports:
+      - '3002:3002'
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ./services/payment-service
+    env_file:
+      - ./services/payment-service/.env.dev
+    environment:
+      APP_NAME: payment-service
+      APP_ENV: development
+      PORT: 3006
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DB_SSL: false
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+      PAYMENT_GATEWAY: mock
+    ports:
+      - '3006:3006'
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+    env_file:
+      - ./services/inventory-service/.env.dev
+    environment:
+      APP_NAME: inventory-service
+      APP_ENV: development
+      PORT: 3007
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DB_SSL: false
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+    ports:
+      - '3007:3007'
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  shipping-service:
+    build:
+      context: ./services/shipping-service
+    env_file:
+      - ./services/shipping-service/.env.example
+    environment:
+      APP_NAME: shipping-service
+      APP_ENV: development
+      PORT: 3008
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+    ports:
+      - '3008:3008'
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+    env_file:
+      - ./services/notification-service/.env.example
+    environment:
+      APP_NAME: notification-service
+      APP_ENV: development
+      PORT: 3009
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DB_SSL: false
+      REDIS_ENABLED: true
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+    ports:
+      - '3011:3009'
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+    env_file:
+      - ./services/analytics-service/.env.dev
+    environment:
+      APP_NAME: analytics-service
+      APP_ENV: development
+      PORT: 3010
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DATABASE: ecommerce_analytics
+      CLICKHOUSE_USERNAME: default
+      CLICKHOUSE_PASSWORD: ''
+      REDIS_ENABLED: true
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_ENABLED: false
+    ports:
+      - '3010:3010'
+    depends_on:
+      - clickhouse
+      - redis
+    restart: unless-stopped
+
+  opensearch:
+    image: opensearchproject/opensearch:2.9.0
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - '9200:9200'
+      - '9600:9600'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9200/_cluster/health?local=true']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  postgres_data:
+  auth_postgres_data:
+  user_postgres_data:
+  clickhouse_data:

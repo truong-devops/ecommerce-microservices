@@ -1,0 +1,508 @@
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  extra_hosts:
+    - 'host.docker.internal:host-gateway'
+
+services:
+  auth-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: auth_db
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d auth_db']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  auth-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  auth-service:
+    <<: *service-defaults
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/auth-service/.env.example
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
+      REDIS_URL: redis://auth-redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3001:3001'
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+      auth-redis:
+        condition: service_healthy
+
+  user-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecommerce_user
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ecommerce_user']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  user-service:
+    <<: *service-defaults
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/user-service/.env.dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_TYPE: postgres
+      DB_HOST: user-postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: ecommerce_user
+      DB_SSL: 'false'
+      DB_MIGRATIONS_RUN: 'true'
+      KAFKA_ENABLED: 'false'
+    ports:
+      - '3100:3000'
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+
+  product-mongo:
+    image: mongo:6
+    command: ['--bind_ip_all']
+    volumes:
+      - product_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  product-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  product-service:
+    <<: *service-defaults
+    build:
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/product-service/.env.dev
+    environment:
+      APP_ENV: development
+      DATABASE_URL: mongodb://product-mongo:27017
+      REDIS_URL: redis://product-redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_ENABLED: 'false'
+    ports:
+      - '3003:3003'
+    depends_on:
+      product-mongo:
+        condition: service_healthy
+      product-redis:
+        condition: service_healthy
+
+  cart-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - cart_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  cart-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  cart-service:
+    <<: *service-defaults
+    build:
+      context: ./services/cart-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/cart-service/.env.dev
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@cart-postgres:5432/ecommerce
+      REDIS_URL: redis://cart-redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_ENABLED: 'false'
+      PRODUCT_SERVICE_BASE_URL: http://product-service:3003/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:3007/api/v1
+    ports:
+      - '3004:3004'
+    depends_on:
+      cart-postgres:
+        condition: service_healthy
+      cart-redis:
+        condition: service_healthy
+
+  order-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - order_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  order-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  order-service:
+    <<: *service-defaults
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/order-service/.env.example
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@order-postgres:5432/ecommerce
+      REDIS_URL: redis://order-redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3002:3002'
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+      order-redis:
+        condition: service_healthy
+
+  payment-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - payment_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  payment-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  payment-service:
+    <<: *service-defaults
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/payment-service/.env.dev
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@payment-postgres:5432/ecommerce
+      REDIS_URL: redis://payment-redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3006:3006'
+    depends_on:
+      payment-postgres:
+        condition: service_healthy
+      payment-redis:
+        condition: service_healthy
+
+  inventory-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - inventory_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  inventory-service:
+    <<: *service-defaults
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/inventory-service/.env.dev
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@inventory-postgres:5432/ecommerce
+      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_ENABLED: 'false'
+    ports:
+      - '3007:3007'
+    depends_on:
+      inventory-postgres:
+        condition: service_healthy
+
+  shipping-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - shipping_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  shipping-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  shipping-service:
+    <<: *service-defaults
+    build:
+      context: ./services/shipping-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/shipping-service/.env.example
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@shipping-postgres:5432/ecommerce
+      REDIS_URL: redis://shipping-redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3008:3008'
+    depends_on:
+      shipping-postgres:
+        condition: service_healthy
+      shipping-redis:
+        condition: service_healthy
+
+  review-mongo:
+    image: mongo:7
+    command: ['--bind_ip_all']
+    volumes:
+      - review_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  review-service:
+    <<: *service-defaults
+    build:
+      context: ./services/review-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/review-service/.env.example
+    environment:
+      APP_ENV: development
+      MONGODB_URI: mongodb://review-mongo:27017/ecommerce_review
+    ports:
+      - '3009:3009'
+    depends_on:
+      review-mongo:
+        condition: service_healthy
+
+  notification-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  notification-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  notification-service:
+    <<: *service-defaults
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/notification-service/.env.dev
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://ecommerce:ecommerce@notification-postgres:5432/ecommerce
+      REDIS_URL: redis://notification-redis:6379
+      KAFKA_ENABLED: 'false'
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3011:3009'
+    depends_on:
+      notification-postgres:
+        condition: service_healthy
+      notification-redis:
+        condition: service_healthy
+
+  analytics-clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    environment:
+      CLICKHOUSE_DB: ecommerce_analytics
+      CLICKHOUSE_USER: analytics
+      CLICKHOUSE_PASSWORD: analytics_password
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    volumes:
+      - analytics_clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  analytics-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  analytics-service:
+    <<: *service-defaults
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/analytics-service/.env.dev
+    environment:
+      APP_ENV: development
+      CLICKHOUSE_URL: http://analytics-clickhouse:8123
+      CLICKHOUSE_DATABASE: ecommerce_analytics
+      CLICKHOUSE_USERNAME: analytics
+      CLICKHOUSE_PASSWORD: analytics_password
+      REDIS_URL: redis://analytics-redis:6379
+      KAFKA_ENABLED: 'false'
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3010:3010'
+    depends_on:
+      analytics-clickhouse:
+        condition: service_healthy
+      analytics-redis:
+        condition: service_healthy
+
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    env_file:
+      - ./services/api-gateway/.env.example
+    environment:
+      APP_ENV: development
+      PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:3001
+      USER_SERVICE_URL: http://user-service:3000
+      PRODUCT_SERVICE_URL: http://product-service:3003
+      CART_SERVICE_URL: http://cart-service:3004
+      ORDER_SERVICE_URL: http://order-service:3002
+      PAYMENT_SERVICE_URL: http://payment-service:3006
+      INVENTORY_SERVICE_URL: http://inventory-service:3007
+      SHIPPING_SERVICE_URL: http://shipping-service:3008
+      REVIEW_SERVICE_URL: http://review-service:3009
+      NOTIFICATION_SERVICE_URL: http://notification-service:3009
+      ANALYTICS_SERVICE_URL: http://analytics-service:3010
+    ports:
+      - '8080:8080'
+    depends_on:
+      auth-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      cart-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      shipping-service:
+        condition: service_started
+      review-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+
+volumes:
+  auth_postgres_data:
+  user_postgres_data:
+  product_mongo_data:
+  cart_postgres_data:
+  order_postgres_data:
+  payment_postgres_data:
+  inventory_postgres_data:
+  shipping_postgres_data:
+  review_mongo_data:
+  notification_postgres_data:
+  analytics_clickhouse_data:

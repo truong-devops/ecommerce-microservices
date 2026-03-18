@@ -1,0 +1,54 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    environment:
+      CLICKHOUSE_DB: ecommerce_analytics
+      CLICKHOUSE_USER: analytics
+      CLICKHOUSE_PASSWORD: analytics_password
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    volumes:
+      - analytics_service_ch_data:/var/lib/clickhouse
+    healthcheck:
+      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env.example
+    environment:
+      APP_ENV: development
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DATABASE: ecommerce_analytics
+      CLICKHOUSE_USERNAME: analytics
+      CLICKHOUSE_PASSWORD: analytics_password
+      REDIS_ENABLED: 'true'
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: host.docker.internal:9092
+    ports:
+      - '3010:3010'
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  analytics_service_ch_data:

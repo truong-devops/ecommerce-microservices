@@ -1,0 +1,3772 @@
+[
+  {
+    "name": "PureGlow Portable Blender Eco 1",
+    "slug": "pureglow-portable-blender-eco-1",
+    "description": "PureGlow Portable Blender Eco 1 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 18,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-1-1/800/800",
+      "https://picsum.photos/seed/product-1-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-001-A",
+        "name": "Standard",
+        "price": 10.5,
+        "currency": "USD",
+        "compareAtPrice": 13.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Running Shorts Pro 2",
+    "slug": "urbannest-running-shorts-pro-2",
+    "description": "UrbanNest Running Shorts Pro 2 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 24,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-2-1/800/800",
+      "https://picsum.photos/seed/product-2-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-002-A",
+        "name": "Standard",
+        "price": 13,
+        "currency": "USD",
+        "compareAtPrice": 16.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-002-B",
+        "name": "Premium",
+        "price": 15.34,
+        "currency": "USD",
+        "compareAtPrice": 18.46,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Gaming Mouse Eco 3",
+    "slug": "peaktrail-gaming-mouse-eco-3",
+    "description": "PeakTrail Gaming Mouse Eco 3 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 3,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-3-1/800/800",
+      "https://picsum.photos/seed/product-3-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-003-A",
+        "name": "Standard",
+        "price": 15.5,
+        "currency": "USD",
+        "compareAtPrice": 19.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Car Phone Holder Pro 4",
+    "slug": "zencore-car-phone-holder-pro-4",
+    "description": "ZenCore Car Phone Holder Pro 4 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 6,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-4-1/800/800",
+      "https://picsum.photos/seed/product-4-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-004-A",
+        "name": "Standard",
+        "price": 18,
+        "currency": "USD",
+        "compareAtPrice": 22.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-004-B",
+        "name": "Premium",
+        "price": 21.24,
+        "currency": "USD",
+        "compareAtPrice": 25.56,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Facial Cleanser Eco 5",
+    "slug": "brightleaf-facial-cleanser-eco-5",
+    "description": "BrightLeaf Facial Cleanser Eco 5 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 12,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-5-1/800/800",
+      "https://picsum.photos/seed/product-5-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-005-A",
+        "name": "Standard",
+        "price": 20.5,
+        "currency": "USD",
+        "compareAtPrice": 25.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-005-C",
+        "name": "Bundle",
+        "price": 27.68,
+        "currency": "USD",
+        "compareAtPrice": 32.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Electric Toothbrush Pro 6",
+    "slug": "mobigear-electric-toothbrush-pro-6",
+    "description": "MobiGear Electric Toothbrush Pro 6 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 18,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-6-1/800/800",
+      "https://picsum.photos/seed/product-6-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-006-A",
+        "name": "Standard",
+        "price": 23,
+        "currency": "USD",
+        "compareAtPrice": 28.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-006-B",
+        "name": "Premium",
+        "price": 27.14,
+        "currency": "USD",
+        "compareAtPrice": 32.66,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Bluetooth Speaker Eco 7",
+    "slug": "craftedge-bluetooth-speaker-eco-7",
+    "description": "CraftEdge Bluetooth Speaker Eco 7 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 24,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-7-1/800/800",
+      "https://picsum.photos/seed/product-7-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-007-A",
+        "name": "Standard",
+        "price": 25.5,
+        "currency": "USD",
+        "compareAtPrice": 31.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Stainless Water Bottle Pro 8",
+    "slug": "pethaven-stainless-water-bottle-pro-8",
+    "description": "PetHaven Stainless Water Bottle Pro 8 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 3,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-8-1/800/800",
+      "https://picsum.photos/seed/product-8-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-008-A",
+        "name": "Standard",
+        "price": 28,
+        "currency": "USD",
+        "compareAtPrice": 35,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-008-B",
+        "name": "Premium",
+        "price": 33.04,
+        "currency": "USD",
+        "compareAtPrice": 39.76,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Desktop Organizer Eco 9",
+    "slug": "roadmaster-desktop-organizer-eco-9",
+    "description": "RoadMaster Desktop Organizer Eco 9 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 6,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-9-1/800/800",
+      "https://picsum.photos/seed/product-9-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-009-A",
+        "name": "Standard",
+        "price": 30.5,
+        "currency": "USD",
+        "compareAtPrice": 38.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Phone Stand Pro 10",
+    "slug": "tinybloom-phone-stand-pro-10",
+    "description": "TinyBloom Phone Stand Pro 10 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 12,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-10-1/800/800",
+      "https://picsum.photos/seed/product-10-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-010-A",
+        "name": "Standard",
+        "price": 33,
+        "currency": "USD",
+        "compareAtPrice": 41.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-010-B",
+        "name": "Premium",
+        "price": 38.94,
+        "currency": "USD",
+        "compareAtPrice": 46.86,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-010-C",
+        "name": "Bundle",
+        "price": 44.55,
+        "currency": "USD",
+        "compareAtPrice": 52.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "FlexPro Pet Feeding Bowl Eco 11",
+    "slug": "flexpro-pet-feeding-bowl-eco-11",
+    "description": "FlexPro Pet Feeding Bowl Eco 11 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "FlexPro",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 18,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-11-1/800/800",
+      "https://picsum.photos/seed/product-11-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-011-A",
+        "name": "Standard",
+        "price": 35.5,
+        "currency": "USD",
+        "compareAtPrice": 44.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "SkyPulse Body Lotion Pro 12",
+    "slug": "skypulse-body-lotion-pro-12",
+    "description": "SkyPulse Body Lotion Pro 12 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "SkyPulse",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 24,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-12-1/800/800",
+      "https://picsum.photos/seed/product-12-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-012-A",
+        "name": "Standard",
+        "price": 38,
+        "currency": "USD",
+        "compareAtPrice": 47.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-012-B",
+        "name": "Premium",
+        "price": 44.84,
+        "currency": "USD",
+        "compareAtPrice": 53.96,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "NovaTech Hair Dryer Eco 13",
+    "slug": "novatech-hair-dryer-eco-13",
+    "description": "NovaTech Hair Dryer Eco 13 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "NovaTech",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 3,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-13-1/800/800",
+      "https://picsum.photos/seed/product-13-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-013-A",
+        "name": "Standard",
+        "price": 40.5,
+        "currency": "USD",
+        "compareAtPrice": 50.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "LumiHome Smart LED Bulb Pro 14",
+    "slug": "lumihome-smart-led-bulb-pro-14",
+    "description": "LumiHome Smart LED Bulb Pro 14 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "LumiHome",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 6,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-14-1/800/800",
+      "https://picsum.photos/seed/product-14-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-014-A",
+        "name": "Standard",
+        "price": 43,
+        "currency": "USD",
+        "compareAtPrice": 53.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-014-B",
+        "name": "Premium",
+        "price": 50.74,
+        "currency": "USD",
+        "compareAtPrice": 61.06,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "AeroFit Yoga Mat Eco 15",
+    "slug": "aerofit-yoga-mat-eco-15",
+    "description": "AeroFit Yoga Mat Eco 15 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "AeroFit",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 12,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-15-1/800/800",
+      "https://picsum.photos/seed/product-15-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-015-A",
+        "name": "Standard",
+        "price": 45.5,
+        "currency": "USD",
+        "compareAtPrice": 56.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-015-C",
+        "name": "Bundle",
+        "price": 61.43,
+        "currency": "USD",
+        "compareAtPrice": 72.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PureGlow Mechanical Keyboard Pro 16",
+    "slug": "pureglow-mechanical-keyboard-pro-16",
+    "description": "PureGlow Mechanical Keyboard Pro 16 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 18,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-16-1/800/800",
+      "https://picsum.photos/seed/product-16-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-016-A",
+        "name": "Standard",
+        "price": 48,
+        "currency": "USD",
+        "compareAtPrice": 60,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-016-B",
+        "name": "Premium",
+        "price": 56.64,
+        "currency": "USD",
+        "compareAtPrice": 68.16,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Laptop Sleeve Eco 17",
+    "slug": "urbannest-laptop-sleeve-eco-17",
+    "description": "UrbanNest Laptop Sleeve Eco 17 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 24,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-17-1/800/800",
+      "https://picsum.photos/seed/product-17-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-017-A",
+        "name": "Standard",
+        "price": 50.5,
+        "currency": "USD",
+        "compareAtPrice": 63.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Baby Stroller Hook Pro 18",
+    "slug": "peaktrail-baby-stroller-hook-pro-18",
+    "description": "PeakTrail Baby Stroller Hook Pro 18 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 3,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-18-1/800/800",
+      "https://picsum.photos/seed/product-18-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-018-A",
+        "name": "Standard",
+        "price": 53,
+        "currency": "USD",
+        "compareAtPrice": 66.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-018-B",
+        "name": "Premium",
+        "price": 62.54,
+        "currency": "USD",
+        "compareAtPrice": 75.26,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Sunscreen SPF50 Eco 19",
+    "slug": "zencore-sunscreen-spf50-eco-19",
+    "description": "ZenCore Sunscreen SPF50 Eco 19 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 6,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-19-1/800/800",
+      "https://picsum.photos/seed/product-19-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-019-A",
+        "name": "Standard",
+        "price": 55.5,
+        "currency": "USD",
+        "compareAtPrice": 69.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Wireless Earbuds Pro 20",
+    "slug": "brightleaf-wireless-earbuds-pro-20",
+    "description": "BrightLeaf Wireless Earbuds Pro 20 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 12,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-20-1/800/800",
+      "https://picsum.photos/seed/product-20-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-020-A",
+        "name": "Standard",
+        "price": 58,
+        "currency": "USD",
+        "compareAtPrice": 72.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-020-B",
+        "name": "Premium",
+        "price": 68.44,
+        "currency": "USD",
+        "compareAtPrice": 82.36,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-020-C",
+        "name": "Bundle",
+        "price": 78.3,
+        "currency": "USD",
+        "compareAtPrice": 92.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Portable Blender Eco 21",
+    "slug": "mobigear-portable-blender-eco-21",
+    "description": "MobiGear Portable Blender Eco 21 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 18,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-21-1/800/800",
+      "https://picsum.photos/seed/product-21-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-021-A",
+        "name": "Standard",
+        "price": 60.5,
+        "currency": "USD",
+        "compareAtPrice": 75.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Running Shorts Pro 22",
+    "slug": "craftedge-running-shorts-pro-22",
+    "description": "CraftEdge Running Shorts Pro 22 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 24,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-22-1/800/800",
+      "https://picsum.photos/seed/product-22-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-022-A",
+        "name": "Standard",
+        "price": 63,
+        "currency": "USD",
+        "compareAtPrice": 78.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-022-B",
+        "name": "Premium",
+        "price": 74.34,
+        "currency": "USD",
+        "compareAtPrice": 89.46,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Gaming Mouse Eco 23",
+    "slug": "pethaven-gaming-mouse-eco-23",
+    "description": "PetHaven Gaming Mouse Eco 23 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 3,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-23-1/800/800",
+      "https://picsum.photos/seed/product-23-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-023-A",
+        "name": "Standard",
+        "price": 65.5,
+        "currency": "USD",
+        "compareAtPrice": 81.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Car Phone Holder Pro 24",
+    "slug": "roadmaster-car-phone-holder-pro-24",
+    "description": "RoadMaster Car Phone Holder Pro 24 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 6,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-24-1/800/800",
+      "https://picsum.photos/seed/product-24-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-024-A",
+        "name": "Standard",
+        "price": 68,
+        "currency": "USD",
+        "compareAtPrice": 85,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-024-B",
+        "name": "Premium",
+        "price": 80.24,
+        "currency": "USD",
+        "compareAtPrice": 96.56,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Facial Cleanser Eco 25",
+    "slug": "tinybloom-facial-cleanser-eco-25",
+    "description": "TinyBloom Facial Cleanser Eco 25 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 12,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-25-1/800/800",
+      "https://picsum.photos/seed/product-25-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-025-A",
+        "name": "Standard",
+        "price": 8,
+        "currency": "USD",
+        "compareAtPrice": 10,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-025-C",
+        "name": "Bundle",
+        "price": 10.8,
+        "currency": "USD",
+        "compareAtPrice": 12.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "FlexPro Electric Toothbrush Pro 26",
+    "slug": "flexpro-electric-toothbrush-pro-26",
+    "description": "FlexPro Electric Toothbrush Pro 26 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "FlexPro",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 18,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-26-1/800/800",
+      "https://picsum.photos/seed/product-26-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-026-A",
+        "name": "Standard",
+        "price": 10.5,
+        "currency": "USD",
+        "compareAtPrice": 13.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-026-B",
+        "name": "Premium",
+        "price": 12.39,
+        "currency": "USD",
+        "compareAtPrice": 14.91,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "SkyPulse Bluetooth Speaker Eco 27",
+    "slug": "skypulse-bluetooth-speaker-eco-27",
+    "description": "SkyPulse Bluetooth Speaker Eco 27 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "SkyPulse",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 24,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-27-1/800/800",
+      "https://picsum.photos/seed/product-27-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-027-A",
+        "name": "Standard",
+        "price": 13,
+        "currency": "USD",
+        "compareAtPrice": 16.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "NovaTech Stainless Water Bottle Pro 28",
+    "slug": "novatech-stainless-water-bottle-pro-28",
+    "description": "NovaTech Stainless Water Bottle Pro 28 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "NovaTech",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 3,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-28-1/800/800",
+      "https://picsum.photos/seed/product-28-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-028-A",
+        "name": "Standard",
+        "price": 15.5,
+        "currency": "USD",
+        "compareAtPrice": 19.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-028-B",
+        "name": "Premium",
+        "price": 18.29,
+        "currency": "USD",
+        "compareAtPrice": 22.01,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "LumiHome Desktop Organizer Eco 29",
+    "slug": "lumihome-desktop-organizer-eco-29",
+    "description": "LumiHome Desktop Organizer Eco 29 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "LumiHome",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 6,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-29-1/800/800",
+      "https://picsum.photos/seed/product-29-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-029-A",
+        "name": "Standard",
+        "price": 18,
+        "currency": "USD",
+        "compareAtPrice": 22.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "AeroFit Phone Stand Pro 30",
+    "slug": "aerofit-phone-stand-pro-30",
+    "description": "AeroFit Phone Stand Pro 30 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "AeroFit",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 12,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-30-1/800/800",
+      "https://picsum.photos/seed/product-30-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-030-A",
+        "name": "Standard",
+        "price": 20.5,
+        "currency": "USD",
+        "compareAtPrice": 25.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-030-B",
+        "name": "Premium",
+        "price": 24.19,
+        "currency": "USD",
+        "compareAtPrice": 29.11,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-030-C",
+        "name": "Bundle",
+        "price": 27.68,
+        "currency": "USD",
+        "compareAtPrice": 32.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PureGlow Pet Feeding Bowl Eco 31",
+    "slug": "pureglow-pet-feeding-bowl-eco-31",
+    "description": "PureGlow Pet Feeding Bowl Eco 31 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 18,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-31-1/800/800",
+      "https://picsum.photos/seed/product-31-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-031-A",
+        "name": "Standard",
+        "price": 23,
+        "currency": "USD",
+        "compareAtPrice": 28.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Body Lotion Pro 32",
+    "slug": "urbannest-body-lotion-pro-32",
+    "description": "UrbanNest Body Lotion Pro 32 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 24,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-32-1/800/800",
+      "https://picsum.photos/seed/product-32-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-032-A",
+        "name": "Standard",
+        "price": 25.5,
+        "currency": "USD",
+        "compareAtPrice": 31.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-032-B",
+        "name": "Premium",
+        "price": 30.09,
+        "currency": "USD",
+        "compareAtPrice": 36.21,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Hair Dryer Eco 33",
+    "slug": "peaktrail-hair-dryer-eco-33",
+    "description": "PeakTrail Hair Dryer Eco 33 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 3,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-33-1/800/800",
+      "https://picsum.photos/seed/product-33-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-033-A",
+        "name": "Standard",
+        "price": 28,
+        "currency": "USD",
+        "compareAtPrice": 35,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Smart LED Bulb Pro 34",
+    "slug": "zencore-smart-led-bulb-pro-34",
+    "description": "ZenCore Smart LED Bulb Pro 34 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 6,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-34-1/800/800",
+      "https://picsum.photos/seed/product-34-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-034-A",
+        "name": "Standard",
+        "price": 30.5,
+        "currency": "USD",
+        "compareAtPrice": 38.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-034-B",
+        "name": "Premium",
+        "price": 35.99,
+        "currency": "USD",
+        "compareAtPrice": 43.31,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Yoga Mat Eco 35",
+    "slug": "brightleaf-yoga-mat-eco-35",
+    "description": "BrightLeaf Yoga Mat Eco 35 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 12,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-35-1/800/800",
+      "https://picsum.photos/seed/product-35-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-035-A",
+        "name": "Standard",
+        "price": 33,
+        "currency": "USD",
+        "compareAtPrice": 41.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-035-C",
+        "name": "Bundle",
+        "price": 44.55,
+        "currency": "USD",
+        "compareAtPrice": 52.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Mechanical Keyboard Pro 36",
+    "slug": "mobigear-mechanical-keyboard-pro-36",
+    "description": "MobiGear Mechanical Keyboard Pro 36 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 18,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-36-1/800/800",
+      "https://picsum.photos/seed/product-36-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-036-A",
+        "name": "Standard",
+        "price": 35.5,
+        "currency": "USD",
+        "compareAtPrice": 44.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-036-B",
+        "name": "Premium",
+        "price": 41.89,
+        "currency": "USD",
+        "compareAtPrice": 50.41,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Laptop Sleeve Eco 37",
+    "slug": "craftedge-laptop-sleeve-eco-37",
+    "description": "CraftEdge Laptop Sleeve Eco 37 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 24,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-37-1/800/800",
+      "https://picsum.photos/seed/product-37-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-037-A",
+        "name": "Standard",
+        "price": 38,
+        "currency": "USD",
+        "compareAtPrice": 47.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Baby Stroller Hook Pro 38",
+    "slug": "pethaven-baby-stroller-hook-pro-38",
+    "description": "PetHaven Baby Stroller Hook Pro 38 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 3,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-38-1/800/800",
+      "https://picsum.photos/seed/product-38-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-038-A",
+        "name": "Standard",
+        "price": 40.5,
+        "currency": "USD",
+        "compareAtPrice": 50.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-038-B",
+        "name": "Premium",
+        "price": 47.79,
+        "currency": "USD",
+        "compareAtPrice": 57.51,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Sunscreen SPF50 Eco 39",
+    "slug": "roadmaster-sunscreen-spf50-eco-39",
+    "description": "RoadMaster Sunscreen SPF50 Eco 39 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 6,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-39-1/800/800",
+      "https://picsum.photos/seed/product-39-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-039-A",
+        "name": "Standard",
+        "price": 43,
+        "currency": "USD",
+        "compareAtPrice": 53.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Wireless Earbuds Pro 40",
+    "slug": "tinybloom-wireless-earbuds-pro-40",
+    "description": "TinyBloom Wireless Earbuds Pro 40 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 12,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-40-1/800/800",
+      "https://picsum.photos/seed/product-40-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-040-A",
+        "name": "Standard",
+        "price": 45.5,
+        "currency": "USD",
+        "compareAtPrice": 56.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-040-B",
+        "name": "Premium",
+        "price": 53.69,
+        "currency": "USD",
+        "compareAtPrice": 64.61,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-040-C",
+        "name": "Bundle",
+        "price": 61.43,
+        "currency": "USD",
+        "compareAtPrice": 72.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "FlexPro Portable Blender Eco 41",
+    "slug": "flexpro-portable-blender-eco-41",
+    "description": "FlexPro Portable Blender Eco 41 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "FlexPro",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 18,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-41-1/800/800",
+      "https://picsum.photos/seed/product-41-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-041-A",
+        "name": "Standard",
+        "price": 48,
+        "currency": "USD",
+        "compareAtPrice": 60,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "SkyPulse Running Shorts Pro 42",
+    "slug": "skypulse-running-shorts-pro-42",
+    "description": "SkyPulse Running Shorts Pro 42 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "SkyPulse",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 24,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-42-1/800/800",
+      "https://picsum.photos/seed/product-42-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-042-A",
+        "name": "Standard",
+        "price": 50.5,
+        "currency": "USD",
+        "compareAtPrice": 63.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-042-B",
+        "name": "Premium",
+        "price": 59.59,
+        "currency": "USD",
+        "compareAtPrice": 71.71,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "NovaTech Gaming Mouse Eco 43",
+    "slug": "novatech-gaming-mouse-eco-43",
+    "description": "NovaTech Gaming Mouse Eco 43 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "NovaTech",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 3,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-43-1/800/800",
+      "https://picsum.photos/seed/product-43-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-043-A",
+        "name": "Standard",
+        "price": 53,
+        "currency": "USD",
+        "compareAtPrice": 66.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "LumiHome Car Phone Holder Pro 44",
+    "slug": "lumihome-car-phone-holder-pro-44",
+    "description": "LumiHome Car Phone Holder Pro 44 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "LumiHome",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 6,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-44-1/800/800",
+      "https://picsum.photos/seed/product-44-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-044-A",
+        "name": "Standard",
+        "price": 55.5,
+        "currency": "USD",
+        "compareAtPrice": 69.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-044-B",
+        "name": "Premium",
+        "price": 65.49,
+        "currency": "USD",
+        "compareAtPrice": 78.81,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "AeroFit Facial Cleanser Eco 45",
+    "slug": "aerofit-facial-cleanser-eco-45",
+    "description": "AeroFit Facial Cleanser Eco 45 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "AeroFit",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 12,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-45-1/800/800",
+      "https://picsum.photos/seed/product-45-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-045-A",
+        "name": "Standard",
+        "price": 58,
+        "currency": "USD",
+        "compareAtPrice": 72.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-045-C",
+        "name": "Bundle",
+        "price": 78.3,
+        "currency": "USD",
+        "compareAtPrice": 92.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PureGlow Electric Toothbrush Pro 46",
+    "slug": "pureglow-electric-toothbrush-pro-46",
+    "description": "PureGlow Electric Toothbrush Pro 46 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 18,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-46-1/800/800",
+      "https://picsum.photos/seed/product-46-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-046-A",
+        "name": "Standard",
+        "price": 60.5,
+        "currency": "USD",
+        "compareAtPrice": 75.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-046-B",
+        "name": "Premium",
+        "price": 71.39,
+        "currency": "USD",
+        "compareAtPrice": 85.91,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Bluetooth Speaker Eco 47",
+    "slug": "urbannest-bluetooth-speaker-eco-47",
+    "description": "UrbanNest Bluetooth Speaker Eco 47 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 24,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-47-1/800/800",
+      "https://picsum.photos/seed/product-47-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-047-A",
+        "name": "Standard",
+        "price": 63,
+        "currency": "USD",
+        "compareAtPrice": 78.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Stainless Water Bottle Pro 48",
+    "slug": "peaktrail-stainless-water-bottle-pro-48",
+    "description": "PeakTrail Stainless Water Bottle Pro 48 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 3,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-48-1/800/800",
+      "https://picsum.photos/seed/product-48-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-048-A",
+        "name": "Standard",
+        "price": 65.5,
+        "currency": "USD",
+        "compareAtPrice": 81.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-048-B",
+        "name": "Premium",
+        "price": 77.29,
+        "currency": "USD",
+        "compareAtPrice": 93.01,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Desktop Organizer Eco 49",
+    "slug": "zencore-desktop-organizer-eco-49",
+    "description": "ZenCore Desktop Organizer Eco 49 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 6,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-49-1/800/800",
+      "https://picsum.photos/seed/product-49-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-049-A",
+        "name": "Standard",
+        "price": 68,
+        "currency": "USD",
+        "compareAtPrice": 85,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Phone Stand Pro 50",
+    "slug": "brightleaf-phone-stand-pro-50",
+    "description": "BrightLeaf Phone Stand Pro 50 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 12,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-50-1/800/800",
+      "https://picsum.photos/seed/product-50-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-050-A",
+        "name": "Standard",
+        "price": 8,
+        "currency": "USD",
+        "compareAtPrice": 10,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-050-B",
+        "name": "Premium",
+        "price": 9.44,
+        "currency": "USD",
+        "compareAtPrice": 11.36,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-050-C",
+        "name": "Bundle",
+        "price": 10.8,
+        "currency": "USD",
+        "compareAtPrice": 12.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Pet Feeding Bowl Eco 51",
+    "slug": "mobigear-pet-feeding-bowl-eco-51",
+    "description": "MobiGear Pet Feeding Bowl Eco 51 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 18,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-51-1/800/800",
+      "https://picsum.photos/seed/product-51-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-051-A",
+        "name": "Standard",
+        "price": 10.5,
+        "currency": "USD",
+        "compareAtPrice": 13.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Body Lotion Pro 52",
+    "slug": "craftedge-body-lotion-pro-52",
+    "description": "CraftEdge Body Lotion Pro 52 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 24,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-52-1/800/800",
+      "https://picsum.photos/seed/product-52-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-052-A",
+        "name": "Standard",
+        "price": 13,
+        "currency": "USD",
+        "compareAtPrice": 16.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-052-B",
+        "name": "Premium",
+        "price": 15.34,
+        "currency": "USD",
+        "compareAtPrice": 18.46,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Hair Dryer Eco 53",
+    "slug": "pethaven-hair-dryer-eco-53",
+    "description": "PetHaven Hair Dryer Eco 53 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 3,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-53-1/800/800",
+      "https://picsum.photos/seed/product-53-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-053-A",
+        "name": "Standard",
+        "price": 15.5,
+        "currency": "USD",
+        "compareAtPrice": 19.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Smart LED Bulb Pro 54",
+    "slug": "roadmaster-smart-led-bulb-pro-54",
+    "description": "RoadMaster Smart LED Bulb Pro 54 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 6,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-54-1/800/800",
+      "https://picsum.photos/seed/product-54-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-054-A",
+        "name": "Standard",
+        "price": 18,
+        "currency": "USD",
+        "compareAtPrice": 22.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-054-B",
+        "name": "Premium",
+        "price": 21.24,
+        "currency": "USD",
+        "compareAtPrice": 25.56,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Yoga Mat Eco 55",
+    "slug": "tinybloom-yoga-mat-eco-55",
+    "description": "TinyBloom Yoga Mat Eco 55 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 12,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-55-1/800/800",
+      "https://picsum.photos/seed/product-55-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-055-A",
+        "name": "Standard",
+        "price": 20.5,
+        "currency": "USD",
+        "compareAtPrice": 25.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-055-C",
+        "name": "Bundle",
+        "price": 27.68,
+        "currency": "USD",
+        "compareAtPrice": 32.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "FlexPro Mechanical Keyboard Pro 56",
+    "slug": "flexpro-mechanical-keyboard-pro-56",
+    "description": "FlexPro Mechanical Keyboard Pro 56 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "FlexPro",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 18,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-56-1/800/800",
+      "https://picsum.photos/seed/product-56-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-056-A",
+        "name": "Standard",
+        "price": 23,
+        "currency": "USD",
+        "compareAtPrice": 28.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-056-B",
+        "name": "Premium",
+        "price": 27.14,
+        "currency": "USD",
+        "compareAtPrice": 32.66,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "SkyPulse Laptop Sleeve Eco 57",
+    "slug": "skypulse-laptop-sleeve-eco-57",
+    "description": "SkyPulse Laptop Sleeve Eco 57 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "SkyPulse",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 24,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-57-1/800/800",
+      "https://picsum.photos/seed/product-57-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-057-A",
+        "name": "Standard",
+        "price": 25.5,
+        "currency": "USD",
+        "compareAtPrice": 31.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "NovaTech Baby Stroller Hook Pro 58",
+    "slug": "novatech-baby-stroller-hook-pro-58",
+    "description": "NovaTech Baby Stroller Hook Pro 58 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "NovaTech",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 3,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-58-1/800/800",
+      "https://picsum.photos/seed/product-58-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-058-A",
+        "name": "Standard",
+        "price": 28,
+        "currency": "USD",
+        "compareAtPrice": 35,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-058-B",
+        "name": "Premium",
+        "price": 33.04,
+        "currency": "USD",
+        "compareAtPrice": 39.76,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "LumiHome Sunscreen SPF50 Eco 59",
+    "slug": "lumihome-sunscreen-spf50-eco-59",
+    "description": "LumiHome Sunscreen SPF50 Eco 59 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "LumiHome",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 6,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-59-1/800/800",
+      "https://picsum.photos/seed/product-59-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-059-A",
+        "name": "Standard",
+        "price": 30.5,
+        "currency": "USD",
+        "compareAtPrice": 38.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "AeroFit Wireless Earbuds Pro 60",
+    "slug": "aerofit-wireless-earbuds-pro-60",
+    "description": "AeroFit Wireless Earbuds Pro 60 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "AeroFit",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 12,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-60-1/800/800",
+      "https://picsum.photos/seed/product-60-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-060-A",
+        "name": "Standard",
+        "price": 33,
+        "currency": "USD",
+        "compareAtPrice": 41.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-060-B",
+        "name": "Premium",
+        "price": 38.94,
+        "currency": "USD",
+        "compareAtPrice": 46.86,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-060-C",
+        "name": "Bundle",
+        "price": 44.55,
+        "currency": "USD",
+        "compareAtPrice": 52.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PureGlow Portable Blender Eco 61",
+    "slug": "pureglow-portable-blender-eco-61",
+    "description": "PureGlow Portable Blender Eco 61 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 18,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-61-1/800/800",
+      "https://picsum.photos/seed/product-61-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-061-A",
+        "name": "Standard",
+        "price": 35.5,
+        "currency": "USD",
+        "compareAtPrice": 44.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Running Shorts Pro 62",
+    "slug": "urbannest-running-shorts-pro-62",
+    "description": "UrbanNest Running Shorts Pro 62 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 24,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-62-1/800/800",
+      "https://picsum.photos/seed/product-62-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-062-A",
+        "name": "Standard",
+        "price": 38,
+        "currency": "USD",
+        "compareAtPrice": 47.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-062-B",
+        "name": "Premium",
+        "price": 44.84,
+        "currency": "USD",
+        "compareAtPrice": 53.96,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Gaming Mouse Eco 63",
+    "slug": "peaktrail-gaming-mouse-eco-63",
+    "description": "PeakTrail Gaming Mouse Eco 63 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 3,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-63-1/800/800",
+      "https://picsum.photos/seed/product-63-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-063-A",
+        "name": "Standard",
+        "price": 40.5,
+        "currency": "USD",
+        "compareAtPrice": 50.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Car Phone Holder Pro 64",
+    "slug": "zencore-car-phone-holder-pro-64",
+    "description": "ZenCore Car Phone Holder Pro 64 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 6,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-64-1/800/800",
+      "https://picsum.photos/seed/product-64-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-064-A",
+        "name": "Standard",
+        "price": 43,
+        "currency": "USD",
+        "compareAtPrice": 53.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-064-B",
+        "name": "Premium",
+        "price": 50.74,
+        "currency": "USD",
+        "compareAtPrice": 61.06,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Facial Cleanser Eco 65",
+    "slug": "brightleaf-facial-cleanser-eco-65",
+    "description": "BrightLeaf Facial Cleanser Eco 65 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 12,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-65-1/800/800",
+      "https://picsum.photos/seed/product-65-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-065-A",
+        "name": "Standard",
+        "price": 45.5,
+        "currency": "USD",
+        "compareAtPrice": 56.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-065-C",
+        "name": "Bundle",
+        "price": 61.43,
+        "currency": "USD",
+        "compareAtPrice": 72.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Electric Toothbrush Pro 66",
+    "slug": "mobigear-electric-toothbrush-pro-66",
+    "description": "MobiGear Electric Toothbrush Pro 66 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 18,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-66-1/800/800",
+      "https://picsum.photos/seed/product-66-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-066-A",
+        "name": "Standard",
+        "price": 48,
+        "currency": "USD",
+        "compareAtPrice": 60,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-066-B",
+        "name": "Premium",
+        "price": 56.64,
+        "currency": "USD",
+        "compareAtPrice": 68.16,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Bluetooth Speaker Eco 67",
+    "slug": "craftedge-bluetooth-speaker-eco-67",
+    "description": "CraftEdge Bluetooth Speaker Eco 67 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 24,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-67-1/800/800",
+      "https://picsum.photos/seed/product-67-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-067-A",
+        "name": "Standard",
+        "price": 50.5,
+        "currency": "USD",
+        "compareAtPrice": 63.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Stainless Water Bottle Pro 68",
+    "slug": "pethaven-stainless-water-bottle-pro-68",
+    "description": "PetHaven Stainless Water Bottle Pro 68 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 3,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-68-1/800/800",
+      "https://picsum.photos/seed/product-68-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-068-A",
+        "name": "Standard",
+        "price": 53,
+        "currency": "USD",
+        "compareAtPrice": 66.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-068-B",
+        "name": "Premium",
+        "price": 62.54,
+        "currency": "USD",
+        "compareAtPrice": 75.26,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Desktop Organizer Eco 69",
+    "slug": "roadmaster-desktop-organizer-eco-69",
+    "description": "RoadMaster Desktop Organizer Eco 69 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 6,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-69-1/800/800",
+      "https://picsum.photos/seed/product-69-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-069-A",
+        "name": "Standard",
+        "price": 55.5,
+        "currency": "USD",
+        "compareAtPrice": 69.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Phone Stand Pro 70",
+    "slug": "tinybloom-phone-stand-pro-70",
+    "description": "TinyBloom Phone Stand Pro 70 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 12,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-70-1/800/800",
+      "https://picsum.photos/seed/product-70-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-070-A",
+        "name": "Standard",
+        "price": 58,
+        "currency": "USD",
+        "compareAtPrice": 72.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-070-B",
+        "name": "Premium",
+        "price": 68.44,
+        "currency": "USD",
+        "compareAtPrice": 82.36,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-070-C",
+        "name": "Bundle",
+        "price": 78.3,
+        "currency": "USD",
+        "compareAtPrice": 92.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "FlexPro Pet Feeding Bowl Eco 71",
+    "slug": "flexpro-pet-feeding-bowl-eco-71",
+    "description": "FlexPro Pet Feeding Bowl Eco 71 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "FlexPro",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 18,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-71-1/800/800",
+      "https://picsum.photos/seed/product-71-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-071-A",
+        "name": "Standard",
+        "price": 60.5,
+        "currency": "USD",
+        "compareAtPrice": 75.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "SkyPulse Body Lotion Pro 72",
+    "slug": "skypulse-body-lotion-pro-72",
+    "description": "SkyPulse Body Lotion Pro 72 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "SkyPulse",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 24,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-72-1/800/800",
+      "https://picsum.photos/seed/product-72-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-072-A",
+        "name": "Standard",
+        "price": 63,
+        "currency": "USD",
+        "compareAtPrice": 78.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-072-B",
+        "name": "Premium",
+        "price": 74.34,
+        "currency": "USD",
+        "compareAtPrice": 89.46,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "NovaTech Hair Dryer Eco 73",
+    "slug": "novatech-hair-dryer-eco-73",
+    "description": "NovaTech Hair Dryer Eco 73 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "NovaTech",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 3,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-73-1/800/800",
+      "https://picsum.photos/seed/product-73-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-073-A",
+        "name": "Standard",
+        "price": 65.5,
+        "currency": "USD",
+        "compareAtPrice": 81.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "LumiHome Smart LED Bulb Pro 74",
+    "slug": "lumihome-smart-led-bulb-pro-74",
+    "description": "LumiHome Smart LED Bulb Pro 74 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "LumiHome",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 6,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-74-1/800/800",
+      "https://picsum.photos/seed/product-74-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-074-A",
+        "name": "Standard",
+        "price": 68,
+        "currency": "USD",
+        "compareAtPrice": 85,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-074-B",
+        "name": "Premium",
+        "price": 80.24,
+        "currency": "USD",
+        "compareAtPrice": 96.56,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "AeroFit Yoga Mat Eco 75",
+    "slug": "aerofit-yoga-mat-eco-75",
+    "description": "AeroFit Yoga Mat Eco 75 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "AeroFit",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 12,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-75-1/800/800",
+      "https://picsum.photos/seed/product-75-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-075-A",
+        "name": "Standard",
+        "price": 8,
+        "currency": "USD",
+        "compareAtPrice": 10,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-075-C",
+        "name": "Bundle",
+        "price": 10.8,
+        "currency": "USD",
+        "compareAtPrice": 12.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PureGlow Mechanical Keyboard Pro 76",
+    "slug": "pureglow-mechanical-keyboard-pro-76",
+    "description": "PureGlow Mechanical Keyboard Pro 76 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 18,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-76-1/800/800",
+      "https://picsum.photos/seed/product-76-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-076-A",
+        "name": "Standard",
+        "price": 10.5,
+        "currency": "USD",
+        "compareAtPrice": 13.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-076-B",
+        "name": "Premium",
+        "price": 12.39,
+        "currency": "USD",
+        "compareAtPrice": 14.91,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Laptop Sleeve Eco 77",
+    "slug": "urbannest-laptop-sleeve-eco-77",
+    "description": "UrbanNest Laptop Sleeve Eco 77 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 24,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-77-1/800/800",
+      "https://picsum.photos/seed/product-77-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-077-A",
+        "name": "Standard",
+        "price": 13,
+        "currency": "USD",
+        "compareAtPrice": 16.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Baby Stroller Hook Pro 78",
+    "slug": "peaktrail-baby-stroller-hook-pro-78",
+    "description": "PeakTrail Baby Stroller Hook Pro 78 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 3,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-78-1/800/800",
+      "https://picsum.photos/seed/product-78-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-078-A",
+        "name": "Standard",
+        "price": 15.5,
+        "currency": "USD",
+        "compareAtPrice": 19.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-078-B",
+        "name": "Premium",
+        "price": 18.29,
+        "currency": "USD",
+        "compareAtPrice": 22.01,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Sunscreen SPF50 Eco 79",
+    "slug": "zencore-sunscreen-spf50-eco-79",
+    "description": "ZenCore Sunscreen SPF50 Eco 79 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 6,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-79-1/800/800",
+      "https://picsum.photos/seed/product-79-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-079-A",
+        "name": "Standard",
+        "price": 18,
+        "currency": "USD",
+        "compareAtPrice": 22.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Wireless Earbuds Pro 80",
+    "slug": "brightleaf-wireless-earbuds-pro-80",
+    "description": "BrightLeaf Wireless Earbuds Pro 80 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 12,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-80-1/800/800",
+      "https://picsum.photos/seed/product-80-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-080-A",
+        "name": "Standard",
+        "price": 20.5,
+        "currency": "USD",
+        "compareAtPrice": 25.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-080-B",
+        "name": "Premium",
+        "price": 24.19,
+        "currency": "USD",
+        "compareAtPrice": 29.11,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-080-C",
+        "name": "Bundle",
+        "price": 27.68,
+        "currency": "USD",
+        "compareAtPrice": 32.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Portable Blender Eco 81",
+    "slug": "mobigear-portable-blender-eco-81",
+    "description": "MobiGear Portable Blender Eco 81 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 18,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-81-1/800/800",
+      "https://picsum.photos/seed/product-81-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-081-A",
+        "name": "Standard",
+        "price": 23,
+        "currency": "USD",
+        "compareAtPrice": 28.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Running Shorts Pro 82",
+    "slug": "craftedge-running-shorts-pro-82",
+    "description": "CraftEdge Running Shorts Pro 82 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 24,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-82-1/800/800",
+      "https://picsum.photos/seed/product-82-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-082-A",
+        "name": "Standard",
+        "price": 25.5,
+        "currency": "USD",
+        "compareAtPrice": 31.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-082-B",
+        "name": "Premium",
+        "price": 30.09,
+        "currency": "USD",
+        "compareAtPrice": 36.21,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Gaming Mouse Eco 83",
+    "slug": "pethaven-gaming-mouse-eco-83",
+    "description": "PetHaven Gaming Mouse Eco 83 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 3,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-83-1/800/800",
+      "https://picsum.photos/seed/product-83-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-083-A",
+        "name": "Standard",
+        "price": 28,
+        "currency": "USD",
+        "compareAtPrice": 35,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Car Phone Holder Pro 84",
+    "slug": "roadmaster-car-phone-holder-pro-84",
+    "description": "RoadMaster Car Phone Holder Pro 84 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 6,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-84-1/800/800",
+      "https://picsum.photos/seed/product-84-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-084-A",
+        "name": "Standard",
+        "price": 30.5,
+        "currency": "USD",
+        "compareAtPrice": 38.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-084-B",
+        "name": "Premium",
+        "price": 35.99,
+        "currency": "USD",
+        "compareAtPrice": 43.31,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Facial Cleanser Eco 85",
+    "slug": "tinybloom-facial-cleanser-eco-85",
+    "description": "TinyBloom Facial Cleanser Eco 85 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 12,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-85-1/800/800",
+      "https://picsum.photos/seed/product-85-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-085-A",
+        "name": "Standard",
+        "price": 33,
+        "currency": "USD",
+        "compareAtPrice": 41.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-085-C",
+        "name": "Bundle",
+        "price": 44.55,
+        "currency": "USD",
+        "compareAtPrice": 52.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "FlexPro Electric Toothbrush Pro 86",
+    "slug": "flexpro-electric-toothbrush-pro-86",
+    "description": "FlexPro Electric Toothbrush Pro 86 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "FlexPro",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 18,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-86-1/800/800",
+      "https://picsum.photos/seed/product-86-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-086-A",
+        "name": "Standard",
+        "price": 35.5,
+        "currency": "USD",
+        "compareAtPrice": 44.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-086-B",
+        "name": "Premium",
+        "price": 41.89,
+        "currency": "USD",
+        "compareAtPrice": 50.41,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "SkyPulse Bluetooth Speaker Eco 87",
+    "slug": "skypulse-bluetooth-speaker-eco-87",
+    "description": "SkyPulse Bluetooth Speaker Eco 87 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "SkyPulse",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 24,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-87-1/800/800",
+      "https://picsum.photos/seed/product-87-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-087-A",
+        "name": "Standard",
+        "price": 38,
+        "currency": "USD",
+        "compareAtPrice": 47.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "NovaTech Stainless Water Bottle Pro 88",
+    "slug": "novatech-stainless-water-bottle-pro-88",
+    "description": "NovaTech Stainless Water Bottle Pro 88 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "NovaTech",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 3,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-88-1/800/800",
+      "https://picsum.photos/seed/product-88-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-088-A",
+        "name": "Standard",
+        "price": 40.5,
+        "currency": "USD",
+        "compareAtPrice": 50.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-088-B",
+        "name": "Premium",
+        "price": 47.79,
+        "currency": "USD",
+        "compareAtPrice": 57.51,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "LumiHome Desktop Organizer Eco 89",
+    "slug": "lumihome-desktop-organizer-eco-89",
+    "description": "LumiHome Desktop Organizer Eco 89 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "LumiHome",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 6,
+      "rating": 4.3
+    },
+    "images": [
+      "https://picsum.photos/seed/product-89-1/800/800",
+      "https://picsum.photos/seed/product-89-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-089-A",
+        "name": "Standard",
+        "price": 43,
+        "currency": "USD",
+        "compareAtPrice": 53.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "AeroFit Phone Stand Pro 90",
+    "slug": "aerofit-phone-stand-pro-90",
+    "description": "AeroFit Phone Stand Pro 90 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "AeroFit",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 12,
+      "rating": 4.4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-90-1/800/800",
+      "https://picsum.photos/seed/product-90-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-090-A",
+        "name": "Standard",
+        "price": 45.5,
+        "currency": "USD",
+        "compareAtPrice": 56.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-090-B",
+        "name": "Premium",
+        "price": 53.69,
+        "currency": "USD",
+        "compareAtPrice": 64.61,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-090-C",
+        "name": "Bundle",
+        "price": 61.43,
+        "currency": "USD",
+        "compareAtPrice": 72.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PureGlow Pet Feeding Bowl Eco 91",
+    "slug": "pureglow-pet-feeding-bowl-eco-91",
+    "description": "PureGlow Pet Feeding Bowl Eco 91 belongs to Electronics. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "electronics",
+    "brand": "PureGlow",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 18,
+      "rating": 4.5
+    },
+    "images": [
+      "https://picsum.photos/seed/product-91-1/800/800",
+      "https://picsum.photos/seed/product-91-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-091-A",
+        "name": "Standard",
+        "price": 48,
+        "currency": "USD",
+        "compareAtPrice": 60,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "UrbanNest Body Lotion Pro 92",
+    "slug": "urbannest-body-lotion-pro-92",
+    "description": "UrbanNest Body Lotion Pro 92 belongs to Home & Kitchen. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "home-kitchen",
+    "brand": "UrbanNest",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 24,
+      "rating": 4.6
+    },
+    "images": [
+      "https://picsum.photos/seed/product-92-1/800/800",
+      "https://picsum.photos/seed/product-92-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-092-A",
+        "name": "Standard",
+        "price": 50.5,
+        "currency": "USD",
+        "compareAtPrice": 63.13,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-092-B",
+        "name": "Premium",
+        "price": 59.59,
+        "currency": "USD",
+        "compareAtPrice": 71.71,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PeakTrail Hair Dryer Eco 93",
+    "slug": "peaktrail-hair-dryer-eco-93",
+    "description": "PeakTrail Hair Dryer Eco 93 belongs to Fashion. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "fashion",
+    "brand": "PeakTrail",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 3,
+      "rating": 4.7
+    },
+    "images": [
+      "https://picsum.photos/seed/product-93-1/800/800",
+      "https://picsum.photos/seed/product-93-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-093-A",
+        "name": "Standard",
+        "price": 53,
+        "currency": "USD",
+        "compareAtPrice": 66.25,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "ZenCore Smart LED Bulb Pro 94",
+    "slug": "zencore-smart-led-bulb-pro-94",
+    "description": "ZenCore Smart LED Bulb Pro 94 belongs to Sports & Outdoor. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "sports-outdoor",
+    "brand": "ZenCore",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 6,
+      "rating": 4.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-94-1/800/800",
+      "https://picsum.photos/seed/product-94-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-094-A",
+        "name": "Standard",
+        "price": 55.5,
+        "currency": "USD",
+        "compareAtPrice": 69.38,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-094-B",
+        "name": "Premium",
+        "price": 65.49,
+        "currency": "USD",
+        "compareAtPrice": 78.81,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "BrightLeaf Yoga Mat Eco 95",
+    "slug": "brightleaf-yoga-mat-eco-95",
+    "description": "BrightLeaf Yoga Mat Eco 95 belongs to Beauty & Health. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "beauty-health",
+    "brand": "BrightLeaf",
+    "attributes": {
+      "color": "gray",
+      "material": "ABS",
+      "warrantyMonths": 12,
+      "rating": 4.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-95-1/800/800",
+      "https://picsum.photos/seed/product-95-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-095-A",
+        "name": "Standard",
+        "price": 58,
+        "currency": "USD",
+        "compareAtPrice": 72.5,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-095-C",
+        "name": "Bundle",
+        "price": 78.3,
+        "currency": "USD",
+        "compareAtPrice": 92.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MobiGear Mechanical Keyboard Pro 96",
+    "slug": "mobigear-mechanical-keyboard-pro-96",
+    "description": "MobiGear Mechanical Keyboard Pro 96 belongs to Office Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "office-supplies",
+    "brand": "MobiGear",
+    "attributes": {
+      "color": "black",
+      "material": "Cotton",
+      "warrantyMonths": 18,
+      "rating": 3.8
+    },
+    "images": [
+      "https://picsum.photos/seed/product-96-1/800/800",
+      "https://picsum.photos/seed/product-96-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-096-A",
+        "name": "Standard",
+        "price": 60.5,
+        "currency": "USD",
+        "compareAtPrice": 75.63,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-096-B",
+        "name": "Premium",
+        "price": 71.39,
+        "currency": "USD",
+        "compareAtPrice": 85.91,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "CraftEdge Laptop Sleeve Eco 97",
+    "slug": "craftedge-laptop-sleeve-eco-97",
+    "description": "CraftEdge Laptop Sleeve Eco 97 belongs to Pet Supplies. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "pet-supplies",
+    "brand": "CraftEdge",
+    "attributes": {
+      "color": "white",
+      "material": "Aluminum",
+      "warrantyMonths": 24,
+      "rating": 3.9
+    },
+    "images": [
+      "https://picsum.photos/seed/product-97-1/800/800",
+      "https://picsum.photos/seed/product-97-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-097-A",
+        "name": "Standard",
+        "price": 63,
+        "currency": "USD",
+        "compareAtPrice": 78.75,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "PetHaven Baby Stroller Hook Pro 98",
+    "slug": "pethaven-baby-stroller-hook-pro-98",
+    "description": "PetHaven Baby Stroller Hook Pro 98 belongs to Automotive. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "automotive",
+    "brand": "PetHaven",
+    "attributes": {
+      "color": "blue",
+      "material": "Polyester",
+      "warrantyMonths": 3,
+      "rating": 4
+    },
+    "images": [
+      "https://picsum.photos/seed/product-98-1/800/800",
+      "https://picsum.photos/seed/product-98-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-098-A",
+        "name": "Standard",
+        "price": 65.5,
+        "currency": "USD",
+        "compareAtPrice": 81.88,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-098-B",
+        "name": "Premium",
+        "price": 77.29,
+        "currency": "USD",
+        "compareAtPrice": 93.01,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      }
+    ]
+  },
+  {
+    "name": "RoadMaster Sunscreen SPF50 Eco 99",
+    "slug": "roadmaster-sunscreen-spf50-eco-99",
+    "description": "RoadMaster Sunscreen SPF50 Eco 99 belongs to Baby & Kids. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "baby-kids",
+    "brand": "RoadMaster",
+    "attributes": {
+      "color": "green",
+      "material": "Silicone",
+      "warrantyMonths": 6,
+      "rating": 4.1
+    },
+    "images": [
+      "https://picsum.photos/seed/product-99-1/800/800",
+      "https://picsum.photos/seed/product-99-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-099-A",
+        "name": "Standard",
+        "price": 68,
+        "currency": "USD",
+        "compareAtPrice": 85,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      }
+    ]
+  },
+  {
+    "name": "TinyBloom Wireless Earbuds Pro 100",
+    "slug": "tinybloom-wireless-earbuds-pro-100",
+    "description": "TinyBloom Wireless Earbuds Pro 100 belongs to Tools & Home Improvement. Designed for daily use with reliable quality and practical features.",
+    "categoryId": "tools-home-improvement",
+    "brand": "TinyBloom",
+    "attributes": {
+      "color": "red",
+      "material": "Steel",
+      "warrantyMonths": 12,
+      "rating": 4.2
+    },
+    "images": [
+      "https://picsum.photos/seed/product-100-1/800/800",
+      "https://picsum.photos/seed/product-100-2/800/800"
+    ],
+    "variants": [
+      {
+        "sku": "SKU-100-A",
+        "name": "Standard",
+        "price": 8,
+        "currency": "USD",
+        "compareAtPrice": 10,
+        "isDefault": true,
+        "metadata": {
+          "package": "standard"
+        }
+      },
+      {
+        "sku": "SKU-100-B",
+        "name": "Premium",
+        "price": 9.44,
+        "currency": "USD",
+        "compareAtPrice": 11.36,
+        "isDefault": false,
+        "metadata": {
+          "package": "premium"
+        }
+      },
+      {
+        "sku": "SKU-100-C",
+        "name": "Bundle",
+        "price": 10.8,
+        "currency": "USD",
+        "compareAtPrice": 12.8,
+        "isDefault": false,
+        "metadata": {
+          "package": "bundle"
+        }
+      }
+    ]
+  }
+]

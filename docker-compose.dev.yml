@@ -4,6 +4,42 @@ x-service-defaults: &service-defaults
     - 'host.docker.internal:host-gateway'
 
 services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '2181:2181'
+    healthcheck:
+      test: ['CMD', 'bash', '-lc', 'echo srvr | nc -w 2 localhost 2181 | grep Mode']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://host.docker.internal:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    ports:
+      - '9092:9092'
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'kafka-topics', '--bootstrap-server', 'localhost:9092', '--list']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   auth-postgres:
     image: postgres:16-alpine
     environment:
@@ -37,13 +73,15 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
       REDIS_URL: redis://auth-redis:6379
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '3001:3001'
     depends_on:
       auth-postgres:
         condition: service_healthy
       auth-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   user-postgres:
@@ -115,7 +153,7 @@ services:
       APP_ENV: development
       DATABASE_URL: mongodb://product-mongo:27017
       REDIS_URL: redis://product-redis:6379
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
       KAFKA_ENABLED: 'false'
     ports:
       - '3003:3003'
@@ -123,6 +161,8 @@ services:
       product-mongo:
         condition: service_healthy
       product-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   cart-postgres:
@@ -158,7 +198,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@cart-postgres:5432/ecommerce
       REDIS_URL: redis://cart-redis:6379
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
       KAFKA_ENABLED: 'false'
       PRODUCT_SERVICE_BASE_URL: http://product-service:3003/api/v1
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:3007/api/v1
@@ -168,6 +208,8 @@ services:
       cart-postgres:
         condition: service_healthy
       cart-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   order-postgres:
@@ -203,13 +245,15 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@order-postgres:5432/ecommerce
       REDIS_URL: redis://order-redis:6379
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '3002:3002'
     depends_on:
       order-postgres:
         condition: service_healthy
       order-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   payment-postgres:
@@ -245,13 +289,15 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@payment-postgres:5432/ecommerce
       REDIS_URL: redis://payment-redis:6379
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '3006:3006'
     depends_on:
       payment-postgres:
         condition: service_healthy
       payment-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   inventory-postgres:
@@ -278,12 +324,14 @@ services:
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@inventory-postgres:5432/ecommerce
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
       KAFKA_ENABLED: 'false'
     ports:
       - '3007:3007'
     depends_on:
       inventory-postgres:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   shipping-postgres:
@@ -319,13 +367,15 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@shipping-postgres:5432/ecommerce
       REDIS_URL: redis://shipping-redis:6379
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '3008:3008'
     depends_on:
       shipping-postgres:
         condition: service_healthy
       shipping-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   review-mongo:
@@ -389,13 +439,15 @@ services:
       DATABASE_URL: postgresql://ecommerce:ecommerce@notification-postgres:5432/ecommerce
       REDIS_URL: redis://notification-redis:6379
       KAFKA_ENABLED: 'false'
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '3011:3009'
     depends_on:
       notification-postgres:
         condition: service_healthy
       notification-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   analytics-clickhouse:
@@ -438,13 +490,15 @@ services:
       CLICKHOUSE_PASSWORD: analytics_password
       REDIS_URL: redis://analytics-redis:6379
       KAFKA_ENABLED: 'false'
-      KAFKA_BROKERS: host.docker.internal:9092
+      KAFKA_BROKERS: kafka:9092
     ports:
       - '3010:3010'
     depends_on:
       analytics-clickhouse:
         condition: service_healthy
       analytics-redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   api-gateway:

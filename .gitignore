@@ -12,6 +12,7 @@ coverage/
 .next/
 .cache/
 .turbo/
+.expo/
 
 # Env
 .env

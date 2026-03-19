@@ -21,6 +21,10 @@ export const authStyles = StyleSheet.create({
     position: 'relative',
     zIndex: 40
   },
+  topHeaderMobile: {
+    height: 72,
+    paddingHorizontal: 12
+  },
   topBrand: {
     flexDirection: 'row',
     alignItems: 'center'
@@ -34,16 +38,29 @@ export const authStyles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 10
   },
+  topBrandIconMobile: {
+    width: 32,
+    height: 32,
+    borderRadius: 7,
+    marginRight: 8
+  },
   topBrandIconText: {
     color: '#ffffff',
     fontWeight: '800',
     fontSize: 12
+  },
+  topBrandIconTextMobile: {
+    fontSize: 10
   },
   topBrandName: {
     color: '#f85a24',
     fontSize: 34,
     fontWeight: '800',
     lineHeight: 38
+  },
+  topBrandNameMobile: {
+    fontSize: 28,
+    lineHeight: 30
   },
   topBrandSub: {
     color: '#222222',
@@ -52,14 +69,25 @@ export const authStyles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 36
   },
+  topBrandSubMobile: {
+    fontSize: 18,
+    lineHeight: 22,
+    marginLeft: 6
+  },
   topHelp: {
     color: '#ff7a4d',
     fontSize: 14,
     fontWeight: '500'
   },
+  topHelpMobile: {
+    fontSize: 12
+  },
   topActions: {
     flexDirection: 'row',
     alignItems: 'center'
+  },
+  topActionsMobile: {
+    gap: 6
   },
   languageWrap: {
     position: 'relative',
@@ -73,6 +101,10 @@ export const authStyles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: '#ffffff'
+  },
+  languageButtonMobile: {
+    paddingHorizontal: 8,
+    paddingVertical: 5
   },
   languageButtonText: {
     color: '#f85a24',
@@ -98,6 +130,9 @@ export const authStyles = StyleSheet.create({
     elevation: 20,
     zIndex: 200
   },
+  languageMenuMobile: {
+    width: 120
+  },
   languageMenuItem: {
     paddingHorizontal: 12,
     paddingVertical: 10
@@ -115,6 +150,11 @@ export const authStyles = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 16,
     minHeight: 640
+  },
+  heroMobile: {
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    minHeight: 0
   },
   heroContentDesktop: {
     width: '100%',
@@ -138,6 +178,9 @@ export const authStyles = StyleSheet.create({
     marginBottom: 24,
     alignItems: 'center'
   },
+  promoMobileCompact: {
+    marginBottom: 12
+  },
   promoLogoBag: {
     width: 168,
     height: 168,
@@ -147,11 +190,20 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  promoLogoBagMobile: {
+    width: 90,
+    height: 90,
+    borderRadius: 16,
+    borderWidth: 5
+  },
   promoLogoText: {
     color: '#ffffff',
     fontWeight: '800',
     fontSize: 46,
     letterSpacing: 1
+  },
+  promoLogoTextMobile: {
+    fontSize: 28
   },
   promoBrand: {
     marginTop: 16,
@@ -160,6 +212,11 @@ export const authStyles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 72
   },
+  promoBrandMobile: {
+    marginTop: 8,
+    fontSize: 38,
+    lineHeight: 42
+  },
   promoCaption: {
     marginTop: 16,
     color: '#fff2ec',
@@ -167,6 +224,12 @@ export const authStyles = StyleSheet.create({
     lineHeight: 32,
     maxWidth: 520,
     textAlign: 'center'
+  },
+  promoCaptionMobile: {
+    marginTop: 8,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 12
   },
   valueList: {
     marginTop: 24,
@@ -179,6 +242,11 @@ export const authStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8
+  },
+  valueListMobile: {
+    marginTop: 12,
+    paddingVertical: 8,
+    gap: 6
   },
   valueItem: {
     flexDirection: 'row',
@@ -194,6 +262,9 @@ export const authStyles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600'
+  },
+  valueTextMobile: {
+    fontSize: 12
   },
   panel: {
     width: '100%',
@@ -222,6 +293,11 @@ export const authStyles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 10
   },
+  panelAccentMobile: {
+    width: 62,
+    height: 4,
+    marginBottom: 8
+  },
   panelDesktop: {
     width: '40%',
     minWidth: 420
@@ -230,16 +306,29 @@ export const authStyles = StyleSheet.create({
     width: '100%',
     maxWidth: 460
   },
+  panelMobileCompact: {
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14
+  },
   badge: {
     color: '#1f1f1f',
     fontSize: 34,
     fontWeight: '600'
+  },
+  badgeMobile: {
+    fontSize: 28
   },
   panelSubtitle: {
     marginTop: 6,
     color: '#8f4a34',
     fontSize: 13,
     lineHeight: 18
+  },
+  panelSubtitleMobile: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 16
   },
   quickActions: {
     marginTop: 14,
@@ -293,11 +382,19 @@ export const authStyles = StyleSheet.create({
     padding: 4,
     flexDirection: 'row'
   },
+  modeTabsMobile: {
+    marginTop: 10,
+    borderRadius: 10,
+    padding: 3
+  },
   modeButton: {
     flex: 1,
     borderRadius: 9,
     alignItems: 'center',
     paddingVertical: 10
+  },
+  modeButtonMobile: {
+    paddingVertical: 8
   },
   modeButtonActive: {
     backgroundColor: '#ff6b33'
@@ -306,6 +403,9 @@ export const authStyles = StyleSheet.create({
     color: '#c95b3b',
     fontWeight: '700',
     fontSize: 14
+  },
+  modeButtonTextMobile: {
+    fontSize: 13
   },
   modeButtonTextActive: {
     color: '#ffffff'
@@ -322,6 +422,11 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between'
   },
+  qrCardMobile: {
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8
+  },
   qrCardBody: {
     flex: 1,
     paddingRight: 8
@@ -335,6 +440,10 @@ export const authStyles = StyleSheet.create({
     color: '#9b634f',
     fontSize: 11,
     marginTop: 2
+  },
+  qrHintMobile: {
+    fontSize: 10,
+    lineHeight: 13
   },
   qrAction: {
     minWidth: 84,
@@ -353,8 +462,17 @@ export const authStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700'
   },
+  qrGlyph: {
+    color: '#f85a24',
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 14
+  },
   form: {
     marginTop: 16
+  },
+  formMobile: {
+    marginTop: 12
   },
   switchRow: {
     marginTop: 12,
@@ -367,6 +485,10 @@ export const authStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8
+  },
+  socialDividerMobile: {
+    marginTop: 12,
+    marginBottom: 8
   },
   socialLine: {
     flex: 1,
@@ -382,6 +504,9 @@ export const authStyles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8
   },
+  socialRowNarrow: {
+    flexDirection: 'column'
+  },
   socialButton: {
     flex: 1,
     borderRadius: 10,
@@ -393,6 +518,22 @@ export const authStyles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 5
+  },
+  socialButtonNarrow: {
+    width: '100%'
+  },
+  socialGlyph: {
+    fontSize: 14,
+    fontWeight: '800'
+  },
+  socialGlyphFacebook: {
+    color: '#1877f2'
+  },
+  socialGlyphGoogle: {
+    color: '#ea4335'
+  },
+  socialGlyphApple: {
+    color: '#111111'
   },
   socialButtonText: {
     color: '#444444',
@@ -427,6 +568,10 @@ export const authStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600'
   },
+  labelMobile: {
+    marginBottom: 4,
+    fontSize: 12
+  },
   input: {
     borderWidth: 1,
     borderColor: '#e8e8e8',
@@ -437,6 +582,13 @@ export const authStyles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 15,
     marginBottom: 10
+  },
+  inputMobile: {
+    borderRadius: 9,
+    fontSize: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    marginBottom: 8
   },
   passwordWrap: {
     position: 'relative',
@@ -459,6 +611,34 @@ export const authStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  eyeIcon: {
+    width: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  eyeOutline: {
+    width: 14,
+    height: 9,
+    borderWidth: 1.5,
+    borderColor: '#e45522',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  eyePupil: {
+    width: 4,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: '#e45522'
+  },
+  eyeSlash: {
+    position: 'absolute',
+    width: 15,
+    height: 1.5,
+    backgroundColor: '#e45522',
+    transform: [{ rotate: '-35deg' }]
+  },
   passwordToggleText: {
     color: '#e45522',
     fontSize: 12,
@@ -469,6 +649,10 @@ export const authStyles = StyleSheet.create({
     gap: 8,
     marginBottom: 12
   },
+  roleRowMobile: {
+    gap: 6,
+    marginBottom: 10
+  },
   roleButton: {
     flex: 1,
     borderRadius: 10,
@@ -477,6 +661,10 @@ export const authStyles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     paddingVertical: 10
+  },
+  roleButtonMobile: {
+    borderRadius: 9,
+    paddingVertical: 9
   },
   roleButtonActive: {
     borderColor: '#ff6b33',
@@ -503,10 +691,19 @@ export const authStyles = StyleSheet.create({
     },
     elevation: 3
   },
+  submitButtonMobile: {
+    borderRadius: 9,
+    paddingVertical: 10,
+    marginTop: 4
+  },
   forgotText: {
     color: '#1165c1',
     fontSize: 13,
     marginTop: 10
+  },
+  forgotTextMobile: {
+    fontSize: 12,
+    marginTop: 8
   },
   submitButtonText: {
     color: '#ffffff',
@@ -539,6 +736,11 @@ export const authStyles = StyleSheet.create({
     marginTop: 14,
     paddingHorizontal: 12,
     paddingVertical: 10
+  },
+  noticeMobile: {
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8
   },
   noticeSuccess: {
     backgroundColor: '#ecfff3',

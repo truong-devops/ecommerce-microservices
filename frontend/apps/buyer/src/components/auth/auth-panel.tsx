@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from 'react-native';
@@ -16,6 +15,10 @@ interface NoticeState {
   message: string;
 }
 
+interface PasswordEyeProps {
+  visible: boolean;
+}
+
 interface AuthPanelProps {
   initialMode?: AuthMode;
   onLoginSuccess?: (user: LoginUser) => void;
@@ -29,6 +32,17 @@ const initialNotice: NoticeState = {
   message: ''
 };
 
+function PasswordEyeIcon({ visible }: PasswordEyeProps): ReactElement {
+  return (
+    <View style={authStyles.eyeIcon}>
+      <View style={authStyles.eyeOutline}>
+        <View style={authStyles.eyePupil} />
+      </View>
+      {!visible ? <View style={authStyles.eyeSlash} /> : null}
+    </View>
+  );
+}
+
 export function AuthPanel({
   initialMode = 'login',
   onLoginSuccess,
@@ -38,6 +52,8 @@ export function AuthPanel({
 }: AuthPanelProps): ReactElement {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
+  const isMobile = width < 768;
+  const isNarrow = width < 420;
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -172,22 +188,24 @@ export function AuthPanel({
   return (
     <ScrollView contentContainerStyle={authStyles.scrollContainer}>
       <View style={authStyles.page}>
-        <View style={authStyles.topHeader}>
+        <View style={[authStyles.topHeader, isMobile ? authStyles.topHeaderMobile : undefined]}>
           <View style={authStyles.topBrand}>
-            <View style={authStyles.topBrandIcon}>
-              <Text style={authStyles.topBrandIconText}>D&T</Text>
+            <View style={[authStyles.topBrandIcon, isMobile ? authStyles.topBrandIconMobile : undefined]}>
+              <Text style={[authStyles.topBrandIconText, isMobile ? authStyles.topBrandIconTextMobile : undefined]}>D&T</Text>
             </View>
-            <Text style={authStyles.topBrandName}>D&T</Text>
-            <Text style={authStyles.topBrandSub}>{mode === 'register' ? locale.auth.register : locale.auth.login}</Text>
+            <Text style={[authStyles.topBrandName, isMobile ? authStyles.topBrandNameMobile : undefined]}>D&T</Text>
+            <Text style={[authStyles.topBrandSub, isMobile ? authStyles.topBrandSubMobile : undefined]}>
+              {mode === 'register' ? locale.auth.register : locale.auth.login}
+            </Text>
           </View>
 
-          <View style={authStyles.topActions}>
+          <View style={[authStyles.topActions, isMobile ? authStyles.topActionsMobile : undefined]}>
             <View style={authStyles.languageWrap}>
-              <Pressable style={authStyles.languageButton} onPress={() => setIsLanguageMenuOpen((prev) => !prev)}>
+              <Pressable style={[authStyles.languageButton, isMobile ? authStyles.languageButtonMobile : undefined]} onPress={() => setIsLanguageMenuOpen((prev) => !prev)}>
                 <Text style={authStyles.languageButtonText}>{currentLanguageLabel}</Text>
               </Pressable>
               {isLanguageMenuOpen ? (
-                <View style={authStyles.languageMenu}>
+                <View style={[authStyles.languageMenu, isMobile ? authStyles.languageMenuMobile : undefined]}>
                   {languageOptions.map((option) => (
                     <Pressable
                       key={option.code}
@@ -204,76 +222,104 @@ export function AuthPanel({
               ) : null}
             </View>
             <Pressable onPress={onBackHome}>
-              <Text style={authStyles.topHelp}>{locale.auth.backHome}</Text>
+              <Text style={[authStyles.topHelp, isMobile ? authStyles.topHelpMobile : undefined]}>{locale.auth.backHome}</Text>
             </Pressable>
           </View>
         </View>
 
-        <View style={authStyles.hero}>
+        <View style={[authStyles.hero, isMobile ? authStyles.heroMobile : undefined]}>
           <View style={isDesktop ? authStyles.heroContentDesktop : authStyles.heroContentMobile}>
-            <View style={isDesktop ? authStyles.promoDesktop : authStyles.promoMobile}>
-              <View style={authStyles.promoLogoBag}>
-                <Text style={authStyles.promoLogoText}>D&T</Text>
+            <View style={[isDesktop ? authStyles.promoDesktop : authStyles.promoMobile, isMobile ? authStyles.promoMobileCompact : undefined]}>
+              <View style={[authStyles.promoLogoBag, isMobile ? authStyles.promoLogoBagMobile : undefined]}>
+                <Text style={[authStyles.promoLogoText, isMobile ? authStyles.promoLogoTextMobile : undefined]}>D&T</Text>
               </View>
-              <Text style={authStyles.promoBrand}>D&T</Text>
-              <Text style={authStyles.promoCaption}>{locale.auth.headline}</Text>
-              <View style={authStyles.valueList}>
+              <Text style={[authStyles.promoBrand, isMobile ? authStyles.promoBrandMobile : undefined]}>D&T</Text>
+              <Text style={[authStyles.promoCaption, isMobile ? authStyles.promoCaptionMobile : undefined]}>{locale.auth.headline}</Text>
+              <View style={[authStyles.valueList, isMobile ? authStyles.valueListMobile : undefined]}>
                 {locale.auth.valueProps.map((item) => (
                   <View key={item} style={authStyles.valueItem}>
                     <Text style={authStyles.valueIcon}>*</Text>
-                    <Text style={authStyles.valueText}>{item}</Text>
+                    <Text style={[authStyles.valueText, isMobile ? authStyles.valueTextMobile : undefined]}>{item}</Text>
                   </View>
                 ))}
               </View>
             </View>
 
-            <View style={[authStyles.panel, isDesktop ? authStyles.panelDesktop : authStyles.panelMobile]}>
-              <View style={authStyles.panelAccent} />
-              <Text style={authStyles.badge}>{mode === 'login' ? locale.auth.signInTitle : locale.auth.createAccountTitle}</Text>
-              <Text style={authStyles.panelSubtitle}>{locale.auth.panelSubtitle}</Text>
-              <View style={authStyles.modeTabs}>
+            <View
+              style={[
+                authStyles.panel,
+                isDesktop ? authStyles.panelDesktop : authStyles.panelMobile,
+                isMobile ? authStyles.panelMobileCompact : undefined
+              ]}
+            >
+              <View style={[authStyles.panelAccent, isMobile ? authStyles.panelAccentMobile : undefined]} />
+              <Text style={[authStyles.badge, isMobile ? authStyles.badgeMobile : undefined]}>
+                {mode === 'login' ? locale.auth.signInTitle : locale.auth.createAccountTitle}
+              </Text>
+              <Text style={[authStyles.panelSubtitle, isMobile ? authStyles.panelSubtitleMobile : undefined]}>{locale.auth.panelSubtitle}</Text>
+              <View style={[authStyles.modeTabs, isMobile ? authStyles.modeTabsMobile : undefined]}>
                 <Pressable
-                  style={[authStyles.modeButton, mode === 'login' ? authStyles.modeButtonActive : undefined]}
+                  style={[
+                    authStyles.modeButton,
+                    isMobile ? authStyles.modeButtonMobile : undefined,
+                    mode === 'login' ? authStyles.modeButtonActive : undefined
+                  ]}
                   onPress={() => {
                     setMode('login');
                     setNotice(initialNotice);
                   }}
                 >
-                  <Text style={[authStyles.modeButtonText, mode === 'login' ? authStyles.modeButtonTextActive : undefined]}>
+                  <Text
+                    style={[
+                      authStyles.modeButtonText,
+                      isMobile ? authStyles.modeButtonTextMobile : undefined,
+                      mode === 'login' ? authStyles.modeButtonTextActive : undefined
+                    ]}
+                  >
                     {locale.auth.loginTab}
                   </Text>
                 </Pressable>
                 <Pressable
-                  style={[authStyles.modeButton, mode === 'register' ? authStyles.modeButtonActive : undefined]}
+                  style={[
+                    authStyles.modeButton,
+                    isMobile ? authStyles.modeButtonMobile : undefined,
+                    mode === 'register' ? authStyles.modeButtonActive : undefined
+                  ]}
                   onPress={() => {
                     setMode('register');
                     setNotice(initialNotice);
                   }}
                 >
-                  <Text style={[authStyles.modeButtonText, mode === 'register' ? authStyles.modeButtonTextActive : undefined]}>
+                  <Text
+                    style={[
+                      authStyles.modeButtonText,
+                      isMobile ? authStyles.modeButtonTextMobile : undefined,
+                      mode === 'register' ? authStyles.modeButtonTextActive : undefined
+                    ]}
+                  >
                     {locale.auth.registerTab}
                   </Text>
                 </Pressable>
               </View>
 
               {mode === 'login' ? (
-                <Pressable style={authStyles.qrCard} onPress={handleQrLoginDemo}>
+                <Pressable style={[authStyles.qrCard, isMobile ? authStyles.qrCardMobile : undefined]} onPress={handleQrLoginDemo}>
                   <View style={authStyles.qrCardBody}>
                     <Text style={authStyles.qrTitle}>{locale.auth.qrLoginTitle}</Text>
-                    <Text style={authStyles.qrHint}>{locale.auth.qrLoginHint}</Text>
+                    <Text style={[authStyles.qrHint, isMobile ? authStyles.qrHintMobile : undefined]}>{locale.auth.qrLoginHint}</Text>
                   </View>
                   <View style={authStyles.qrAction}>
-                    <Ionicons name="qr-code-outline" size={18} color="#f85a24" />
+                    <Text style={authStyles.qrGlyph}>#</Text>
                     <Text style={authStyles.qrActionText}>{locale.auth.qrLoginAction}</Text>
                   </View>
                 </Pressable>
               ) : null}
 
               {mode === 'login' ? (
-                <View style={authStyles.form}>
-                  <Text style={authStyles.label}>{locale.auth.email}</Text>
+                <View style={[authStyles.form, isMobile ? authStyles.formMobile : undefined]}>
+                  <Text style={[authStyles.label, isMobile ? authStyles.labelMobile : undefined]}>{locale.auth.email}</Text>
                   <TextInput
-                    style={authStyles.input}
+                    style={[authStyles.input, isMobile ? authStyles.inputMobile : undefined]}
                     placeholder="buyer@example.com"
                     placeholderTextColor="#c58b77"
                     keyboardType="email-address"
@@ -282,10 +328,10 @@ export function AuthPanel({
                     onChangeText={setLoginEmail}
                   />
 
-                  <Text style={authStyles.label}>{locale.auth.password}</Text>
+                  <Text style={[authStyles.label, isMobile ? authStyles.labelMobile : undefined]}>{locale.auth.password}</Text>
                   <View style={authStyles.passwordWrap}>
                     <TextInput
-                      style={[authStyles.input, authStyles.passwordInput]}
+                      style={[authStyles.input, authStyles.passwordInput, isMobile ? authStyles.inputMobile : undefined]}
                       placeholder={locale.auth.passwordPlaceholder}
                       placeholderTextColor="#c58b77"
                       secureTextEntry={!showLoginPassword}
@@ -298,14 +344,14 @@ export function AuthPanel({
                       accessibilityRole="button"
                       accessibilityLabel={showLoginPassword ? locale.auth.hidePassword : locale.auth.showPassword}
                     >
-                      <Ionicons name={showLoginPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#e45522" />
+                      <PasswordEyeIcon visible={showLoginPassword} />
                     </Pressable>
                   </View>
 
-                  <Pressable style={authStyles.submitButton} onPress={handleLoginSubmit} disabled={isSubmitting}>
+                  <Pressable style={[authStyles.submitButton, isMobile ? authStyles.submitButtonMobile : undefined]} onPress={handleLoginSubmit} disabled={isSubmitting}>
                     {isSubmitting ? <ActivityIndicator color="#ffffff" /> : <Text style={authStyles.submitButtonText}>{ctaLabel}</Text>}
                   </Pressable>
-                  <Text style={authStyles.forgotText}>{locale.auth.forgotPassword}</Text>
+                  <Text style={[authStyles.forgotText, isMobile ? authStyles.forgotTextMobile : undefined]}>{locale.auth.forgotPassword}</Text>
 
                   <View style={authStyles.switchRow}>
                     <Text style={authStyles.switchText}>{locale.auth.noAccountPrefix}</Text>
@@ -319,23 +365,32 @@ export function AuthPanel({
                     </Pressable>
                   </View>
 
-                  <View style={authStyles.socialDivider}>
+                  <View style={[authStyles.socialDivider, isMobile ? authStyles.socialDividerMobile : undefined]}>
                     <View style={authStyles.socialLine} />
                     <Text style={authStyles.socialDividerText}>{locale.auth.socialOr}</Text>
                     <View style={authStyles.socialLine} />
                   </View>
 
-                  <View style={authStyles.socialRow}>
-                    <Pressable style={authStyles.socialButton} onPress={() => handleSocialLoginDemo(locale.auth.socialFacebook)}>
-                      <Ionicons name="logo-facebook" size={16} color="#1877f2" />
+                  <View style={[authStyles.socialRow, isNarrow ? authStyles.socialRowNarrow : undefined]}>
+                    <Pressable
+                      style={[authStyles.socialButton, isNarrow ? authStyles.socialButtonNarrow : undefined]}
+                      onPress={() => handleSocialLoginDemo(locale.auth.socialFacebook)}
+                    >
+                      <Text style={[authStyles.socialGlyph, authStyles.socialGlyphFacebook]}>f</Text>
                       <Text style={authStyles.socialButtonText}>{locale.auth.socialFacebook}</Text>
                     </Pressable>
-                    <Pressable style={authStyles.socialButton} onPress={() => handleSocialLoginDemo(locale.auth.socialGoogle)}>
-                      <Ionicons name="logo-google" size={16} color="#ea4335" />
+                    <Pressable
+                      style={[authStyles.socialButton, isNarrow ? authStyles.socialButtonNarrow : undefined]}
+                      onPress={() => handleSocialLoginDemo(locale.auth.socialGoogle)}
+                    >
+                      <Text style={[authStyles.socialGlyph, authStyles.socialGlyphGoogle]}>G</Text>
                       <Text style={authStyles.socialButtonText}>{locale.auth.socialGoogle}</Text>
                     </Pressable>
-                    <Pressable style={authStyles.socialButton} onPress={() => handleSocialLoginDemo(locale.auth.socialApple)}>
-                      <Ionicons name="logo-apple" size={16} color="#111111" />
+                    <Pressable
+                      style={[authStyles.socialButton, isNarrow ? authStyles.socialButtonNarrow : undefined]}
+                      onPress={() => handleSocialLoginDemo(locale.auth.socialApple)}
+                    >
+                      <Text style={[authStyles.socialGlyph, authStyles.socialGlyphApple]}>A</Text>
                       <Text style={authStyles.socialButtonText}>{locale.auth.socialApple}</Text>
                     </Pressable>
                   </View>
@@ -344,10 +399,10 @@ export function AuthPanel({
                   <Text style={authStyles.agreementText}>{locale.auth.agreement}</Text>
                 </View>
               ) : (
-                <View style={authStyles.form}>
-                  <Text style={authStyles.label}>{locale.auth.email}</Text>
+                <View style={[authStyles.form, isMobile ? authStyles.formMobile : undefined]}>
+                  <Text style={[authStyles.label, isMobile ? authStyles.labelMobile : undefined]}>{locale.auth.email}</Text>
                   <TextInput
-                    style={authStyles.input}
+                    style={[authStyles.input, isMobile ? authStyles.inputMobile : undefined]}
                     placeholder="new-account@example.com"
                     placeholderTextColor="#c58b77"
                     keyboardType="email-address"
@@ -356,10 +411,10 @@ export function AuthPanel({
                     onChangeText={setRegisterEmail}
                   />
 
-                  <Text style={authStyles.label}>{locale.auth.passwordRule}</Text>
+                  <Text style={[authStyles.label, isMobile ? authStyles.labelMobile : undefined]}>{locale.auth.passwordRule}</Text>
                   <View style={authStyles.passwordWrap}>
                     <TextInput
-                      style={[authStyles.input, authStyles.passwordInput]}
+                      style={[authStyles.input, authStyles.passwordInput, isMobile ? authStyles.inputMobile : undefined]}
                       placeholder={locale.auth.passwordPlaceholder}
                       placeholderTextColor="#c58b77"
                       secureTextEntry={!showRegisterPassword}
@@ -372,14 +427,14 @@ export function AuthPanel({
                       accessibilityRole="button"
                       accessibilityLabel={showRegisterPassword ? locale.auth.hidePassword : locale.auth.showPassword}
                     >
-                      <Ionicons name={showRegisterPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#e45522" />
+                      <PasswordEyeIcon visible={showRegisterPassword} />
                     </Pressable>
                   </View>
 
-                  <Text style={authStyles.label}>{locale.auth.confirmPassword}</Text>
+                  <Text style={[authStyles.label, isMobile ? authStyles.labelMobile : undefined]}>{locale.auth.confirmPassword}</Text>
                   <View style={authStyles.passwordWrap}>
                     <TextInput
-                      style={[authStyles.input, authStyles.passwordInput]}
+                      style={[authStyles.input, authStyles.passwordInput, isMobile ? authStyles.inputMobile : undefined]}
                       placeholder={locale.auth.confirmPasswordPlaceholder}
                       placeholderTextColor="#c58b77"
                       secureTextEntry={!showRegisterConfirmPassword}
@@ -392,27 +447,35 @@ export function AuthPanel({
                       accessibilityRole="button"
                       accessibilityLabel={showRegisterConfirmPassword ? locale.auth.hidePassword : locale.auth.showPassword}
                     >
-                      <Ionicons name={showRegisterConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color="#e45522" />
+                      <PasswordEyeIcon visible={showRegisterConfirmPassword} />
                     </Pressable>
                   </View>
 
-                  <Text style={authStyles.label}>{locale.auth.role}</Text>
-                  <View style={authStyles.roleRow}>
+                  <Text style={[authStyles.label, isMobile ? authStyles.labelMobile : undefined]}>{locale.auth.role}</Text>
+                  <View style={[authStyles.roleRow, isMobile ? authStyles.roleRowMobile : undefined]}>
                     <Pressable
-                      style={[authStyles.roleButton, registerRole === 'CUSTOMER' ? authStyles.roleButtonActive : undefined]}
+                      style={[
+                        authStyles.roleButton,
+                        isMobile ? authStyles.roleButtonMobile : undefined,
+                        registerRole === 'CUSTOMER' ? authStyles.roleButtonActive : undefined
+                      ]}
                       onPress={() => setRegisterRole('CUSTOMER')}
                     >
                       <Text style={authStyles.roleButtonText}>{locale.auth.roleCustomer}</Text>
                     </Pressable>
                     <Pressable
-                      style={[authStyles.roleButton, registerRole === 'SELLER' ? authStyles.roleButtonActive : undefined]}
+                      style={[
+                        authStyles.roleButton,
+                        isMobile ? authStyles.roleButtonMobile : undefined,
+                        registerRole === 'SELLER' ? authStyles.roleButtonActive : undefined
+                      ]}
                       onPress={() => setRegisterRole('SELLER')}
                     >
                       <Text style={authStyles.roleButtonText}>{locale.auth.roleSeller}</Text>
                     </Pressable>
                   </View>
 
-                  <Pressable style={authStyles.submitButton} onPress={handleRegisterSubmit} disabled={isSubmitting}>
+                  <Pressable style={[authStyles.submitButton, isMobile ? authStyles.submitButtonMobile : undefined]} onPress={handleRegisterSubmit} disabled={isSubmitting}>
                     {isSubmitting ? <ActivityIndicator color="#ffffff" /> : <Text style={authStyles.submitButtonText}>{ctaLabel}</Text>}
                   </Pressable>
 
@@ -433,7 +496,13 @@ export function AuthPanel({
               )}
 
               {notice.type !== 'idle' ? (
-                <View style={[authStyles.notice, notice.type === 'success' ? authStyles.noticeSuccess : authStyles.noticeError]}>
+                <View
+                  style={[
+                    authStyles.notice,
+                    isMobile ? authStyles.noticeMobile : undefined,
+                    notice.type === 'success' ? authStyles.noticeSuccess : authStyles.noticeError
+                  ]}
+                >
                   <Text style={authStyles.noticeText}>{notice.message}</Text>
                 </View>
               ) : null}

@@ -1,18 +1,23 @@
+'use client';
+
 import type { FlashSaleItem } from '@/lib/mock-data';
+import { useLanguage } from '@/providers/AppProvider';
 
 interface FlashSaleSectionProps {
   items: FlashSaleItem[];
 }
 
 export function FlashSaleSection({ items }: FlashSaleSectionProps) {
+  const { text } = useLanguage();
+
   return (
     <section aria-labelledby="flash-sale-heading" className="rounded-md bg-white p-3 shadow-card md:p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 id="flash-sale-heading" className="text-xl font-bold uppercase tracking-wide text-brand-600">
-          Flash Sale
+          {text.home.flashSaleTitle}
         </h2>
         <a href="#" className="text-sm font-medium text-brand-600 hover:text-brand-700">
-          View all
+          {text.home.viewAll}
         </a>
       </div>
 

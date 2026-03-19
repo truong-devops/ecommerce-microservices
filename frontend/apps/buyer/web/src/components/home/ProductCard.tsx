@@ -1,10 +1,15 @@
+'use client';
+
 import type { ProductItem } from '@/lib/mock-data';
+import { useLanguage } from '@/providers/AppProvider';
 
 interface ProductCardProps {
   product: ProductItem;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const { text } = useLanguage();
+
   return (
     <article className="group overflow-hidden rounded-md border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:shadow-card">
       <div className="relative">
@@ -18,7 +23,9 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="line-clamp-2 min-h-[2.6rem] text-sm font-medium text-slate-700">{product.title}</h3>
         <div className="flex items-center justify-between gap-2">
           <span className="text-lg font-bold text-brand-600">${product.price.toFixed(2)}</span>
-          <span className="text-xs text-slate-500">Sold {product.sold}</span>
+          <span className="text-xs text-slate-500">
+            {text.home.soldLabel} {product.sold}
+          </span>
         </div>
       </div>
     </article>

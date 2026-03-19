@@ -2,10 +2,32 @@
   "name": "@frontend/buyer-app",
   "version": "0.1.0",
   "private": true,
+  "main": "expo/AppEntry",
   "scripts": {
-    "dev": "echo 'buyer app scaffold pending'",
-    "build": "echo 'buyer app build scaffold pending'",
+    "dev": "expo start --clear",
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web --non-interactive",
+    "build": "expo export --platform web --output-dir dist",
     "test": "echo 'buyer app test scaffold pending'",
-    "lint": "echo 'buyer app lint scaffold pending'"
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~54.0.33",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-web": "~0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "babel-preset-expo": "~54.0.0",
+    "eslint": "^8.57.1",
+    "eslint-config-expo": "~10.0.0",
+    "typescript": "^5.8.3"
   }
 }

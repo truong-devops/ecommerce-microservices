@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Buyer App",
+    "slug": "buyer-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

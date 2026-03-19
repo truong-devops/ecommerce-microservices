@@ -17,7 +17,14 @@ export interface RegisterResponse {
 export interface LoginRequest {
   email: string;
   password: string;
-  mfaCode?: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
 }
 
 export interface LoginUser {

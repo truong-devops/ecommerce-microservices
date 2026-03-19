@@ -1,6 +1,6 @@
 import { apiBaseUrl } from '../constants/env';
 import { ApiEnvelope } from '../types/api';
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse } from '../types/auth';
+import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VerifyEmailRequest, VerifyEmailResponse } from '../types/auth';
 
 const authBasePath = '/api/v1/auth';
 
@@ -61,4 +61,8 @@ export async function registerUser(request: RegisterRequest): Promise<RegisterRe
 
 export async function loginUser(request: LoginRequest): Promise<LoginResponse> {
   return postJson<LoginRequest, LoginResponse>('login', request);
+}
+
+export async function verifyEmail(request: VerifyEmailRequest): Promise<VerifyEmailResponse> {
+  return postJson<VerifyEmailRequest, VerifyEmailResponse>('verify-email', request);
 }

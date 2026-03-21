@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (ready && user) {
-      router.replace('/account');
+      router.replace(readReturnUrlFromWindow() ?? '/account');
     }
   }, [ready, router, user]);
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push('/account');
+      router.push(readReturnUrlFromWindow() ?? '/account');
     } finally {
       setIsSubmitting(false);
     }
@@ -99,4 +99,26 @@ export default function LoginPage() {
       </main>
     </div>
   );
+}
+
+function resolveReturnUrl(raw: string | null): string | null {
+  if (!raw) {
+    return null;
+  }
+
+  const value = raw.trim();
+  if (!value.startsWith('/') || value.startsWith('//')) {
+    return null;
+  }
+
+  return value;
+}
+
+function readReturnUrlFromWindow(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  return resolveReturnUrl(params.get('returnUrl'));
 }

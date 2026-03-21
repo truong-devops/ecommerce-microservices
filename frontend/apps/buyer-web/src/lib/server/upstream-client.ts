@@ -1,9 +1,11 @@
 const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:3001/api/v1';
 const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:3003/api/v1';
+const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:3002/api/v1';
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
-  product: PRODUCT_SERVICE_BASE_URL
+  product: PRODUCT_SERVICE_BASE_URL,
+  order: ORDER_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {

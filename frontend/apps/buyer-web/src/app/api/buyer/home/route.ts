@@ -90,7 +90,7 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
   }));
 
   const recommendationProducts = normalized.slice(0, 15).map((item, index) => ({
-    id: `p-${item.id}`,
+    id: item.id,
     title: item.name,
     price: item.price,
     sold: `${(index + 2) * 2}k+`,

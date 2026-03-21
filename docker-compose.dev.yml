@@ -74,6 +74,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
       REDIS_URL: redis://auth-redis:6379
       KAFKA_BROKERS: kafka:9092
+      JWT_ACCESS_SECRET: dev-shared-access-secret-please-change-123456
     ports:
       - '3001:3001'
     depends_on:
@@ -246,6 +247,7 @@ services:
       DATABASE_URL: postgresql://ecommerce:ecommerce@order-postgres:5432/ecommerce
       REDIS_URL: redis://order-redis:6379
       KAFKA_BROKERS: kafka:9092
+      JWT_ACCESS_SECRET: dev-shared-access-secret-please-change-123456
     ports:
       - '3002:3002'
     depends_on:

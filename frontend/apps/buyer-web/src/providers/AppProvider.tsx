@@ -10,6 +10,7 @@ import { messages, type Locale } from '@/lib/i18n';
 const LOCALE_STORAGE_KEY = 'buyer_locale';
 const AUTH_SESSION_STORAGE_KEY = 'buyer_auth_session';
 const PROFILES_STORAGE_KEY = 'buyer_profiles';
+const CART_STORAGE_KEY = 'buyer_cart_items';
 
 interface BuyerProfile {
   name: string;
@@ -55,17 +56,56 @@ interface AuthActionResult {
   message?: string;
 }
 
+export interface CartItem {
+  productId: string;
+  title: string;
+  image: string;
+  unitPrice: number;
+  quantity: number;
+  stock: number | null;
+  sku: string | null;
+  currency: string;
+}
+
+interface AddToCartPayload {
+  productId: string;
+  title: string;
+  image: string;
+  unitPrice: number;
+  stock: number | null;
+  sku?: string | null;
+  currency?: string;
+}
+
+interface CartActionResult {
+  ok: boolean;
+  message?: string;
+}
+
 interface AuthContextValue {
   ready: boolean;
   user: BuyerUser | null;
+  accessToken: string | null;
   login: (payload: LoginPayload) => Promise<AuthActionResult>;
   register: (payload: RegisterPayload) => Promise<AuthActionResult>;
   logout: () => Promise<void>;
   updateProfile: (payload: UpdateProfilePayload) => AuthActionResult;
 }
 
+interface CartContextValue {
+  ready: boolean;
+  items: CartItem[];
+  cartCount: number;
+  cartTotal: number;
+  addToCart: (payload: AddToCartPayload, quantity?: number) => CartActionResult;
+  setItemQuantity: (productId: string, quantity: number) => CartActionResult;
+  removeFromCart: (productId: string) => void;
+  clearCart: () => void;
+}
+
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -135,12 +175,84 @@ function readSession(): BuyerAuthSession | null {
   }
 }
 
+function sanitizeNonNegativeInt(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+    return Math.floor(value);
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.floor(parsed);
+    }
+  }
+
+  return null;
+}
+
+function readCartItems(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+
+        const record = item as Partial<CartItem>;
+        const productId = typeof record.productId === 'string' ? record.productId.trim() : '';
+        const title = typeof record.title === 'string' ? record.title.trim() : '';
+        const image = typeof record.image === 'string' ? record.image : '';
+        const unitPrice =
+          typeof record.unitPrice === 'number' && Number.isFinite(record.unitPrice) && record.unitPrice >= 0
+            ? record.unitPrice
+            : null;
+        const quantity = sanitizeNonNegativeInt(record.quantity);
+        const stock = record.stock === null ? null : sanitizeNonNegativeInt(record.stock);
+        const sku = typeof record.sku === 'string' && record.sku.trim().length > 0 ? record.sku.trim() : null;
+        const currency =
+          typeof record.currency === 'string' && /^[A-Z]{3}$/.test(record.currency.trim().toUpperCase())
+            ? record.currency.trim().toUpperCase()
+            : 'USD';
+
+        if (!productId || !title || !image || unitPrice === null || quantity === null || quantity <= 0) {
+          return null;
+        }
+
+        return {
+          productId,
+          title,
+          image,
+          unitPrice,
+          quantity,
+          stock,
+          sku,
+          currency
+        } satisfies CartItem;
+      })
+      .filter((item): item is CartItem => item !== null);
+  } catch {
+    return [];
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('vi');
   const [ready, setReady] = useState(false);
+  const [cartReady, setCartReady] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, BuyerProfile>>({});
   const [session, setSession] = useState<BuyerAuthSession | null>(null);
   const [user, setUser] = useState<BuyerUser | null>(null);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
     let disposed = false;
@@ -204,9 +316,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    const storedCartItems = readCartItems();
+    setCartItems(storedCartItems);
+    setCartReady(true);
+  }, []);
+
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);
     localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
+  }, []);
+
+  const persistCartItems = useCallback((nextItems: CartItem[]) => {
+    setCartItems(nextItems);
+
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextItems));
+    } catch {
+      // Ignore persist errors to avoid breaking cart interactions.
+    }
   }, []);
 
   const login = useCallback(
@@ -348,6 +476,162 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [locale, profiles, user]
   );
 
+  const cartCount = useMemo(
+    () => cartItems.reduce((total, item) => total + item.quantity, 0),
+    [cartItems]
+  );
+
+  const cartTotal = useMemo(
+    () => cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0),
+    [cartItems]
+  );
+
+  const addToCart = useCallback(
+    (payload: AddToCartPayload, quantity = 1): CartActionResult => {
+      const productId = payload.productId.trim();
+      const title = payload.title.trim();
+      const unitPrice = payload.unitPrice;
+      const stock = payload.stock;
+      const sku = typeof payload.sku === 'string' && payload.sku.trim().length > 0 ? payload.sku.trim() : null;
+      const currency =
+        typeof payload.currency === 'string' && /^[A-Z]{3}$/.test(payload.currency.trim().toUpperCase())
+          ? payload.currency.trim().toUpperCase()
+          : 'USD';
+      const requested = sanitizeNonNegativeInt(quantity);
+
+      if (!productId || !title || !payload.image || !Number.isFinite(unitPrice) || unitPrice < 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.loadError
+        };
+      }
+
+      if (requested === null || requested <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.invalidQuantity
+        };
+      }
+
+      const normalizedStock = stock === null ? null : sanitizeNonNegativeInt(stock);
+      if (normalizedStock !== null && normalizedStock <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.stockOut
+        };
+      }
+
+      const existing = cartItems.find((item) => item.productId === productId);
+      const baseQuantity = existing?.quantity ?? 0;
+      const targetQuantity = baseQuantity + requested;
+      const finalQuantity =
+        normalizedStock !== null ? Math.min(targetQuantity, normalizedStock) : targetQuantity;
+
+      if (finalQuantity <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.stockOut
+        };
+      }
+
+      const nextItem: CartItem = {
+        productId,
+        title,
+        image: payload.image,
+        unitPrice,
+        stock: normalizedStock,
+        quantity: finalQuantity,
+        sku: sku ?? existing?.sku ?? null,
+        currency
+      };
+
+      const nextItems = existing
+        ? cartItems.map((item) => (item.productId === productId ? nextItem : item))
+        : [...cartItems, nextItem];
+      persistCartItems(nextItems);
+
+      if (normalizedStock !== null && finalQuantity < targetQuantity) {
+        return {
+          ok: true,
+          message: messages[locale].product.maxStockReached
+        };
+      }
+
+      return {
+        ok: true,
+        message: messages[locale].product.addedToCart
+      };
+    },
+    [cartItems, locale, persistCartItems]
+  );
+
+  const setItemQuantity = useCallback(
+    (productId: string, quantity: number): CartActionResult => {
+      const normalizedId = productId.trim();
+      const nextQuantity = sanitizeNonNegativeInt(quantity);
+      if (!normalizedId || nextQuantity === null || nextQuantity <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.invalidQuantity
+        };
+      }
+
+      const current = cartItems.find((item) => item.productId === normalizedId);
+      if (!current) {
+        return {
+          ok: false,
+          message: messages[locale].product.notFound
+        };
+      }
+
+      const finalQuantity = current.stock !== null ? Math.min(nextQuantity, current.stock) : nextQuantity;
+      if (current.stock !== null && current.stock <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.stockOut
+        };
+      }
+
+      const nextItems = cartItems.map((item) =>
+        item.productId === normalizedId
+          ? {
+              ...item,
+              quantity: finalQuantity
+            }
+          : item
+      );
+
+      persistCartItems(nextItems);
+
+      if (current.stock !== null && finalQuantity < nextQuantity) {
+        return {
+          ok: true,
+          message: messages[locale].product.maxStockReached
+        };
+      }
+
+      return { ok: true };
+    },
+    [cartItems, locale, persistCartItems]
+  );
+
+  const removeFromCart = useCallback(
+    (productId: string) => {
+      const normalizedId = productId.trim();
+      if (!normalizedId) {
+        return;
+      }
+
+      const nextItems = cartItems.filter((item) => item.productId !== normalizedId);
+      persistCartItems(nextItems);
+    },
+    [cartItems, persistCartItems]
+  );
+
+  const clearCart = useCallback(() => {
+    persistCartItems([]);
+  }, [persistCartItems]);
+
   const languageValue = useMemo(
     () => ({
       locale,
@@ -361,17 +645,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => ({
       ready,
       user,
+      accessToken: session?.accessToken ?? null,
       login,
       register,
       logout,
       updateProfile
     }),
-    [login, logout, ready, register, updateProfile, user]
+    [login, logout, ready, register, session?.accessToken, updateProfile, user]
+  );
+
+  const cartValue = useMemo(
+    () => ({
+      ready: cartReady,
+      items: cartItems,
+      cartCount,
+      cartTotal,
+      addToCart,
+      setItemQuantity,
+      removeFromCart,
+      clearCart
+    }),
+    [
+      addToCart,
+      cartCount,
+      cartItems,
+      cartReady,
+      cartTotal,
+      clearCart,
+      removeFromCart,
+      setItemQuantity
+    ]
   );
 
   return (
     <LanguageContext.Provider value={languageValue}>
-      <AuthContext.Provider value={authValue}>{children}</AuthContext.Provider>
+      <AuthContext.Provider value={authValue}>
+        <CartContext.Provider value={cartValue}>{children}</CartContext.Provider>
+      </AuthContext.Provider>
     </LanguageContext.Provider>
   );
 }
@@ -389,6 +699,15 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within AppProvider');
+  }
+
+  return context;
+}
+
+export function useCart() {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within AppProvider');
   }
 
   return context;

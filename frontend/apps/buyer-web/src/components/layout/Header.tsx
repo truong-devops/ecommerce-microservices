@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth, useLanguage } from '@/providers/AppProvider';
+import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 interface HeaderProps {
   keywords: string[];
@@ -12,6 +12,7 @@ export function Header({ keywords }: HeaderProps) {
   const router = useRouter();
   const { locale, setLocale, text } = useLanguage();
   const { ready, user } = useAuth();
+  const { cartCount } = useCart();
 
   const handleLogout = () => {
     router.push('/logout');
@@ -69,6 +70,9 @@ export function Header({ keywords }: HeaderProps) {
 
             {ready && user ? (
               <>
+                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
+                  {text.header.orders}
+                </Link>
                 <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/account">
                   {text.header.account}
                 </Link>
@@ -122,9 +126,9 @@ export function Header({ keywords }: HeaderProps) {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/60 text-white transition hover:bg-white/10 focus-visible:outline-white"
+          <Link
+            href="/cart"
+            className="relative inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/60 text-white transition hover:bg-white/10 focus-visible:outline-white"
             aria-label={text.header.cart}
           >
             <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
@@ -132,7 +136,13 @@ export function Header({ keywords }: HeaderProps) {
               <circle cx="10" cy="19" r="1.5" fill="currentColor" />
               <circle cx="17" cy="19" r="1.5" fill="currentColor" />
             </svg>
-          </button>
+
+            {cartCount > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-brand-600">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            ) : null}
+          </Link>
         </div>
       </div>
     </header>

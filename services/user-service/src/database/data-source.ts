@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
+import { AddAddressToUsersTable1710000000001 } from './migrations/1710000000001-add-address-to-users-table';
 import { UserEntity } from '../modules/users/entities/user.entity';
 import { CreateUsersTable1710000000000 } from './migrations/1710000000000-create-users-table';
 
@@ -13,7 +14,7 @@ const dataSource = new DataSource({
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
   synchronize: false,
   entities: [UserEntity],
-  migrations: [CreateUsersTable1710000000000]
+  migrations: [CreateUsersTable1710000000000, AddAddressToUsersTable1710000000001]
 });
 
 export default dataSource;

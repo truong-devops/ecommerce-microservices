@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
-import { BuyerApiClientError } from '@/lib/api/client';
-import { createBuyerOrder } from '@/lib/api/orders';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 function formatPrice(value: number, currency = 'USD'): string {
@@ -21,25 +19,9 @@ function buildLoginRedirectUrl(path: string): string {
   return `/login?returnUrl=${encodeURIComponent(path)}`;
 }
 
-function normalizeSku(rawSku: string | null, productId: string): string {
-  if (rawSku && rawSku.trim().length > 0) {
-    return rawSku.trim().slice(0, 64);
-  }
-
-  return `SKU-${productId.slice(0, 8).toUpperCase()}`;
-}
-
 function normalizeCurrency(rawCurrency: string): string {
   const normalized = rawCurrency.trim().toUpperCase();
   return /^[A-Z]{3}$/.test(normalized) ? normalized : 'USD';
-}
-
-function buildIdempotencyKey(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-
-  return `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export default function CartPage() {
@@ -49,13 +31,12 @@ export default function CartPage() {
   const { ready: cartReady, items, cartTotal, setItemQuantity, removeFromCart, clearCart } = useCart();
 
   const [feedback, setFeedback] = useState('');
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   const ready = cartReady && authReady;
   const orderCurrency = items[0]?.currency ? normalizeCurrency(items[0].currency) : 'USD';
 
-  const handleCheckout = async () => {
-    if (items.length === 0 || isPlacingOrder) {
+  const handleCheckout = () => {
+    if (items.length === 0) {
       return;
     }
 
@@ -63,55 +44,11 @@ export default function CartPage() {
 
     if (!user || !accessToken) {
       setFeedback(text.cart.checkoutLoginRequired);
-      router.push(buildLoginRedirectUrl('/cart'));
+      router.push(buildLoginRedirectUrl('/checkout'));
       return;
     }
 
-    const orderItems = items
-      .filter((item) => item.productId.trim().length > 0)
-      .map((item) => ({
-        productId: item.productId,
-        sku: normalizeSku(item.sku, item.productId),
-        productName: item.title.slice(0, 255),
-        quantity: item.quantity,
-        unitPrice: item.unitPrice
-      }));
-
-    if (orderItems.length === 0) {
-      setFeedback(text.orders.invalidData);
-      return;
-    }
-
-    setIsPlacingOrder(true);
-
-    try {
-      await createBuyerOrder({
-        accessToken,
-        idempotencyKey: buildIdempotencyKey(),
-        payload: {
-          currency: orderCurrency,
-          items: orderItems
-        }
-      });
-
-      clearCart();
-      setFeedback(text.cart.orderPlaced);
-      router.push('/orders');
-    } catch (error) {
-      if (error instanceof BuyerApiClientError) {
-        if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN' || error.code === 'HTTP_401' || error.code === 'HTTP_403') {
-          setFeedback(text.cart.checkoutLoginRequired);
-          router.push(buildLoginRedirectUrl('/cart'));
-          return;
-        }
-
-        setFeedback(error.message || text.cart.checkoutFailed);
-      } else {
-        setFeedback(text.cart.checkoutFailed);
-      }
-    } finally {
-      setIsPlacingOrder(false);
-    }
+    router.push('/checkout');
   };
 
   return (
@@ -229,12 +166,11 @@ export default function CartPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    void handleCheckout();
+                    handleCheckout();
                   }}
-                  disabled={isPlacingOrder}
                   className="h-11 rounded-md bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {isPlacingOrder ? text.cart.placingOrder : text.cart.checkout}
+                  {text.cart.checkout}
                 </button>
               </div>
             </div>

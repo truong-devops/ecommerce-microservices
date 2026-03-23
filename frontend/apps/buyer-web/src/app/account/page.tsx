@@ -30,20 +30,6 @@ function maskEmail(email: string): string {
   return `${localPart.slice(0, 2)}${'*'.repeat(Math.max(4, localPart.length - 2))}@${domain}`;
 }
 
-function maskPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (!digits) {
-    return '**********';
-  }
-
-  if (digits.length <= 4) {
-    return `***${digits}`;
-  }
-
-  const hidden = '*'.repeat(Math.max(3, digits.length - 4));
-  return `${hidden}${digits.slice(-4)}`;
-}
-
 function formatMemberDate(value: string, locale: 'vi' | 'en'): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -63,9 +49,12 @@ export default function AccountPage() {
   const { ready, user, updateProfile } = useAuth();
 
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [gender, setGender] = useState<ProfileGender>('male');
   const [birthday, setBirthday] = useState('');
   const [notice, setNotice] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!ready) {
@@ -78,6 +67,8 @@ export default function AccountPage() {
     }
 
     setName(user.name);
+    setPhone(user.phone);
+    setAddress(user.address);
     setNotice('');
   }, [ready, router, user]);
 
@@ -93,14 +84,18 @@ export default function AccountPage() {
     );
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice('');
+    setIsSaving(true);
 
-    const result = updateProfile({ name, phone: user.phone, address: user.address });
+    const result = await updateProfile({ name, phone, address });
     if (result.ok && result.message) {
       setNotice(result.message);
+    } else if (!result.ok && result.message) {
+      setNotice(result.message);
     }
+    setIsSaving(false);
   };
 
   const handleLogout = () => {
@@ -254,15 +249,26 @@ export default function AccountPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-                  <p className="text-sm text-slate-500">{accountLabels.phone}</p>
-                  <p className="text-sm text-slate-700">
-                    {maskPhone(user.phone)}{' '}
-                    <button type="button" className="font-medium text-brand-600 hover:underline">
-                      {accountLabels.change}
-                    </button>
-                  </p>
-                </div>
+                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
+                  <span className="text-sm text-slate-500">{accountLabels.phone}</span>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                    required
+                  />
+                </label>
+
+                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
+                  <span className="pt-2 text-sm text-slate-500">{text.account.address}</span>
+                  <textarea
+                    rows={3}
+                    value={address}
+                    onChange={(event) => setAddress(event.target.value)}
+                    className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                  />
+                </label>
 
                 <fieldset className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
                   <legend className="text-sm text-slate-500">{accountLabels.gender}</legend>
@@ -319,6 +325,7 @@ export default function AccountPage() {
                 <div className="flex flex-wrap gap-3 pt-2">
                   <button
                     type="submit"
+                    disabled={isSaving}
                     className="h-11 min-w-[110px] rounded-sm bg-brand-500 px-6 text-sm font-semibold text-white transition hover:bg-brand-600"
                   >
                     {accountLabels.save}

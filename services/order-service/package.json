@@ -10,7 +10,7 @@
     "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
     "docker:down": "docker compose -f docker-compose.dev.yml down --remove-orphans",
     "docker:logs": "docker compose -f docker-compose.dev.yml logs -f order-service",
-    "docker:migrate": "cat migrations/0001_init_order_service.sql | docker compose -f docker-compose.dev.yml exec -T postgres psql -U ecommerce -d ecommerce",
+    "docker:migrate": "for f in migrations/*.sql; do echo \"[migrate] $f\"; cat \"$f\" | docker compose -f docker-compose.dev.yml exec -T postgres psql -U ecommerce -d ecommerce; done",
     "docker:test": "BASE_URL=http://localhost:3002/api/v1 ../../scripts/test-order-service.sh",
     "lint": "echo 'lint scaffold pending'",
     "test": "jest --watchman=false --runInBand --passWithNoTests",

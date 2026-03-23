@@ -43,3 +43,15 @@ export interface LoginResponse {
   sessionId: string;
   user: LoginUser;
 }
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  sessionId: string;
+}

@@ -199,11 +199,11 @@ export const authStyles = StyleSheet.create({
   promoLogoText: {
     color: '#ffffff',
     fontWeight: '800',
-    fontSize: 46,
-    letterSpacing: 1
+    fontSize: 26,
+    letterSpacing: 0.4
   },
   promoLogoTextMobile: {
-    fontSize: 28
+    fontSize: 17
   },
   promoBrand: {
     marginTop: 16,

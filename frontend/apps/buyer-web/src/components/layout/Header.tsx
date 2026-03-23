@@ -99,8 +99,8 @@ export function Header({ keywords }: HeaderProps) {
 
         <div className="flex items-center gap-3 md:gap-5">
           <Link className="flex items-center gap-2 rounded-md focus-visible:outline-white" href="/" aria-label="Homepage">
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-white text-2xl font-bold text-brand-500">e</span>
-            <span className="text-3xl font-semibold tracking-tight">epay</span>
+            <span className="grid h-10 w-10 place-items-center rounded-md bg-white text-2xl font-bold text-brand-500">m</span>
+            <span className="text-3xl font-semibold tracking-tight">eMall</span>
           </Link>
 
           <div className="flex-1">

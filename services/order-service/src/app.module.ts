@@ -21,18 +21,23 @@ import { OrdersModule } from './modules/orders/orders.module';
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.getOrThrow<string>('database.url'),
-        ssl: configService.get<boolean>('database.ssl')
-          ? {
-              rejectUnauthorized: false
-            }
-          : false,
-        autoLoadEntities: true,
-        synchronize: false,
-        logging: false
-      })
+      useFactory: (configService: ConfigService) => {
+        const appEnv = configService.get<string>('app.env', 'development');
+        const isProduction = appEnv === 'production';
+
+        return {
+          type: 'postgres',
+          url: configService.getOrThrow<string>('database.url'),
+          ssl: configService.get<boolean>('database.ssl')
+            ? {
+                rejectUnauthorized: false
+              }
+            : false,
+          autoLoadEntities: true,
+          synchronize: !isProduction,
+          logging: false
+        };
+      }
     }),
     HealthModule,
     OrdersModule

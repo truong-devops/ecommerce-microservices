@@ -6,7 +6,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Length,
   Matches,
   MaxLength,
@@ -15,7 +14,8 @@ import {
 } from 'class-validator';
 
 export class CreateOrderItemDto {
-  @IsUUID()
+  @IsString()
+  @Length(1, 64)
   productId!: string;
 
   @IsString()

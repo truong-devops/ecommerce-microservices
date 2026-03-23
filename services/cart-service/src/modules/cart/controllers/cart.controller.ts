@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { Role } from '../../../common/constants/role.enum';
@@ -13,13 +13,13 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Get()
-  @Roles(Role.BUYER)
+  @Roles(Role.BUYER, Role.CUSTOMER)
   async getCart(@CurrentUser() user: RequestWithContext['user']): Promise<unknown> {
     return this.cartService.getCart(user!);
   }
 
   @Post('items')
-  @Roles(Role.BUYER)
+  @Roles(Role.BUYER, Role.CUSTOMER)
   async addItem(
     @CurrentUser() user: RequestWithContext['user'],
     @Req() request: RequestWithContext,
@@ -29,7 +29,7 @@ export class CartController {
   }
 
   @Patch('items/:itemId')
-  @Roles(Role.BUYER)
+  @Roles(Role.BUYER, Role.CUSTOMER)
   async updateItem(
     @CurrentUser() user: RequestWithContext['user'],
     @Req() request: RequestWithContext,
@@ -40,7 +40,7 @@ export class CartController {
   }
 
   @Delete('items/:itemId')
-  @Roles(Role.BUYER)
+  @Roles(Role.BUYER, Role.CUSTOMER)
   async removeItem(
     @CurrentUser() user: RequestWithContext['user'],
     @Req() request: RequestWithContext,
@@ -50,13 +50,13 @@ export class CartController {
   }
 
   @Delete()
-  @Roles(Role.BUYER)
+  @Roles(Role.BUYER, Role.CUSTOMER)
   async clearCart(@CurrentUser() user: RequestWithContext['user'], @Req() request: RequestWithContext): Promise<unknown> {
     return this.cartService.clearCart(user!, request.requestId ?? 'unknown-request-id');
   }
 
   @Post('validate')
-  @Roles(Role.BUYER)
+  @Roles(Role.BUYER, Role.CUSTOMER)
   async validateCart(@CurrentUser() user: RequestWithContext['user'], @Body() dto: ValidateCartDto): Promise<unknown> {
     return this.cartService.validateCart(user!, dto);
   }

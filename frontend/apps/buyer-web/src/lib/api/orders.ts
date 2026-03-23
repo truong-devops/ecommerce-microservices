@@ -1,5 +1,12 @@
 import { requestBuyerApi } from './client';
-import type { CancelOrderInput, CreateOrderInput, ListOrdersInput, Order, OrderListOutput } from './types';
+import type {
+  CancelOrderInput,
+  CreateOrderInput,
+  ListOrdersInput,
+  Order,
+  OrderListOutput,
+  OrderStatusHistoryOutput
+} from './types';
 
 interface AuthRequestInit extends RequestInit {
   accessToken: string;
@@ -98,6 +105,32 @@ export function confirmBuyerOrderReceived(input: AuthRequestInit & { orderId: st
     `/api/buyer/orders/${encodeURIComponent(orderId)}/confirm-received`,
     withAuth(accessToken, {
       method: 'PATCH',
+      ...init
+    })
+  );
+}
+
+export function fetchBuyerOrderById(input: AuthRequestInit & { orderId: string }): Promise<Order> {
+  const { accessToken, orderId, ...init } = input;
+
+  return requestBuyerApi<Order>(
+    `/api/buyer/orders/${encodeURIComponent(orderId)}`,
+    withAuth(accessToken, {
+      method: 'GET',
+      cache: 'no-store',
+      ...init
+    })
+  );
+}
+
+export function fetchBuyerOrderStatusHistory(input: AuthRequestInit & { orderId: string }): Promise<OrderStatusHistoryOutput> {
+  const { accessToken, orderId, ...init } = input;
+
+  return requestBuyerApi<OrderStatusHistoryOutput>(
+    `/api/buyer/orders/${encodeURIComponent(orderId)}/history`,
+    withAuth(accessToken, {
+      method: 'GET',
+      cache: 'no-store',
       ...init
     })
   );

@@ -1,11 +1,23 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { cancelBuyerOrder, confirmBuyerOrderReceived, fetchBuyerOrders } from '@/lib/api/orders';
-import type { Order, OrderItem, OrderListOutput, OrderStatus } from '@/lib/api/types';
+import { fetchBuyerPaymentByOrderId } from '@/lib/api/payments';
+import { fetchBuyerShipmentByOrderId } from '@/lib/api/shipping';
+import type {
+  Order,
+  OrderItem,
+  OrderListOutput,
+  OrderStatus,
+  Payment,
+  PaymentStatus,
+  Shipment,
+  ShipmentStatus
+} from '@/lib/api/types';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 type OrdersTabKey = 'all' | 'pending' | 'shipping' | 'waiting-delivery' | 'completed' | 'cancelled' | 'return-refund';
@@ -20,6 +32,17 @@ const validOrderStatusSet: Set<OrderStatus> = new Set([
   'DELIVERED',
   'CANCELLED',
   'FAILED'
+]);
+const validShipmentStatusSet: Set<ShipmentStatus> = new Set([
+  'PENDING',
+  'AWB_CREATED',
+  'PICKED_UP',
+  'IN_TRANSIT',
+  'OUT_FOR_DELIVERY',
+  'DELIVERED',
+  'CANCELLED',
+  'FAILED',
+  'RETURNED'
 ]);
 
 function formatPrice(value: number, currency = 'USD'): string {
@@ -169,32 +192,129 @@ function statusLabel(status: OrderStatus, localeText: ReturnType<typeof useLangu
   return dictionary[status] ?? status;
 }
 
-function getTabStatuses(tab: OrdersTabKey): OrderStatus[] | null {
-  if (tab === 'all') {
+function paymentStatusLabel(status: PaymentStatus, localeText: ReturnType<typeof useLanguage>['text']): string {
+  const dictionary: Record<PaymentStatus, string> = {
+    PENDING: localeText.orders.paymentPending,
+    REQUIRES_ACTION: localeText.orders.paymentRequiresAction,
+    AUTHORIZED: localeText.orders.paymentAuthorized,
+    CAPTURED: localeText.orders.paymentCaptured,
+    FAILED: localeText.orders.paymentFailed,
+    CANCELLED: localeText.orders.paymentCancelled,
+    PARTIALLY_REFUNDED: localeText.orders.paymentPartiallyRefunded,
+    REFUNDED: localeText.orders.paymentRefunded,
+    CHARGEBACK: localeText.orders.paymentChargeback
+  };
+
+  return dictionary[status] ?? status;
+}
+
+function toShipmentStatus(raw: unknown): ShipmentStatus {
+  if (typeof raw === 'string' && validShipmentStatusSet.has(raw as ShipmentStatus)) {
+    return raw as ShipmentStatus;
+  }
+
+  return 'FAILED';
+}
+
+function sanitizeShipment(raw: unknown): Shipment | null {
+  if (!raw || typeof raw !== 'object') {
     return null;
   }
 
+  const record = raw as Partial<Shipment>;
+  const id = typeof record.id === 'string' ? record.id.trim() : '';
+  const orderId = typeof record.orderId === 'string' ? record.orderId.trim() : '';
+  const buyerId = typeof record.buyerId === 'string' ? record.buyerId.trim() : '';
+  const sellerId = typeof record.sellerId === 'string' ? record.sellerId.trim() : '';
+
+  if (!id || !orderId || !buyerId || !sellerId) {
+    return null;
+  }
+
+  return {
+    id,
+    orderId,
+    buyerId,
+    sellerId,
+    provider: typeof record.provider === 'string' ? record.provider.trim() : '',
+    awb: typeof record.awb === 'string' ? record.awb : null,
+    trackingNumber: typeof record.trackingNumber === 'string' ? record.trackingNumber : null,
+    status: toShipmentStatus(record.status),
+    currency: normalizeCurrency(record.currency),
+    shippingFee: typeof record.shippingFee === 'number' && Number.isFinite(record.shippingFee) ? record.shippingFee : 0,
+    codAmount: typeof record.codAmount === 'number' && Number.isFinite(record.codAmount) ? record.codAmount : 0,
+    recipientName: typeof record.recipientName === 'string' ? record.recipientName : '',
+    recipientPhone: typeof record.recipientPhone === 'string' ? record.recipientPhone : '',
+    recipientAddress: typeof record.recipientAddress === 'string' ? record.recipientAddress : '',
+    note: typeof record.note === 'string' ? record.note : null,
+    metadata: record.metadata && typeof record.metadata === 'object' ? (record.metadata as Record<string, unknown>) : null,
+    createdAt: typeof record.createdAt === 'string' ? record.createdAt : new Date().toISOString(),
+    updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString()
+  };
+}
+
+function shipmentStatusLabel(status: ShipmentStatus, localeText: ReturnType<typeof useLanguage>['text']): string {
+  const dictionary: Record<ShipmentStatus, string> = {
+    PENDING: localeText.orders.shipmentPending,
+    AWB_CREATED: localeText.orders.shipmentAwbCreated,
+    PICKED_UP: localeText.orders.shipmentPickedUp,
+    IN_TRANSIT: localeText.orders.shipmentInTransit,
+    OUT_FOR_DELIVERY: localeText.orders.shipmentOutForDelivery,
+    DELIVERED: localeText.orders.shipmentDelivered,
+    CANCELLED: localeText.orders.shipmentCancelled,
+    FAILED: localeText.orders.shipmentFailed,
+    RETURNED: localeText.orders.shipmentReturned
+  };
+
+  return dictionary[status] ?? status;
+}
+
+function getBackendStatusForTab(tab: OrdersTabKey): OrderStatus | null {
   if (tab === 'pending') {
-    return ['PENDING'];
+    return 'PENDING';
+  }
+
+  return null;
+}
+
+function matchesTab(order: Order, payment: Payment | null | undefined, shipment: Shipment | null | undefined, tab: OrdersTabKey): boolean {
+  if (tab === 'all') {
+    return true;
+  }
+
+  if (tab === 'pending') {
+    return order.status === 'PENDING';
   }
 
   if (tab === 'shipping') {
-    return ['CONFIRMED', 'PROCESSING'];
+    if (order.status === 'CONFIRMED' || order.status === 'PROCESSING') {
+      return true;
+    }
+
+    return shipment?.status === 'PENDING' || shipment?.status === 'AWB_CREATED' || shipment?.status === 'PICKED_UP';
   }
 
   if (tab === 'waiting-delivery') {
-    return ['SHIPPED'];
+    if (order.status === 'SHIPPED') {
+      return true;
+    }
+
+    return shipment?.status === 'IN_TRANSIT' || shipment?.status === 'OUT_FOR_DELIVERY';
   }
 
   if (tab === 'completed') {
-    return ['DELIVERED'];
+    return order.status === 'DELIVERED' || shipment?.status === 'DELIVERED';
   }
 
   if (tab === 'cancelled') {
-    return ['CANCELLED', 'FAILED'];
+    if (order.status === 'CANCELLED' || order.status === 'FAILED') {
+      return true;
+    }
+
+    return shipment?.status === 'CANCELLED' || shipment?.status === 'FAILED' || shipment?.status === 'RETURNED';
   }
 
-  return [];
+  return payment?.status === 'PARTIALLY_REFUNDED' || payment?.status === 'REFUNDED' || payment?.status === 'CHARGEBACK' || shipment?.status === 'RETURNED';
 }
 
 export default function OrdersPage() {
@@ -209,12 +329,22 @@ export default function OrdersPage() {
   const [searchValue, setSearchValue] = useState('');
   const [activeTab, setActiveTab] = useState<OrdersTabKey>('all');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [paymentsByOrderId, setPaymentsByOrderId] = useState<Record<string, Payment | null>>({});
+  const [shipmentsByOrderId, setShipmentsByOrderId] = useState<Record<string, Shipment | null>>({});
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [isShipmentLoading, setIsShipmentLoading] = useState(false);
   const [actingOrderId, setActingOrderId] = useState<string | null>(null);
+  const requestRef = useRef(0);
 
   const loadOrders = useCallback(async () => {
     if (!accessToken) {
       return;
     }
+
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+
+    const backendStatus = getBackendStatusForTab(activeTab);
 
     setFetchStatus('loading');
     setErrorMessage('');
@@ -226,12 +356,86 @@ export default function OrdersPage() {
           page: 1,
           pageSize: 100,
           sortBy: 'createdAt',
-          sortOrder: 'DESC'
+          sortOrder: 'DESC',
+          ...(backendStatus ? { status: backendStatus } : {})
         }
       });
 
-      setOrders(sanitizeOrdersResponse(payload));
+      if (requestRef.current !== requestId) {
+        return;
+      }
+
+      const sanitizedOrders = sanitizeOrdersResponse(payload);
+      setOrders(sanitizedOrders);
       setFetchStatus('success');
+      setPaymentsByOrderId({});
+      setShipmentsByOrderId({});
+      setIsPaymentLoading(false);
+      setIsShipmentLoading(false);
+
+      if (sanitizedOrders.length === 0) {
+        return;
+      }
+
+      setIsPaymentLoading(true);
+      setIsShipmentLoading(true);
+      const [paymentEntries, shipmentEntries] = await Promise.all([
+        Promise.all(
+          sanitizedOrders.map(async (order) => {
+            try {
+              const payment = await fetchBuyerPaymentByOrderId({
+                accessToken,
+                orderId: order.id
+              });
+              return [order.id, payment] as const;
+            } catch (error) {
+              if (error instanceof BuyerApiClientError) {
+                if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN' || error.code === 'HTTP_401' || error.code === 'HTTP_403') {
+                  throw error;
+                }
+
+                if (error.code === 'PAYMENT_NOT_FOUND' || error.code === 'NOT_FOUND' || error.code === 'HTTP_404') {
+                  return [order.id, null] as const;
+                }
+              }
+
+              return [order.id, null] as const;
+            }
+          })
+        ),
+        Promise.all(
+          sanitizedOrders.map(async (order) => {
+            try {
+              const shipment = await fetchBuyerShipmentByOrderId({
+                accessToken,
+                orderId: order.id
+              });
+              return [order.id, sanitizeShipment(shipment)] as const;
+            } catch (error) {
+              if (error instanceof BuyerApiClientError) {
+                if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN' || error.code === 'HTTP_401' || error.code === 'HTTP_403') {
+                  throw error;
+                }
+
+                if (error.code === 'SHIPMENT_NOT_FOUND' || error.code === 'NOT_FOUND' || error.code === 'HTTP_404') {
+                  return [order.id, null] as const;
+                }
+              }
+
+              return [order.id, null] as const;
+            }
+          })
+        )
+      ]);
+
+      if (requestRef.current !== requestId) {
+        return;
+      }
+
+      setPaymentsByOrderId(Object.fromEntries(paymentEntries));
+      setShipmentsByOrderId(Object.fromEntries(shipmentEntries));
+      setIsPaymentLoading(false);
+      setIsShipmentLoading(false);
     } catch (error) {
       if (error instanceof BuyerApiClientError) {
         if (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN' || error.code === 'HTTP_401' || error.code === 'HTTP_403') {
@@ -245,8 +449,10 @@ export default function OrdersPage() {
       }
 
       setFetchStatus('error');
+      setIsPaymentLoading(false);
+      setIsShipmentLoading(false);
     }
-  }, [accessToken, router, text.product.loadError]);
+  }, [accessToken, activeTab, router, text.product.loadError]);
 
   useEffect(() => {
     if (!ready) {
@@ -262,15 +468,13 @@ export default function OrdersPage() {
   }, [accessToken, loadOrders, ready, router, user]);
 
   const visibleOrders = useMemo(() => {
-    const statuses = getTabStatuses(activeTab);
     const keyword = searchValue.trim().toLowerCase();
 
     return orders.filter((order) => {
-      if (statuses && statuses.length > 0 && !statuses.includes(order.status)) {
-        return false;
-      }
+      const payment = paymentsByOrderId[order.id];
+      const shipment = shipmentsByOrderId[order.id];
 
-      if (statuses && statuses.length === 0) {
+      if (!matchesTab(order, payment, shipment, activeTab)) {
         return false;
       }
 
@@ -288,7 +492,7 @@ export default function OrdersPage() {
 
       return order.items.some((item) => item.productName.toLowerCase().includes(keyword));
     });
-  }, [activeTab, orders, searchValue]);
+  }, [activeTab, orders, paymentsByOrderId, searchValue, shipmentsByOrderId]);
 
   const tabs: Array<{ key: OrdersTabKey; label: string }> = [
     { key: 'all', label: text.orders.all },
@@ -448,9 +652,24 @@ export default function OrdersPage() {
           {fetchStatus === 'success' && visibleOrders.length > 0 ? (
             <div className="space-y-4">
               {visibleOrders.map((order) => {
-                const canCancel = order.status === 'PENDING';
+                const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
                 const canConfirmReceived = order.status === 'SHIPPED';
                 const canBuyAgain = order.status === 'DELIVERED';
+                const payment = paymentsByOrderId[order.id];
+                const shipment = shipmentsByOrderId[order.id];
+                const paymentLabel =
+                  payment === undefined && isPaymentLoading
+                    ? '...'
+                    : payment
+                      ? paymentStatusLabel(payment.status, text)
+                      : text.orders.paymentMissing;
+                const shipmentLabel =
+                  shipment === undefined && isShipmentLoading
+                    ? '...'
+                    : shipment
+                      ? shipmentStatusLabel(shipment.status, text)
+                      : text.orders.shipmentMissing;
+                const shipmentCode = shipment?.trackingNumber?.trim() || shipment?.awb?.trim() || '';
 
                 return (
                   <article key={order.id} className="overflow-hidden rounded-sm border border-slate-200">
@@ -462,6 +681,12 @@ export default function OrdersPage() {
                       <div className="flex items-center gap-3">
                         <span className="text-slate-500">
                           {text.orders.orderCode}: <span className="font-medium text-slate-700">{order.orderNumber}</span>
+                        </span>
+                        <span className="text-slate-500">
+                          {text.orders.paymentLabel}: <span className="font-medium text-slate-700">{paymentLabel}</span>
+                        </span>
+                        <span className="text-slate-500">
+                          {text.orders.shipmentLabel}: <span className="font-medium text-slate-700">{shipmentLabel}</span>
                         </span>
                         <span className="font-semibold text-brand-600">{statusLabel(order.status, text)}</span>
                       </div>
@@ -500,7 +725,32 @@ export default function OrdersPage() {
                         </p>
                       </div>
 
+                      {shipmentCode ? (
+                        <p className="text-xs text-slate-500">
+                          {shipment?.provider ? `${shipment.provider} - ` : ''}
+                          {shipmentCode}
+                        </p>
+                      ) : null}
+
                       <div className="flex flex-wrap justify-end gap-2">
+                        <Link
+                          href={`/orders/${encodeURIComponent(order.id)}`}
+                          className="inline-flex h-10 items-center rounded-sm border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                        >
+                          {text.orders.actionDetail}
+                        </Link>
+
+                        {payment && payment.status === 'REQUIRES_ACTION' && payment.requiresActionUrl ? (
+                          <a
+                            href={payment.requiresActionUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-10 items-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+                          >
+                            {text.orders.paymentAction}
+                          </a>
+                        ) : null}
+
                         {canCancel ? (
                           <button
                             type="button"

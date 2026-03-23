@@ -1,11 +1,17 @@
 const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:3001/api/v1';
+const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? 'http://localhost:3100/api/v1';
 const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:3003/api/v1';
 const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:3002/api/v1';
+const PAYMENT_SERVICE_BASE_URL = process.env.PAYMENT_SERVICE_BASE_URL ?? 'http://localhost:3006/api/v1';
+const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? 'http://localhost:3008/api/v1';
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
+  user: USER_SERVICE_BASE_URL,
   product: PRODUCT_SERVICE_BASE_URL,
-  order: ORDER_SERVICE_BASE_URL
+  order: ORDER_SERVICE_BASE_URL,
+  payment: PAYMENT_SERVICE_BASE_URL,
+  shipping: SHIPPING_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {

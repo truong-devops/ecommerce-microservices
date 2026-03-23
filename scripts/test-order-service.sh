@@ -178,7 +178,7 @@ echo "Unauthorized guard OK"
 
 print_step "Create order"
 IDEMPOTENCY_KEY="order-test-$(date +%s)-$$"
-CREATE_PAYLOAD='{"currency":"USD","shippingAmount":5.5,"discountAmount":1.0,"note":"first order","items":[{"productId":"33333333-3333-4333-8333-333333333333","sku":"SKU-001","productName":"Laptop Stand","quantity":2,"unitPrice":10.25}]}'
+CREATE_PAYLOAD='{"currency":"USD","shippingAmount":5.5,"discountAmount":1.0,"note":"first order","items":[{"productId":"product-seed-333333333333333333333333","sku":"SKU-001","productName":"Laptop Stand","quantity":2,"unitPrice":10.25}]}'
 call_api POST /orders "$CREATE_PAYLOAD" "$CUSTOMER_TOKEN" "$IDEMPOTENCY_KEY"
 assert_status_in "200 201"
 assert_success_true
@@ -203,7 +203,7 @@ fi
 echo "Idempotency replay OK"
 
 print_step "Idempotency payload mismatch"
-call_api POST /orders '{"currency":"USD","items":[{"productId":"44444444-4444-4444-8444-444444444444","sku":"SKU-002","productName":"Mouse","quantity":1,"unitPrice":20}]}' "$CUSTOMER_TOKEN" "$IDEMPOTENCY_KEY"
+call_api POST /orders '{"currency":"USD","items":[{"productId":"product-seed-444444444444444444444444","sku":"SKU-002","productName":"Mouse","quantity":1,"unitPrice":20}]}' "$CUSTOMER_TOKEN" "$IDEMPOTENCY_KEY"
 assert_status_in "409"
 assert_error_code "IDEMPOTENCY_CONFLICT"
 echo "Idempotency mismatch OK"

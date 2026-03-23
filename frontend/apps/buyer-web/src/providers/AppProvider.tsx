@@ -4,7 +4,9 @@ import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getBuyerMe, loginBuyer, logoutBuyer, registerBuyer } from '@/lib/api/auth';
 import { BuyerApiClientError } from '@/lib/api/client';
-import type { BuyerAuthSession, BuyerAuthUser } from '@/lib/api/types';
+import { getBuyerProfile, updateBuyerProfile } from '@/lib/api/profile';
+import { isValidProductId } from '@/lib/product-id';
+import type { BuyerAuthSession, BuyerAuthUser, BuyerProfileOutput } from '@/lib/api/types';
 import { messages, type Locale } from '@/lib/i18n';
 
 const LOCALE_STORAGE_KEY = 'buyer_locale';
@@ -89,7 +91,7 @@ interface AuthContextValue {
   login: (payload: LoginPayload) => Promise<AuthActionResult>;
   register: (payload: RegisterPayload) => Promise<AuthActionResult>;
   logout: () => Promise<void>;
-  updateProfile: (payload: UpdateProfilePayload) => AuthActionResult;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<AuthActionResult>;
 }
 
 interface CartContextValue {
@@ -128,6 +130,20 @@ function toBuyerUser(authUser: BuyerAuthUser, profile: BuyerProfile): BuyerUser 
     phone: profile.phone,
     address: profile.address,
     createdAt: profile.createdAt
+  };
+}
+
+function profileFromApi(apiProfile: BuyerProfileOutput, fallbackEmail: string, fallbackProfile: BuyerProfile): BuyerProfile {
+  const fallbackName = profileFromEmail(fallbackEmail).name.toLowerCase();
+  const nextName = apiProfile.name.trim();
+  const shouldKeepLocalName =
+    fallbackProfile.name.trim().length > 0 && nextName.length > 0 && nextName.toLowerCase() === fallbackName;
+
+  return {
+    name: shouldKeepLocalName ? fallbackProfile.name : nextName || fallbackProfile.name || profileFromEmail(fallbackEmail).name,
+    phone: apiProfile.phone,
+    address: apiProfile.address,
+    createdAt: apiProfile.createdAt || fallbackProfile.createdAt
   };
 }
 
@@ -224,7 +240,7 @@ function readCartItems(): CartItem[] {
             ? record.currency.trim().toUpperCase()
             : 'USD';
 
-        if (!productId || !title || !image || unitPrice === null || quantity === null || quantity <= 0) {
+        if (!isValidProductId(productId) || !title || !image || unitPrice === null || quantity === null || quantity <= 0) {
           return null;
         }
 
@@ -278,22 +294,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try {
           const me = await getBuyerMe(storedSession.accessToken);
           const existingProfile = storedProfiles[me.user.id] ?? profileFromEmail(me.user.email);
-          const nextProfiles =
-            storedProfiles[me.user.id] === undefined
-              ? {
-                  ...storedProfiles,
-                  [me.user.id]: existingProfile
-                }
-              : storedProfiles;
+          let resolvedProfile = existingProfile;
+
+          try {
+            const backendProfile = await getBuyerProfile({
+              accessToken: storedSession.accessToken
+            });
+            resolvedProfile = profileFromApi(backendProfile, me.user.email, existingProfile);
+          } catch {
+            // Fallback to local profile cache when user-service profile is unavailable.
+          }
+
+          const nextProfiles = {
+            ...storedProfiles,
+            [me.user.id]: resolvedProfile
+          };
 
           if (!disposed) {
-            if (storedProfiles[me.user.id] === undefined) {
-              setProfiles(nextProfiles);
-              localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
-            }
-
+            setProfiles(nextProfiles);
+            localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
             setSession(storedSession);
-            setUser(toBuyerUser(me.user, existingProfile));
+            setUser(toBuyerUser(me.user, resolvedProfile));
           }
         } catch {
           localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
@@ -347,21 +368,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         const currentProfiles = readProfiles();
         const existingProfile = currentProfiles[result.user.id] ?? profileFromEmail(result.user.email);
-        const nextProfiles =
-          currentProfiles[result.user.id] === undefined
-            ? {
-                ...currentProfiles,
-                [result.user.id]: existingProfile
-              }
-            : currentProfiles;
+        let resolvedProfile = existingProfile;
 
-        setProfiles(nextProfiles);
-        if (currentProfiles[result.user.id] === undefined) {
-          localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
+        try {
+          const backendProfile = await getBuyerProfile({
+            accessToken: result.session.accessToken
+          });
+          resolvedProfile = profileFromApi(backendProfile, result.user.email, existingProfile);
+        } catch {
+          // Fallback to local profile cache when user-service profile is unavailable.
         }
 
+        const nextProfiles = {
+          ...currentProfiles,
+          [result.user.id]: resolvedProfile
+        };
+
+        setProfiles(nextProfiles);
+        localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
+
         setSession(result.session);
-        setUser(toBuyerUser(result.user, existingProfile));
+        setUser(toBuyerUser(result.user, resolvedProfile));
         localStorage.setItem(AUTH_SESSION_STORAGE_KEY, JSON.stringify(result.session));
 
         return { ok: true };
@@ -447,33 +474,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const updateProfile = useCallback(
-    ({ name, phone, address }: UpdateProfilePayload): AuthActionResult => {
-      if (!user) {
+    async ({ name, phone, address }: UpdateProfilePayload): Promise<AuthActionResult> => {
+      if (!user || !session?.accessToken) {
         return { ok: false };
       }
 
-      const nextProfile: BuyerProfile = {
-        name: name.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        createdAt: user.createdAt
-      };
+      const normalizedName = name.trim();
+      const normalizedPhone = phone.trim();
+      const normalizedAddress = address.trim();
 
-      const nextProfiles = {
-        ...profiles,
-        [user.id]: nextProfile
-      };
+      if (!normalizedName || !normalizedPhone) {
+        return {
+          ok: false,
+          message: messages[locale].auth.requiredFields
+        };
+      }
 
-      setProfiles(nextProfiles);
-      setUser({
-        ...user,
-        ...nextProfile
-      });
-      localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
+      try {
+        const updatedProfile = await updateBuyerProfile({
+          accessToken: session.accessToken,
+          payload: {
+            name: normalizedName,
+            phone: normalizedPhone,
+            address: normalizedAddress
+          }
+        });
 
-      return { ok: true, message: messages[locale].account.saveSuccess };
+        const currentProfile = profiles[user.id] ?? profileFromEmail(user.email);
+        const nextProfile = profileFromApi(updatedProfile, user.email, currentProfile);
+        const nextProfiles = {
+          ...profiles,
+          [user.id]: nextProfile
+        };
+
+        setProfiles(nextProfiles);
+        setUser({
+          ...user,
+          ...nextProfile
+        });
+        localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(nextProfiles));
+
+        return { ok: true, message: messages[locale].account.saveSuccess };
+      } catch (error) {
+        if (error instanceof BuyerApiClientError) {
+          return { ok: false, message: error.message };
+        }
+
+        return { ok: false, message: messages[locale].account.saveFailed };
+      }
     },
-    [locale, profiles, user]
+    [locale, profiles, session?.accessToken, user]
   );
 
   const cartCount = useMemo(
@@ -499,7 +549,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : 'USD';
       const requested = sanitizeNonNegativeInt(quantity);
 
-      if (!productId || !title || !payload.image || !Number.isFinite(unitPrice) || unitPrice < 0) {
+      if (!isValidProductId(productId) || !title || !payload.image || !Number.isFinite(unitPrice) || unitPrice < 0) {
         return {
           ok: false,
           message: messages[locale].product.loadError
@@ -569,7 +619,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     (productId: string, quantity: number): CartActionResult => {
       const normalizedId = productId.trim();
       const nextQuantity = sanitizeNonNegativeInt(quantity);
-      if (!normalizedId || nextQuantity === null || nextQuantity <= 0) {
+      if (!isValidProductId(normalizedId) || nextQuantity === null || nextQuantity <= 0) {
         return {
           ok: false,
           message: messages[locale].product.invalidQuantity
@@ -618,7 +668,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const removeFromCart = useCallback(
     (productId: string) => {
       const normalizedId = productId.trim();
-      if (!normalizedId) {
+      if (!isValidProductId(normalizedId)) {
         return;
       }
 

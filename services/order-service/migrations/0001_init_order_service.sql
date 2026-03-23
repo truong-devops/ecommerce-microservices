@@ -25,7 +25,7 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE TABLE order_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id uuid NOT NULL,
+  product_id varchar(128) NOT NULL,
   sku varchar(64) NOT NULL,
   product_name_snapshot varchar(255) NOT NULL,
   quantity integer NOT NULL,

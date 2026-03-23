@@ -127,6 +127,24 @@ export interface MeOutput {
   user: BuyerAuthUser;
 }
 
+export interface BuyerProfileOutput {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  phone: string;
+  address: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateBuyerProfileInput {
+  name?: string;
+  phone?: string;
+  address?: string;
+}
+
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
 
 export interface OrderItem {
@@ -195,3 +213,105 @@ export interface CancelOrderInput {
 }
 
 export type OrderAction = 'cancel' | 'confirm-received' | 'buy-again';
+
+export interface OrderStatusHistoryItem {
+  id: string;
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus;
+  changedBy: string;
+  changedByRole: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface OrderStatusHistoryOutput {
+  orderId: string;
+  histories: OrderStatusHistoryItem[];
+}
+
+export type PaymentStatus =
+  | 'PENDING'
+  | 'REQUIRES_ACTION'
+  | 'AUTHORIZED'
+  | 'CAPTURED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'PARTIALLY_REFUNDED'
+  | 'REFUNDED'
+  | 'CHARGEBACK';
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  userId: string;
+  sellerId: string | null;
+  provider: string;
+  providerPaymentId: string | null;
+  status: PaymentStatus;
+  currency: string;
+  amount: number;
+  refundedAmount: number;
+  refundableAmount: number;
+  description: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+  requiresActionUrl?: string;
+}
+
+export interface CreatePaymentIntentInput {
+  orderId: string;
+  currency: string;
+  amount: number;
+  description?: string;
+  autoCapture?: boolean;
+}
+
+export type ShipmentStatus =
+  | 'PENDING'
+  | 'AWB_CREATED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'RETURNED';
+
+export interface Shipment {
+  id: string;
+  orderId: string;
+  buyerId: string;
+  sellerId: string;
+  provider: string;
+  awb: string | null;
+  trackingNumber: string | null;
+  status: ShipmentStatus;
+  currency: string;
+  shippingFee: number;
+  codAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  note: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShipmentTrackingEvent {
+  id: string;
+  shipmentId: string;
+  status: ShipmentStatus;
+  eventCode: string | null;
+  description: string | null;
+  location: string | null;
+  occurredAt: string;
+  rawPayload: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface ShipmentTrackingEventsOutput {
+  shipmentId: string;
+  events: ShipmentTrackingEvent[];
+}

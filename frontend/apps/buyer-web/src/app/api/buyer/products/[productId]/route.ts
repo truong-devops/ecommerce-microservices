@@ -1,4 +1,5 @@
 import type { ProductDetail } from '@/lib/api/types';
+import { isValidProductId } from '@/lib/product-id';
 import { ok, fail } from '@/lib/server/buyer-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
@@ -152,8 +153,4 @@ function toNonNegativeInt(value: unknown): number | null {
   }
 
   return null;
-}
-
-function isValidProductId(value: string): boolean {
-  return /^[A-Za-z0-9-]{6,80}$/.test(value);
 }

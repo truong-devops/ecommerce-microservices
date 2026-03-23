@@ -191,9 +191,9 @@ export function AuthPanel({
         <View style={[authStyles.topHeader, isMobile ? authStyles.topHeaderMobile : undefined]}>
           <View style={authStyles.topBrand}>
             <View style={[authStyles.topBrandIcon, isMobile ? authStyles.topBrandIconMobile : undefined]}>
-              <Text style={[authStyles.topBrandIconText, isMobile ? authStyles.topBrandIconTextMobile : undefined]}>D&T</Text>
+              <Text style={[authStyles.topBrandIconText, isMobile ? authStyles.topBrandIconTextMobile : undefined]}>eMall</Text>
             </View>
-            <Text style={[authStyles.topBrandName, isMobile ? authStyles.topBrandNameMobile : undefined]}>D&T</Text>
+            <Text style={[authStyles.topBrandName, isMobile ? authStyles.topBrandNameMobile : undefined]}>eMall</Text>
             <Text style={[authStyles.topBrandSub, isMobile ? authStyles.topBrandSubMobile : undefined]}>
               {mode === 'register' ? locale.auth.register : locale.auth.login}
             </Text>
@@ -231,9 +231,9 @@ export function AuthPanel({
           <View style={isDesktop ? authStyles.heroContentDesktop : authStyles.heroContentMobile}>
             <View style={[isDesktop ? authStyles.promoDesktop : authStyles.promoMobile, isMobile ? authStyles.promoMobileCompact : undefined]}>
               <View style={[authStyles.promoLogoBag, isMobile ? authStyles.promoLogoBagMobile : undefined]}>
-                <Text style={[authStyles.promoLogoText, isMobile ? authStyles.promoLogoTextMobile : undefined]}>D&T</Text>
+                <Text style={[authStyles.promoLogoText, isMobile ? authStyles.promoLogoTextMobile : undefined]}>eMall</Text>
               </View>
-              <Text style={[authStyles.promoBrand, isMobile ? authStyles.promoBrandMobile : undefined]}>D&T</Text>
+              <Text style={[authStyles.promoBrand, isMobile ? authStyles.promoBrandMobile : undefined]}>eMall</Text>
               <Text style={[authStyles.promoCaption, isMobile ? authStyles.promoCaptionMobile : undefined]}>{locale.auth.headline}</Text>
               <View style={[authStyles.valueList, isMobile ? authStyles.valueListMobile : undefined]}>
                 {locale.auth.valueProps.map((item) => (

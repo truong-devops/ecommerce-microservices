@@ -1,5 +1,6 @@
-﻿export enum Role {
+export enum Role {
   BUYER = 'BUYER',
+  CUSTOMER = 'CUSTOMER',
   SELLER = 'SELLER',
   ADMIN = 'ADMIN',
   MODERATOR = 'MODERATOR',
@@ -8,4 +9,4 @@
   SUPER_ADMIN = 'SUPER_ADMIN'
 }
 
-export const BUYER_ROLES: Role[] = [Role.BUYER];
+export const BUYER_ROLES: Role[] = [Role.BUYER, Role.CUSTOMER];

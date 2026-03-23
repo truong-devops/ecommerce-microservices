@@ -47,8 +47,13 @@ func Middleware(secret string, logger *zap.Logger) func(http.Handler) http.Handl
 				return
 			}
 
+			userID := claimAsString(mapClaims, "user_id")
+			if userID == "" {
+				userID = claimAsString(mapClaims, "sub")
+			}
+
 			user := User{
-				UserID: claimAsString(mapClaims, "user_id"),
+				UserID: userID,
 				Email:  claimAsString(mapClaims, "email"),
 				Role:   claimAsString(mapClaims, "role"),
 			}

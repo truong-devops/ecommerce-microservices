@@ -25,12 +25,14 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://host.docker.internal:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -78,11 +80,23 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
       REDIS_URL: redis://auth-redis:6379
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
     ports:
       - '3001:3001'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3001/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
     depends_on:
       auth-postgres:
         condition: service_healthy
@@ -159,18 +173,28 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: mongodb://product-mongo:27017
       REDIS_URL: redis://product-redis:6379
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
     ports:
       - '3003:3003'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3003/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
     depends_on:
       product-mongo:
         condition: service_healthy
       product-redis:
-        condition: service_healthy
-      kafka:
         condition: service_healthy
 
   cart-postgres:
@@ -207,8 +231,9 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@cart-postgres:5432/ecommerce
       REDIS_URL: redis://cart-redis:6379
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       PRODUCT_SERVICE_BASE_URL: http://product-service:3003/api/v1
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:3007/api/v1
     ports:
@@ -253,9 +278,10 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: postgresql://ecommerce:ecommerce@order-postgres:5432/ecommerce
       REDIS_URL: redis://order-redis:6379
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
     ports:
       - '3002:3002'
     depends_on:
@@ -300,7 +326,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@payment-postgres:5432/ecommerce
       REDIS_URL: redis://payment-redis:6379
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
     ports:
       - '3006:3006'
     depends_on:
@@ -336,7 +362,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@inventory-postgres:5432/ecommerce
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
     ports:
       - '3007:3007'
@@ -380,7 +406,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@shipping-postgres:5432/ecommerce
       REDIS_URL: redis://shipping-redis:6379
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
     ports:
       - '3008:3008'
     depends_on:
@@ -454,7 +480,7 @@ services:
       DATABASE_URL: postgresql://ecommerce:ecommerce@notification-postgres:5432/ecommerce
       REDIS_URL: redis://notification-redis:6379
       KAFKA_ENABLED: 'false'
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
     ports:
       - '3011:3009'
     depends_on:
@@ -506,7 +532,7 @@ services:
       CLICKHOUSE_PASSWORD: analytics_password
       REDIS_URL: redis://analytics-redis:6379
       KAFKA_ENABLED: 'false'
-      KAFKA_BROKERS: kafka:9092
+      KAFKA_BROKERS: kafka:29092
     ports:
       - '3010:3010'
     depends_on:
@@ -528,9 +554,13 @@ services:
       <<: *shared-jwt-gateway-secret
       APP_ENV: development
       PORT: 8080
+      REQUEST_TIMEOUT: 45s
+      JWT_SECRET: dev-shared-jwt-access-secret-min-32-chars
       AUTH_SERVICE_URL: http://auth-service:3001
+      AUTH_SERVICE_TIMEOUT: 20s
       USER_SERVICE_URL: http://user-service:3000
       PRODUCT_SERVICE_URL: http://product-service:3003
+      PRODUCT_SERVICE_TIMEOUT: 20s
       CART_SERVICE_URL: http://cart-service:3004
       ORDER_SERVICE_URL: http://order-service:3002
       PAYMENT_SERVICE_URL: http://payment-service:3006
@@ -543,11 +573,11 @@ services:
       - '8080:8080'
     depends_on:
       auth-service:
-        condition: service_started
+        condition: service_healthy
       user-service:
         condition: service_started
       product-service:
-        condition: service_started
+        condition: service_healthy
       cart-service:
         condition: service_started
       order-service:
@@ -577,3 +607,5 @@ volumes:
   review_mongo_data:
   notification_postgres_data:
   analytics_clickhouse_data:
+
+

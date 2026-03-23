@@ -11,7 +11,7 @@ export class OrderItemEntity {
   @Column({ name: 'order_id', type: 'uuid' })
   orderId!: string;
 
-  @Column({ name: 'product_id', type: 'varchar', length: 64 })
+  @Column({ name: 'product_id', type: 'varchar', length: 128 })
   productId!: string;
 
   @Column({ type: 'varchar', length: 64 })

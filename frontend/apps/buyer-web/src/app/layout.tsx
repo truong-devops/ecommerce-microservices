@@ -4,7 +4,7 @@ import { AppProvider } from '@/providers/AppProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Buyer Home | Market Demo',
+  title: 'E-Mall',
   description: 'Buyer-facing homepage scaffold inspired by modern marketplace patterns.'
 };
 

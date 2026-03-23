@@ -38,7 +38,8 @@ export class UsersService {
         email: normalizedEmail,
         firstName: dto.firstName.trim(),
         lastName: dto.lastName.trim(),
-        phone: dto.phone ?? null,
+        phone: dto.phone ? dto.phone.trim() : null,
+        address: dto.address ? dto.address.trim() : null,
         role: dto.role ?? UserRole.BUYER,
         status: dto.status ?? UserStatus.PENDING,
         emailVerified: dto.emailVerified ?? false
@@ -95,6 +96,18 @@ export class UsersService {
         });
       }
       dto.email = normalizedEmail;
+    }
+    if (dto.firstName) {
+      dto.firstName = dto.firstName.trim();
+    }
+    if (dto.lastName) {
+      dto.lastName = dto.lastName.trim();
+    }
+    if (dto.phone) {
+      dto.phone = dto.phone.trim();
+    }
+    if (dto.address !== undefined) {
+      dto.address = dto.address.trim();
     }
 
     const updated = await this.usersRepository.updateUser(id, dto);

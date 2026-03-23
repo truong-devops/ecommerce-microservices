@@ -1,8 +1,9 @@
 'use client';
 
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth, useLanguage } from '@/providers/AppProvider';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 interface HeaderProps {
   keywords: string[];
@@ -10,11 +11,44 @@ interface HeaderProps {
 
 export function Header({ keywords }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { locale, setLocale, text } = useLanguage();
   const { ready, user } = useAuth();
+  const { cartCount } = useCart();
+  const [searchValue, setSearchValue] = useState('');
+
+  useEffect(() => {
+    if (pathname === '/search') {
+      setSearchValue(searchParams.get('q')?.trim() ?? '');
+      return;
+    }
+
+    setSearchValue('');
+  }, [pathname, searchParams]);
 
   const handleLogout = () => {
     router.push('/logout');
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const keyword = searchValue.trim();
+    if (!keyword) {
+      router.push('/search');
+      return;
+    }
+
+    const query = new URLSearchParams();
+    query.set('q', keyword);
+    router.push(`/search?${query.toString()}`);
+  };
+
+  const buildSearchHref = (keyword: string) => {
+    const query = new URLSearchParams();
+    query.set('q', keyword);
+    return `/search?${query.toString()}`;
   };
 
   return (
@@ -69,6 +103,9 @@ export function Header({ keywords }: HeaderProps) {
 
             {ready && user ? (
               <>
+                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
+                  {text.header.orders}
+                </Link>
                 <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/account">
                   {text.header.account}
                 </Link>
@@ -95,15 +132,22 @@ export function Header({ keywords }: HeaderProps) {
 
         <div className="flex items-center gap-3 md:gap-5">
           <Link className="flex items-center gap-2 rounded-md focus-visible:outline-white" href="/" aria-label="Homepage">
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-white text-2xl font-bold text-brand-500">M</span>
-            <span className="text-3xl font-semibold tracking-tight">Market</span>
+            <span className="grid h-10 w-10 place-items-center rounded-md bg-white text-2xl font-bold text-brand-500">m</span>
+            <span className="text-3xl font-semibold tracking-tight">eMall</span>
           </Link>
 
           <div className="flex-1">
-            <form className="flex rounded-md border border-white/80 bg-white p-1" role="search" aria-label="Search products">
+            <form
+              className="flex rounded-md border border-white/80 bg-white p-1"
+              role="search"
+              aria-label="Search products"
+              onSubmit={handleSearchSubmit}
+            >
               <input
                 type="search"
                 placeholder={text.header.searchPlaceholder}
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
                 className="h-10 flex-1 border-0 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
               <button
@@ -115,16 +159,16 @@ export function Header({ keywords }: HeaderProps) {
             </form>
             <div className="mt-1 hidden flex-wrap gap-3 text-xs text-white/90 md:flex" aria-label="Trending keywords">
               {keywords.map((keyword) => (
-                <a key={keyword} href="#" className="rounded-sm hover:text-white focus-visible:outline-white">
+                <Link key={keyword} href={buildSearchHref(keyword)} className="rounded-sm hover:text-white focus-visible:outline-white">
                   {keyword}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
 
-          <button
-            type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/60 text-white transition hover:bg-white/10 focus-visible:outline-white"
+          <Link
+            href="/cart"
+            className="relative inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/60 text-white transition hover:bg-white/10 focus-visible:outline-white"
             aria-label={text.header.cart}
           >
             <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
@@ -132,7 +176,13 @@ export function Header({ keywords }: HeaderProps) {
               <circle cx="10" cy="19" r="1.5" fill="currentColor" />
               <circle cx="17" cy="19" r="1.5" fill="currentColor" />
             </svg>
-          </button>
+
+            {cartCount > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-brand-600">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            ) : null}
+          </Link>
         </div>
       </div>
     </header>

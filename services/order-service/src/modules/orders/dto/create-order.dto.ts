@@ -15,7 +15,8 @@ import {
 
 export class CreateOrderItemDto {
   @IsString()
-  @Length(1, 64)
+  @Length(6, 128)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9._:-]{5,127}$/)
   productId!: string;
 
   @IsString()

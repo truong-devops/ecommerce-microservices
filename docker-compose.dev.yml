@@ -3,6 +3,12 @@ x-service-defaults: &service-defaults
   extra_hosts:
     - 'host.docker.internal:host-gateway'
 
+x-shared-jwt-access-secret: &shared-jwt-access-secret
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-access-secret-please-change-123456}
+
+x-shared-jwt-gateway-secret: &shared-jwt-gateway-secret
+  JWT_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-access-secret-please-change-123456}
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
@@ -72,6 +78,7 @@ services:
     env_file:
       - ./services/auth-service/.env.example
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
@@ -164,6 +171,7 @@ services:
     env_file:
       - ./services/product-service/.env.dev
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: mongodb://product-mongo:27017
@@ -219,6 +227,7 @@ services:
     env_file:
       - ./services/cart-service/.env.dev
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@cart-postgres:5432/ecommerce
       REDIS_URL: redis://cart-redis:6379
@@ -267,6 +276,7 @@ services:
     env_file:
       - ./services/order-service/.env.example
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: postgresql://ecommerce:ecommerce@order-postgres:5432/ecommerce
@@ -312,6 +322,7 @@ services:
     env_file:
       - ./services/payment-service/.env.dev
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@payment-postgres:5432/ecommerce
       REDIS_URL: redis://payment-redis:6379
@@ -348,6 +359,7 @@ services:
     env_file:
       - ./services/inventory-service/.env.dev
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@inventory-postgres:5432/ecommerce
       KAFKA_BROKERS: kafka:29092
@@ -390,6 +402,7 @@ services:
     env_file:
       - ./services/shipping-service/.env.example
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@shipping-postgres:5432/ecommerce
       REDIS_URL: redis://shipping-redis:6379
@@ -423,6 +436,7 @@ services:
     env_file:
       - ./services/review-service/.env.example
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       MONGODB_URI: mongodb://review-mongo:27017/ecommerce_review
     ports:
@@ -461,6 +475,7 @@ services:
     env_file:
       - ./services/notification-service/.env.dev
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@notification-postgres:5432/ecommerce
       REDIS_URL: redis://notification-redis:6379
@@ -509,6 +524,7 @@ services:
     env_file:
       - ./services/analytics-service/.env.dev
     environment:
+      <<: *shared-jwt-access-secret
       APP_ENV: development
       CLICKHOUSE_URL: http://analytics-clickhouse:8123
       CLICKHOUSE_DATABASE: ecommerce_analytics
@@ -535,6 +551,7 @@ services:
     env_file:
       - ./services/api-gateway/.env.example
     environment:
+      <<: *shared-jwt-gateway-secret
       APP_ENV: development
       PORT: 8080
       REQUEST_TIMEOUT: 45s

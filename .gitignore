@@ -27,3 +27,4 @@ coverage/
 # Logs
 logs/
 *.log
+frontend/apps/buyer-web/tsconfig.tsbuildinfo

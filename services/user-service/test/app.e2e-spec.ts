@@ -37,6 +37,7 @@ class InMemoryUsersRepository {
       firstName: payload.firstName ?? '',
       lastName: payload.lastName ?? '',
       phone: payload.phone ?? null,
+      address: payload.address ?? null,
       role: payload.role ?? UserRole.BUYER,
       status: payload.status ?? UserStatus.PENDING,
       emailVerified: payload.emailVerified ?? false,

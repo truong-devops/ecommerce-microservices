@@ -46,6 +46,42 @@ export interface ProductDetail {
   stock: number | null;
 }
 
+export type ProductSortBy = 'createdAt' | 'updatedAt' | 'name' | 'minPrice';
+export type ProductSortOrder = 'ASC' | 'DESC';
+
+export interface ProductSearchItem {
+  id: string;
+  title: string;
+  slug: string;
+  categoryId: string;
+  brand: string | null;
+  image: string;
+  price: number;
+  currency: string;
+  compareAtPrice: number | null;
+  discountPercent: number;
+}
+
+export interface ProductSearchOutput {
+  items: ProductSearchItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface ListProductsInput {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  categoryId?: string;
+  brand?: string;
+  sortBy?: ProductSortBy;
+  sortOrder?: ProductSortOrder;
+}
+
 export interface BuyerApiMeta {
   source: 'backend';
   timestamp: string;

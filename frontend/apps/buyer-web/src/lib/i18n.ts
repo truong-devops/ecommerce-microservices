@@ -32,6 +32,26 @@ export interface AppMessages {
     retry: string;
     empty: string;
   };
+  search: {
+    title: string;
+    subtitle: string;
+    resultFor: string;
+    totalResults: string;
+    sortLabel: string;
+    sortNewest: string;
+    sortRecentlyUpdated: string;
+    sortPriceLowToHigh: string;
+    sortPriceHighToLow: string;
+    sortNameAsc: string;
+    sortNameDesc: string;
+    loading: string;
+    loadError: string;
+    retry: string;
+    empty: string;
+    prevPage: string;
+    nextPage: string;
+    pageLabel: string;
+  };
   auth: {
     loginTitle: string;
     loginSubtitle: string;
@@ -238,6 +258,26 @@ export const messages: Record<Locale, AppMessages> = {
       retry: 'Retry',
       empty: 'No products available yet.'
     },
+    search: {
+      title: 'Search Products',
+      subtitle: 'Browse products with sorting and pagination.',
+      resultFor: 'Results for "{query}"',
+      totalResults: '{count} products found',
+      sortLabel: 'Sort by',
+      sortNewest: 'Newest',
+      sortRecentlyUpdated: 'Recently updated',
+      sortPriceLowToHigh: 'Price: low to high',
+      sortPriceHighToLow: 'Price: high to low',
+      sortNameAsc: 'Name: A to Z',
+      sortNameDesc: 'Name: Z to A',
+      loading: 'Searching products...',
+      loadError: 'Cannot load search results right now.',
+      retry: 'Retry',
+      empty: 'No products matched your search.',
+      prevPage: 'Previous',
+      nextPage: 'Next',
+      pageLabel: 'Page {page} of {totalPages}'
+    },
     auth: {
       loginTitle: 'Buyer Login',
       loginSubtitle: 'Sign in to continue shopping and manage your account.',
@@ -441,6 +481,26 @@ export const messages: Record<Locale, AppMessages> = {
       loadError: 'Chưa thể tải dữ liệu sản phẩm lúc này.',
       retry: 'Thử lại',
       empty: 'Chưa có sản phẩm để hiển thị.'
+    },
+    search: {
+      title: 'Tìm Kiếm Sản Phẩm',
+      subtitle: 'Duyệt sản phẩm với sắp xếp và phân trang.',
+      resultFor: 'Kết quả cho "{query}"',
+      totalResults: 'Tìm thấy {count} sản phẩm',
+      sortLabel: 'Sắp xếp',
+      sortNewest: 'Mới nhất',
+      sortRecentlyUpdated: 'Cập nhật gần đây',
+      sortPriceLowToHigh: 'Giá: thấp đến cao',
+      sortPriceHighToLow: 'Giá: cao đến thấp',
+      sortNameAsc: 'Tên: A đến Z',
+      sortNameDesc: 'Tên: Z đến A',
+      loading: 'Đang tìm sản phẩm...',
+      loadError: 'Chưa thể tải kết quả tìm kiếm lúc này.',
+      retry: 'Thử lại',
+      empty: 'Không có sản phẩm phù hợp.',
+      prevPage: 'Trang trước',
+      nextPage: 'Trang sau',
+      pageLabel: 'Trang {page}/{totalPages}'
     },
     auth: {
       loginTitle: 'Đăng Nhập Người Mua',

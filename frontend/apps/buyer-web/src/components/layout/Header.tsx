@@ -1,7 +1,8 @@
 'use client';
 
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 interface HeaderProps {
@@ -10,12 +11,44 @@ interface HeaderProps {
 
 export function Header({ keywords }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { locale, setLocale, text } = useLanguage();
   const { ready, user } = useAuth();
   const { cartCount } = useCart();
+  const [searchValue, setSearchValue] = useState('');
+
+  useEffect(() => {
+    if (pathname === '/search') {
+      setSearchValue(searchParams.get('q')?.trim() ?? '');
+      return;
+    }
+
+    setSearchValue('');
+  }, [pathname, searchParams]);
 
   const handleLogout = () => {
     router.push('/logout');
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const keyword = searchValue.trim();
+    if (!keyword) {
+      router.push('/search');
+      return;
+    }
+
+    const query = new URLSearchParams();
+    query.set('q', keyword);
+    router.push(`/search?${query.toString()}`);
+  };
+
+  const buildSearchHref = (keyword: string) => {
+    const query = new URLSearchParams();
+    query.set('q', keyword);
+    return `/search?${query.toString()}`;
   };
 
   return (
@@ -104,10 +137,17 @@ export function Header({ keywords }: HeaderProps) {
           </Link>
 
           <div className="flex-1">
-            <form className="flex rounded-md border border-white/80 bg-white p-1" role="search" aria-label="Search products">
+            <form
+              className="flex rounded-md border border-white/80 bg-white p-1"
+              role="search"
+              aria-label="Search products"
+              onSubmit={handleSearchSubmit}
+            >
               <input
                 type="search"
                 placeholder={text.header.searchPlaceholder}
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
                 className="h-10 flex-1 border-0 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
               <button
@@ -119,9 +159,9 @@ export function Header({ keywords }: HeaderProps) {
             </form>
             <div className="mt-1 hidden flex-wrap gap-3 text-xs text-white/90 md:flex" aria-label="Trending keywords">
               {keywords.map((keyword) => (
-                <a key={keyword} href="#" className="rounded-sm hover:text-white focus-visible:outline-white">
+                <Link key={keyword} href={buildSearchHref(keyword)} className="rounded-sm hover:text-white focus-visible:outline-white">
                   {keyword}
-                </a>
+                </Link>
               ))}
             </div>
           </div>

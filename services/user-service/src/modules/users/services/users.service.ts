@@ -6,6 +6,7 @@ import { ListUsersQueryDto } from '../dto/list-users-query.dto';
 import { UpdateUserStatusDto } from '../dto/update-user-status.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserEntity } from '../entities/user.entity';
+import { UserGender } from '../enums/user-gender.enum';
 import { UserRole } from '../enums/user-role.enum';
 import { UserStatus } from '../enums/user-status.enum';
 import { USER_EVENTS_PUBLISHER, UserEventsPublisher } from '../events/user-events.publisher';
@@ -40,6 +41,9 @@ export class UsersService {
         lastName: dto.lastName.trim(),
         phone: dto.phone ? dto.phone.trim() : null,
         address: dto.address ? dto.address.trim() : null,
+        gender: dto.gender ?? UserGender.UNSPECIFIED,
+        dateOfBirth: dto.dateOfBirth ?? null,
+        avatarUrl: dto.avatarUrl ? dto.avatarUrl.trim() : null,
         role: dto.role ?? UserRole.BUYER,
         status: dto.status ?? UserStatus.PENDING,
         emailVerified: dto.emailVerified ?? false
@@ -108,6 +112,9 @@ export class UsersService {
     }
     if (dto.address !== undefined) {
       dto.address = dto.address.trim();
+    }
+    if (dto.avatarUrl !== undefined && dto.avatarUrl !== null) {
+      dto.avatarUrl = dto.avatarUrl.trim();
     }
 
     const updated = await this.usersRepository.updateUser(id, dto);

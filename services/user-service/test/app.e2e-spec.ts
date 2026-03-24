@@ -23,6 +23,7 @@ import { USER_EVENTS_PUBLISHER, UserEventsPublisher } from '../src/modules/users
 import { UsersRepository } from '../src/modules/users/repositories/users.repository';
 import { UsersController } from '../src/modules/users/controllers/users.controller';
 import { UsersService } from '../src/modules/users/services/users.service';
+import { UserGender } from '../src/modules/users/enums/user-gender.enum';
 
 process.env.SERVICE_NAME = 'user-service';
 
@@ -38,6 +39,9 @@ class InMemoryUsersRepository {
       lastName: payload.lastName ?? '',
       phone: payload.phone ?? null,
       address: payload.address ?? null,
+      gender: payload.gender ?? UserGender.UNSPECIFIED,
+      dateOfBirth: payload.dateOfBirth ?? null,
+      avatarUrl: payload.avatarUrl ?? null,
       role: payload.role ?? UserRole.BUYER,
       status: payload.status ?? UserStatus.PENDING,
       emailVerified: payload.emailVerified ?? false,
@@ -275,10 +279,16 @@ describe('User service e2e', () => {
     expect(getResponse.body.data.id).toBe(userId);
 
     const updateResponse = await request(app.getHttpServer()).patch(`/api/v1/users/${userId}`).send({
-      firstName: 'Updated'
+      firstName: 'Updated',
+      gender: 'male',
+      dateOfBirth: '2000-01-15',
+      avatarUrl: 'https://cdn.example.com/avatar.png'
     });
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body.data.firstName).toBe('Updated');
+    expect(updateResponse.body.data.gender).toBe('male');
+    expect(updateResponse.body.data.dateOfBirth).toBe('2000-01-15');
+    expect(updateResponse.body.data.avatarUrl).toBe('https://cdn.example.com/avatar.png');
 
     const updateStatusResponse = await request(app.getHttpServer())
       .patch(`/api/v1/users/${userId}/status`)

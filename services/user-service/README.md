@@ -52,9 +52,15 @@ DB host mode:
 
 - `npm run migration:run --workspace services/user-service`
 - `npm run migration:revert --workspace services/user-service`
+- Phase A rollback helper:
+  - `./scripts/rollback-user-service-profile-phase-a.sh`
 
 ## Test
 
 - `npm run test:e2e --workspace services/user-service`
 
 The e2e suite uses `sqljs` in test mode and mocks Kafka publisher.
+
+## Phase A QA
+
+- Checklist: `docs/operations/buyer-profile-phase-a-qa-checklist.md`

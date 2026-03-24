@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { DataType, newDb } from 'pg-mem';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { AddAddressToUsersTable1710000000001 } from '../database/migrations/1710000000001-add-address-to-users-table';
+import { AddProfileFieldsToUsersTable1710000000002 } from '../database/migrations/1710000000002-add-profile-fields-to-users-table';
 import { CreateUsersTable1710000000000 } from '../database/migrations/1710000000000-create-users-table';
 import { UserEntity } from '../modules/users/entities/user.entity';
 
@@ -73,7 +74,7 @@ export function createTypeOrmOptions(configService: ConfigService): TypeOrmModul
     synchronize: false,
     autoLoadEntities: true,
     entities: [UserEntity],
-    migrations: [CreateUsersTable1710000000000, AddAddressToUsersTable1710000000001],
+    migrations: [CreateUsersTable1710000000000, AddAddressToUsersTable1710000000001, AddProfileFieldsToUsersTable1710000000002],
     migrationsRun: configService.get<boolean>('DB_MIGRATIONS_RUN', true)
   };
 }

@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { UserRole } from '../enums/user-role.enum';
 import { UserStatus } from '../enums/user-status.enum';
+import { UserGender } from '../enums/user-gender.enum';
 
 @Entity({ name: 'users' })
 @Index('idx_users_email_unique', ['email'], { unique: true })
@@ -30,6 +31,15 @@ export class UserEntity {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   address!: string | null;
+
+  @Column({ type: 'varchar', length: 20, default: UserGender.UNSPECIFIED })
+  gender!: UserGender;
+
+  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
+  dateOfBirth!: string | null;
+
+  @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
+  avatarUrl!: string | null;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.BUYER })
   role!: UserRole;

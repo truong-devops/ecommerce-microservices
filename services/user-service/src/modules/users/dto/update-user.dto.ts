@@ -1,6 +1,7 @@
-import { IsBoolean, IsEmail, IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsBoolean, IsDateString, IsEmail, IsEnum, IsOptional, IsString, Length, Matches } from 'class-validator';
 import { UserRole } from '../enums/user-role.enum';
 import { UserStatus } from '../enums/user-status.enum';
+import { UserGender } from '../enums/user-gender.enum';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -25,6 +26,19 @@ export class UpdateUserDto {
   @IsString()
   @Length(0, 255)
   address?: string;
+
+  @IsOptional()
+  @IsEnum(UserGender)
+  gender?: UserGender;
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  dateOfBirth?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  avatarUrl?: string | null;
 
   @IsOptional()
   @IsEnum(UserRole)

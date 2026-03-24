@@ -171,14 +171,22 @@ export interface BuyerProfileOutput {
   name: string;
   phone: string;
   address: string;
+  gender: BuyerGender;
+  dateOfBirth: string | null;
+  avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type BuyerGender = 'male' | 'female' | 'other' | 'unspecified';
 
 export interface UpdateBuyerProfileInput {
   name?: string;
   phone?: string;
   address?: string;
+  gender?: BuyerGender;
+  dateOfBirth?: string | null;
+  avatarUrl?: string | null;
 }
 
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED';

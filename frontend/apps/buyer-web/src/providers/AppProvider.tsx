@@ -6,18 +6,22 @@ import { getBuyerMe, loginBuyer, logoutBuyer, registerBuyer } from '@/lib/api/au
 import { BuyerApiClientError } from '@/lib/api/client';
 import { getBuyerProfile, updateBuyerProfile } from '@/lib/api/profile';
 import { isValidProductId } from '@/lib/product-id';
-import type { BuyerAuthSession, BuyerAuthUser, BuyerProfileOutput } from '@/lib/api/types';
+import type { BuyerAuthSession, BuyerAuthUser, BuyerGender, BuyerProfileOutput } from '@/lib/api/types';
 import { messages, type Locale } from '@/lib/i18n';
 
 const LOCALE_STORAGE_KEY = 'buyer_locale';
 const AUTH_SESSION_STORAGE_KEY = 'buyer_auth_session';
 const PROFILES_STORAGE_KEY = 'buyer_profiles';
 const CART_STORAGE_KEY = 'buyer_cart_items';
+const VALID_GENDERS: BuyerGender[] = ['male', 'female', 'other', 'unspecified'];
 
 interface BuyerProfile {
   name: string;
   phone: string;
   address: string;
+  gender: BuyerGender;
+  dateOfBirth: string | null;
+  avatarUrl: string | null;
   createdAt: string;
 }
 
@@ -27,6 +31,9 @@ export interface BuyerUser {
   email: string;
   phone: string;
   address: string;
+  gender: BuyerGender;
+  dateOfBirth: string | null;
+  avatarUrl: string | null;
   createdAt: string;
 }
 
@@ -51,6 +58,9 @@ interface UpdateProfilePayload {
   name: string;
   phone: string;
   address: string;
+  gender: BuyerGender;
+  dateOfBirth: string | null;
+  avatarUrl: string | null;
 }
 
 interface AuthActionResult {
@@ -118,6 +128,9 @@ function profileFromEmail(email: string): BuyerProfile {
     name: email.split('@')[0] ?? 'Buyer',
     phone: '',
     address: '',
+    gender: 'unspecified',
+    dateOfBirth: null,
+    avatarUrl: null,
     createdAt: new Date().toISOString()
   };
 }
@@ -129,8 +142,20 @@ function toBuyerUser(authUser: BuyerAuthUser, profile: BuyerProfile): BuyerUser 
     name: profile.name,
     phone: profile.phone,
     address: profile.address,
+    gender: profile.gender,
+    dateOfBirth: profile.dateOfBirth,
+    avatarUrl: profile.avatarUrl,
     createdAt: profile.createdAt
   };
+}
+
+function normalizeGender(value: string | null | undefined, fallback: BuyerGender): BuyerGender {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return (VALID_GENDERS.find((gender) => gender === normalized) ?? fallback) as BuyerGender;
 }
 
 function profileFromApi(apiProfile: BuyerProfileOutput, fallbackEmail: string, fallbackProfile: BuyerProfile): BuyerProfile {
@@ -143,6 +168,9 @@ function profileFromApi(apiProfile: BuyerProfileOutput, fallbackEmail: string, f
     name: shouldKeepLocalName ? fallbackProfile.name : nextName || fallbackProfile.name || profileFromEmail(fallbackEmail).name,
     phone: apiProfile.phone,
     address: apiProfile.address,
+    gender: normalizeGender(apiProfile.gender, fallbackProfile.gender),
+    dateOfBirth: apiProfile.dateOfBirth,
+    avatarUrl: apiProfile.avatarUrl,
     createdAt: apiProfile.createdAt || fallbackProfile.createdAt
   };
 }
@@ -154,8 +182,41 @@ function readProfiles(): Record<string, BuyerProfile> {
       return {};
     }
 
-    const parsed = JSON.parse(raw) as Record<string, BuyerProfile>;
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    const parsed = JSON.parse(raw) as Record<string, Partial<BuyerProfile>>;
+    if (!parsed || typeof parsed !== 'object') {
+      return {};
+    }
+
+    return Object.entries(parsed).reduce<Record<string, BuyerProfile>>((accumulator, [userId, profile]) => {
+      if (!profile || typeof profile !== 'object') {
+        return accumulator;
+      }
+
+      const normalizedName = typeof profile.name === 'string' && profile.name.trim().length > 0 ? profile.name : 'Buyer';
+      const normalizedPhone = typeof profile.phone === 'string' ? profile.phone : '';
+      const normalizedAddress = typeof profile.address === 'string' ? profile.address : '';
+      const normalizedGender = normalizeGender(profile.gender, 'unspecified');
+      const normalizedDateOfBirth =
+        typeof profile.dateOfBirth === 'string' && profile.dateOfBirth.trim().length > 0 ? profile.dateOfBirth : null;
+      const normalizedAvatarUrl =
+        typeof profile.avatarUrl === 'string' && profile.avatarUrl.trim().length > 0 ? profile.avatarUrl : null;
+      const normalizedCreatedAt =
+        typeof profile.createdAt === 'string' && profile.createdAt.trim().length > 0
+          ? profile.createdAt
+          : new Date().toISOString();
+
+      accumulator[userId] = {
+        name: normalizedName,
+        phone: normalizedPhone,
+        address: normalizedAddress,
+        gender: normalizedGender,
+        dateOfBirth: normalizedDateOfBirth,
+        avatarUrl: normalizedAvatarUrl,
+        createdAt: normalizedCreatedAt
+      };
+
+      return accumulator;
+    }, {});
   } catch {
     return {};
   }
@@ -420,6 +481,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: name.trim() || profileFromEmail(normalizedEmail).name,
           phone: '',
           address: '',
+          gender: 'unspecified',
+          dateOfBirth: null,
+          avatarUrl: null,
           createdAt: new Date().toISOString()
         };
 
@@ -474,7 +538,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const updateProfile = useCallback(
-    async ({ name, phone, address }: UpdateProfilePayload): Promise<AuthActionResult> => {
+    async ({ name, phone, address, gender, dateOfBirth, avatarUrl }: UpdateProfilePayload): Promise<AuthActionResult> => {
       if (!user || !session?.accessToken) {
         return { ok: false };
       }
@@ -482,6 +546,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const normalizedName = name.trim();
       const normalizedPhone = phone.trim();
       const normalizedAddress = address.trim();
+      const normalizedGender = normalizeGender(gender, 'unspecified');
+      const normalizedDateOfBirth = typeof dateOfBirth === 'string' && dateOfBirth.trim() ? dateOfBirth.trim() : null;
+      const normalizedAvatarUrl = typeof avatarUrl === 'string' && avatarUrl.trim() ? avatarUrl.trim() : null;
 
       if (!normalizedName || !normalizedPhone) {
         return {
@@ -496,7 +563,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           payload: {
             name: normalizedName,
             phone: normalizedPhone,
-            address: normalizedAddress
+            address: normalizedAddress,
+            gender: normalizedGender,
+            dateOfBirth: normalizedDateOfBirth,
+            avatarUrl: normalizedAvatarUrl
           }
         });
 

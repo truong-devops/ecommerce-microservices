@@ -24,6 +24,8 @@
       dockerfile: Dockerfile
     env_file:
       - ./.env.dev
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
     ports:
       - '3003:3003'
     depends_on:

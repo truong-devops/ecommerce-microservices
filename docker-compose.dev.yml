@@ -4,10 +4,10 @@ x-service-defaults: &service-defaults
     - 'host.docker.internal:host-gateway'
 
 x-shared-jwt-access-secret: &shared-jwt-access-secret
-  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-access-secret-please-change-123456}
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
 
 x-shared-jwt-gateway-secret: &shared-jwt-gateway-secret
-  JWT_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-access-secret-please-change-123456}
+  JWT_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
 
 services:
   zookeeper:
@@ -607,5 +607,4 @@ volumes:
   review_mongo_data:
   notification_postgres_data:
   analytics_clickhouse_data:
-
 

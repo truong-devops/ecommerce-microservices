@@ -32,6 +32,7 @@ services:
       - ./.env.example
     environment:
       APP_ENV: development
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       CLICKHOUSE_URL: http://clickhouse:8123
       CLICKHOUSE_DATABASE: ecommerce_analytics
       CLICKHOUSE_USERNAME: analytics

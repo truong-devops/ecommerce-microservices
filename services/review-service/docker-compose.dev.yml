@@ -20,6 +20,7 @@ services:
       - ./.env.example
     environment:
       APP_ENV: development
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       MONGODB_URI: mongodb://mongo:27017/ecommerce_review
     ports:
       - '3009:3009'

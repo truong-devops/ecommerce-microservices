@@ -48,21 +48,33 @@ services:
       timeout: 5s
       retries: 10
 
-  auth-postgres:
+  postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: auth_db
+      POSTGRES_DB: postgres
     volumes:
-      - auth_postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/01-init-multiple-dbs.sql:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d auth_db']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
       interval: 5s
       timeout: 3s
       retries: 20
 
-  auth-redis:
+  mongo:
+    image: mongo:7
+    command: ['--bind_ip_all']
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
     image: redis:7-alpine
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
@@ -81,8 +93,8 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
-      DATABASE_URL: postgresql://postgres:postgres@auth-postgres:5432/auth_db
-      REDIS_URL: redis://auth-redis:6379
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
     ports:
       - '3001:3001'
@@ -98,26 +110,12 @@ services:
       timeout: 5s
       retries: 20
     depends_on:
-      auth-postgres:
+      postgres:
         condition: service_healthy
-      auth-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-  user-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: ecommerce_user
-    volumes:
-      - user_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d ecommerce_user']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   user-service:
     <<: *service-defaults
@@ -130,7 +128,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       DB_TYPE: postgres
-      DB_HOST: user-postgres
+      DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
@@ -141,27 +139,8 @@ services:
     ports:
       - '3100:3000'
     depends_on:
-      user-postgres:
+      postgres:
         condition: service_healthy
-
-  product-mongo:
-    image: mongo:6
-    command: ['--bind_ip_all']
-    volumes:
-      - product_mongo_data:/data/db
-    healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
-      interval: 10s
-      timeout: 5s
-      retries: 20
-
-  product-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   product-service:
     <<: *service-defaults
@@ -174,8 +153,8 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
-      DATABASE_URL: mongodb://product-mongo:27017
-      REDIS_URL: redis://product-redis:6379
+      DATABASE_URL: mongodb://mongo:27017/ecommerce_product
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
     ports:
@@ -192,32 +171,10 @@ services:
       timeout: 5s
       retries: 20
     depends_on:
-      product-mongo:
+      mongo:
         condition: service_healthy
-      product-redis:
+      redis:
         condition: service_healthy
-
-  cart-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
-    volumes:
-      - cart_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
-  cart-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   cart-service:
     <<: *service-defaults
@@ -229,8 +186,8 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
-      DATABASE_URL: postgresql://ecommerce:ecommerce@cart-postgres:5432/ecommerce
-      REDIS_URL: redis://cart-redis:6379
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
@@ -239,34 +196,12 @@ services:
     ports:
       - '3004:3004'
     depends_on:
-      cart-postgres:
+      postgres:
         condition: service_healthy
-      cart-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-  order-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
-    volumes:
-      - order_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
-  order-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   order-service:
     <<: *service-defaults
@@ -279,40 +214,18 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
-      DATABASE_URL: postgresql://ecommerce:ecommerce@order-postgres:5432/ecommerce
-      REDIS_URL: redis://order-redis:6379
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
     ports:
       - '3002:3002'
     depends_on:
-      order-postgres:
+      postgres:
         condition: service_healthy
-      order-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-  payment-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
-    volumes:
-      - payment_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
-  payment-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   payment-service:
     <<: *service-defaults
@@ -324,32 +237,18 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
-      DATABASE_URL: postgresql://ecommerce:ecommerce@payment-postgres:5432/ecommerce
-      REDIS_URL: redis://payment-redis:6379
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
     ports:
       - '3006:3006'
     depends_on:
-      payment-postgres:
+      postgres:
         condition: service_healthy
-      payment-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-  inventory-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
-    volumes:
-      - inventory_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   inventory-service:
     <<: *service-defaults
@@ -361,38 +260,16 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
-      DATABASE_URL: postgresql://ecommerce:ecommerce@inventory-postgres:5432/ecommerce
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
     ports:
       - '3007:3007'
     depends_on:
-      inventory-postgres:
+      postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-  shipping-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
-    volumes:
-      - shipping_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
-  shipping-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   shipping-service:
     <<: *service-defaults
@@ -404,29 +281,18 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
-      DATABASE_URL: postgresql://ecommerce:ecommerce@shipping-postgres:5432/ecommerce
-      REDIS_URL: redis://shipping-redis:6379
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
     ports:
       - '3008:3008'
     depends_on:
-      shipping-postgres:
+      postgres:
         condition: service_healthy
-      shipping-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
-
-  review-mongo:
-    image: mongo:7
-    command: ['--bind_ip_all']
-    volumes:
-      - review_mongo_data:/data/db
-    healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
-      interval: 5s
-      timeout: 5s
-      retries: 20
 
   review-service:
     <<: *service-defaults
@@ -438,34 +304,12 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
-      MONGODB_URI: mongodb://review-mongo:27017/ecommerce_review
+      MONGODB_URI: mongodb://mongo:27017/ecommerce_review
     ports:
       - '3009:3009'
     depends_on:
-      review-mongo:
+      mongo:
         condition: service_healthy
-
-  notification-postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
-    volumes:
-      - notification_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
-  notification-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   notification-service:
     <<: *service-defaults
@@ -477,16 +321,16 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
-      DATABASE_URL: postgresql://ecommerce:ecommerce@notification-postgres:5432/ecommerce
-      REDIS_URL: redis://notification-redis:6379
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_URL: redis://redis:6379
       KAFKA_ENABLED: 'false'
       KAFKA_BROKERS: kafka:29092
     ports:
       - '3011:3009'
     depends_on:
-      notification-postgres:
+      postgres:
         condition: service_healthy
-      notification-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -508,14 +352,6 @@ services:
       timeout: 3s
       retries: 20
 
-  analytics-redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
   analytics-service:
     <<: *service-defaults
     build:
@@ -530,7 +366,7 @@ services:
       CLICKHOUSE_DATABASE: ecommerce_analytics
       CLICKHOUSE_USERNAME: analytics
       CLICKHOUSE_PASSWORD: analytics_password
-      REDIS_URL: redis://analytics-redis:6379
+      REDIS_URL: redis://redis:6379
       KAFKA_ENABLED: 'false'
       KAFKA_BROKERS: kafka:29092
     ports:
@@ -538,7 +374,7 @@ services:
     depends_on:
       analytics-clickhouse:
         condition: service_healthy
-      analytics-redis:
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -596,15 +432,6 @@ services:
         condition: service_started
 
 volumes:
-  auth_postgres_data:
-  user_postgres_data:
-  product_mongo_data:
-  cart_postgres_data:
-  order_postgres_data:
-  payment_postgres_data:
-  inventory_postgres_data:
-  shipping_postgres_data:
-  review_mongo_data:
-  notification_postgres_data:
+  postgres_data:
+  mongo_data:
   analytics_clickhouse_data:
-

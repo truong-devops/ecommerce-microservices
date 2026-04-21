@@ -49,7 +49,10 @@ const sections: SidebarSection[] = [
   },
   {
     title: 'Chăm sóc khách hàng',
-    items: [{ label: 'Quản lý Chat' }, { label: 'Quản lý Đánh Giá' }]
+    items: [
+      { label: 'Quản lý Chat', href: '/customer-care/chat' },
+      { label: 'Quản lý Đánh Giá', href: '/customer-care/reviews' }
+    ]
   },
   {
     title: 'Tài Chính',
@@ -77,7 +80,7 @@ export function SellerSidebar() {
     'Quản Lý Đơn Hàng': true,
     'Quản Lý Sản Phẩm': true,
     'Kênh Marketing': true,
-    'Chăm sóc khách hàng': false,
+    'Chăm sóc khách hàng': true,
     'Tài Chính': false,
     'Dữ Liệu': false,
     'Quản Lý Shop': false

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface SidebarItem {
   label: string;
@@ -56,7 +56,11 @@ const sections: SidebarSection[] = [
   },
   {
     title: 'Tài Chính',
-    items: [{ label: 'Doanh Thu' }, { label: 'Số dư TK Shopee' }, { label: 'Tài Khoản Ngân Hàng' }]
+    items: [
+      { label: 'Doanh Thu', href: '/finance/revenue' },
+      { label: 'Số dư TK Shopee', href: '/finance/balance' },
+      { label: 'Tài Khoản Ngân Hàng', href: '/finance/bank-account' }
+    ]
   },
   {
     title: 'Dữ Liệu',
@@ -76,15 +80,25 @@ const sections: SidebarSection[] = [
 
 export function SellerSidebar() {
   const pathname = usePathname();
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    'Quản Lý Đơn Hàng': true,
-    'Quản Lý Sản Phẩm': true,
-    'Kênh Marketing': true,
-    'Chăm sóc khách hàng': true,
-    'Tài Chính': false,
-    'Dữ Liệu': false,
-    'Quản Lý Shop': false
-  });
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => getInitialExpandedSections(pathname));
+
+  useEffect(() => {
+    const activeSectionTitle = getActiveSectionTitle(pathname);
+    if (!activeSectionTitle) {
+      return;
+    }
+
+    setExpandedSections((previous) => {
+      if (previous[activeSectionTitle]) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        [activeSectionTitle]: true
+      };
+    });
+  }, [pathname]);
 
   const toggleSection = (title: string) => {
     setExpandedSections((previous) => ({
@@ -162,4 +176,27 @@ function isItemActive(pathname: string, href?: string): boolean {
   }
 
   return pathname.startsWith(href);
+}
+
+function getInitialExpandedSections(pathname: string): Record<string, boolean> {
+  const initialState = Object.fromEntries(sections.map((section) => [section.title, false])) as Record<string, boolean>;
+  const activeSectionTitle = getActiveSectionTitle(pathname);
+
+  if (activeSectionTitle) {
+    initialState[activeSectionTitle] = true;
+  } else {
+    initialState['Quản Lý Đơn Hàng'] = true;
+  }
+
+  return initialState;
+}
+
+function getActiveSectionTitle(pathname: string): string | null {
+  for (const section of sections) {
+    if (section.items.some((item) => isItemActive(pathname, item.href))) {
+      return section.title;
+    }
+  }
+
+  return null;
 }

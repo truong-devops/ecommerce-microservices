@@ -27,7 +27,11 @@ const sections: SidebarSection[] = [
   },
   {
     title: 'Quản Lý Sản Phẩm',
-    items: [{ label: 'Tất Cả Sản Phẩm' }, { label: 'Thêm Sản Phẩm' }, { label: 'Công cụ Tối ưu AI' }]
+    items: [
+      { label: 'Tất Cả Sản Phẩm', href: '/products/all' },
+      { label: 'Thêm Sản Phẩm', href: '/products/new' },
+      { label: 'Công cụ Tối ưu AI', href: '/products/ai-tools' }
+    ]
   },
   {
     title: 'Kênh Marketing',
@@ -36,7 +40,7 @@ const sections: SidebarSection[] = [
       { label: 'Đấu Giá Rẻ Vô Địch' },
       { label: 'Dịch Vụ Hiển Thị Shopee' },
       { label: 'Tăng Đơn Cùng KOL' },
-      { label: 'Live & Video' },
+      { label: 'Live & Video', href: '/marketing/live-video' },
       { label: 'Khuyến Mãi của Shop' },
       { label: 'Flash Sale Của Shop' },
       { label: 'Mã Giảm Giá Của Shop' },
@@ -71,8 +75,8 @@ export function SellerSidebar() {
   const pathname = usePathname();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'Quản Lý Đơn Hàng': true,
-    'Quản Lý Sản Phẩm': false,
-    'Kênh Marketing': false,
+    'Quản Lý Sản Phẩm': true,
+    'Kênh Marketing': true,
     'Chăm sóc khách hàng': false,
     'Tài Chính': false,
     'Dữ Liệu': false,

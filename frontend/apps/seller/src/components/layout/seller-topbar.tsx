@@ -39,7 +39,7 @@ export function SellerTopbar({ email, role, onLogout }: SellerTopbarProps) {
             }}
             className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
           >
-            Dang xuat
+            Đăng xuất
           </button>
         </div>
       </div>

@@ -63,33 +63,59 @@ export interface DateRange {
   to: string;
 }
 
-export interface DashboardKpis {
-  waitingForPickup: number;
-  processedOrders: number;
-  returnOrCancelledOrders: number;
-  lockedProducts: number;
+export type DashboardMetricType = 'currency' | 'number' | 'percent';
+
+export type DashboardTrend = 'up' | 'down' | 'flat';
+
+export interface SellerDashboardKpi {
+  id: string;
+  label: string;
+  value: number;
+  metricType: DashboardMetricType;
+  changePercent: number;
+  trend: DashboardTrend;
+  sparkline: number[];
 }
 
-export interface SalesAnalysis {
+export interface DashboardSeriesPoint {
+  label: string;
+  value: number;
+}
+
+export interface OrderStatusSlice {
+  id: string;
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface TopProductPerformance {
+  id: string;
+  name: string;
+  imageUrl: string | null;
   revenue: number;
-  visits: number;
-  clicks: number;
-  orders: number;
-  conversionRate: number;
+  sold: number;
 }
 
-export interface RightPanelPerformance {
-  uniquePayments: number;
-  uniqueShipments: number;
-  refundedAmount: number;
+export interface TrafficSourceSlice {
+  id: string;
+  label: string;
+  value: number;
+  color: string;
 }
 
-export interface HighlightModule {
+export interface QuickActionItem {
+  id: string;
   title: string;
-  subtitle: string;
-  primaryValue: number;
-  secondaryValue: number;
-  unit?: string;
+  description: string;
+  accent: 'orange' | 'blue' | 'green' | 'purple' | 'slate';
+}
+
+export interface DashboardAlertItem {
+  id: string;
+  level: 'warning' | 'info' | 'success';
+  title: string;
+  description: string;
 }
 
 export interface SellerNewsItem {
@@ -104,16 +130,13 @@ export interface SellerNewsItem {
 
 export interface SellerDashboardData {
   dateRange: DateRange;
-  kpis: DashboardKpis;
-  salesAnalysis: SalesAnalysis;
-  performance: RightPanelPerformance;
-  displayService: HighlightModule;
-  kolAffiliate: HighlightModule;
-  livestream: HighlightModule;
-  campaign: {
-    totalCampaigns: number;
-    recent: SellerNewsItem[];
-  };
-  suggestions: string[];
+  kpis: SellerDashboardKpi[];
+  revenueSeries: DashboardSeriesPoint[];
+  orderStatus: OrderStatusSlice[];
+  topProducts: TopProductPerformance[];
+  trafficSources: TrafficSourceSlice[];
+  quickActions: QuickActionItem[];
+  alerts: DashboardAlertItem[];
+  insights: string[];
   news: SellerNewsItem[];
 }

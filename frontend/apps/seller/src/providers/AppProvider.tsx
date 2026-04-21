@@ -129,7 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return {
         ok: false,
-        message: 'Dang nhap that bai, vui long thu lai.'
+        message: 'Đăng nhập thất bại, vui lòng thử lại!'
       };
     }
   }, []);

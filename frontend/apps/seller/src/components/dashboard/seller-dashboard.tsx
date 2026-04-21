@@ -27,7 +27,7 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
   const adsRatio = totalTraffic > 0 ? (adsTraffic / totalTraffic) * 100 : 0;
 
   return (
-    <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div className="grid gap-3 text-sm xl:grid-cols-[minmax(0,1fr)_360px]">
       <section className="space-y-3">
         <article className="rounded-lg border border-slate-200 bg-white px-4 py-5">
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -41,7 +41,7 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
         <article className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-3">
-              <h3 className="text-lg font-semibold leading-tight text-slate-800">Phân Tích Bán Hàng</h3>
+              <h3 className="text-sm font-semibold leading-tight text-slate-800">Phân Tích Bán Hàng</h3>
               <p className="text-sm text-slate-400">Hôm nay {formatDateTime(data.dateRange.to)} (Dữ liệu thay đổi so với hôm qua)</p>
             </div>
 
@@ -79,14 +79,14 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
 
         <article className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold leading-tight text-slate-800">Dịch vụ Hiển thị Shopee</h3>
+            <h3 className="text-sm font-semibold leading-tight text-slate-800">Dịch vụ Hiển thị Shopee</h3>
             <button type="button" className="text-sm font-medium text-[#0b6bde] hover:underline">
               Xem thêm
             </button>
           </div>
 
           <div className="mt-3 rounded-lg border border-slate-200 bg-[#fff8f5] p-4">
-            <p className="text-base font-semibold text-slate-800">
+            <p className="text-sm font-semibold text-slate-800">
               Tối đa hóa doanh số bán hàng của bạn với Dịch vụ Hiển thị Shopee!
             </p>
             <p className="mt-2 text-sm text-slate-500">
@@ -110,7 +110,7 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
         <div className="grid gap-3 lg:grid-cols-2">
           <article className="rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold leading-tight text-slate-800">Tăng đơn cùng KOL</h3>
+              <h3 className="text-sm font-semibold leading-tight text-slate-800">Tăng đơn cùng KOL</h3>
               <button type="button" className="text-sm font-medium text-[#0b6bde] hover:underline">
                 Thêm
               </button>
@@ -134,14 +134,14 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
 
           <article className="rounded-lg border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold leading-tight text-slate-800">Livestream</h3>
+              <h3 className="text-sm font-semibold leading-tight text-slate-800">Livestream</h3>
               <button type="button" className="text-sm font-medium text-[#0b6bde] hover:underline">
                 Xem thêm
               </button>
             </div>
 
             <div className="mt-3 rounded-md bg-[#fff4f2] p-5">
-              <p className="text-lg font-semibold leading-tight text-slate-800">Bắt đầu Livestream ngay</p>
+              <p className="text-sm font-semibold leading-tight text-slate-800">Bắt đầu Livestream ngay</p>
               <p className="mt-2 text-sm text-slate-700">
                 Tăng tỉ lệ chuyển đổi của bạn <span className="font-semibold text-[#ee4d2d]">2x!</span>
               </p>
@@ -155,14 +155,14 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
 
       <aside className="space-y-3">
         <article className="rounded-lg border border-slate-200 bg-white p-4">
-          <h3 className="text-lg font-semibold leading-tight text-slate-800">Hiệu quả bán hàng</h3>
+          <h3 className="text-sm font-semibold leading-tight text-slate-800">Hiệu quả bán hàng</h3>
           <p className="mt-2 text-sm font-semibold text-[#0b6bde]">Xuất sắc</p>
           <p className="mt-1 text-sm text-slate-500">Tất cả chỉ số đều tốt!</p>
         </article>
 
         <article className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold leading-tight text-slate-800">Gợi ý Kinh Doanh</h3>
+            <h3 className="text-sm font-semibold leading-tight text-slate-800">Gợi ý Kinh Doanh</h3>
             <span className="text-sm text-slate-400">{data.insights.length} Gợi ý</span>
           </div>
 
@@ -188,7 +188,7 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
 
         <article className="rounded-lg border border-slate-200 bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-lg font-semibold leading-tight text-slate-800">Tin Nổi Bật</h3>
+            <h3 className="text-sm font-semibold leading-tight text-slate-800">Tin Nổi Bật</h3>
             <button className="text-sm font-medium text-[#0b6bde] hover:underline">Xem thêm</button>
           </div>
 
@@ -202,7 +202,7 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
 function TopKpiCell({ label, value }: { label: string; value: number }) {
   return (
     <div className="px-2 py-1 text-center">
-      <p className="text-xl font-semibold leading-tight text-[#0b6bde]">{formatNumber(value)}</p>
+      <p className="text-base font-semibold leading-tight text-[#0b6bde]">{formatNumber(value)}</p>
       <p className="mt-1 text-sm text-slate-600">{label}</p>
     </div>
   );
@@ -214,7 +214,7 @@ function SalesMetric({ label, value, change }: { label: string; value: string; c
   return (
     <div className="rounded-md border border-slate-200 p-3">
       <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-xl font-semibold leading-tight text-slate-800">{value}</p>
+      <p className="mt-2 text-base font-semibold leading-tight text-slate-800">{value}</p>
       <p className="mt-1 text-sm font-medium text-slate-500">{formattedChange}</p>
     </div>
   );

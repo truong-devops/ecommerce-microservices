@@ -1,54 +1,74 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+
+interface SidebarItem {
+  label: string;
+  href?: string;
+}
 
 interface SidebarSection {
   title: string;
-  items: string[];
+  items: SidebarItem[];
 }
 
 const sections: SidebarSection[] = [
   {
     title: 'Quản Lý Đơn Hàng',
-    items: ['Tất cả', 'Giao Hàng Loạt', 'Bàn Giao Đơn Hàng', 'Đơn Trả hàng/Hoàn tiền hoặc Đơn hủy', 'Cài Đặt Vận Chuyển']
+    items: [
+      { label: 'Tất cả', href: '/' },
+      { label: 'Giao Hàng Loạt', href: '/orders/bulk-shipping' },
+      { label: 'Bàn Giao Đơn Hàng', href: '/orders/handover' },
+      { label: 'Đơn Trả hàng/Hoàn tiền hoặc Đơn hủy', href: '/orders/returns' },
+      { label: 'Cài Đặt Vận Chuyển', href: '/orders/shipping-settings' }
+    ]
   },
   {
     title: 'Quản Lý Sản Phẩm',
-    items: ['Tất Cả Sản Phẩm', 'Thêm Sản Phẩm', 'Công cụ Tối ưu AI']
+    items: [{ label: 'Tất Cả Sản Phẩm' }, { label: 'Thêm Sản Phẩm' }, { label: 'Công cụ Tối ưu AI' }]
   },
   {
     title: 'Kênh Marketing',
     items: [
-      'Kênh Marketing',
-      'Đấu Giá Rẻ Vô Địch',
-      'Dịch Vụ Hiển Thị Shopee',
-      'Tăng Đơn Cùng KOL',
-      'Live & Video',
-      'Khuyến Mãi của Shop',
-      'Flash Sale Của Shop',
-      'Mã Giảm Giá Của Shop',
-      'Chương Trình Shopee'
+      { label: 'Kênh Marketing' },
+      { label: 'Đấu Giá Rẻ Vô Địch' },
+      { label: 'Dịch Vụ Hiển Thị Shopee' },
+      { label: 'Tăng Đơn Cùng KOL' },
+      { label: 'Live & Video' },
+      { label: 'Khuyến Mãi của Shop' },
+      { label: 'Flash Sale Của Shop' },
+      { label: 'Mã Giảm Giá Của Shop' },
+      { label: 'Chương Trình Shopee' }
     ]
   },
   {
     title: 'Chăm sóc khách hàng',
-    items: ['Quản lý Chat', 'Quản lý Đánh Giá']
+    items: [{ label: 'Quản lý Chat' }, { label: 'Quản lý Đánh Giá' }]
   },
   {
     title: 'Tài Chính',
-    items: ['Doanh Thu', 'Số dư TK Shopee', 'Tài Khoản Ngân Hàng']
+    items: [{ label: 'Doanh Thu' }, { label: 'Số dư TK Shopee' }, { label: 'Tài Khoản Ngân Hàng' }]
   },
   {
     title: 'Dữ Liệu',
-    items: ['Phân Tích Bán Hàng', 'Hiệu Quả Hoạt Động']
+    items: [{ label: 'Phân Tích Bán Hàng' }, { label: 'Hiệu Quả Hoạt Động' }]
   },
   {
     title: 'Quản Lý Shop',
-    items: ['Hồ Sơ Shop', 'Trang Trí Shop', 'Thiết Lập Shop', 'Quản lý các khiếu nại', 'Nhiệm Vụ Người Bán']
+    items: [
+      { label: 'Hồ Sơ Shop' },
+      { label: 'Trang Trí Shop' },
+      { label: 'Thiết Lập Shop' },
+      { label: 'Quản lý các khiếu nại' },
+      { label: 'Nhiệm Vụ Người Bán' }
+    ]
   }
 ];
 
 export function SellerSidebar() {
+  const pathname = usePathname();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     'Quản Lý Đơn Hàng': true,
     'Quản Lý Sản Phẩm': false,
@@ -94,14 +114,25 @@ export function SellerSidebar() {
             {section.items.length > 0 && expandedSections[section.title] ? (
               <ul className="ml-2 mt-1 space-y-0.5">
                 {section.items.map((item) => {
+                  const isActive = isItemActive(pathname, item.href);
+                  const itemClassName = [
+                    'block w-full rounded-md border px-3 py-1.5 text-left text-sm transition',
+                    isActive
+                      ? 'border-[#fbd3c9] bg-[#fff5f2] font-semibold text-[#ee4d2d]'
+                      : 'border-transparent text-slate-700 hover:border-slate-200 hover:bg-white'
+                  ].join(' ');
+
                   return (
-                    <li key={item}>
-                      <button
-                        type="button"
-                        className="w-full rounded-md border border-transparent px-3 py-1.5 text-left text-sm text-slate-700 hover:border-slate-200 hover:bg-white"
-                      >
-                        {item}
-                      </button>
+                    <li key={item.label}>
+                      {item.href ? (
+                        <Link href={item.href} aria-current={isActive ? 'page' : undefined} className={itemClassName}>
+                          {item.label}
+                        </Link>
+                      ) : (
+                        <button type="button" className={itemClassName}>
+                          {item.label}
+                        </button>
+                      )}
                     </li>
                   );
                 })}
@@ -112,4 +143,16 @@ export function SellerSidebar() {
       </div>
     </aside>
   );
+}
+
+function isItemActive(pathname: string, href?: string): boolean {
+  if (!href) {
+    return false;
+  }
+
+  if (href === '/') {
+    return pathname === '/';
+  }
+
+  return pathname.startsWith(href);
 }

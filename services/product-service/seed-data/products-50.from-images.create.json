@@ -203,10 +203,10 @@
     "attributes": {
       "source": "seed-data/image",
       "folder": "dienthoaivaphukien",
-      "imageFile": "op-lung-chong-ban.png"
+      "imageFile": "op-lung-chong-ban.webp"
     },
     "images": [
-      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/op-lung-chong-ban.png"
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/op-lung-chong-ban.webp"
     ],
     "variants": [
       {
@@ -593,10 +593,10 @@
     "attributes": {
       "source": "seed-data/image",
       "folder": "maytinhvalaptop",
-      "imageFile": "loa-bluetooth-pro.png"
+      "imageFile": "loa-bluetooth-pro.webp"
     },
     "images": [
-      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/loa-bluetooth-pro.png"
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/loa-bluetooth-pro.webp"
     ],
     "variants": [
       {
@@ -632,10 +632,10 @@
     "attributes": {
       "source": "seed-data/image",
       "folder": "maytinhvalaptop",
-      "imageFile": "loa-bluetooth.png"
+      "imageFile": "loa-bluetooth.webp"
     },
     "images": [
-      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/loa-bluetooth.png"
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/loa-bluetooth.webp"
     ],
     "variants": [
       {

@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const IMAGE_ROOT = path.join(__dirname, 'image');
 const OUTPUT_FILE = path.join(__dirname, 'products-50.from-images.create.json');
 const IMAGE_BASE_URL = process.env.PRODUCT_IMAGE_BASE_URL ?? 'http://127.0.0.1:3003/api/v1/products/assets';
+const EXTENSION_PRIORITY = ['.webp', '.png', '.jpg', '.jpeg'];
 
 const CATEGORY_MAP = {
   thoitrangnam: {
@@ -181,6 +182,33 @@ function vndRound(value) {
   return Math.round(value / 1000) * 1000;
 }
 
+function pickPreferredImageFiles(fileNames) {
+  const bestByBaseName = new Map();
+
+  for (const fileName of fileNames) {
+    const extension = path.extname(fileName).toLowerCase();
+    const baseName = fileName.slice(0, -extension.length);
+    const existing = bestByBaseName.get(baseName);
+
+    if (!existing) {
+      bestByBaseName.set(baseName, fileName);
+      continue;
+    }
+
+    const existingExtension = path.extname(existing).toLowerCase();
+    const currentRank = EXTENSION_PRIORITY.indexOf(extension);
+    const existingRank = EXTENSION_PRIORITY.indexOf(existingExtension);
+    const safeCurrentRank = currentRank === -1 ? Number.MAX_SAFE_INTEGER : currentRank;
+    const safeExistingRank = existingRank === -1 ? Number.MAX_SAFE_INTEGER : existingRank;
+
+    if (safeCurrentRank < safeExistingRank) {
+      bestByBaseName.set(baseName, fileName);
+    }
+  }
+
+  return Array.from(bestByBaseName.values()).sort((a, b) => a.localeCompare(b));
+}
+
 async function main() {
   const folders = (await readdir(IMAGE_ROOT, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory() && CATEGORY_MAP[entry.name])
@@ -191,11 +219,12 @@ async function main() {
 
   for (const folder of folders) {
     const category = CATEGORY_MAP[folder];
-    const files = (await readdir(path.join(IMAGE_ROOT, folder), { withFileTypes: true }))
+    const rawFiles = (await readdir(path.join(IMAGE_ROOT, folder), { withFileTypes: true }))
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name)
       .filter((name) => /\.(png|jpe?g|webp)$/i.test(name))
       .sort((a, b) => a.localeCompare(b));
+    const files = pickPreferredImageFiles(rawFiles);
 
     for (let index = 0; index < files.length; index += 1) {
       const fileName = files[index];

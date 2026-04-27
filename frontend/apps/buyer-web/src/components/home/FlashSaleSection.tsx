@@ -1,6 +1,7 @@
 'use client';
 
 import type { FlashSaleItem } from '@/lib/api/types';
+import { formatPrice } from '@/lib/price';
 import { useLanguage } from '@/providers/AppProvider';
 
 interface FlashSaleSectionProps {
@@ -31,7 +32,7 @@ export function FlashSaleSection({ items }: FlashSaleSectionProps) {
               </span>
             </div>
             <h3 className="mt-2 line-clamp-2 text-sm font-medium text-slate-700">{item.name}</h3>
-            <p className="mt-1 text-lg font-bold text-brand-600">${item.price.toFixed(2)}</p>
+            <p className="mt-1 text-lg font-bold text-brand-600">{formatPrice(item.price)}</p>
             <p className="mt-1 rounded-full bg-brand-100 px-2 py-1 text-center text-xs font-semibold uppercase tracking-wide text-brand-700">
               {item.soldLabel}
             </p>

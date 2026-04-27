@@ -10,6 +10,7 @@ import {
   fetchBuyerOrderStatusHistory
 } from '@/lib/api/orders';
 import { fetchBuyerPaymentByOrderId } from '@/lib/api/payments';
+import { formatPrice } from '@/lib/price';
 import {
   fetchBuyerShipmentByOrderId,
   fetchBuyerShipmentTrackingEvents
@@ -29,15 +30,6 @@ import { useAuth, useLanguage } from '@/providers/AppProvider';
 type FetchStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const ORDER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function formatPrice(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 function formatDateTime(rawDate: string, locale: 'vi' | 'en'): string {
   const date = new Date(rawDate);

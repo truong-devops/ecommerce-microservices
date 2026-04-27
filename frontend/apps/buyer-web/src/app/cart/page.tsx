@@ -4,16 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
+import { formatPrice } from '@/lib/price';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
-
-function formatPrice(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 function buildLoginRedirectUrl(path: string): string {
   return `/login?returnUrl=${encodeURIComponent(path)}`;

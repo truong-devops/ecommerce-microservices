@@ -1,0 +1,1952 @@
+[
+  {
+    "name": "iPhone Air",
+    "slug": "dienthoaivaphukien-iphone-air-001",
+    "description": "iPhone Air thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "iphone-air.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/iphone-air.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-001",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 249000,
+        "currency": "VND",
+        "compareAtPrice": 279000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-001-P",
+        "name": "Bản Cao Cấp",
+        "price": 429000,
+        "currency": "VND",
+        "compareAtPrice": 472000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "iPhone 15",
+    "slug": "dienthoaivaphukien-iphone15-002",
+    "description": "iPhone 15 thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "iphone15.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/iphone15.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-002",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 274000,
+        "currency": "VND",
+        "compareAtPrice": 307000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-002-P",
+        "name": "Bản Cao Cấp",
+        "price": 460000,
+        "currency": "VND",
+        "compareAtPrice": 506000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "iPhone 16 Plus",
+    "slug": "dienthoaivaphukien-iphone16-plus-003",
+    "description": "iPhone 16 Plus thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "iphone16-plus.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/iphone16-plus.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-003",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 299000,
+        "currency": "VND",
+        "compareAtPrice": 335000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-003-P",
+        "name": "Bản Cao Cấp",
+        "price": 491000,
+        "currency": "VND",
+        "compareAtPrice": 540000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "iPhone 17",
+    "slug": "dienthoaivaphukien-iphone17-004",
+    "description": "iPhone 17 thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "iphone17.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/iphone17.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-004",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 324000,
+        "currency": "VND",
+        "compareAtPrice": 363000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-004-P",
+        "name": "Bản Cao Cấp",
+        "price": 522000,
+        "currency": "VND",
+        "compareAtPrice": 574000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "iPhone 17 Pro Max",
+    "slug": "dienthoaivaphukien-iphone17promax-005",
+    "description": "iPhone 17 Pro Max thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "iphone17promax.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/iphone17promax.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-005",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 349000,
+        "currency": "VND",
+        "compareAtPrice": 391000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-005-P",
+        "name": "Bản Cao Cấp",
+        "price": 553000,
+        "currency": "VND",
+        "compareAtPrice": 608000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Ốp Lưng Chống Bẩn",
+    "slug": "dienthoaivaphukien-op-lung-chong-ban-006",
+    "description": "Ốp Lưng Chống Bẩn thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "op-lung-chong-ban.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/op-lung-chong-ban.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-006",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 374000,
+        "currency": "VND",
+        "compareAtPrice": 419000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-006-P",
+        "name": "Bản Cao Cấp",
+        "price": 584000,
+        "currency": "VND",
+        "compareAtPrice": 642000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Ốp Lưng",
+    "slug": "dienthoaivaphukien-op-lung-007",
+    "description": "Ốp Lưng thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "op-lung.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/op-lung.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-007",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 399000,
+        "currency": "VND",
+        "compareAtPrice": 447000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-007-P",
+        "name": "Bản Cao Cấp",
+        "price": 615000,
+        "currency": "VND",
+        "compareAtPrice": 677000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Sạc Dự Phòng",
+    "slug": "dienthoaivaphukien-sac-du-phong-008",
+    "description": "Sạc Dự Phòng thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "sac-du-phong.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/sac-du-phong.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-008",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 424000,
+        "currency": "VND",
+        "compareAtPrice": 475000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-008-P",
+        "name": "Bản Cao Cấp",
+        "price": 646000,
+        "currency": "VND",
+        "compareAtPrice": 711000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Sạc iPhone",
+    "slug": "dienthoaivaphukien-sac-iphone-009",
+    "description": "Sạc iPhone thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "sac-iphone.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/sac-iphone.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-009",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 449000,
+        "currency": "VND",
+        "compareAtPrice": 503000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-009-P",
+        "name": "Bản Cao Cấp",
+        "price": 677000,
+        "currency": "VND",
+        "compareAtPrice": 745000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Samsung Galaxy J7 Pro",
+    "slug": "dienthoaivaphukien-samsung-galaxy-j7pro-010",
+    "description": "Samsung Galaxy J7 Pro thuộc danh mục dien-thoai-phu-kien, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ECM Mobile",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "dienthoaivaphukien",
+      "imageFile": "samsung-galaxy-j7pro.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/dienthoaivaphukien/samsung-galaxy-j7pro.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-DTPK-010",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 474000,
+        "currency": "VND",
+        "compareAtPrice": 531000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-DTPK-010-P",
+        "name": "Bản Cao Cấp",
+        "price": 708000,
+        "currency": "VND",
+        "compareAtPrice": 779000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Bàn Phím Cơ",
+    "slug": "maytinhvalaptop-ban-phim-co-001",
+    "description": "Bàn Phím Cơ thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "ban-phim-co.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/ban-phim-co.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-001",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 299000,
+        "currency": "VND",
+        "compareAtPrice": 335000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-001-P",
+        "name": "Bản Cao Cấp",
+        "price": 519000,
+        "currency": "VND",
+        "compareAtPrice": 571000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Bàn Phím Mini",
+    "slug": "maytinhvalaptop-ban-phim-mini-002",
+    "description": "Bàn Phím Mini thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "ban-phim-mini.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/ban-phim-mini.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-002",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 329000,
+        "currency": "VND",
+        "compareAtPrice": 368000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-002-P",
+        "name": "Bản Cao Cấp",
+        "price": 555000,
+        "currency": "VND",
+        "compareAtPrice": 611000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Chuột Không Dây Logitech",
+    "slug": "maytinhvalaptop-chuot-khong-day-logitech-003",
+    "description": "Chuột Không Dây Logitech thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "chuot-khong-day-logitech.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/chuot-khong-day-logitech.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-003",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 359000,
+        "currency": "VND",
+        "compareAtPrice": 402000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-003-P",
+        "name": "Bản Cao Cấp",
+        "price": 591000,
+        "currency": "VND",
+        "compareAtPrice": 650000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Laptop Lenovo",
+    "slug": "maytinhvalaptop-laptop-lenovo-004",
+    "description": "Laptop Lenovo thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "laptop-lenovo.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/laptop-lenovo.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-004",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 389000,
+        "currency": "VND",
+        "compareAtPrice": 436000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-004-P",
+        "name": "Bản Cao Cấp",
+        "price": 627000,
+        "currency": "VND",
+        "compareAtPrice": 690000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Laptop ThinkPad",
+    "slug": "maytinhvalaptop-laptop-thinkpad-005",
+    "description": "Laptop ThinkPad thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "laptop-thinkpad.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/laptop-thinkpad.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-005",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 419000,
+        "currency": "VND",
+        "compareAtPrice": 469000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-005-P",
+        "name": "Bản Cao Cấp",
+        "price": 663000,
+        "currency": "VND",
+        "compareAtPrice": 729000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Loa Bluetooth Pro",
+    "slug": "maytinhvalaptop-loa-bluetooth-pro-006",
+    "description": "Loa Bluetooth Pro thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "loa-bluetooth-pro.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/loa-bluetooth-pro.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-006",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 449000,
+        "currency": "VND",
+        "compareAtPrice": 503000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-006-P",
+        "name": "Bản Cao Cấp",
+        "price": 699000,
+        "currency": "VND",
+        "compareAtPrice": 769000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Loa Bluetooth",
+    "slug": "maytinhvalaptop-loa-bluetooth-007",
+    "description": "Loa Bluetooth thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "loa-bluetooth.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/loa-bluetooth.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-007",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 479000,
+        "currency": "VND",
+        "compareAtPrice": 536000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-007-P",
+        "name": "Bản Cao Cấp",
+        "price": 735000,
+        "currency": "VND",
+        "compareAtPrice": 809000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "MacBook Pro 14 Inch",
+    "slug": "maytinhvalaptop-macbook-pro-14inch-008",
+    "description": "MacBook Pro 14 Inch thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "macbook-pro-14inch.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/macbook-pro-14inch.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-008",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 509000,
+        "currency": "VND",
+        "compareAtPrice": 570000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-008-P",
+        "name": "Bản Cao Cấp",
+        "price": 771000,
+        "currency": "VND",
+        "compareAtPrice": 848000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Tai Nghe Nhét Tai",
+    "slug": "maytinhvalaptop-tai-nghe-nhet-tai-009",
+    "description": "Tai Nghe Nhét Tai thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "tai-nghe-nhet-tai.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/tai-nghe-nhet-tai.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-009",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 539000,
+        "currency": "VND",
+        "compareAtPrice": 604000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-009-P",
+        "name": "Bản Cao Cấp",
+        "price": 807000,
+        "currency": "VND",
+        "compareAtPrice": 888000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "USB 1TB",
+    "slug": "maytinhvalaptop-usb-1tb-010",
+    "description": "USB 1TB thuộc danh mục may-tinh-laptop, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ECM Tech",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "maytinhvalaptop",
+      "imageFile": "usb-1tb.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/maytinhvalaptop/usb-1tb.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-MTLT-010",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 569000,
+        "currency": "VND",
+        "compareAtPrice": 637000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-MTLT-010-P",
+        "name": "Bản Cao Cấp",
+        "price": 843000,
+        "currency": "VND",
+        "compareAtPrice": 927000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Dầu Gội Dầu Argan",
+    "slug": "sacdep-dau-goi-dau-argan-001",
+    "description": "Dầu Gội Dầu Argan thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "dau-goi-dau-argan.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/dau-goi-dau-argan.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-001",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 169000,
+        "currency": "VND",
+        "compareAtPrice": 189000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-001-P",
+        "name": "Bản Cao Cấp",
+        "price": 289000,
+        "currency": "VND",
+        "compareAtPrice": 318000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Gel Rửa Mặt",
+    "slug": "sacdep-gel-rua-mat-002",
+    "description": "Gel Rửa Mặt thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "gel-rua-mat.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/gel-rua-mat.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-002",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 180000,
+        "currency": "VND",
+        "compareAtPrice": 202000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-002-P",
+        "name": "Bản Cao Cấp",
+        "price": 306000,
+        "currency": "VND",
+        "compareAtPrice": 337000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Gương Soi Để Bàn",
+    "slug": "sacdep-guong-soi-de-ban-003",
+    "description": "Gương Soi Để Bàn thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "guong-soi-de-ban.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/guong-soi-de-ban.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-003",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 191000,
+        "currency": "VND",
+        "compareAtPrice": 214000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-003-P",
+        "name": "Bản Cao Cấp",
+        "price": 323000,
+        "currency": "VND",
+        "compareAtPrice": 355000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Kem Body",
+    "slug": "sacdep-kem-body-004",
+    "description": "Kem Body thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "kem-body.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/kem-body.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-004",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 202000,
+        "currency": "VND",
+        "compareAtPrice": 226000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-004-P",
+        "name": "Bản Cao Cấp",
+        "price": 340000,
+        "currency": "VND",
+        "compareAtPrice": 374000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Lông Mi Giả",
+    "slug": "sacdep-long-mi-gia-005",
+    "description": "Lông Mi Giả thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "long-mi-gia.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/long-mi-gia.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-005",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 213000,
+        "currency": "VND",
+        "compareAtPrice": 239000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-005-P",
+        "name": "Bản Cao Cấp",
+        "price": 357000,
+        "currency": "VND",
+        "compareAtPrice": 393000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Máy Làm Tóc",
+    "slug": "sacdep-may-lam-toc-006",
+    "description": "Máy Làm Tóc thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "may-lam-toc.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/may-lam-toc.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-006",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 224000,
+        "currency": "VND",
+        "compareAtPrice": 251000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-006-P",
+        "name": "Bản Cao Cấp",
+        "price": 374000,
+        "currency": "VND",
+        "compareAtPrice": 411000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Móng Tay Giả",
+    "slug": "sacdep-mong-tay-gia-007",
+    "description": "Móng Tay Giả thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "mong-tay-gia.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/mong-tay-gia.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-007",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 235000,
+        "currency": "VND",
+        "compareAtPrice": 263000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-007-P",
+        "name": "Bản Cao Cấp",
+        "price": 391000,
+        "currency": "VND",
+        "compareAtPrice": 430000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Nước Hoa Hồng",
+    "slug": "sacdep-nuoc-hoa-hong-008",
+    "description": "Nước Hoa Hồng thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "nuoc-hoa-hong.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/nuoc-hoa-hong.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-008",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 246000,
+        "currency": "VND",
+        "compareAtPrice": 276000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-008-P",
+        "name": "Bản Cao Cấp",
+        "price": 408000,
+        "currency": "VND",
+        "compareAtPrice": 449000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Nước Hoa Shimang",
+    "slug": "sacdep-nuoc-hoa-shimang-009",
+    "description": "Nước Hoa Shimang thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "nuoc-hoa-shimang.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/nuoc-hoa-shimang.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-009",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 257000,
+        "currency": "VND",
+        "compareAtPrice": 288000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-009-P",
+        "name": "Bản Cao Cấp",
+        "price": 425000,
+        "currency": "VND",
+        "compareAtPrice": 468000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Sữa Dưỡng Thể",
+    "slug": "sacdep-sua-duong-the-010",
+    "description": "Sữa Dưỡng Thể thuộc danh mục sac-dep, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "sac-dep",
+    "brand": "ECM Beauty",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "sacdep",
+      "imageFile": "sua-duong-the.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/sacdep/sua-duong-the.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-SD-010",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 268000,
+        "currency": "VND",
+        "compareAtPrice": 300000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-SD-010-P",
+        "name": "Bản Cao Cấp",
+        "price": 442000,
+        "currency": "VND",
+        "compareAtPrice": 486000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Cardigan",
+    "slug": "thoitrangnam-ao-cadigan-001",
+    "description": "Áo Cardigan thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "ao-cadigan.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/ao-cadigan.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-001",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 199000,
+        "currency": "VND",
+        "compareAtPrice": 223000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-001-P",
+        "name": "Bản Cao Cấp",
+        "price": 349000,
+        "currency": "VND",
+        "compareAtPrice": 384000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Hoodie Zip",
+    "slug": "thoitrangnam-ao-hoodie-zip-002",
+    "description": "Áo Hoodie Zip thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "ao-hoodie-zip.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/ao-hoodie-zip.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-002",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 211000,
+        "currency": "VND",
+        "compareAtPrice": 236000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-002-P",
+        "name": "Bản Cao Cấp",
+        "price": 367000,
+        "currency": "VND",
+        "compareAtPrice": 404000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Hoodie",
+    "slug": "thoitrangnam-ao-hoodie-003",
+    "description": "Áo Hoodie thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "ao-hoodie.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/ao-hoodie.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-003",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 223000,
+        "currency": "VND",
+        "compareAtPrice": 250000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-003-P",
+        "name": "Bản Cao Cấp",
+        "price": 385000,
+        "currency": "VND",
+        "compareAtPrice": 424000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Sweater",
+    "slug": "thoitrangnam-ao-sweater-004",
+    "description": "Áo Sweater thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "ao-sweater.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/ao-sweater.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-004",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 235000,
+        "currency": "VND",
+        "compareAtPrice": 263000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-004-P",
+        "name": "Bản Cao Cấp",
+        "price": 403000,
+        "currency": "VND",
+        "compareAtPrice": 443000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Thun",
+    "slug": "thoitrangnam-ao-thun-005",
+    "description": "Áo Thun thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "ao-thun.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/ao-thun.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-005",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 247000,
+        "currency": "VND",
+        "compareAtPrice": 277000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-005-P",
+        "name": "Bản Cao Cấp",
+        "price": 421000,
+        "currency": "VND",
+        "compareAtPrice": 463000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Quần Đùi Nam",
+    "slug": "thoitrangnam-quan-dui-nam-006",
+    "description": "Quần Đùi Nam thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "quan-dui-nam.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/quan-dui-nam.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-006",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 259000,
+        "currency": "VND",
+        "compareAtPrice": 290000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-006-P",
+        "name": "Bản Cao Cấp",
+        "price": 439000,
+        "currency": "VND",
+        "compareAtPrice": 483000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Quần Jean Ống Rộng",
+    "slug": "thoitrangnam-quan-jean-ong-rong-007",
+    "description": "Quần Jean Ống Rộng thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "quan-jean-ong-rong.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/quan-jean-ong-rong.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-007",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 271000,
+        "currency": "VND",
+        "compareAtPrice": 304000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-007-P",
+        "name": "Bản Cao Cấp",
+        "price": 457000,
+        "currency": "VND",
+        "compareAtPrice": 503000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Quần Jean",
+    "slug": "thoitrangnam-quan-jean-008",
+    "description": "Quần Jean thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "quan-jean.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/quan-jean.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-008",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 283000,
+        "currency": "VND",
+        "compareAtPrice": 317000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-008-P",
+        "name": "Bản Cao Cấp",
+        "price": 475000,
+        "currency": "VND",
+        "compareAtPrice": 523000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Quần Lót Nam",
+    "slug": "thoitrangnam-quan-lot-nam-009",
+    "description": "Quần Lót Nam thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "quan-lot-nam.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/quan-lot-nam.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-009",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 295000,
+        "currency": "VND",
+        "compareAtPrice": 330000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-009-P",
+        "name": "Bản Cao Cấp",
+        "price": 493000,
+        "currency": "VND",
+        "compareAtPrice": 542000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Tất Nam",
+    "slug": "thoitrangnam-tat-nam-010",
+    "description": "Tất Nam thuộc danh mục thoi-trang-nam, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "ECM Men",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "thoitrangnam",
+      "imageFile": "tat-nam.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/thoitrangnam/tat-nam.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TMN-010",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 307000,
+        "currency": "VND",
+        "compareAtPrice": 344000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TMN-010-P",
+        "name": "Bản Cao Cấp",
+        "price": 511000,
+        "currency": "VND",
+        "compareAtPrice": 562000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Ba Lỗ Nữ",
+    "slug": "trangsucnu-ao-ba-lo-nu-001",
+    "description": "Áo Ba Lỗ Nữ thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "ao-ba-lo-nu.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/ao-ba-lo-nu.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-001",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 189000,
+        "currency": "VND",
+        "compareAtPrice": 212000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-001-P",
+        "name": "Bản Cao Cấp",
+        "price": 329000,
+        "currency": "VND",
+        "compareAtPrice": 362000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Baby Doll",
+    "slug": "trangsucnu-ao-baby-doll-002",
+    "description": "Áo Baby Doll thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "ao-baby-doll.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/ao-baby-doll.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-002",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 202000,
+        "currency": "VND",
+        "compareAtPrice": 226000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-002-P",
+        "name": "Bản Cao Cấp",
+        "price": 348000,
+        "currency": "VND",
+        "compareAtPrice": 383000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Cardigan",
+    "slug": "trangsucnu-ao-cadigan-003",
+    "description": "Áo Cardigan thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "ao-cadigan.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/ao-cadigan.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-003",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 215000,
+        "currency": "VND",
+        "compareAtPrice": 241000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-003-P",
+        "name": "Bản Cao Cấp",
+        "price": 367000,
+        "currency": "VND",
+        "compareAtPrice": 404000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Khoác Bomber",
+    "slug": "trangsucnu-ao-khoac-bomber-004",
+    "description": "Áo Khoác Bomber thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "ao-khoac-bomber.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/ao-khoac-bomber.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-004",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 228000,
+        "currency": "VND",
+        "compareAtPrice": 255000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-004-P",
+        "name": "Bản Cao Cấp",
+        "price": 386000,
+        "currency": "VND",
+        "compareAtPrice": 425000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Thun Baby",
+    "slug": "trangsucnu-ao-thun-baby-005",
+    "description": "Áo Thun Baby thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "ao-thun-baby.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/ao-thun-baby.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-005",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 241000,
+        "currency": "VND",
+        "compareAtPrice": 270000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-005-P",
+        "name": "Bản Cao Cấp",
+        "price": 405000,
+        "currency": "VND",
+        "compareAtPrice": 446000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Áo Thun Thắt Eo",
+    "slug": "trangsucnu-ao-thun-that-eo-006",
+    "description": "Áo Thun Thắt Eo thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "ao-thun-that-eo.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/ao-thun-that-eo.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-006",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 254000,
+        "currency": "VND",
+        "compareAtPrice": 284000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-006-P",
+        "name": "Bản Cao Cấp",
+        "price": 424000,
+        "currency": "VND",
+        "compareAtPrice": 466000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Chân Váy Midi",
+    "slug": "trangsucnu-chan-vay-midi-007",
+    "description": "Chân Váy Midi thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "chan-vay-midi.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/chan-vay-midi.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-007",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 267000,
+        "currency": "VND",
+        "compareAtPrice": 299000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-007-P",
+        "name": "Bản Cao Cấp",
+        "price": 443000,
+        "currency": "VND",
+        "compareAtPrice": 487000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Chân Váy Xếp Ly",
+    "slug": "trangsucnu-chan-vay-xep-ly-008",
+    "description": "Chân Váy Xếp Ly thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "chan-vay-xep-ly.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/chan-vay-xep-ly.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-008",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 280000,
+        "currency": "VND",
+        "compareAtPrice": 314000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-008-P",
+        "name": "Bản Cao Cấp",
+        "price": 462000,
+        "currency": "VND",
+        "compareAtPrice": 508000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Đầm Maxi",
+    "slug": "trangsucnu-dam-maxi-009",
+    "description": "Đầm Maxi thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "dam-maxi.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/dam-maxi.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-009",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 293000,
+        "currency": "VND",
+        "compareAtPrice": 328000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-009-P",
+        "name": "Bản Cao Cấp",
+        "price": 481000,
+        "currency": "VND",
+        "compareAtPrice": 529000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Quần Tất Nữ",
+    "slug": "trangsucnu-quan-tat-nu-010",
+    "description": "Quần Tất Nữ thuộc danh mục thoi-trang-nu, dữ liệu được tạo tự động từ tên file ảnh.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "ECM Women",
+    "attributes": {
+      "source": "seed-data/image",
+      "folder": "trangsucnu",
+      "imageFile": "quan-tat-nu.webp"
+    },
+    "images": [
+      "http://127.0.0.1:3003/api/v1/products/assets/trangsucnu/quan-tat-nu.webp"
+    ],
+    "variants": [
+      {
+        "sku": "IMG-TTN-010",
+        "name": "Bản Tiêu Chuẩn",
+        "price": 306000,
+        "currency": "VND",
+        "compareAtPrice": 343000,
+        "isDefault": true,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      },
+      {
+        "sku": "IMG-TTN-010-P",
+        "name": "Bản Cao Cấp",
+        "price": 500000,
+        "currency": "VND",
+        "compareAtPrice": 550000,
+        "isDefault": false,
+        "metadata": {
+          "generatedFrom": "image-filename"
+        }
+      }
+    ]
+  }
+]

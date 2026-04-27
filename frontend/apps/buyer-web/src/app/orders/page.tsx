@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { cancelBuyerOrder, confirmBuyerOrderReceived, fetchBuyerOrders } from '@/lib/api/orders';
 import { fetchBuyerPaymentByOrderId } from '@/lib/api/payments';
+import { formatPrice } from '@/lib/price';
 import { fetchBuyerShipmentByOrderId } from '@/lib/api/shipping';
 import type {
   Order,
@@ -44,15 +45,6 @@ const validShipmentStatusSet: Set<ShipmentStatus> = new Set([
   'FAILED',
   'RETURNED'
 ]);
-
-function formatPrice(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 function buildLoginRedirectUrl(path: string): string {
   return `/login?returnUrl=${encodeURIComponent(path)}`;

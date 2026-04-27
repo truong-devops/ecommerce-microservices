@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { fetchBuyerProducts } from '@/lib/api/products';
 import type { ListProductsInput, ProductSearchOutput } from '@/lib/api/types';
+import { formatPrice } from '@/lib/price';
 import { useLanguage } from '@/providers/AppProvider';
 
 type SearchStatus = 'loading' | 'error' | 'success';
@@ -250,11 +251,4 @@ function parsePositiveInt(raw: string | null): number | null {
   }
 
   return Math.floor(value);
-}
-
-function formatPrice(value: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency
-  }).format(value);
 }

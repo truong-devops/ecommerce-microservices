@@ -24,10 +24,17 @@ export interface TopSearchItem {
 export interface ProductItem {
   id: string;
   title: string;
+  categoryId: string;
   price: number;
   sold: string;
   discountPercent: number;
   image: string;
+}
+
+export interface HomeCategoryItem {
+  id: string;
+  label: string;
+  icon: string;
 }
 
 export interface ProductDetail {
@@ -108,6 +115,7 @@ export type BuyerApiResponse<T> = BuyerApiSuccess<T> | BuyerApiFailure;
 
 export interface HomeSectionsData {
   keywords: string[];
+  categories: HomeCategoryItem[];
   flashSaleItems: FlashSaleItem[];
   mallDeals: MallDealItem[];
   topSearchItems: TopSearchItem[];

@@ -2,12 +2,12 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getSellerMe, loginSeller, logoutSeller } from '@/lib/api/auth';
-import { SellerApiClientError } from '@/lib/api/client';
-import type { LoginInput, SellerAuthSession, SellerAuthUser } from '@/lib/api/types';
+import { getModeratorMe, loginModerator, logoutModerator } from '@/lib/api/auth';
+import { ModeratorApiClientError } from '@/lib/api/client';
+import type { LoginInput, ModeratorAuthSession, ModeratorAuthUser } from '@/lib/api/types';
 
-const AUTH_SESSION_STORAGE_KEY = 'seller_auth_session';
-const ALLOWED_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT']);
+const AUTH_SESSION_STORAGE_KEY = 'moderator_auth_session';
+const ALLOWED_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
 
 interface AuthActionResult {
   ok: boolean;
@@ -16,7 +16,7 @@ interface AuthActionResult {
 
 interface AuthContextValue {
   ready: boolean;
-  user: SellerAuthUser | null;
+  user: ModeratorAuthUser | null;
   accessToken: string | null;
   login: (payload: LoginInput) => Promise<AuthActionResult>;
   logout: () => Promise<void>;
@@ -24,31 +24,29 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-function readSession(): SellerAuthSession | null {
+function readSession(): ModeratorAuthSession | null {
   try {
     const raw = localStorage.getItem(AUTH_SESSION_STORAGE_KEY);
     if (!raw) {
       return null;
     }
 
-    const parsed = JSON.parse(raw) as Partial<SellerAuthSession> & {
-      session?: Partial<SellerAuthSession>;
+    const parsed = JSON.parse(raw) as Partial<ModeratorAuthSession> & {
+      session?: Partial<ModeratorAuthSession>;
     };
+
     const value = parsed.session && typeof parsed.session === 'object' ? parsed.session : parsed;
 
     if (typeof value.accessToken !== 'string' || typeof value.refreshToken !== 'string' || typeof value.tokenType !== 'string') {
       return null;
     }
 
-    const expiresInRaw = value.expiresIn;
-    const normalizedExpiresIn = typeof expiresInRaw === 'number' ? expiresInRaw : NaN;
-
     return {
       accessToken: value.accessToken,
       refreshToken: value.refreshToken,
       tokenType: value.tokenType,
       sessionId: typeof value.sessionId === 'string' ? value.sessionId : '',
-      expiresIn: Number.isFinite(normalizedExpiresIn) && normalizedExpiresIn > 0 ? Math.floor(normalizedExpiresIn) : 0
+      expiresIn: typeof value.expiresIn === 'number' ? value.expiresIn : Number(value.expiresIn ?? 0)
     };
   } catch {
     return null;
@@ -57,8 +55,8 @@ function readSession(): SellerAuthSession | null {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [session, setSession] = useState<SellerAuthSession | null>(null);
-  const [user, setUser] = useState<SellerAuthUser | null>(null);
+  const [session, setSession] = useState<ModeratorAuthSession | null>(null);
+  const [user, setUser] = useState<ModeratorAuthUser | null>(null);
 
   useEffect(() => {
     const stored = readSession();
@@ -69,7 +67,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     let isCancelled = false;
 
-    void getSellerMe(stored.accessToken)
+    void getModeratorMe(stored.accessToken)
       .then((result) => {
         if (isCancelled) {
           return;
@@ -86,13 +84,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser(result.user);
       })
       .catch(() => {
-        if (isCancelled) {
-          return;
+        if (!isCancelled) {
+          localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+          setSession(null);
+          setUser(null);
         }
-
-        localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
-        setSession(null);
-        setUser(null);
       })
       .finally(() => {
         if (!isCancelled) {
@@ -105,50 +101,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  useEffect(() => {
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key !== AUTH_SESSION_STORAGE_KEY) {
-        return;
-      }
-
-      const stored = readSession();
-      if (!stored) {
-        setSession(null);
-        setUser(null);
-        return;
-      }
-
-      void getSellerMe(stored.accessToken)
-        .then((result) => {
-          if (!ALLOWED_ROLES.has(result.user.role)) {
-            localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
-            setSession(null);
-            setUser(null);
-            return;
-          }
-
-          setSession(stored);
-          setUser(result.user);
-        })
-        .catch(() => {
-          setSession(null);
-          setUser(null);
-        });
-    };
-
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-    };
-  }, []);
-
   const login = useCallback(async (payload: LoginInput): Promise<AuthActionResult> => {
     try {
-      const result = await loginSeller(payload);
+      const result = await loginModerator(payload);
+
       if (!ALLOWED_ROLES.has(result.user.role)) {
         return {
           ok: false,
-          message: 'Tai khoan khong co quyen truy cap Seller Dashboard.'
+          message: 'Tài khoản không có quyền truy cập Moderator Dashboard.'
         };
       }
 
@@ -158,7 +118,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return { ok: true };
     } catch (error) {
-      if (error instanceof SellerApiClientError) {
+      if (error instanceof ModeratorApiClientError) {
         return {
           ok: false,
           message: error.message
@@ -167,22 +127,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return {
         ok: false,
-        message: 'Đăng nhập thất bại, vui lòng thử lại!'
+        message: 'Đăng nhập thất bại, vui lòng thử lại.'
       };
     }
   }, []);
 
   const logout = useCallback(async () => {
-    const currentSession = session ?? readSession();
+    const current = session ?? readSession();
 
-    if (currentSession) {
+    if (current) {
       try {
-        await logoutSeller({
-          accessToken: currentSession.accessToken,
-          refreshToken: currentSession.refreshToken
+        await logoutModerator({
+          accessToken: current.accessToken,
+          refreshToken: current.refreshToken
         });
       } catch {
-        // Always clear local session regardless of upstream response.
+        // ignore
       }
     }
 

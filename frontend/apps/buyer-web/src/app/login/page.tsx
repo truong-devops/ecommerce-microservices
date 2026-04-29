@@ -85,8 +85,8 @@ export default function LoginPage() {
       <Header keywords={[]} />
       <main className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-3 py-6 md:px-4 md:py-10 lg:grid-cols-[1fr_430px] lg:items-center">
         <section className="hidden px-6 lg:block">
-          <h2 className="text-[36px] font-semibold leading-tight text-brand-600">{copy.introTitle}</h2>
-          <p className="mt-3 max-w-[560px] text-[18px] leading-snug text-slate-600">{copy.introDescription}</p>
+          <h2 className="text-[28px] font-semibold leading-tight text-brand-600">{copy.introTitle}</h2>
+          <p className="mt-3 max-w-[560px] text-[16px] leading-snug text-slate-600">{copy.introDescription}</p>
 
           <div className="mt-8">
             <svg viewBox="0 0 480 300" className="h-[280px] w-[460px]" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -114,7 +114,7 @@ export default function LoginPage() {
         <section>
           <div className="rounded-sm bg-white p-6 shadow-card md:p-8" aria-labelledby="login-title">
             <div className="flex items-start justify-between gap-3">
-              <h1 id="login-title" className="text-[22px] font-semibold text-slate-800">
+              <h1 id="login-title" className="text-[18px] font-medium text-slate-800">
                 {text.auth.loginTitle}
               </h1>
               <div className="relative border-2 border-[#f0b100] bg-[#fffbe6] px-3 py-1 text-[13px] font-semibold leading-tight text-[#f0a300]">
@@ -131,7 +131,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder={text.auth.email}
-                className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                className="h-12 w-full rounded-sm border border-slate-300 px-4 text-base focus:border-brand-500 focus:outline-none"
                 required
               />
 
@@ -140,7 +140,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder={text.auth.password}
-                className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                className="h-12 w-full rounded-sm border border-slate-300 px-4 text-base focus:border-brand-500 focus:outline-none"
                 required
               />
 
@@ -149,31 +149,31 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-11 w-full rounded-sm bg-[#ee826f] px-4 text-sm font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-80"
+                className="h-12 w-full rounded-sm bg-[#ee826f] px-4 text-[14px] font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-80"
               >
                 {isSubmitting ? `${text.auth.submitLogin}...` : text.auth.submitLogin.toUpperCase()}
               </button>
 
-              <a href="#" className="inline-block text-sm text-[#0f5db6] hover:underline">
+              <a href="#" className="inline-block text-[15px] text-[#0f5db6] hover:underline">
                 {copy.forgotPassword}
               </a>
 
               <div className="flex items-center gap-4 text-slate-400">
                 <span className="h-px flex-1 bg-slate-300" />
-                <span className="text-sm">{copy.or}</span>
+                <span className="text-base">{copy.or}</span>
                 <span className="h-px flex-1 bg-slate-300" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <button type="button" className="h-11 rounded-sm border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
                   {copy.socialFacebook}
                 </button>
-                <button type="button" className="h-11 rounded-sm border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
                   {copy.socialGoogle}
                 </button>
               </div>
 
-              <p className="text-center text-xs leading-relaxed text-slate-500">
+              <p className="text-center text-sm leading-relaxed text-slate-500">
                 {copy.legalPrefix}{' '}
                 <a href="#" className="text-brand-500 hover:underline">
                   {copy.terms}
@@ -186,7 +186,7 @@ export default function LoginPage() {
               </p>
             </form>
 
-            <p className="mt-4 text-center text-sm text-slate-500">
+            <p className="mt-4 text-center text-base text-slate-500">
               {text.auth.noAccount}{' '}
               <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700">
                 {text.auth.goRegister}
@@ -196,7 +196,7 @@ export default function LoginPage() {
 
           <button
             type="button"
-            className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-sm bg-white text-sm text-slate-700 shadow-card hover:bg-slate-50"
+            className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-white text-base text-slate-700 shadow-card hover:bg-slate-50"
           >
             {copy.splitLogin}
             <span aria-hidden="true">›</span>
@@ -204,7 +204,7 @@ export default function LoginPage() {
         </section>
       </main>
 
-      <footer className="pb-8 text-center text-xs text-slate-500">{copy.copyright}</footer>
+      <footer className="pb-8 text-center text-sm text-slate-500">{copy.copyright}</footer>
     </div>
   );
 }

@@ -192,7 +192,7 @@ export class ProductsService {
     const existing = await this.requireProduct(id);
     this.assertCanManageProduct(user, existing);
 
-    if (dto.status) {
+    if (dto.status && dto.status !== ProductStatus.DRAFT) {
       throw new UnprocessableEntityException({
         code: ErrorCode.VALIDATION_FAILED,
         message: 'Use status endpoint to update product status'
@@ -240,6 +240,10 @@ export class ProductsService {
 
     if (dto.sellerId && isStaff(user.role)) {
       payload.sellerId = dto.sellerId;
+    }
+
+    if (dto.status === ProductStatus.DRAFT) {
+      payload.status = ProductStatus.DRAFT;
     }
 
     if (dto.variants) {

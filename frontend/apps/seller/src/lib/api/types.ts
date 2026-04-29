@@ -140,3 +140,83 @@ export interface SellerDashboardData {
   insights: string[];
   news: SellerNewsItem[];
 }
+
+export type SellerProductStatus = 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
+
+export interface SellerProductVariantInput {
+  sku: string;
+  name: string;
+  price: number;
+  currency: string;
+  compareAtPrice?: number | null;
+  isDefault?: boolean;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreateSellerProductInput {
+  sellerId?: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  categoryId: string;
+  brand?: string;
+  attributes?: Record<string, unknown>;
+  images?: string[];
+  variants: SellerProductVariantInput[];
+  status?: SellerProductStatus;
+}
+
+export interface UpdateSellerProductInput extends CreateSellerProductInput {}
+
+export interface SellerProductVariant extends SellerProductVariantInput {
+  compareAtPrice: number | null;
+  isDefault: boolean;
+  metadata: Record<string, unknown>;
+}
+
+export interface SellerProduct {
+  id: string;
+  sellerId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  categoryId: string;
+  brand: string | null;
+  status: SellerProductStatus;
+  attributes: Record<string, unknown>;
+  images: string[];
+  variants: SellerProductVariant[];
+  minPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface SellerProductListOutput {
+  items: SellerProduct[];
+  page: number;
+  pageSize: number;
+  hasNext: boolean;
+}
+
+export interface SellerCategoryOption {
+  id: string;
+  count: number;
+}
+
+export interface SellerCategoryListOutput {
+  items: SellerCategoryOption[];
+  scannedPages: number;
+}
+
+export interface UploadSellerProductImageInput {
+  file: File;
+  folder?: string;
+}
+
+export interface UploadSellerProductImageOutput {
+  fileName: string;
+  folder: string;
+  imageUrl: string;
+  relativePath: string;
+}

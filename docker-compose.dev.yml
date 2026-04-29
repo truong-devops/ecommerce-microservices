@@ -151,6 +151,8 @@ services:
     build:
       context: ./services/product-service
       dockerfile: Dockerfile
+    volumes:
+      - ./services/product-service/seed-data/image:/app/seed-data/image
     env_file:
       - ./services/product-service/.env
     environment:

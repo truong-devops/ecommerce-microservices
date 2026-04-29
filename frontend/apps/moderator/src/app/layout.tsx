@@ -1,28 +1,25 @@
 import type { Metadata } from 'next';
-import { Public_Sans } from 'next/font/google';
+import { IBM_Plex_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
-import { SellerAuthGuard } from '@/components/auth/seller-auth-guard';
 import { AppProvider } from '@/providers/AppProvider';
 import './globals.css';
 
-const publicSans = Public_Sans({
+const bodyFont = IBM_Plex_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-body'
 });
 
 export const metadata: Metadata = {
-  title: 'eMall Seller Dashboard',
-  description: 'Seller/admin dashboard for eMall with analytics and order operations overview.'
+  title: 'eMall Moderator Console',
+  description: 'Trust & Safety moderation workspace for eMall.'
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={publicSans.variable}>
-        <AppProvider>
-          <SellerAuthGuard>{children}</SellerAuthGuard>
-        </AppProvider>
+      <body className={bodyFont.variable}>
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   );

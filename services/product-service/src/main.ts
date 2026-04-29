@@ -21,7 +21,7 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(appLogger);
   app.use(RequestIdMiddleware);
-  app.useStaticAssets(join(process.cwd(), 'seed-data', 'image'), {
+  app.useStaticAssets(join(__dirname, '..', 'seed-data', 'image'), {
     prefix: '/api/v1/products/assets/'
   });
   app.useGlobalFilters(new HttpExceptionFilter(appLogger, configService));

@@ -92,7 +92,7 @@ services:
       context: ./services/auth-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/auth-service/.env.example
+      - ./services/auth-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -127,7 +127,7 @@ services:
       context: ./services/user-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/user-service/.env.dev
+      - ./services/user-service/.env
     environment:
       NODE_ENV: development
       PORT: 3000
@@ -152,7 +152,7 @@ services:
       context: ./services/product-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/product-service/.env.dev
+      - ./services/product-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -186,7 +186,7 @@ services:
       context: ./services/cart-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/cart-service/.env.dev
+      - ./services/cart-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -213,7 +213,7 @@ services:
       context: ./services/order-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/order-service/.env.example
+      - ./services/order-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -237,7 +237,7 @@ services:
       context: ./services/payment-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/payment-service/.env.dev
+      - ./services/payment-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -260,7 +260,7 @@ services:
       context: ./services/inventory-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/inventory-service/.env.dev
+      - ./services/inventory-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -281,7 +281,7 @@ services:
       context: ./services/shipping-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/shipping-service/.env.example
+      - ./services/shipping-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -304,7 +304,7 @@ services:
       context: ./services/review-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/review-service/.env.example
+      - ./services/review-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -321,7 +321,7 @@ services:
       context: ./services/notification-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/notification-service/.env.dev
+      - ./services/notification-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -362,7 +362,7 @@ services:
       context: ./services/analytics-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/analytics-service/.env.dev
+      - ./services/analytics-service/.env
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -389,7 +389,7 @@ services:
       context: ./services/api-gateway
       dockerfile: Dockerfile
     env_file:
-      - ./services/api-gateway/.env.example
+      - ./services/api-gateway/.env
     environment:
       <<: *shared-jwt-gateway-secret
       APP_ENV: development

@@ -8,7 +8,7 @@ services:
       context: ./services/api-gateway
     env_file:
       - ./.env.example
-      - ./services/api-gateway/.env.dev
+      - ./services/api-gateway/.env
     ports:
       - '3000:3000'
     restart: unless-stopped

@@ -19,7 +19,10 @@ export const envValidationSchema = Joi.object({
 
   WEBHOOK_IDEMPOTENCY_TTL_MINUTES: Joi.number().integer().min(5).default(1440),
 
+  KAFKA_ENABLED: Joi.boolean().default(true),
   KAFKA_BROKERS: Joi.string().default('localhost:9092'),
+  ORDER_EVENTS_TOPIC: Joi.string().default('order.events'),
+  ORDER_EVENTS_CONSUMER_GROUP: Joi.string().default('shipping-service-order-events-group'),
   SHIPPING_EVENTS_TOPIC: Joi.string().default('shipping.events'),
   NOTIFICATION_EVENTS_TOPIC: Joi.string().default('notification.events'),
   ANALYTICS_EVENTS_TOPIC: Joi.string().default('analytics.events')

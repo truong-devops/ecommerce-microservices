@@ -31,23 +31,29 @@ function readSession(): SellerAuthSession | null {
       return null;
     }
 
-    const parsed = JSON.parse(raw) as Partial<SellerAuthSession>;
-    if (
-      typeof parsed.accessToken !== 'string' ||
-      typeof parsed.refreshToken !== 'string' ||
-      typeof parsed.tokenType !== 'string' ||
-      typeof parsed.sessionId !== 'string' ||
-      typeof parsed.expiresIn !== 'number'
-    ) {
+    const parsed = JSON.parse(raw) as Partial<SellerAuthSession> & {
+      session?: Partial<SellerAuthSession>;
+    };
+    const value = parsed.session && typeof parsed.session === 'object' ? parsed.session : parsed;
+
+    if (typeof value.accessToken !== 'string' || typeof value.refreshToken !== 'string' || typeof value.tokenType !== 'string') {
       return null;
     }
 
+    const expiresInRaw = value.expiresIn;
+    const normalizedExpiresIn =
+      typeof expiresInRaw === 'number'
+        ? expiresInRaw
+        : typeof expiresInRaw === 'string' && expiresInRaw.trim().length > 0
+          ? Number(expiresInRaw)
+          : NaN;
+
     return {
-      accessToken: parsed.accessToken,
-      refreshToken: parsed.refreshToken,
-      tokenType: parsed.tokenType,
-      sessionId: parsed.sessionId,
-      expiresIn: parsed.expiresIn
+      accessToken: value.accessToken,
+      refreshToken: value.refreshToken,
+      tokenType: value.tokenType,
+      sessionId: typeof value.sessionId === 'string' ? value.sessionId : '',
+      expiresIn: Number.isFinite(normalizedExpiresIn) && normalizedExpiresIn > 0 ? Math.floor(normalizedExpiresIn) : 0
     };
   } catch {
     return null;
@@ -101,6 +107,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isCancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== AUTH_SESSION_STORAGE_KEY) {
+        return;
+      }
+
+      const stored = readSession();
+      if (!stored) {
+        setSession(null);
+        setUser(null);
+        return;
+      }
+
+      void getSellerMe(stored.accessToken)
+        .then((result) => {
+          if (!ALLOWED_ROLES.has(result.user.role)) {
+            localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+            setSession(null);
+            setUser(null);
+            return;
+          }
+
+          setSession(stored);
+          setUser(result.user);
+        })
+        .catch(() => {
+          setSession(null);
+          setUser(null);
+        });
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 

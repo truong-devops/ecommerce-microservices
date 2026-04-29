@@ -26,6 +26,7 @@ import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { EventsPublisherService } from './services/events-publisher.service';
 import { IdempotencyService } from './services/idempotency.service';
 import { OutboxDispatcherService } from './services/outbox-dispatcher.service';
+import { OrderEventsConsumerService } from './services/order-events-consumer.service';
 import { PaymentsService } from './services/payments.service';
 
 @Module({
@@ -58,6 +59,7 @@ import { PaymentsService } from './services/payments.service';
     IdempotencyService,
     EventsPublisherService,
     OutboxDispatcherService,
+    OrderEventsConsumerService,
     PaymentsService,
     MockPaymentGatewayProvider,
     VnpayPaymentGatewayProvider,

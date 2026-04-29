@@ -2,7 +2,7 @@ import type { Shipment } from '@/lib/api/types';
 import { readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/buyer-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
-import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
+import { UpstreamHttpError, requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface RouteContext {
   params: {
@@ -36,6 +36,10 @@ export async function GET(request: Request, context: RouteContext) {
 
     return ok(shipment, 'backend');
   } catch (error) {
+    if (error instanceof UpstreamHttpError && error.status === 404) {
+      return ok<Shipment | null>(null, 'backend');
+    }
+
     return toErrorResponse(error);
   }
 }

@@ -32,7 +32,10 @@ export const envValidationSchema = Joi.object({
   VNPAY_ORDER_TYPE: Joi.string().default('other'),
   VNPAY_REFUND_SIMULATION: Joi.boolean().default(true),
 
+  KAFKA_ENABLED: Joi.boolean().default(true),
   KAFKA_BROKERS: Joi.string().default('localhost:9092'),
+  ORDER_EVENTS_TOPIC: Joi.string().default('order.events'),
+  ORDER_EVENTS_CONSUMER_GROUP: Joi.string().default('payment-service-order-events-group'),
   PAYMENT_EVENTS_TOPIC: Joi.string().default('payment.events'),
   NOTIFICATION_EVENTS_TOPIC: Joi.string().default('notification.events'),
   ANALYTICS_EVENTS_TOPIC: Joi.string().default('analytics.events')

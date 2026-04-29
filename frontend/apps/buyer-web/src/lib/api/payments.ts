@@ -33,10 +33,10 @@ export function createBuyerPaymentIntent(
   );
 }
 
-export function fetchBuyerPaymentByOrderId(input: AuthRequestInit & { orderId: string }): Promise<Payment> {
+export function fetchBuyerPaymentByOrderId(input: AuthRequestInit & { orderId: string }): Promise<Payment | null> {
   const { accessToken, orderId, ...init } = input;
 
-  return requestBuyerApi<Payment>(
+  return requestBuyerApi<Payment | null>(
     `/api/buyer/payments/order/${encodeURIComponent(orderId)}`,
     withAuth(accessToken, {
       method: 'GET',

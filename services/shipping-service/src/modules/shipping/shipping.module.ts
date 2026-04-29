@@ -16,6 +16,7 @@ import { ShipmentTrackingEventRepository } from './repositories/shipment-trackin
 import { WebhookIdempotencyRecordRepository } from './repositories/webhook-idempotency-record.repository';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { EventsPublisherService } from './services/events-publisher.service';
+import { OrderEventsConsumerService } from './services/order-events-consumer.service';
 import { OutboxDispatcherService } from './services/outbox-dispatcher.service';
 import { ShippingService } from './services/shipping.service';
 
@@ -44,6 +45,7 @@ import { ShippingService } from './services/shipping.service';
     WebhookIdempotencyRecordRepository,
     EventsPublisherService,
     OutboxDispatcherService,
+    OrderEventsConsumerService,
     ShippingService
   ]
 })

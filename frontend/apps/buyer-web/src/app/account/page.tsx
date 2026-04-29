@@ -288,12 +288,7 @@ export default function AccountPage() {
           validationDateOfBirthFuture: 'Ngày sinh không được ở tương lai.',
           validationAvatarUrlInvalid: 'URL ảnh đại diện phải là http(s) hợp lệ.',
           validationAvatarUrlTooLong: 'URL ảnh đại diện không được vượt quá 500 ký tự.',
-          fixValidation: 'Vui lòng sửa các trường đang báo lỗi trước khi lưu.',
-          supportTitle: 'DỊCH VỤ KHÁCH HÀNG',
-          companyTitle: 'MARKET VIỆT NAM',
-          paymentTitle: 'THANH TOÁN',
-          socialTitle: 'THEO DÕI MARKET',
-          appTitle: 'TẢI ỨNG DỤNG MARKET'
+          fixValidation: 'Vui lòng sửa các trường đang báo lỗi trước khi lưu.'
         }
       : {
           profileTitle: 'My Profile',
@@ -332,12 +327,7 @@ export default function AccountPage() {
           validationDateOfBirthFuture: 'Date of birth cannot be in the future.',
           validationAvatarUrlInvalid: 'Avatar URL must be a valid http(s) URL.',
           validationAvatarUrlTooLong: 'Avatar URL must be at most 500 characters.',
-          fixValidation: 'Please fix invalid fields before saving.',
-          supportTitle: 'CUSTOMER SERVICE',
-          companyTitle: 'MARKET VIET NAM',
-          paymentTitle: 'PAYMENT',
-          socialTitle: 'FOLLOW MARKET',
-          appTitle: 'DOWNLOAD APP'
+          fixValidation: 'Please fix invalid fields before saving.'
         };
 
   const normalizedCurrent = normalizeFormValues(formValues);
@@ -701,71 +691,6 @@ export default function AccountPage() {
           </article>
         </section>
       </main>
-
-      <footer className="border-t-4 border-brand-500 bg-white">
-        <section className="mx-auto grid w-full max-w-[1200px] gap-8 px-3 py-8 md:grid-cols-2 md:px-4 lg:grid-cols-5 lg:gap-6">
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">{accountLabels.supportTitle}</h2>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>Trung Tâm Trợ Giúp</li>
-              <li>Market Blog</li>
-              <li>Hướng Dẫn Mua Hàng</li>
-              <li>Chính Sách Trả Hàng</li>
-              <li>Liên Hệ</li>
-            </ul>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">{accountLabels.companyTitle}</h2>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>Về Market</li>
-              <li>Tuyển Dụng</li>
-              <li>Điều Khoản</li>
-              <li>Chính Sách Bảo Mật</li>
-              <li>Kênh Người Bán</li>
-            </ul>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">{accountLabels.paymentTitle}</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {['VISA', 'Mastercard', 'JCB', 'Amex', 'SPay', 'COD'].map((item) => (
-                <span
-                  key={item}
-                  className="rounded-sm border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 shadow-sm"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">{accountLabels.socialTitle}</h2>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>Facebook</li>
-              <li>Instagram</li>
-              <li>LinkedIn</li>
-            </ul>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-slate-800">{accountLabels.appTitle}</h2>
-            <div className="mt-3 flex items-center gap-3">
-              <div className="grid h-20 w-20 place-items-center border border-slate-200 bg-slate-100 text-[11px] font-medium text-slate-500">
-                QR
-              </div>
-              <div className="space-y-2">
-                <span className="block rounded-sm border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-                  App Store
-                </span>
-                <span className="block rounded-sm border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-                  Google Play
-                </span>
-                <span className="block rounded-sm border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-                  AppGallery
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-      </footer>
     </div>
   );
 }

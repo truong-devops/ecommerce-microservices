@@ -19,7 +19,7 @@ No email-change flow in this checklist.
    - `npm run migration:run --workspace services/user-service`
 2. Ensure services are up:
    - `user-service` (default `http://localhost:3100/api/v1`)
-   - `buyer-web` (default `http://localhost:3000`)
+   - `buyer-web` (default `http://localhost:8888`)
 3. Have a valid buyer `ACCESS_TOKEN`.
 
 ## Quick API Smoke (through buyer-web proxy)
@@ -28,7 +28,7 @@ Set env:
 
 ```bash
 export ACCESS_TOKEN="<buyer_access_token>"
-export BUYER_WEB_BASE_URL="http://localhost:3000"
+export BUYER_WEB_BASE_URL="http://localhost:8888"
 ```
 
 ### 1) Get current profile

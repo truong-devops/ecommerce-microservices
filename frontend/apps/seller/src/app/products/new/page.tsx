@@ -74,6 +74,8 @@ const INITIAL_VARIANT: VariantFormState = {
   isDefault: true
 };
 
+const SKU_PATTERN = /^[A-Z0-9._-]+$/;
+
 export default function NewProductPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -257,6 +259,17 @@ export default function NewProductPage() {
     return `${price.toLocaleString('vi-VN')} ${candidate.currency.trim().toUpperCase() || 'VND'}`;
   }, [variants]);
 
+  const suggestedSkuPrefix = useMemo(() => buildSkuPrefix(form.brand, form.categoryId, form.name), [form.brand, form.categoryId, form.name]);
+
+  useEffect(() => {
+    const prefix = suggestedSkuPrefix || 'SKU';
+    setVariants((previous) => {
+      const next = autoAssignSkus(previous, prefix);
+      const hasChanged = next.some((item, index) => item.sku !== previous[index]?.sku);
+      return hasChanged ? next : previous;
+    });
+  }, [suggestedSkuPrefix, variants.length]);
+
   const updateField = useCallback(
     <K extends keyof ProductFormState>(key: K, value: ProductFormState[K]) => {
       if (key === 'slug') {
@@ -405,10 +418,16 @@ export default function NewProductPage() {
         return;
       }
 
+      const duplicatedSkus = findDuplicateSkus(variants.map((variant) => variant.sku));
+      if (duplicatedSkus.length > 0) {
+        setSubmitError(`SKU bị trùng: ${duplicatedSkus.join(', ')}`);
+        return;
+      }
+
       const validatedVariants: CreateSellerProductInput['variants'] = [];
 
       for (const variant of variants) {
-        const sku = variant.sku.trim();
+        const sku = variant.sku.trim().toUpperCase();
         const variantName = variant.name.trim();
         const currency = variant.currency.trim().toUpperCase();
         const price = Number(variant.price);
@@ -420,6 +439,11 @@ export default function NewProductPage() {
 
         if (!variantName) {
           setSubmitError('Mỗi phân loại phải có tên.');
+          return;
+        }
+
+        if (!SKU_PATTERN.test(sku)) {
+          setSubmitError(`SKU ${sku} chỉ được chứa chữ hoa, số, dấu ".", "_" hoặc "-".`);
           return;
         }
 
@@ -553,7 +577,7 @@ export default function NewProductPage() {
     if (activeTab === 'sales') {
       return (
         <section className="rounded-md border border-slate-200 bg-white p-4 text-sm">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold text-slate-900">Thông tin bán hàng</h2>
             <button
               type="button"
@@ -563,6 +587,7 @@ export default function NewProductPage() {
               + Thêm phân loại
             </button>
           </div>
+          <p className="mt-2 text-xs text-slate-500">SKU được hệ thống tự sinh theo mẫu: {buildSkuValue(suggestedSkuPrefix || 'SKU', 1)}</p>
 
           <div className="mt-4 space-y-3">
             {variants.map((variant, index) => (
@@ -599,12 +624,11 @@ export default function NewProductPage() {
                     SKU *
                     <input
                       value={variant.sku}
-                      onChange={(event) => {
-                        updateVariant(variant.id, 'sku', event.target.value);
-                      }}
-                      placeholder="IMG-DTPK-003"
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      readOnly
+                      placeholder="SKU tự sinh"
+                      className="mt-1 w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                     />
+                    <p className="mt-1 text-xs text-slate-500">Hệ thống tự kiểm tra trùng SKU và tự tạo mã cho từng phân loại.</p>
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700">
@@ -805,7 +829,7 @@ export default function NewProductPage() {
                     </option>
                   ))}
                 </datalist>
-                <p className="mt-1 text-xs font-normal text-slate-500">Có thể chọn danh mục hiện có hoặc nhập Use status endpoint to update product status để tạo danh mục mới.</p>
+                <p className="mt-1 text-xs font-normal text-slate-500">Có thể chọn danh mục hiện có hoặc nhập mới để tạo danh mục mới.</p>
               </label>
 
               <label className="block text-sm font-semibold text-slate-900">
@@ -833,6 +857,7 @@ export default function NewProductPage() {
     isLoadingCategories,
     isUploadingImages,
     selectedRatio,
+    suggestedSkuPrefix,
     updateField,
     uploadError,
     uploadedImages,
@@ -893,7 +918,7 @@ export default function NewProductPage() {
             <p className="mt-2 text-sm text-slate-500">
               {isEditMode
                 ? 'Khi lưu chỉnh sửa từ màn Chi tiết, trạng thái sẽ chuyển về DRAFT để hệ thống kiểm duyệt lại.'
-                : 'Seller tạo mới sẽ ở trạng thái DRAFT theo rule backend.'}
+                : 'Seller tạo mới sẽ ở trạng thái DRAFT.'}
             </p>
           </aside>
 
@@ -1043,6 +1068,70 @@ function toProductSlug(name: string): string {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
+}
+
+function buildSkuPrefix(brand: string, categoryId: string, productName: string): string {
+  const candidates = [brand, categoryId, productName]
+    .map((value) => toSkuToken(value))
+    .filter(Boolean);
+
+  if (candidates.length === 0) {
+    return 'SKU';
+  }
+
+  return candidates.slice(0, 2).join('-');
+}
+
+function buildSkuValue(prefix: string, sequence: number): string {
+  const normalizedPrefix = toSkuToken(prefix) || 'SKU';
+  const paddedSequence = String(Math.max(1, sequence)).padStart(3, '0');
+  return `${normalizedPrefix}-${paddedSequence}`;
+}
+
+function autoAssignSkus(variants: VariantFormState[], prefix: string): VariantFormState[] {
+  const usedSkus = new Set<string>();
+
+  return variants.map((variant, index) => {
+    let sequence = index + 1;
+    let candidate = buildSkuValue(prefix, sequence);
+
+    while (usedSkus.has(candidate)) {
+      sequence += 1;
+      candidate = buildSkuValue(prefix, sequence);
+    }
+
+    usedSkus.add(candidate);
+    return {
+      ...variant,
+      sku: candidate
+    };
+  });
+}
+
+function findDuplicateSkus(values: string[]): string[] {
+  const counts = new Map<string, number>();
+
+  for (const rawValue of values) {
+    const normalized = rawValue.trim().toUpperCase();
+    if (!normalized) {
+      continue;
+    }
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+
+  return [...counts.entries()].filter(([, count]) => count > 1).map(([sku]) => sku);
+}
+
+function toSkuToken(value: string): string {
+  return value
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/(^-+|-+$)/g, '');
 }
 
 function createLocalId(): string {

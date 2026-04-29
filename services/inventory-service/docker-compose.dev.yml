@@ -21,6 +21,7 @@ services:
       - ./.env.example
     environment:
       APP_ENV: development
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       KAFKA_BROKERS: host.docker.internal:9092
     ports:

@@ -18,6 +18,10 @@ export interface AppMessages {
     orders: string;
   };
   home: {
+    categoryTitle: string;
+    allCategories: string;
+    categoryProductsTitle: string;
+    noProductsInCategory: string;
     flashSaleTitle: string;
     mallTitle: string;
     topSearchTitle: string;
@@ -244,6 +248,10 @@ export const messages: Record<Locale, AppMessages> = {
       orders: 'My orders'
     },
     home: {
+      categoryTitle: 'Categories',
+      allCategories: 'All',
+      categoryProductsTitle: 'Products in {category}',
+      noProductsInCategory: 'No products in this category yet.',
       flashSaleTitle: 'Flash Sale',
       mallTitle: 'Mall Highlights',
       topSearchTitle: 'Top Search',
@@ -468,6 +476,10 @@ export const messages: Record<Locale, AppMessages> = {
       orders: 'Đơn mua'
     },
     home: {
+      categoryTitle: 'Danh Mục',
+      allCategories: 'Tất cả',
+      categoryProductsTitle: 'Sản phẩm thuộc {category}',
+      noProductsInCategory: 'Chưa có sản phẩm trong danh mục này.',
       flashSaleTitle: 'Flash Sale',
       mallTitle: 'Mall Nổi Bật',
       topSearchTitle: 'Tìm Kiếm Hàng Đầu',

@@ -7,21 +7,13 @@ import { Header } from '@/components/layout/Header';
 import { createBuyerOrder } from '@/lib/api/orders';
 import { createBuyerPaymentIntent } from '@/lib/api/payments';
 import { BuyerApiClientError } from '@/lib/api/client';
+import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
 import type { CreateOrderItemInput } from '@/lib/api/types';
 import type { CartItem } from '@/providers/AppProvider';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 type PaymentMethod = 'cod' | 'online';
-
-function formatPrice(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 function buildLoginRedirectUrl(path: string): string {
   return `/login?returnUrl=${encodeURIComponent(path)}`;

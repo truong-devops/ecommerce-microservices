@@ -26,7 +26,10 @@ export default () => ({
     ttlMinutes: Number(process.env.WEBHOOK_IDEMPOTENCY_TTL_MINUTES ?? 1440)
   },
   kafka: {
+    enabled: process.env.KAFKA_ENABLED !== 'false',
     brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9092').split(',').map((value) => value.trim()),
+    orderEventsTopic: process.env.ORDER_EVENTS_TOPIC ?? 'order.events',
+    orderEventsConsumerGroup: process.env.ORDER_EVENTS_CONSUMER_GROUP ?? 'shipping-service-order-events-group',
     shippingEventsTopic: process.env.SHIPPING_EVENTS_TOPIC ?? 'shipping.events',
     notificationEventsTopic: process.env.NOTIFICATION_EVENTS_TOPIC ?? 'notification.events',
     analyticsEventsTopic: process.env.ANALYTICS_EVENTS_TOPIC ?? 'analytics.events'

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { CategorySection } from '@/components/home/CategorySection';
 import { FlashSaleSection } from '@/components/home/FlashSaleSection';
 import { MallSection } from '@/components/home/MallSection';
 import { RecommendationSection } from '@/components/home/RecommendationSection';
@@ -15,6 +16,7 @@ type HomeStatus = 'loading' | 'error' | 'success';
 
 const emptyHomeSections: HomeSectionsData = {
   keywords: [],
+  categories: [],
   flashSaleItems: [],
   mallDeals: [],
   topSearchItems: [],
@@ -26,6 +28,7 @@ export default function HomePage() {
   const [status, setStatus] = useState<HomeStatus>('loading');
   const [error, setError] = useState('');
   const [sections, setSections] = useState<HomeSectionsData>(emptyHomeSections);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   const loadHomeData = useCallback(async () => {
     setStatus('loading');
@@ -57,6 +60,38 @@ export default function HomePage() {
       sections.recommendationProducts.length === 0,
     [sections]
   );
+
+  useEffect(() => {
+    if (sections.categories.length === 0) {
+      setSelectedCategoryId(null);
+      return;
+    }
+
+    const isSelectedCategoryExists = sections.categories.some((category) => category.id === selectedCategoryId);
+    if (selectedCategoryId && !isSelectedCategoryExists) {
+      setSelectedCategoryId(null);
+    }
+  }, [sections.categories, selectedCategoryId]);
+
+  const selectedCategory = useMemo(
+    () => sections.categories.find((category) => category.id === selectedCategoryId) ?? null,
+    [sections.categories, selectedCategoryId]
+  );
+  const filteredRecommendationProducts = useMemo(() => {
+    if (!selectedCategoryId) {
+      return sections.recommendationProducts;
+    }
+
+    return sections.recommendationProducts.filter((product) => product.categoryId === selectedCategoryId);
+  }, [sections.recommendationProducts, selectedCategoryId]);
+
+  const recommendationTitle = useMemo(() => {
+    if (!selectedCategory) {
+      return text.home.recommendationTitle;
+    }
+
+    return text.home.categoryProductsTitle.replace('{category}', selectedCategory.label);
+  }, [selectedCategory, text.home.categoryProductsTitle, text.home.recommendationTitle]);
 
   return (
     <div className="min-h-screen bg-app-bg text-slate-900">
@@ -92,10 +127,19 @@ export default function HomePage() {
 
         {status === 'success' && !isEmpty ? (
           <>
+            <CategorySection
+              categories={sections.categories}
+              selectedCategoryId={selectedCategoryId}
+              onSelectCategory={setSelectedCategoryId}
+            />
             <FlashSaleSection items={sections.flashSaleItems} />
             <MallSection deals={sections.mallDeals} />
             <TopSearchSection items={sections.topSearchItems} />
-            <RecommendationSection products={sections.recommendationProducts} />
+            <RecommendationSection
+              title={recommendationTitle}
+              emptyMessage={text.home.noProductsInCategory}
+              products={filteredRecommendationProducts}
+            />
           </>
         ) : null}
       </main>

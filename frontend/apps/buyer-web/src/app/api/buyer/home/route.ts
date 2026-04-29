@@ -13,6 +13,7 @@ interface ProductVariant {
 interface BackendProduct {
   id: string;
   name: string;
+  categoryId: string;
   brand: string | null;
   images: string[];
   minPrice: number;
@@ -20,6 +21,8 @@ interface BackendProduct {
 }
 
 const soldLabels = ['Hot sale', 'Fast moving', 'Trending', 'Best choice', 'Almost gone', 'Top pick'];
+const HOME_PRODUCTS_PAGE_SIZE = 100;
+const MAX_PRODUCTS_PER_CATEGORY = 6;
 const mallTitles = [
   'Up to 50% off',
   'Buy 1 get 1',
@@ -30,11 +33,33 @@ const mallTitles = [
   'Combo discounts',
   'New arrivals'
 ];
+const categoryLabelMap: Record<string, string> = {
+  'thoi-trang-nam': 'Thời Trang Nam',
+  'thoi-trang-nu': 'Thời Trang Nữ',
+  'dien-thoai-phu-kien': 'Điện Thoại & Phụ Kiện',
+  'thiet-bi-dien-tu': 'Thiết Bị Điện Tử',
+  'may-tinh-laptop': 'Máy Tính & Laptop',
+  'may-anh-may-quay-phim': 'Máy Ảnh & Máy Quay Phim',
+  'dong-ho': 'Đồng Hồ',
+  'giay-dep-nam': 'Giày Dép Nam',
+  'thiet-bi-dien-gia-dung': 'Thiết Bị Điện Gia Dụng',
+  'the-thao-du-lich': 'Thể Thao & Du Lịch',
+  'o-to-xe-may-xe-dap': 'Ô Tô & Xe Máy',
+  'me-va-be': 'Mẹ & Bé',
+  'nha-cua-doi-song': 'Nhà Cửa & Đời Sống',
+  'sac-dep': 'Sắc Đẹp',
+  'suc-khoe': 'Sức Khỏe',
+  'giay-dep-nu': 'Giày Dép Nữ',
+  'tui-vi-nu': 'Túi Ví Nữ',
+  'phu-kien-trang-suc-nu': 'Phụ Kiện & Trang Sức',
+  'bach-hoa-online': 'Bách Hóa Online',
+  'nha-sach-online': 'Nhà Sách Online'
+};
 
 export async function GET() {
   try {
     const products = await requestUpstream<BackendProduct[]>(
-      `${serviceBaseUrls.product}/products?page=1&pageSize=40&sortBy=createdAt&sortOrder=DESC`
+      `${serviceBaseUrls.product}/products?page=1&pageSize=${HOME_PRODUCTS_PAGE_SIZE}&sortBy=createdAt&sortOrder=DESC`
     );
 
     return ok(buildHomeSections(products), 'backend');
@@ -47,6 +72,7 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
   if (products.length === 0) {
     return {
       keywords: [],
+      categories: [],
       flashSaleItems: [],
       mallDeals: [],
       topSearchItems: [],
@@ -63,6 +89,7 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
     return {
       id: product.id,
       name: product.name,
+      categoryId: product.categoryId?.trim() || 'uncategorized',
       brand: product.brand,
       price,
       compareAtPrice,
@@ -89,14 +116,26 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
     image: item.image
   }));
 
-  const recommendationProducts = normalized.slice(0, 15).map((item, index) => ({
-    id: item.id,
-    title: item.name,
-    price: item.price,
-    sold: `${(index + 2) * 2}k+`,
-    discountPercent: item.discountPercent,
-    image: item.image
-  }));
+  const categories = Array.from(new Map(normalized.map((item) => [item.categoryId, item])).values())
+    .slice(0, 12)
+    .map((item) => ({
+      id: item.categoryId,
+      label: resolveCategoryLabel(item.categoryId),
+      icon: item.image
+    }));
+  const recommendationProducts = categories.flatMap((category) => {
+    const itemsInCategory = normalized.filter((item) => item.categoryId === category.id).slice(0, MAX_PRODUCTS_PER_CATEGORY);
+
+    return itemsInCategory.map((item, index) => ({
+      id: item.id,
+      title: item.name,
+      categoryId: item.categoryId,
+      price: item.price,
+      sold: `${(index + 2) * 2}k+`,
+      discountPercent: item.discountPercent,
+      image: item.image
+    }));
+  });
 
   const uniqueBrands = Array.from(
     new Set(
@@ -117,11 +156,25 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
 
   return {
     keywords,
+    categories,
     flashSaleItems,
     mallDeals,
     topSearchItems,
     recommendationProducts
   };
+}
+
+function resolveCategoryLabel(categoryId: string): string {
+  const normalized = categoryId.trim().toLowerCase();
+  if (categoryLabelMap[normalized]) {
+    return categoryLabelMap[normalized];
+  }
+
+  return normalized
+    .split('-')
+    .filter((part) => part.length > 0)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function deriveKeywords(names: string[]): string[] {

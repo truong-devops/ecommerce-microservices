@@ -15,10 +15,10 @@ function withAuth(accessToken: string, init?: RequestInit): RequestInit {
   };
 }
 
-export function fetchBuyerShipmentByOrderId(input: AuthRequestInit & { orderId: string }): Promise<Shipment> {
+export function fetchBuyerShipmentByOrderId(input: AuthRequestInit & { orderId: string }): Promise<Shipment | null> {
   const { accessToken, orderId, ...init } = input;
 
-  return requestBuyerApi<Shipment>(
+  return requestBuyerApi<Shipment | null>(
     `/api/buyer/shipments/order/${encodeURIComponent(orderId)}`,
     withAuth(accessToken, {
       method: 'GET',

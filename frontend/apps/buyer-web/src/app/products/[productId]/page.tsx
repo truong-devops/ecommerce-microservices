@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { fetchProductDetail } from '@/lib/api/products';
+import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
 import type { ProductDetail } from '@/lib/api/types';
 import { useCart, useLanguage } from '@/providers/AppProvider';
@@ -16,15 +17,6 @@ interface ProductDetailPageProps {
   params: {
     productId: string;
   };
-}
-
-function formatPrice(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(value);
 }
 
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {

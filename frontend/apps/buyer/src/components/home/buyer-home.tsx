@@ -35,6 +35,7 @@ interface ProductCardView {
   name: string;
   image: string;
   price: number;
+  priceMax: number;
   currency: string;
   sold: string;
   soldCount: number;
@@ -403,31 +404,25 @@ function detectProductTheme(product: ProductItem): ProductTheme {
 
 function buildDisplayProductData(product: ProductItem, index: number, language: LanguageCode): DisplayProductData {
   const theme = detectProductTheme(product);
-  const themeAssets = productThemeAssets[theme];
-  const seed = Math.abs(
-    Array.from(normalizeSlug(product.id + product.slug)).reduce((sum, char) => sum + char.charCodeAt(0), 0) + index
-  );
-
-  const nameVi = pickByIndex(themeAssets.namesVi, seed);
-  const descriptionVi = pickByIndex(themeAssets.descriptionsVi, seed);
-  const shopName = pickByIndex(themeAssets.shopsVi, seed);
-  const imageOffset = seed % themeAssets.images.length;
-  const gallery = new Array(5)
-    .fill(null)
-    .map((_, imageIndex) => themeAssets.images[(imageOffset + imageIndex) % themeAssets.images.length]);
-
-  const name = language === 'vi' ? nameVi : product.name;
-  const description =
-    language === 'vi'
-      ? `${descriptionVi} ${product.description ?? ''}`.trim()
-      : product.description ?? 'Product description is being updated.';
+  const categoryByTheme: Record<ProductTheme, ProductCardView['category']> = {
+    perfume: 'perfume',
+    skincare: 'beauty',
+    audio: 'home',
+    laptop: 'home',
+    fashion: 'fashion',
+    home: 'home'
+  };
+  const gallery = Array.from(new Set((product.images ?? []).filter((item) => /^https?:\/\//i.test(item))));
+  const name = product.name;
+  const description = product.description ?? (language === 'vi' ? 'Sản phẩm đang được cập nhật mô tả.' : 'Product description is being updated.');
+  const shopName = `Shop ${product.sellerId.slice(0, 6).toUpperCase()}`;
 
   return {
     name,
     description,
     images: gallery,
     shopName,
-    category: themeAssets.category
+    category: categoryByTheme[theme]
   };
 }
 
@@ -459,6 +454,11 @@ function resolveLocale(language: LanguageCode): string {
 }
 
 function formatMoney(value: number, currency: string, language: LanguageCode): string {
+  if (currency.toUpperCase() === 'VND') {
+    const normalized = Number.isFinite(value) ? Math.round(value) : 0;
+    return `${normalized.toLocaleString('vi-VN')}₫`;
+  }
+
   try {
     return new Intl.NumberFormat(resolveLocale(language), {
       style: 'currency',
@@ -468,6 +468,15 @@ function formatMoney(value: number, currency: string, language: LanguageCode): s
   } catch {
     return `${Math.round(value)} ${currency}`;
   }
+}
+
+function formatPriceRange(minValue: number, maxValue: number, currency: string, language: LanguageCode): string {
+  const min = Number.isFinite(minValue) ? minValue : 0;
+  const max = Number.isFinite(maxValue) ? maxValue : min;
+  if (Math.round(min) === Math.round(max)) {
+    return formatMoney(min, currency, language);
+  }
+  return `${formatMoney(min, currency, language)} - ${formatMoney(max, currency, language)}`;
 }
 
 function soldLabel(index: number): string {
@@ -730,6 +739,7 @@ export function BuyerHome({
         name: locale.home.recommendTitles[index] ?? `Product ${index + 1}`,
         image,
         price: 19000 + index * 9000,
+        priceMax: 19000 + index * 9000,
         currency: 'VND',
         sold: soldLabel(index),
         soldCount: parseSoldCount(soldLabel(index)),
@@ -743,6 +753,9 @@ export function BuyerHome({
 
     return products.map((product, index) => {
       const variant = pickDefaultVariant(product);
+      const variantPrices = (product.variants ?? []).map((item) => item.price).filter((value) => Number.isFinite(value) && value >= 0);
+      const minVariantPrice = variantPrices.length > 0 ? Math.min(...variantPrices) : product.minPrice;
+      const maxVariantPrice = variantPrices.length > 0 ? Math.max(...variantPrices) : minVariantPrice;
       const display = productDisplayMap.get(product.id);
       const meta = buildCardMeta(index);
       const sold = soldLabel(index);
@@ -752,7 +765,8 @@ export function BuyerHome({
         id: product.id,
         name: display?.name ?? product.name,
         image: display?.images[0] ?? resolveProductImage(product),
-        price: variant?.price ?? product.minPrice,
+        price: minVariantPrice,
+        priceMax: maxVariantPrice,
         currency: variant?.currency ?? 'VND',
         sold,
         soldCount: parseSoldCount(sold),
@@ -1792,7 +1806,7 @@ export function BuyerHome({
                     >
                       <Image source={{ uri: item.image }} style={homeStyles.mobileProductImage} />
                       <Text style={homeStyles.mobileProductName} numberOfLines={2}>{item.name}</Text>
-                      <Text style={homeStyles.mobileProductPrice}>{formatMoney(item.price, item.currency, language)}</Text>
+                      <Text style={homeStyles.mobileProductPrice}>{formatPriceRange(item.price, item.priceMax, item.currency, language)}</Text>
                       <Text style={homeStyles.mobileProductMeta}>{`${locale.home.soldPrefix} ${item.sold}`}</Text>
                     </Pressable>
                   ))}
@@ -1899,7 +1913,7 @@ export function BuyerHome({
                     {relatedShopProducts.map((item) => (
                       <View key={`related-${item.id}`} style={homeStyles.relatedProductItem}>
                         <Image source={{ uri: item.image }} style={homeStyles.relatedImage} />
-                        <Text style={homeStyles.relatedPrice}>{formatMoney(item.price, item.currency, language)}</Text>
+                        <Text style={homeStyles.relatedPrice}>{formatPriceRange(item.price, item.priceMax, item.currency, language)}</Text>
                       </View>
                     ))}
                     <Pressable style={homeStyles.relatedShopButton}>
@@ -1961,7 +1975,7 @@ export function BuyerHome({
                           <Text style={homeStyles.discountBadge}>-15%</Text>
                         </View>
                         <Text style={homeStyles.productName} numberOfLines={2}>{item.name}</Text>
-                        <Text style={homeStyles.productPrice}>{formatMoney(item.price, item.currency, language)}</Text>
+                        <Text style={homeStyles.productPrice}>{formatPriceRange(item.price, item.priceMax, item.currency, language)}</Text>
                         <Text style={homeStyles.productSold}>{`${locale.home.soldPrefix} ${item.sold}`}</Text>
                         <View style={homeStyles.productActionRow}>
                           {item.product ? (
@@ -2034,7 +2048,7 @@ export function BuyerHome({
                         <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>#{item.mallRank}</Text>
                       </View>
                       <Text style={homeStyles.mobileProductName} numberOfLines={2}>{item.name}</Text>
-                      <Text style={homeStyles.mobileProductPrice}>{formatMoney(item.price, item.currency, language)}</Text>
+                      <Text style={homeStyles.mobileProductPrice}>{formatPriceRange(item.price, item.priceMax, item.currency, language)}</Text>
                       <Text style={homeStyles.mobileProductMeta}>{`${locale.home.soldPrefix} ${item.sold}`}</Text>
                     </Pressable>
                   ))}
@@ -2095,7 +2109,7 @@ export function BuyerHome({
                     >
                       <Image source={{ uri: item.image }} style={homeStyles.mobileProductImage} />
                       <Text style={homeStyles.mobileProductName} numberOfLines={2}>{item.name}</Text>
-                      <Text style={homeStyles.mobileProductPrice}>{formatMoney(item.price, item.currency, language)}</Text>
+                      <Text style={homeStyles.mobileProductPrice}>{formatPriceRange(item.price, item.priceMax, item.currency, language)}</Text>
                       <Text style={homeStyles.mobileProductMeta}>{`${locale.home.soldPrefix} ${item.sold}`}</Text>
                     </Pressable>
                   ))}
@@ -2734,8 +2748,6 @@ export function BuyerHome({
     </View>
   );
 }
-
-
 
 
 

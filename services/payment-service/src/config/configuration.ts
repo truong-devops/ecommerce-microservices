@@ -43,7 +43,10 @@ export default () => ({
     refundSimulation: process.env.VNPAY_REFUND_SIMULATION !== 'false'
   },
   kafka: {
+    enabled: process.env.KAFKA_ENABLED !== 'false',
     brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9092').split(',').map((value) => value.trim()),
+    orderEventsTopic: process.env.ORDER_EVENTS_TOPIC ?? 'order.events',
+    orderEventsConsumerGroup: process.env.ORDER_EVENTS_CONSUMER_GROUP ?? 'payment-service-order-events-group',
     paymentEventsTopic: process.env.PAYMENT_EVENTS_TOPIC ?? 'payment.events',
     notificationEventsTopic: process.env.NOTIFICATION_EVENTS_TOPIC ?? 'notification.events',
     analyticsEventsTopic: process.env.ANALYTICS_EVENTS_TOPIC ?? 'analytics.events'

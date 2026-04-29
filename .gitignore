@@ -28,3 +28,8 @@ coverage/
 logs/
 *.log
 frontend/apps/buyer-web/tsconfig.tsbuildinfo
+node_modules/
+.next/
+dist/
+build/
+.cache/

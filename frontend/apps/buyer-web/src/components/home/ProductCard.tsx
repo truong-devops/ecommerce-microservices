@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { ProductItem } from '@/lib/api/types';
+import { formatPrice } from '@/lib/price';
 import { useLanguage } from '@/providers/AppProvider';
 
 interface ProductCardProps {
@@ -24,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="space-y-2 p-2.5">
           <h3 className="line-clamp-2 min-h-[2.6rem] text-sm font-medium text-slate-700">{product.title}</h3>
           <div className="flex items-center justify-between gap-2">
-            <span className="text-lg font-bold text-brand-600">${product.price.toFixed(2)}</span>
+            <span className="text-lg font-bold text-brand-600">{formatPrice(product.price)}</span>
             <span className="text-xs text-slate-500">
               {text.home.soldLabel} {product.sold}
             </span>

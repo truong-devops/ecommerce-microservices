@@ -226,7 +226,11 @@ export default function AllOrdersPage() {
                     ) : (
                       items.map((order) => (
                         <tr key={order.id} className="border-t border-slate-200 align-top">
-                          <td className="px-4 py-3 font-medium text-slate-800">{formatOrderCode(order.orderNumber, order.id)}</td>
+                          <td className="px-4 py-3 font-medium text-slate-800">
+                            <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:underline">
+                              {formatOrderCode(order.orderNumber, order.id)}
+                            </Link>
+                          </td>
                           <td className="px-4 py-3">{formatCustomerCode(order.userId)}</td>
                           <td className="px-4 py-3">{toProductSummary(order)}</td>
                           <td className="px-4 py-3">{formatCurrency(order.totalAmount, order.currency)}</td>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { SellerApiClientError } from '@/lib/api/client';
@@ -466,7 +466,7 @@ function toOrderStatusFilter(tab: MainTabId): SellerOrderStatus | null {
   return null;
 }
 
-function renderOrderCell(order: SellerOrder, column: string): string {
+function renderOrderCell(order: SellerOrder, column: string): ReactNode {
   if (column === 'Sản phẩm') {
     return buildProductLabel(order);
   }
@@ -500,7 +500,11 @@ function renderOrderCell(order: SellerOrder, column: string): string {
   }
 
   if (column === 'Thao tác') {
-    return `Xem ${formatOrderCode(order.orderNumber, order.id)}`;
+    return (
+      <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:underline">
+        Xem {formatOrderCode(order.orderNumber, order.id)}
+      </Link>
+    );
   }
 
   return '-';

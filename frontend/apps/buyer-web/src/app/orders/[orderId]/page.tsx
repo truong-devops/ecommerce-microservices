@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/orders';
 import { fetchBuyerPaymentByOrderId } from '@/lib/api/payments';
 import { formatPrice } from '@/lib/price';
+import { formatOrderCode } from '@/lib/order-codes';
 import {
   fetchBuyerShipmentByOrderId,
   fetchBuyerShipmentTrackingEvents
@@ -346,7 +347,7 @@ export default function OrderDetailPage() {
 
           <div className="mt-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 md:grid-cols-2">
             <p>
-              {text.orders.orderCode}: <span className="font-semibold text-slate-900">{order.orderNumber}</span>
+              {text.orders.orderCode}: <span className="font-semibold text-slate-900">{formatOrderCode(order.orderNumber, order.id)}</span>
             </p>
             <p>
               {text.orders.orderedAt}: {formatDateTime(order.createdAt, locale)}

@@ -71,6 +71,7 @@ interface OrderRecord {
   id: string;
   status: string;
   items: OrderItem[];
+  createdAt: string;
 }
 
 interface OrderListOutput {
@@ -161,19 +162,19 @@ export async function GET(request: Request) {
 
   try {
     const [
-      overview,
-      timeseries,
-      latestNotifications,
-      pendingCount,
-      confirmedCount,
-      processingCount,
-      shippedCount,
-      deliveredCount,
-      cancelledCount,
-      failedCount,
-      recentOrders,
-      managedProducts
-    ] = await Promise.all([
+      overviewResult,
+      timeseriesResult,
+      latestNotificationsResult,
+      pendingCountResult,
+      confirmedCountResult,
+      processingCountResult,
+      shippedCountResult,
+      deliveredCountResult,
+      cancelledCountResult,
+      failedCountResult,
+      recentOrdersResult,
+      managedProductsResult
+    ] = await Promise.allSettled([
       requestUpstream<AnalyticsOverviewOutput>(`${serviceBaseUrls.analytics}/analytics/overview${analyticsQuery}`, {
         method: 'GET',
         headers: authHeaders
@@ -194,8 +195,49 @@ export async function GET(request: Request) {
       shouldFetchManagedProducts ? fetchManagedProducts(accessToken) : Promise.resolve([])
     ]);
 
-    const dailyBuckets = aggregateDailyMetrics(timeseries.items);
-    const revenueSeries = deriveRevenueSeries(dailyBuckets, sanitizeNumber(overview.capturedAmount));
+    const overview = overviewResult.status === 'fulfilled'
+      ? overviewResult.value
+      : {
+          from: dateRange.from,
+          to: dateRange.to,
+          sellerId: sellerId || null,
+          totalEvents: 0,
+          uniqueOrders: 0,
+          uniquePayments: 0,
+          uniqueShipments: 0,
+          capturedAmount: 0,
+          refundedAmount: 0
+        };
+    const timeseries = timeseriesResult.status === 'fulfilled' ? timeseriesResult.value : { items: [] };
+    const latestNotifications = latestNotificationsResult.status === 'fulfilled'
+      ? latestNotificationsResult.value
+      : {
+          items: [],
+          pagination: {
+            page: 1,
+            pageSize: 8,
+            totalItems: 0,
+            totalPages: 0
+          }
+        };
+    const pendingCount = pendingCountResult.status === 'fulfilled' ? pendingCountResult.value : 0;
+    const confirmedCount = confirmedCountResult.status === 'fulfilled' ? confirmedCountResult.value : 0;
+    const processingCount = processingCountResult.status === 'fulfilled' ? processingCountResult.value : 0;
+    const shippedCount = shippedCountResult.status === 'fulfilled' ? shippedCountResult.value : 0;
+    const deliveredCount = deliveredCountResult.status === 'fulfilled' ? deliveredCountResult.value : 0;
+    const cancelledCount = cancelledCountResult.status === 'fulfilled' ? cancelledCountResult.value : 0;
+    const failedCount = failedCountResult.status === 'fulfilled' ? failedCountResult.value : 0;
+    const recentOrders = recentOrdersResult.status === 'fulfilled' ? recentOrdersResult.value : [];
+    const managedProducts = managedProductsResult.status === 'fulfilled' ? managedProductsResult.value : [];
+
+    let dailyBuckets = aggregateDailyMetrics(timeseries.items);
+    let revenueSeries = deriveRevenueSeries(dailyBuckets, sanitizeNumber(overview.capturedAmount));
+    const hasAnalyticsSignal = dailyBuckets.some((bucket) => bucket.totalEvents > 0 || bucket.ordersCreated > 0 || bucket.visits > 0);
+    if (!hasAnalyticsSignal && recentOrders.length > 0) {
+      const fallback = buildFallbackFromOrders(recentOrders, dateRange.from, dateRange.to);
+      dailyBuckets = fallback.dailyBuckets;
+      revenueSeries = fallback.revenueSeries;
+    }
 
     const todayBucket = dailyBuckets.at(-1) ?? createEmptyDailyBucket(dateRange.to);
     const yesterdayBucket = dailyBuckets.at(-2) ?? createEmptyDailyBucket(dateRange.from);
@@ -235,6 +277,30 @@ export async function GET(request: Request) {
 
     const orderStatus: OrderStatusSlice[] = [
       {
+        id: 'pending_only',
+        label: 'Chờ xác nhận',
+        value: pendingCount,
+        color: '#f59e0b'
+      },
+      {
+        id: 'confirmed',
+        label: 'Đã xác nhận',
+        value: confirmedCount,
+        color: '#3b82f6'
+      },
+      {
+        id: 'processing',
+        label: 'Đang xử lý',
+        value: processingCount,
+        color: '#3b82f6'
+      },
+      {
+        id: 'shipped',
+        label: 'Đang giao',
+        value: shippedCount,
+        color: '#3b82f6'
+      },
+      {
         id: 'pending',
         label: 'Chờ xử lý',
         value: pendingCount + confirmedCount,
@@ -251,6 +317,12 @@ export async function GET(request: Request) {
         label: 'Hoàn thành',
         value: deliveredCount,
         color: '#10b981'
+      },
+      {
+        id: 'failed',
+        label: 'Thất bại',
+        value: failedCount,
+        color: '#ef4444'
       },
       {
         id: 'cancelled',
@@ -440,7 +512,10 @@ async function fetchRecentOrders(accessToken: string): Promise<OrderRecord[]> {
   return data.items.map((order) => ({
     id: typeof order.id === 'string' ? order.id : '',
     status: typeof order.status === 'string' ? order.status : '',
-    items: Array.isArray(order.items) ? order.items : []
+    items: Array.isArray(order.items) ? order.items : [],
+    createdAt: typeof (order as { createdAt?: unknown }).createdAt === 'string'
+      ? (order as { createdAt: string }).createdAt
+      : new Date().toISOString()
   }));
 }
 
@@ -621,6 +696,74 @@ function aggregateDailyMetrics(items: AnalyticsTimeseriesOutput['items'] | undef
   }
 
   return [...byBucket.values()].sort((a, b) => a.bucket.localeCompare(b.bucket));
+}
+
+function buildFallbackFromOrders(
+  orders: OrderRecord[],
+  fromIso: string,
+  toIso: string
+): { dailyBuckets: DailyMetricBucket[]; revenueSeries: DashboardSeriesPoint[] } {
+  const from = new Date(fromIso);
+  const to = new Date(toIso);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) {
+    return {
+      dailyBuckets: [],
+      revenueSeries: []
+    };
+  }
+
+  const dayKeys: string[] = [];
+  const cursor = new Date(from);
+  cursor.setHours(0, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(0, 0, 0, 0);
+
+  while (cursor <= end) {
+    dayKeys.push(cursor.toISOString());
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  const buckets = new Map<string, DailyMetricBucket>();
+  const revenueByBucket = new Map<string, number>();
+  for (const key of dayKeys) {
+    buckets.set(key, createEmptyDailyBucket(key));
+    revenueByBucket.set(key, 0);
+  }
+
+  for (const order of orders) {
+    const orderTime = new Date(order.createdAt);
+    if (Number.isNaN(orderTime.getTime())) {
+      continue;
+    }
+    orderTime.setHours(0, 0, 0, 0);
+    const key = orderTime.toISOString();
+    const bucket = buckets.get(key);
+    if (!bucket) {
+      continue;
+    }
+
+    bucket.totalEvents += 1;
+    bucket.ordersCreated += 1;
+    bucket.direct += 1;
+
+    if (order.status === ORDER_STATUS.cancelled || order.status === ORDER_STATUS.failed) {
+      bucket.cancelledEvents += 1;
+    }
+
+    const orderRevenue = (order.items ?? []).reduce((sum, item) => sum + sanitizeNumber(item.totalPrice), 0);
+    revenueByBucket.set(key, (revenueByBucket.get(key) ?? 0) + orderRevenue);
+  }
+
+  const dailyBuckets = dayKeys.map((key) => buckets.get(key) ?? createEmptyDailyBucket(key));
+  const revenueSeries = dayKeys.map((key) => ({
+    label: toDateLabel(key),
+    value: revenueByBucket.get(key) ?? 0
+  }));
+
+  return {
+    dailyBuckets,
+    revenueSeries
+  };
 }
 
 function createEmptyDailyBucket(bucket: string): DailyMetricBucket {

@@ -64,7 +64,10 @@ const sections: SidebarSection[] = [
   },
   {
     title: 'Dữ Liệu',
-    items: [{ label: 'Phân Tích Bán Hàng' }, { label: 'Hiệu Quả Hoạt Động' }]
+    items: [
+      { label: 'Phân Tích Bán Hàng', href: '/data/sales-analytics' },
+      { label: 'Hiệu Quả Hoạt Động' }
+    ]
   },
   {
     title: 'Quản Lý Shop',

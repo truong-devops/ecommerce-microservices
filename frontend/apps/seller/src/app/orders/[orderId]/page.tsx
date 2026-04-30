@@ -20,9 +20,9 @@ import { useAuth } from '@/providers/AppProvider';
 
 const statusTransitionMap: Partial<Record<SellerOrderStatus, SellerOrderStatus[]>> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['PROCESSING', 'CANCELLED'],
-  PROCESSING: ['SHIPPED', 'CANCELLED'],
-  SHIPPED: ['DELIVERED', 'FAILED'],
+  CONFIRMED: ['CANCELLED'],
+  PROCESSING: ['CANCELLED'],
+  SHIPPED: [],
   DELIVERED: [],
   CANCELLED: [],
   FAILED: []
@@ -42,6 +42,7 @@ export default function SellerOrderDetailPage() {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
+  const [orderMissing, setOrderMissing] = useState(false);
   const [statusReason, setStatusReason] = useState('');
 
   const handleLogout = useCallback(async () => {
@@ -56,26 +57,63 @@ export default function SellerOrderDetailPage() {
 
     setLoading(true);
     setError('');
+    setOrderMissing(false);
 
     try {
-      const [orderData, historyData, shipmentData] = await Promise.all([
+      const [orderResult, shipmentResult] = await Promise.allSettled([
         getSellerOrderById(accessToken, orderId),
-        getSellerOrderHistory(accessToken, orderId),
         getSellerShipmentByOrderId(accessToken, orderId)
       ]);
 
-      const trackingData = shipmentData ? await getSellerShipmentTrackingEvents(accessToken, shipmentData.id) : null;
+      let orderData: SellerOrder | null = null;
+      let historyData: SellerOrderStatusHistoryOutput | null = null;
+      let shipmentData: SellerShipment | null = null;
+
+      if (orderResult.status === 'fulfilled') {
+        orderData = orderResult.value;
+      } else if (orderResult.reason instanceof SellerApiClientError && orderResult.reason.code === 'NOT_FOUND') {
+        setOrderMissing(true);
+      } else {
+        throw orderResult.reason;
+      }
+
+      if (shipmentResult.status === 'fulfilled') {
+        shipmentData = shipmentResult.value;
+      } else {
+        throw shipmentResult.reason;
+      }
+
+      if (orderData) {
+        try {
+          historyData = await getSellerOrderHistory(accessToken, orderId);
+        } catch (historyError) {
+          if (!(historyError instanceof SellerApiClientError && historyError.code === 'NOT_FOUND')) {
+            throw historyError;
+          }
+        }
+      }
+
+      let trackingData: SellerShipmentTrackingEventsOutput | null = null;
+      if (shipmentData) {
+        trackingData = await getSellerShipmentTrackingEvents(accessToken, shipmentData.id);
+      }
 
       setOrder(orderData);
       setHistory(historyData);
       setShipment(shipmentData);
       setTracking(trackingData);
+
+      if (!orderData && shipmentData) {
+        setError('Không tìm thấy đơn hàng trong Order Service. Đang hiển thị dữ liệu giao vận hiện có.');
+      }
     } catch (loadError) {
       if (loadError instanceof SellerApiClientError) {
         setError(loadError.message);
       } else {
         setError('Không tải được chi tiết đơn hàng.');
       }
+      setOrder(null);
+      setHistory(null);
     } finally {
       setLoading(false);
     }
@@ -165,8 +203,65 @@ export default function SellerOrderDetailPage() {
 
           {error ? <section className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</section> : null}
 
-          {loading || !order ? (
+          {loading ? (
             <section className="rounded-md border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Đang tải chi tiết đơn hàng...</section>
+          ) : !order ? (
+            <section className="space-y-3">
+              <article className="rounded-md border border-slate-200 bg-white p-4">
+                <h1 className="text-base font-semibold text-slate-900">Không tìm thấy chi tiết đơn hàng</h1>
+                <p className="mt-2 text-sm text-slate-600">
+                  Mã đơn: <span className="font-medium text-slate-800">{formatOrderCode(undefined, orderId)}</span>
+                </p>
+                <p className="mt-1 text-sm text-slate-600">
+                  {orderMissing
+                    ? 'Order Service không có bản ghi cho mã này hoặc dữ liệu chưa đồng bộ.'
+                    : 'Không thể tải dữ liệu đơn hàng từ hệ thống.'}
+                </p>
+                <div className="mt-3">
+                  <Link href="/orders/all" className="text-sm font-medium text-slate-700 hover:underline">
+                    Quay lại danh sách đơn
+                  </Link>
+                </div>
+              </article>
+
+              <section className="grid gap-3 xl:grid-cols-2">
+                <article className="rounded-md border border-slate-200 bg-white p-4">
+                  <h2 className="text-sm font-semibold text-slate-900">Thông tin giao vận</h2>
+                  {!shipment ? (
+                    <p className="mt-3 text-sm text-slate-500">Chưa có shipment cho đơn hàng này.</p>
+                  ) : (
+                    <div className="mt-3 space-y-1 text-sm text-slate-700">
+                      <p>Đơn vị vận chuyển: {shipment.provider}</p>
+                      <p>Trạng thái shipment: {shipment.status}</p>
+                      <p>AWB: {shipment.awb ?? 'N/A'}</p>
+                      <p>Tracking: {shipment.trackingNumber ?? 'N/A'}</p>
+                      <p>Mã người mua: {formatCustomerCode(shipment.buyerId)}</p>
+                      <p>Mã seller: {formatSellerCode(shipment.sellerId)}</p>
+                      <p>Người nhận: {shipment.recipientName}</p>
+                      <p>SĐT: {shipment.recipientPhone}</p>
+                      <p>Địa chỉ: {shipment.recipientAddress}</p>
+                    </div>
+                  )}
+                </article>
+
+                <article className="rounded-md border border-slate-200 bg-white p-4">
+                  <h2 className="text-sm font-semibold text-slate-900">Lịch sử tracking</h2>
+                  {!tracking || tracking.events.length === 0 ? (
+                    <p className="mt-3 text-sm text-slate-500">Chưa có tracking event.</p>
+                  ) : (
+                    <div className="mt-3 space-y-3">
+                      {tracking.events.map((eventItem) => (
+                        <div key={eventItem.id} className="rounded-md border border-slate-200 p-3 text-sm">
+                          <p className="font-semibold text-slate-800">{eventItem.status}</p>
+                          <p className="text-slate-600">{eventItem.description ?? 'Không có mô tả'}</p>
+                          <p className="text-xs text-slate-500">{formatDateTime(eventItem.occurredAt)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              </section>
+            </section>
           ) : (
             <div className="space-y-3">
               <section className="rounded-md border border-slate-200 bg-white p-4">

@@ -47,6 +47,16 @@ interface UploadedImageItem extends UploadSellerProductImageOutput {
   id: string;
 }
 
+const MAIN_SELLER_CATEGORIES = [
+  { id: 'dien-thoai-phu-kien', label: 'Điện thoại & Phụ kiện' },
+  { id: 'may-tinh-laptop', label: 'Máy tính & Laptop' },
+  { id: 'sac-dep', label: 'Sắc đẹp' },
+  { id: 'thoi-trang-nam', label: 'Thời trang nam' },
+  { id: 'thoi-trang-nu', label: 'Thời trang nữ' }
+] as const;
+
+const MAIN_SELLER_CATEGORY_MAP = new Map(MAIN_SELLER_CATEGORIES.map((category) => [category.id, category.label]));
+
 const FORM_TABS: Array<{ id: ProductFormTab; label: string }> = [
   { id: 'basic', label: 'Thông tin cơ bản' },
   { id: 'description', label: 'Mô tả' },
@@ -122,7 +132,12 @@ export default function NewProductPage() {
         const response = await listSellerCategories(accessToken);
 
         if (!cancelled) {
-          setCategoryOptions(response.items);
+          const countByCategoryId = new Map(response.items.map((item) => [item.id, item.count]));
+          const mainCategoryOptions: SellerCategoryOption[] = MAIN_SELLER_CATEGORIES.map((category) => ({
+            id: category.id,
+            count: countByCategoryId.get(category.id) ?? 0
+          }));
+          setCategoryOptions(mainCategoryOptions);
         }
       } catch (error) {
         if (!cancelled) {
@@ -799,14 +814,19 @@ export default function NewProductPage() {
                   className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
                 >
                   <option value="">Chọn danh mục hiện có</option>
+                  {form.categoryId.trim() && !categoryOptions.some((category) => category.id === form.categoryId.trim()) ? (
+                    <option value={form.categoryId.trim()}>{form.categoryId.trim()} (ngoài 5 danh mục chính)</option>
+                  ) : null}
                   {categoryOptions.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.id} ({category.count})
+                      {MAIN_SELLER_CATEGORY_MAP.get(category.id) ?? category.id} ({category.count})
                     </option>
                   ))}
                 </select>
                 <p className="mt-1 text-xs font-normal text-slate-500">
-                  {isLoadingCategories ? 'Đang tải danh mục từ dữ liệu sản phẩm...' : `Đã tải ${categoryOptions.length} danh mục.`}
+                  {isLoadingCategories
+                    ? 'Đang tải danh mục từ database...'
+                    : `Hiện tại đang có ${categoryOptions.length} danh mục chính.`}
                 </p>
                 {categoryError ? <p className="mt-1 text-xs font-normal text-rose-600">{categoryError}</p> : null}
               </label>
@@ -825,7 +845,7 @@ export default function NewProductPage() {
                 <datalist id="seller-category-options">
                   {categoryOptions.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.id}
+                      {MAIN_SELLER_CATEGORY_MAP.get(category.id) ?? category.id}
                     </option>
                   ))}
                 </datalist>
@@ -912,7 +932,7 @@ export default function NewProductPage() {
           <aside className="h-fit rounded-md border border-slate-200 bg-white p-4 text-sm xl:sticky xl:top-16">
             <h3 className="text-sm font-semibold text-[#2563eb]">Gợi ý</h3>
             <h4 className="mt-3 text-sm font-semibold text-slate-900">Danh mục & hình ảnh</h4>
-            <p className="mt-2 text-sm text-slate-600">- Danh mục gợi ý lấy từ dữ liệu sản phẩm hiện có.</p>
+            <p className="mt-2 text-sm text-slate-600">- Danh mục lấy từ database và giới hạn theo 5 nhóm chính của shop.</p>
             <p className="mt-1 text-sm text-slate-600">- Nếu danh mục chưa có, bạn nhập mới và hệ thống vẫn tạo sản phẩm bình thường.</p>
             {/* <p className="mt-1 text-sm text-slate-600">- Hình upload sẽ lưu vào `services/product-service/seed-data/image/folder-name`.</p> */}
             <p className="mt-2 text-sm text-slate-500">

@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
+import { SellerApiClientError } from '@/lib/api/client';
+import { listSellerShipments } from '@/lib/api/shipping';
+import type { SellerShipment, SellerShipmentStatus } from '@/lib/api/types';
 import { useAuth } from '@/providers/AppProvider';
 
 type HandoverMode = 'pickup' | 'dropoff';
@@ -17,14 +20,63 @@ const DROPOFF_DONE_COLUMNS = ['Ngày gửi hàng tại bưu cục', 'Đơn vị 
 
 export default function OrderHandoverPage() {
   const router = useRouter();
-  const { ready, user, logout } = useAuth();
+  const { ready, user, accessToken, logout } = useAuth();
   const [mode, setMode] = useState<HandoverMode>('pickup');
   const [status, setStatus] = useState<HandoverStatus>('waiting');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [shipments, setShipments] = useState<SellerShipment[]>([]);
 
   const handleLogout = useCallback(async () => {
     await logout();
     router.push('/login');
   }, [logout, router]);
+
+  useEffect(() => {
+    if (!ready || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const result = await listSellerShipments(accessToken, {
+          page: 1,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          sortOrder: 'DESC'
+        });
+
+        if (!cancelled) {
+          setShipments(result.items);
+        }
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        if (loadError instanceof SellerApiClientError) {
+          setError(loadError.message);
+        } else {
+          setError('Không tải được dữ liệu bàn giao đơn hàng.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, ready]);
 
   const tableColumns = useMemo(() => {
     if (mode === 'pickup') {
@@ -33,6 +85,28 @@ export default function OrderHandoverPage() {
 
     return status === 'done' ? DROPOFF_DONE_COLUMNS : DROPOFF_WAITING_COLUMNS;
   }, [mode, status]);
+
+  const tableRows = useMemo(() => {
+    const scoped = shipments.filter((shipment) => matchesScope(shipment.status, mode, status));
+    const grouped = groupByProviderAndDate(scoped);
+
+    return grouped.map((entry) => {
+      if (mode === 'pickup' && status === 'waiting') {
+        return [entry.dateLabel, entry.provider, String(entry.total), '0', String(entry.total)];
+      }
+
+      if (mode === 'pickup' && status === 'done') {
+        return [entry.dateLabel, entry.provider, String(entry.total), 'Xem chi tiết'];
+      }
+
+      if (mode === 'dropoff' && status === 'waiting') {
+        return [entry.provider, 'Bưu cục gần nhất', String(entry.total)];
+      }
+
+      return [entry.dateLabel, entry.provider, String(entry.total), 'Xem chi tiết'];
+    });
+  }, [mode, shipments, status]);
+
   const waitingTabLabel = mode === 'pickup' ? 'Chờ lấy hàng' : 'Chờ gửi hàng tại bưu cục';
   const doneTabLabel = mode === 'pickup' ? 'Đã Lấy hàng' : 'Đã Gửi hàng tại bưu cục';
   const activeMainTabClass = 'border-b-[3px] border-[#ee4d2d] pb-2 text-[#ee4d2d]';
@@ -48,7 +122,7 @@ export default function OrderHandoverPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !accessToken) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <section className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6 text-center">
@@ -82,6 +156,10 @@ export default function OrderHandoverPage() {
             <span>›</span>
             <span className="font-medium text-slate-700">Bàn Giao Đơn Hàng</span>
           </div>
+
+          {error ? (
+            <section className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</section>
+          ) : null}
 
           <section className="rounded-md border border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-end gap-6 border-b border-slate-200 pb-2 text-sm font-semibold">
@@ -165,14 +243,32 @@ export default function OrderHandoverPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td colSpan={tableColumns.length} className="h-[360px] px-4 py-10 text-center">
-                        <div className="mx-auto flex w-fit flex-col items-center">
-                          <EmptyClipboardIcon />
-                          <p className="mt-3 text-sm text-slate-400">Không tìm thấy đơn hàng</p>
-                        </div>
-                      </td>
-                    </tr>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={tableColumns.length} className="h-[260px] px-4 py-10 text-center text-sm text-slate-400">
+                          Đang tải dữ liệu bàn giao...
+                        </td>
+                      </tr>
+                    ) : tableRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={tableColumns.length} className="h-[360px] px-4 py-10 text-center">
+                          <div className="mx-auto flex w-fit flex-col items-center">
+                            <EmptyClipboardIcon />
+                            <p className="mt-3 text-sm text-slate-400">Không tìm thấy đơn hàng</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      tableRows.map((row, index) => (
+                        <tr key={`${row.join('-')}-${index}`} className="border-t border-slate-100">
+                          {row.map((cell, cellIndex) => (
+                            <td key={`${index}-${cellIndex}`} className="px-4 py-3">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -209,4 +305,65 @@ function showHelpIcon(mode: HandoverMode, status: HandoverStatus, column: string
   }
 
   return column === 'Đơn lấy dự kiến' || column === 'Lấy hàng thành công' || column === 'Số đơn chờ lấy hàng';
+}
+
+function matchesScope(status: SellerShipmentStatus, mode: HandoverMode, handoverStatus: HandoverStatus): boolean {
+  if (mode === 'pickup') {
+    if (handoverStatus === 'waiting') {
+      return status === 'PENDING' || status === 'AWB_CREATED';
+    }
+
+    return status === 'PICKED_UP' || status === 'IN_TRANSIT' || status === 'OUT_FOR_DELIVERY' || status === 'DELIVERED';
+  }
+
+  if (handoverStatus === 'waiting') {
+    return status === 'PENDING' || status === 'AWB_CREATED';
+  }
+
+  return status === 'PICKED_UP' || status === 'IN_TRANSIT' || status === 'OUT_FOR_DELIVERY' || status === 'DELIVERED';
+}
+
+function groupByProviderAndDate(shipments: SellerShipment[]): Array<{ provider: string; dateLabel: string; total: number }> {
+  const grouped = new Map<string, { provider: string; dateLabel: string; total: number }>();
+
+  for (const shipment of shipments) {
+    const provider = normalizeProvider(shipment.provider);
+    const dateLabel = formatDate(shipment.updatedAt);
+    const key = `${provider}::${dateLabel}`;
+
+    const current = grouped.get(key);
+    if (current) {
+      current.total += 1;
+    } else {
+      grouped.set(key, {
+        provider,
+        dateLabel,
+        total: 1
+      });
+    }
+  }
+
+  return Array.from(grouped.values()).sort((a, b) => b.dateLabel.localeCompare(a.dateLabel));
+}
+
+function normalizeProvider(value: string): string {
+  return value
+    .trim()
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
 }

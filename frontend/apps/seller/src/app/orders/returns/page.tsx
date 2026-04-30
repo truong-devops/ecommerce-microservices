@@ -2,9 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
+import { SellerApiClientError } from '@/lib/api/client';
+import { listSellerOrders } from '@/lib/api/orders';
+import type { SellerOrder, SellerOrderStatus } from '@/lib/api/types';
+import { formatOrderCode } from '@/lib/order-codes';
 import { useAuth } from '@/providers/AppProvider';
 
 type MainTabId = 'all' | 'refund' | 'cancel' | 'failed_delivery';
@@ -102,11 +106,16 @@ const MAIN_TABS: MainTabConfig[] = [
 
 export default function ReturnsAndCancellationsPage() {
   const router = useRouter();
-  const { ready, user, logout } = useAuth();
+  const { ready, user, accessToken, logout } = useAuth();
 
   const [activeMainTab, setActiveMainTab] = useState<MainTabId>('all');
   const [activeSecondaryTab, setActiveSecondaryTab] = useState('Tất cả');
   const [activePriorityChip, setActivePriorityChip] = useState('Tất cả');
+  const [searchDraft, setSearchDraft] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [orders, setOrders] = useState<SellerOrder[]>([]);
 
   const currentTab = useMemo(() => MAIN_TABS.find((tab) => tab.id === activeMainTab) ?? MAIN_TABS[0], [activeMainTab]);
 
@@ -114,6 +123,61 @@ export default function ReturnsAndCancellationsPage() {
     await logout();
     router.push('/login');
   }, [logout, router]);
+
+  useEffect(() => {
+    if (!ready || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const status = toOrderStatusFilter(activeMainTab);
+        const result = await listSellerOrders(accessToken, {
+          page: 1,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          sortOrder: 'DESC',
+          status: status ?? undefined,
+          search: searchKeyword || undefined
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        const normalizedItems = activeMainTab === 'all'
+          ? result.items.filter((item) => item.status === 'CANCELLED' || item.status === 'FAILED')
+          : result.items;
+
+        setOrders(normalizedItems);
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        if (loadError instanceof SellerApiClientError) {
+          setError(loadError.message);
+        } else {
+          setError('Không tải được yêu cầu trả hàng/hoàn tiền/hủy.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, activeMainTab, ready, searchKeyword]);
 
   const activateMainTab = (tabId: MainTabId) => {
     setActiveMainTab(tabId);
@@ -129,7 +193,7 @@ export default function ReturnsAndCancellationsPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !accessToken) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <section className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6 text-center">
@@ -163,6 +227,10 @@ export default function ReturnsAndCancellationsPage() {
             <span>›</span>
             <span className="font-medium text-slate-700">Trả hàng/Hoàn tiền/Hủy</span>
           </div>
+
+          {error ? (
+            <section className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</section>
+          ) : null}
 
           <section className="rounded-md border border-slate-200 bg-white p-4 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-2">
@@ -268,6 +336,10 @@ export default function ReturnsAndCancellationsPage() {
                   <div className="flex min-w-0 items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
                     <span className="mr-3 shrink-0 font-medium text-slate-700">Tìm yêu cầu</span>
                     <input
+                      value={searchDraft}
+                      onChange={(event) => {
+                        setSearchDraft(event.target.value);
+                      }}
                       placeholder="Điền Mã yêu cầu trả hàng/ Mã đơn hàng/ Mã vận đơn"
                       className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                     />
@@ -284,10 +356,23 @@ export default function ReturnsAndCancellationsPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button type="button" className="rounded-md border border-[#ee4d2d] px-6 py-2 text-sm font-semibold text-[#ee4d2d]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchKeyword(searchDraft.trim());
+                    }}
+                    className="rounded-md border border-[#ee4d2d] px-6 py-2 text-sm font-semibold text-[#ee4d2d]"
+                  >
                     Tìm kiếm
                   </button>
-                  <button type="button" className="rounded-md border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchDraft('');
+                      setSearchKeyword('');
+                    }}
+                    className="rounded-md border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700"
+                  >
                     Đặt lại
                   </button>
                   <button type="button" className="text-sm font-medium text-[#2563eb] hover:underline">
@@ -296,7 +381,7 @@ export default function ReturnsAndCancellationsPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-slate-900">0 Yêu cầu</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{orders.length} Yêu cầu</h3>
 
                   <div className="flex items-center gap-2">
                     <button type="button" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">
@@ -329,9 +414,29 @@ export default function ReturnsAndCancellationsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td colSpan={currentTab.columns.length} className="h-[240px] px-4 py-6" />
-                        </tr>
+                        {isLoading ? (
+                          <tr>
+                            <td colSpan={currentTab.columns.length} className="px-4 py-10 text-center text-sm text-slate-400">
+                              Đang tải dữ liệu yêu cầu...
+                            </td>
+                          </tr>
+                        ) : orders.length === 0 ? (
+                          <tr>
+                            <td colSpan={currentTab.columns.length} className="px-4 py-10 text-center text-sm text-slate-400">
+                              Không có yêu cầu phù hợp.
+                            </td>
+                          </tr>
+                        ) : (
+                          orders.map((order) => (
+                            <tr key={order.id} className="border-t border-slate-100">
+                              {currentTab.columns.map((column) => (
+                                <td key={`${order.id}-${column}`} className="px-4 py-3">
+                                  {renderOrderCell(order, column)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -343,4 +448,105 @@ export default function ReturnsAndCancellationsPage() {
       </div>
     </div>
   );
+}
+
+function toOrderStatusFilter(tab: MainTabId): SellerOrderStatus | null {
+  if (tab === 'refund') {
+    return 'FAILED';
+  }
+
+  if (tab === 'cancel') {
+    return 'CANCELLED';
+  }
+
+  if (tab === 'failed_delivery') {
+    return 'FAILED';
+  }
+
+  return null;
+}
+
+function renderOrderCell(order: SellerOrder, column: string): string {
+  if (column === 'Sản phẩm') {
+    return buildProductLabel(order);
+  }
+
+  if (column === 'Số tiền') {
+    return formatCurrency(order.totalAmount, order.currency);
+  }
+
+  if (column === 'Lý do') {
+    return order.note?.trim() || 'Người mua yêu cầu xử lý';
+  }
+
+  if (column === 'Lý do điều chỉnh bởi Shopee') {
+    return '-';
+  }
+
+  if (column === 'Phương án cho Người mua') {
+    return order.status === 'CANCELLED' ? 'Hoàn tiền' : 'Xử lý hoàn trả';
+  }
+
+  if (column === 'Trạng thái') {
+    return toStatusLabel(order.status);
+  }
+
+  if (column === 'Vận chuyển hàng hoàn') {
+    return order.status === 'FAILED' ? 'Đang hoàn hàng' : 'Không áp dụng';
+  }
+
+  if (column === 'Vận chuyển chiều giao hàng') {
+    return order.status === 'FAILED' ? 'Giao hàng thất bại' : 'Không áp dụng';
+  }
+
+  if (column === 'Thao tác') {
+    return `Xem ${formatOrderCode(order.orderNumber, order.id)}`;
+  }
+
+  return '-';
+}
+
+function buildProductLabel(order: SellerOrder): string {
+  if (order.items.length === 0) {
+    return 'N/A';
+  }
+
+  if (order.items.length === 1) {
+    return order.items[0].productName;
+  }
+
+  return `${order.items[0].productName} +${order.items.length - 1}`;
+}
+
+function toStatusLabel(status: SellerOrderStatus): string {
+  switch (status) {
+    case 'PENDING':
+      return 'Chờ xác nhận';
+    case 'CONFIRMED':
+      return 'Đã xác nhận';
+    case 'PROCESSING':
+      return 'Đang xử lý';
+    case 'SHIPPED':
+      return 'Đang giao';
+    case 'DELIVERED':
+      return 'Đã giao';
+    case 'CANCELLED':
+      return 'Đã hủy';
+    case 'FAILED':
+      return 'Giao thất bại';
+    default:
+      return status;
+  }
+}
+
+function formatCurrency(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0
+    }).format(amount);
+  } catch {
+    return `${amount} ${currency}`;
+  }
 }

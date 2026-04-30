@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
+import { SellerApiClientError } from '@/lib/api/client';
+import { listSellerShipments } from '@/lib/api/shipping';
 import { useAuth } from '@/providers/AppProvider';
 
 interface ShippingOption {
@@ -18,6 +20,11 @@ interface ShippingGroup {
   title: string;
   description?: string;
   options: ShippingOption[];
+}
+
+interface ProviderStat {
+  provider: string;
+  count: number;
 }
 
 const SETTINGS_TABS = ['Tài Khoản & Bảo Mật', 'Cài đặt Vận Chuyển', 'Cài đặt Thanh Toán', 'Cài đặt Sản Phẩm', 'Cài đặt Chat', 'Cài đặt Thông Báo'];
@@ -67,7 +74,7 @@ const SHIPPING_GROUPS: ShippingGroup[] = [
 
 export default function ShippingSettingsPage() {
   const router = useRouter();
-  const { ready, user, logout } = useAuth();
+  const { ready, user, accessToken, logout } = useAuth();
 
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({
     'express-channel': false,
@@ -88,29 +95,131 @@ export default function ShippingSettingsPage() {
     'don-vi-khac': false
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [providerStats, setProviderStats] = useState<ProviderStat[]>([]);
+
   const handleLogout = useCallback(async () => {
     await logout();
     router.push('/login');
   }, [logout, router]);
 
-  const groupedSections = useMemo(
-    () => [
-      {
-        heading: 'Đơn Hỏa Tốc',
-        statusText: 'Trạng thái kênh: Bật',
-        actionText: 'Tạm ngừng kênh Hỏa Tốc',
-        groups: SHIPPING_GROUPS.filter((group) => group.id === 'express-channel')
-      },
-      {
-        heading: 'Đơn thường',
-        groups: SHIPPING_GROUPS.filter((group) => group.id === 'standard-same-day' || group.id === 'standard-fast')
-      },
-      {
-        heading: null,
-        groups: SHIPPING_GROUPS.filter((group) => group.id === 'self-pickup' || group.id === 'bulky' || group.id === 'add-carrier')
+  useEffect(() => {
+    if (!ready || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        const result = await listSellerShipments(accessToken, {
+          page: 1,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          sortOrder: 'DESC'
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        const counts = new Map<string, number>();
+
+        for (const shipment of result.items) {
+          const provider = normalizeProvider(shipment.provider || 'Khác');
+          counts.set(provider, (counts.get(provider) ?? 0) + 1);
+        }
+
+        const stats = Array.from(counts.entries())
+          .map(([provider, count]) => ({ provider, count }))
+          .sort((a, b) => b.count - a.count);
+
+        setProviderStats(stats);
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        if (loadError instanceof SellerApiClientError) {
+          setError(loadError.message);
+        } else {
+          setError('Không tải được cấu hình vận chuyển từ backend.');
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-    ],
-    []
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, ready]);
+
+  const additionalCarrierOptions = useMemo(() => {
+    if (providerStats.length === 0) {
+      return [{ id: 'don-vi-khac', label: 'Đơn vị vận chuyển khác', codActivated: false }];
+    }
+
+    return providerStats.slice(0, 8).map((stat) => ({
+      id: `provider-${slugify(stat.provider)}`,
+      label: `${stat.provider} (${stat.count})`,
+      codActivated: true
+    }));
+  }, [providerStats]);
+
+  useEffect(() => {
+    setEnabledOptions((previous) => {
+      const next = { ...previous };
+
+      for (const option of additionalCarrierOptions) {
+        if (typeof next[option.id] === 'undefined') {
+          next[option.id] = true;
+        }
+      }
+
+      return next;
+    });
+  }, [additionalCarrierOptions]);
+
+  const groupedSections = useMemo(
+    () => {
+      const enrichedGroups = SHIPPING_GROUPS.map((group) => {
+        if (group.id === 'add-carrier') {
+          return {
+            ...group,
+            options: additionalCarrierOptions
+          };
+        }
+
+        return group;
+      });
+
+      return [
+        {
+          heading: 'Đơn Hỏa Tốc',
+          statusText: 'Trạng thái kênh: Bật',
+          actionText: 'Tạm ngừng kênh Hỏa Tốc',
+          groups: enrichedGroups.filter((group) => group.id === 'express-channel')
+        },
+        {
+          heading: 'Đơn thường',
+          groups: enrichedGroups.filter((group) => group.id === 'standard-same-day' || group.id === 'standard-fast')
+        },
+        {
+          heading: null,
+          groups: enrichedGroups.filter((group) => group.id === 'self-pickup' || group.id === 'bulky' || group.id === 'add-carrier')
+        }
+      ];
+    },
+    [additionalCarrierOptions]
   );
 
   if (!ready) {
@@ -121,7 +230,7 @@ export default function ShippingSettingsPage() {
     );
   }
 
-  if (!user) {
+  if (!user || !accessToken) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <section className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6 text-center">
@@ -157,6 +266,10 @@ export default function ShippingSettingsPage() {
             <span>›</span>
             <span className="font-medium text-slate-700">Đơn vị vận chuyển</span>
           </div>
+
+          {error ? (
+            <section className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</section>
+          ) : null}
 
           <section className="rounded-md border border-slate-200 bg-white p-4 text-sm">
             <div className="flex flex-wrap items-center gap-5 border-b border-slate-200 pb-2">
@@ -201,6 +314,11 @@ export default function ShippingSettingsPage() {
               </div>
 
               <p className="mt-4 text-sm text-slate-500">Các cài đặt liên quan đến đơn vị vận chuyển</p>
+              <p className="mt-2 text-sm text-slate-600">
+                {isLoading
+                  ? 'Đang đồng bộ dữ liệu vận chuyển...'
+                  : `Đã phát hiện ${providerStats.length} đơn vị vận chuyển từ dữ liệu shipment.`}
+              </p>
 
               <div className="mt-5 space-y-8">
                 {groupedSections.map((section, sectionIndex) => (
@@ -304,4 +422,22 @@ export default function ShippingSettingsPage() {
       </div>
     </div>
   );
+}
+
+function normalizeProvider(value: string): string {
+  return value
+    .trim()
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }

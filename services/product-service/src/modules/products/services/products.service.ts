@@ -26,7 +26,9 @@ import { ProductSearchService } from './product-search.service';
 
 interface ProductResponse {
   id: string;
+  productCode: string;
   sellerId: string;
+  sellerCode: string;
   name: string;
   slug: string;
   description: string | null;
@@ -532,12 +534,12 @@ function findDuplicate(values: string[]): string | null {
 function toProductResponse(product: ProductDocument | ProductResponse): ProductResponse {
   if ('id' in product && typeof product.id === 'string' && 'variants' in product && Array.isArray(product.variants)) {
     if ((product as ProductResponse).createdAt && typeof (product as ProductResponse).createdAt === 'string') {
-      return product as ProductResponse;
+      return enrichProductResponse(product as ProductResponse);
     }
   }
 
   const document = product as ProductDocument;
-  return {
+  return enrichProductResponse({
     id: document.id,
     sellerId: document.sellerId,
     name: document.name,
@@ -561,7 +563,49 @@ function toProductResponse(product: ProductDocument | ProductResponse): ProductR
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
     deletedAt: document.deletedAt ? document.deletedAt.toISOString() : null
+  });
+}
+
+function enrichProductResponse(
+  input: Omit<ProductResponse, 'productCode' | 'sellerCode'> & Partial<Pick<ProductResponse, 'productCode' | 'sellerCode'>>
+): ProductResponse {
+  return {
+    ...input,
+    productCode: toDisplayCode(input.id, 'PRD'),
+    sellerCode: toDisplayCode(input.sellerId, 'SEL')
   };
+}
+
+function toDisplayCode(raw: string, prefix: string): string {
+  const source = raw.trim();
+  if (!source) {
+    return `${prefix}0000000`;
+  }
+
+  const normalized = source.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const exactPattern = new RegExp(`^${prefix}(\\d{7})$`);
+  const exactMatch = normalized.match(exactPattern);
+  if (exactMatch) {
+    return `${prefix}${exactMatch[1]}`;
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length >= 7) {
+    return `${prefix}${digits.slice(-7)}`;
+  }
+
+  return `${prefix}${String(stableHash(source)).padStart(7, '0')}`;
+}
+
+function stableHash(value: string): number {
+  const modulo = 10_000_000;
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % modulo;
+  }
+
+  return hash;
 }
 
 function toSearchableProduct(product: ProductResponse): {

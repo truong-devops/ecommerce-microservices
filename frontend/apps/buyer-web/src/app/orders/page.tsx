@@ -9,6 +9,7 @@ import { cancelBuyerOrder, confirmBuyerOrderReceived, fetchBuyerOrders } from '@
 import { fetchBuyerPaymentByOrderId } from '@/lib/api/payments';
 import { formatPrice } from '@/lib/price';
 import { fetchBuyerShipmentByOrderId } from '@/lib/api/shipping';
+import { formatOrderCode } from '@/lib/order-codes';
 import type {
   Order,
   OrderItem,
@@ -478,6 +479,10 @@ export default function OrdersPage() {
         return true;
       }
 
+      if (formatOrderCode(order.orderNumber, order.id).toLowerCase().includes(keyword)) {
+        return true;
+      }
+
       if (FALLBACK_SHOP_NAME.toLowerCase().includes(keyword)) {
         return true;
       }
@@ -672,7 +677,7 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-slate-500">
-                          {text.orders.orderCode}: <span className="font-medium text-slate-700">{order.orderNumber}</span>
+                          {text.orders.orderCode}: <span className="font-medium text-slate-700">{formatOrderCode(order.orderNumber, order.id)}</span>
                         </span>
                         <span className="text-slate-500">
                           {text.orders.paymentLabel}: <span className="font-medium text-slate-700">{paymentLabel}</span>

@@ -2,6 +2,7 @@ const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://local
 const ANALYTICS_SERVICE_BASE_URL = process.env.ANALYTICS_SERVICE_BASE_URL ?? 'http://localhost:3010/api/v1';
 const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:3002/api/v1';
 const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:3003/api/v1';
+const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? 'http://localhost:3008/api/v1';
 const NOTIFICATION_SERVICE_BASE_URL = process.env.NOTIFICATION_SERVICE_BASE_URL ?? 'http://localhost:3011/api/v1';
 const INVENTORY_SERVICE_BASE_URL = process.env.INVENTORY_SERVICE_BASE_URL ?? 'http://localhost:3007/api/v1';
 
@@ -10,6 +11,7 @@ export const serviceBaseUrls = {
   analytics: ANALYTICS_SERVICE_BASE_URL,
   order: ORDER_SERVICE_BASE_URL,
   product: PRODUCT_SERVICE_BASE_URL,
+  shipping: SHIPPING_SERVICE_BASE_URL,
   notification: NOTIFICATION_SERVICE_BASE_URL,
   inventory: INVENTORY_SERVICE_BASE_URL
 };

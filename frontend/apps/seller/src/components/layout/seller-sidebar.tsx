@@ -18,7 +18,7 @@ const sections: SidebarSection[] = [
   {
     title: 'Quản Lý Đơn Hàng',
     items: [
-      { label: 'Tất cả', href: '/' },
+      { label: 'Tất cả', href: '/orders/all' },
       { label: 'Giao Hàng Loạt', href: '/orders/bulk-shipping' },
       { label: 'Bàn Giao Đơn Hàng', href: '/orders/handover' },
       { label: 'Đơn Trả hàng/Hoàn tiền hoặc Đơn hủy', href: '/orders/returns' },
@@ -64,7 +64,10 @@ const sections: SidebarSection[] = [
   },
   {
     title: 'Dữ Liệu',
-    items: [{ label: 'Phân Tích Bán Hàng' }, { label: 'Hiệu Quả Hoạt Động' }]
+    items: [
+      { label: 'Phân Tích Bán Hàng', href: '/data/sales-analytics' },
+      { label: 'Hiệu Quả Hoạt Động' }
+    ]
   },
   {
     title: 'Quản Lý Shop',

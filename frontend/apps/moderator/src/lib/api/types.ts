@@ -72,7 +72,9 @@ export interface ModerationProductVariant {
 
 export interface ModerationProduct {
   id: string;
+  productCode: string;
   sellerId: string;
+  sellerCode: string;
   name: string;
   slug: string;
   description: string | null;

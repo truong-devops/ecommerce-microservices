@@ -220,3 +220,140 @@ export interface UploadSellerProductImageOutput {
   imageUrl: string;
   relativePath: string;
 }
+
+export type SellerOrderStatus = 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
+
+export interface SellerOrderItem {
+  id: string;
+  productId: string;
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
+export interface SellerOrder {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  status: SellerOrderStatus;
+  currency: string;
+  subtotalAmount: number;
+  shippingAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: SellerOrderItem[];
+}
+
+export interface SellerOrderListOutput {
+  items: SellerOrder[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface ListSellerOrdersInput {
+  page?: number;
+  pageSize?: number;
+  status?: SellerOrderStatus;
+  sortBy?: 'createdAt' | 'totalAmount' | 'orderNumber';
+  sortOrder?: 'ASC' | 'DESC';
+  search?: string;
+}
+
+export interface UpdateSellerOrderStatusInput {
+  status: SellerOrderStatus;
+  reason?: string;
+}
+
+export interface SellerOrderStatusHistoryItem {
+  id: string;
+  fromStatus: SellerOrderStatus | null;
+  toStatus: SellerOrderStatus;
+  changedBy: string;
+  changedByRole: string;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface SellerOrderStatusHistoryOutput {
+  orderId: string;
+  histories: SellerOrderStatusHistoryItem[];
+}
+
+export type SellerShipmentStatus =
+  | 'PENDING'
+  | 'AWB_CREATED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'RETURNED';
+
+export interface SellerShipment {
+  id: string;
+  orderId: string;
+  buyerId: string;
+  sellerId: string;
+  provider: string;
+  awb: string | null;
+  trackingNumber: string | null;
+  status: SellerShipmentStatus;
+  currency: string;
+  shippingFee: number;
+  codAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  note: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerShipmentListOutput {
+  items: SellerShipment[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface ListSellerShipmentsInput {
+  page?: number;
+  pageSize?: number;
+  status?: SellerShipmentStatus;
+  provider?: string;
+  orderId?: string;
+  search?: string;
+  sortBy?: 'createdAt' | 'shippingFee' | 'status';
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface SellerShipmentTrackingEvent {
+  id: string;
+  shipmentId: string;
+  status: SellerShipmentStatus;
+  eventCode: string | null;
+  description: string | null;
+  location: string | null;
+  occurredAt: string;
+  rawPayload: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface SellerShipmentTrackingEventsOutput {
+  shipmentId: string;
+  events: SellerShipmentTrackingEvent[];
+}

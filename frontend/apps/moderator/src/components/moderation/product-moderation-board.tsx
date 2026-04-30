@@ -59,11 +59,11 @@ export function ProductModerationBoard({ items, loading, onUpdateStatus }: Produ
                       <div>
                         <p className="font-semibold text-slate-900">{item.name}</p>
                         <p className="mt-1 text-xs text-slate-500">SKU mặc định: {defaultSku}</p>
-                        <p className="mt-1 text-xs text-slate-500">ID: {item.id}</p>
+                        <p className="mt-1 text-xs text-slate-500">Mã SP: {item.productCode || toDisplayCode(item.id, 'PRD')}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-slate-700">{item.sellerId}</td>
+                  <td className="px-3 py-3 text-slate-700">{item.sellerCode || toDisplayCode(item.sellerId, 'SEL')}</td>
                   <td className="px-3 py-3 text-slate-700">{item.categoryId}</td>
                   <td className="px-3 py-3 text-slate-700">
                     {item.minPrice.toLocaleString('vi-VN')} {currency}
@@ -125,4 +125,36 @@ function ActionButton({
       {label}
     </button>
   );
+}
+
+function toDisplayCode(raw: string, prefix: string): string {
+  const source = raw.trim();
+  if (!source) {
+    return `${prefix}0000000`;
+  }
+
+  const normalized = source.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const exactPattern = new RegExp(`^${prefix}(\\d{7})$`);
+  const exactMatch = normalized.match(exactPattern);
+  if (exactMatch) {
+    return `${prefix}${exactMatch[1]}`;
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length >= 7) {
+    return `${prefix}${digits.slice(-7)}`;
+  }
+
+  return `${prefix}${String(stableHash(source)).padStart(7, '0')}`;
+}
+
+function stableHash(value: string): number {
+  const modulo = 10_000_000;
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % modulo;
+  }
+
+  return hash;
 }

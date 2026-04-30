@@ -9,7 +9,9 @@ const ALLOWED_STATUSES = new Set<ModerationProductStatus>(['DRAFT', 'ACTIVE', 'H
 
 interface ProductListItem {
   id: string;
+  productCode?: string;
   sellerId: string;
+  sellerCode?: string;
   name: string;
   slug: string;
   description: string | null;

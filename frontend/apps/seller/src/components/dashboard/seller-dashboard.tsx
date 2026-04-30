@@ -11,9 +11,11 @@ const RANGE_OPTIONS = [7, 14, 30] as const;
 
 export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }: SellerDashboardProps) {
   const orderStatus = toOrderStatusMap(data.orderStatus);
+  const totalOrders =
+    orderStatus.pending + orderStatus.inTransit + orderStatus.completed + orderStatus.cancelled;
 
-  const waitingForPickup = orderStatus.pending;
-  const processedOrders = orderStatus.inTransit + orderStatus.completed;
+  const waitingForPickup = orderStatus.confirmed + orderStatus.processing;
+  const processedOrders = orderStatus.shipped + orderStatus.completed;
   const returnCancelled = orderStatus.cancelled;
 
   const revenueKpi = findKpi(data.kpis, 'revenue');
@@ -21,6 +23,11 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
   const ordersKpi = findKpi(data.kpis, 'orders');
   const conversionKpi = findKpi(data.kpis, 'conversion');
   const lowStockKpi = findKpi(data.kpis, 'low-stock');
+
+  const revenueFromRange = data.revenueSeries.reduce((sum, point) => sum + point.value, 0);
+  const revenueFromTopProducts = data.topProducts.reduce((sum, item) => sum + item.revenue, 0);
+  const revenueDisplay = Math.max(revenueKpi.value, revenueFromRange, revenueFromTopProducts);
+  const orderDisplay = Math.max(Math.round(ordersKpi.value), totalOrders);
 
   const adsTraffic = data.trafficSources.find((item) => item.id === 'ads')?.value ?? 0;
   const totalTraffic = data.trafficSources.reduce((sum, item) => sum + item.value, 0);
@@ -67,10 +74,10 @@ export function SellerDashboard({ data, rangeDays, onRangeChange, isRefreshing }
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <SalesMetric label="Doanh số" value={formatCurrency(revenueKpi.value)} change={revenueKpi.changePercent} />
+            <SalesMetric label="Doanh số" value={formatCurrency(revenueDisplay)} change={revenueKpi.changePercent} />
             <SalesMetric label="Lượt truy cập" value={formatNumber(Math.round(visitsKpi.value))} change={visitsKpi.changePercent} />
             <SalesMetric label="Product Clicks" value={formatNumber(totalTraffic)} change={adsRatio - 50} />
-            <SalesMetric label="Đơn hàng" value={formatNumber(Math.round(ordersKpi.value))} change={ordersKpi.changePercent} />
+            <SalesMetric label="Đơn hàng" value={formatNumber(orderDisplay)} change={ordersKpi.changePercent} />
             <SalesMetric label="Order Conversion Rate" value={`${conversionKpi.value.toFixed(2)}%`} change={conversionKpi.changePercent} />
           </div>
 
@@ -239,11 +246,24 @@ function NewsPanel({ news }: { news: SellerNewsItem[] }) {
 }
 
 function toOrderStatusMap(status: OrderStatusSlice[]) {
+  const pendingLegacy = status.find((i) => i.id === 'pending')?.value ?? 0;
+  const inTransitLegacy = status.find((i) => i.id === 'in_transit')?.value ?? 0;
+  const completedLegacy = status.find((i) => i.id === 'completed')?.value ?? 0;
+  const cancelledLegacy = status.find((i) => i.id === 'cancelled')?.value ?? 0;
+  const pendingOnly = status.find((i) => i.id === 'pending_only')?.value ?? 0;
+  const confirmed = status.find((i) => i.id === 'confirmed')?.value ?? Math.max(0, pendingLegacy - pendingOnly);
+  const processing = status.find((i) => i.id === 'processing')?.value ?? Math.max(0, inTransitLegacy);
+  const shipped = status.find((i) => i.id === 'shipped')?.value ?? 0;
+
   return {
-    pending: status.find(i => i.id === 'pending')?.value ?? 0,
-    inTransit: status.find(i => i.id === 'in_transit')?.value ?? 0,
-    completed: status.find(i => i.id === 'completed')?.value ?? 0,
-    cancelled: status.find(i => i.id === 'cancelled')?.value ?? 0,
+    pending: pendingLegacy,
+    pendingOnly,
+    confirmed,
+    processing,
+    shipped,
+    inTransit: inTransitLegacy,
+    completed: completedLegacy,
+    cancelled: cancelledLegacy
   };
 }
 

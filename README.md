@@ -32,26 +32,26 @@ gRPC **Protocol Buffer definitions** in `shared/proto` serve as the source of tr
                         │   buyer-web · buyer(mobile) · seller · mod  │
                         └─────────────────┬───────────────────────────┘
                                           │ HTTPS
-                               ┌──────────▼──────────┐
+                               ┌──────────▼──────────-┐
                                │     API Gateway      │  Go · chi · JWT
                                │   Rate Limit · CORS  │  Prometheus · Zap
                                └──────┬──────┬────────┘
                         REST (per-svc)│      │ JWT validation
               ┌───────────────────────┘      └──────────────────────────┐
               │                                                         │
-   ┌──────────▼──────────────────────────────────────────────────────┐ │
-   │                     NestJS Microservices                        │ │
-   │  auth · user · product · cart · order · payment                 │ │
-   │  inventory · shipping · review · notification · analytics       │ │
-   └──────────────────────────────┬──────────────────────────────────┘ │
+   ┌──────────▼──────────────────────────────────────────────────────┐  │
+   │                     NestJS Microservices                        │  │
+   │  auth · user · product · cart · order · payment                 │  │
+   │  inventory · shipping · review · notification · analytics       │  │
+   └──────────────────────────────┬──────────────────────────────────┘  │
                                   │ Kafka Events                        │
-                         ┌────────▼────────┐                           │
-                         │  Apache Kafka   │◄──────────────────────────┘
+                         ┌────────▼────────┐                            │
+                         │  Apache Kafka   │◄──────────────────────────-┘
                          └────────┬────────┘
                     ┌─────────────┴──────────────┐
              ┌──────▼──────┐            ┌────────▼────────┐
-             │  PostgreSQL  │            │    MongoDB       │
-             │  Redis       │            │    ClickHouse    │
+             │  PostgreSQL │            │    MongoDB      │
+             │  Redis      │            │    ClickHouse   │
              └─────────────┘            └─────────────────┘
 ```
 

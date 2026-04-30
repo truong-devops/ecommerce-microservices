@@ -58,6 +58,53 @@ export interface LogoutInput {
   refreshToken: string;
 }
 
+export interface SellerShopProfile {
+  userId: string;
+  shopName: string;
+  contactFirstName: string;
+  contactLastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  avatarUrl: string;
+}
+
+export interface UpdateSellerShopProfileInput {
+  shopName?: string;
+  contactFirstName?: string;
+  contactLastName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  avatarUrl?: string;
+}
+
+export interface SellerShopDecor {
+  sellerId: string;
+  shopName: string;
+  slogan: string;
+  logoUrl: string;
+  bannerUrl: string;
+  accentColor: string;
+  navItems: string[];
+  introTitle: string;
+  introDescription: string;
+  featuredCategories: string[];
+  updatedAt: string;
+}
+
+export interface UpdateSellerShopDecorInput {
+  shopName?: string;
+  slogan?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  accentColor?: string;
+  navItems?: string[];
+  introTitle?: string;
+  introDescription?: string;
+  featuredCategories?: string[];
+}
+
 export interface DateRange {
   from: string;
   to: string;

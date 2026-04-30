@@ -76,6 +76,11 @@ export async function GET(request: Request) {
     query.set('brand', brand);
   }
 
+  const sellerId = input.get('sellerId')?.trim() ?? '';
+  if (sellerId.length > 0) {
+    query.set('sellerId', sellerId);
+  }
+
   const suffix = query.toString();
   const upstreamUrl = `${serviceBaseUrls.product}/products${suffix ? `?${suffix}` : ''}`;
   const fallbackPage = page ?? 1;

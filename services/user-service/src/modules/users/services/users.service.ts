@@ -34,6 +34,26 @@ export class UsersService {
       });
     }
 
+    if (existing && existing.status === UserStatus.DELETED) {
+      const revived = await this.usersRepository.reviveDeletedUser(existing.id, {
+        email: normalizedEmail,
+        firstName: dto.firstName.trim(),
+        lastName: dto.lastName.trim(),
+        phone: dto.phone ? dto.phone.trim() : null,
+        address: dto.address ? dto.address.trim() : null,
+        gender: dto.gender ?? UserGender.UNSPECIFIED,
+        dateOfBirth: dto.dateOfBirth ?? null,
+        avatarUrl: dto.avatarUrl ? dto.avatarUrl.trim() : null,
+        role: dto.role ?? UserRole.BUYER,
+        status: dto.status ?? UserStatus.ACTIVE,
+        emailVerified: dto.emailVerified ?? false
+      });
+
+      if (revived) {
+        return revived;
+      }
+    }
+
     try {
       const created = await this.usersRepository.createUser({
         email: normalizedEmail,

@@ -28,6 +28,19 @@ export class UsersRepository {
     return this.userRepository.save(entity);
   }
 
+  async reviveDeletedUser(id: string, payload: Partial<UserEntity>): Promise<UserEntity | null> {
+    await this.userRepository.update(
+      { id, status: UserStatus.DELETED },
+      {
+        ...payload,
+        status: UserStatus.ACTIVE,
+        deletedAt: null
+      }
+    );
+
+    return this.findById(id);
+  }
+
   async findById(id: string): Promise<UserEntity | null> {
     return this.userRepository.findOne({
       where: {

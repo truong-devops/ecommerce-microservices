@@ -72,8 +72,8 @@ const sections: SidebarSection[] = [
   {
     title: 'Quản Lý Shop',
     items: [
-      { label: 'Hồ Sơ Shop' },
-      { label: 'Trang Trí Shop' },
+      { label: 'Hồ Sơ Shop', href: '/shop/profile' },
+      { label: 'Trang Trí Shop', href: '/shop/decor' },
       { label: 'Thiết Lập Shop' },
       { label: 'Quản lý các khiếu nại' },
       { label: 'Nhiệm Vụ Người Bán' }

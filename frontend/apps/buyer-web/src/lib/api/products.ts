@@ -1,5 +1,5 @@
 import { requestBuyerApi } from './client';
-import type { ListProductsInput, ProductDetail, ProductSearchOutput } from './types';
+import type { BuyerShopDetail, ListProductsInput, ProductDetail, ProductSearchOutput } from './types';
 
 export function fetchProductDetail(productId: string): Promise<ProductDetail> {
   return requestBuyerApi<ProductDetail>(`/api/buyer/products/${encodeURIComponent(productId)}`, {
@@ -35,6 +35,10 @@ function buildProductQuery(params?: ListProductsInput): string {
     query.set('brand', params.brand.trim());
   }
 
+  if (params.sellerId && params.sellerId.trim().length > 0) {
+    query.set('sellerId', params.sellerId.trim());
+  }
+
   if (params.sortBy) {
     query.set('sortBy', params.sortBy);
   }
@@ -49,6 +53,13 @@ function buildProductQuery(params?: ListProductsInput): string {
 
 export function fetchBuyerProducts(params?: ListProductsInput): Promise<ProductSearchOutput> {
   return requestBuyerApi<ProductSearchOutput>(`/api/buyer/products${buildProductQuery(params)}`, {
+    method: 'GET',
+    cache: 'no-store'
+  });
+}
+
+export function fetchBuyerShopDetail(sellerId: string): Promise<BuyerShopDetail> {
+  return requestBuyerApi<BuyerShopDetail>(`/api/buyer/shops/${encodeURIComponent(sellerId)}`, {
     method: 'GET',
     cache: 'no-store'
   });

@@ -16,14 +16,14 @@ export function SellerTopbar({ email, role, onLogout }: SellerTopbarProps) {
         </div>
 
         <div className="flex items-center gap-2 text-slate-600">
-          <button type="button" className="hidden rounded-md p-1.5 hover:bg-slate-100 md:block" aria-label="apps">
+          {/* <button type="button" className="hidden rounded-md p-1.5 hover:bg-slate-100 md:block" aria-label="apps">
             <span className="block h-4 w-4 rounded border border-slate-400" />
           </button>
           <button type="button" className="hidden rounded-md p-1.5 hover:bg-slate-100 md:block" aria-label="help">
             <span className="block h-4 w-4 rounded-full border border-slate-400" />
-          </button>
+          </button> */}
 
-          <div className="mx-1 h-5 w-px bg-slate-200" />
+          {/* <div className="mx-1 h-5 w-px bg-slate-200" /> */}
 
           <div className="hidden rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-[#ee4d2d] lg:block">{role}</div>
 

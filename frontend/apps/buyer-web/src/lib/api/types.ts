@@ -39,6 +39,7 @@ export interface HomeCategoryItem {
 
 export interface ProductDetail {
   id: string;
+  sellerId: string | null;
   title: string;
   description: string;
   brand: string | null;
@@ -51,6 +52,20 @@ export interface ProductDetail {
   compareAtPrice: number | null;
   discountPercent: number;
   stock: number | null;
+}
+
+export interface BuyerShopDetail {
+  sellerId: string;
+  shopName: string;
+  slogan: string;
+  logoUrl: string;
+  bannerUrl: string;
+  accentColor: string;
+  navItems: string[];
+  introTitle: string;
+  introDescription: string;
+  featuredCategories: string[];
+  updatedAt: string;
 }
 
 export type ProductSortBy = 'createdAt' | 'updatedAt' | 'name' | 'minPrice';
@@ -85,6 +100,7 @@ export interface ListProductsInput {
   search?: string;
   categoryId?: string;
   brand?: string;
+  sellerId?: string;
   sortBy?: ProductSortBy;
   sortOrder?: ProductSortOrder;
 }

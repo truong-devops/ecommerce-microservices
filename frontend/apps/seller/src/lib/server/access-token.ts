@@ -27,7 +27,7 @@ export function decodeAccessToken(accessToken: string): AccessTokenClaims | null
     const payload = base64UrlDecode(parts[1]);
     const parsed = JSON.parse(payload) as Partial<AccessTokenClaims>;
 
-    if (!parsed.sub || !parsed.email || !parsed.role) {
+    if (typeof parsed.sub !== 'string' || typeof parsed.email !== 'string' || typeof parsed.role !== 'string') {
       return null;
     }
 

@@ -15,6 +15,7 @@ interface ProductVariant {
 
 interface BackendProduct {
   id: string;
+  sellerId?: string | null;
   name: string;
   description: string | null;
   categoryId: string;
@@ -63,6 +64,7 @@ function toProductDetail(product: BackendProduct): ProductDetail {
 
   return {
     id: product.id,
+    sellerId: typeof product.sellerId === 'string' && product.sellerId.trim().length > 0 ? product.sellerId.trim() : null,
     title: product.name?.trim() || 'Unnamed product',
     description: product.description?.trim() || 'Product description is being updated.',
     brand: product.brand?.trim() || null,

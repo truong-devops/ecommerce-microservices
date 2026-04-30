@@ -245,6 +245,19 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                   </p>
                 </div>
 
+                {product.sellerId ? (
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-sm font-semibold text-slate-800">Thông tin shop</p>
+                    <p className="mt-1 text-sm text-slate-600">Xem toàn bộ sản phẩm và trang trí cửa hàng của người bán.</p>
+                    <Link
+                      href={`/shops/${encodeURIComponent(product.sellerId)}`}
+                      className="mt-2 inline-flex rounded-md border border-brand-500 px-3 py-1.5 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+                    >
+                      Xem shop
+                    </Link>
+                  </div>
+                ) : null}
+
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-semibold text-slate-700">{text.product.quantity}</span>
                   <div className="inline-flex items-center rounded-md border border-slate-300">

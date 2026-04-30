@@ -92,11 +92,15 @@ services:
       context: ./services/auth-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/auth-service/.env
+      - path: ./services/auth-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_REFRESH_SECRET: dev-shared-jwt-refresh-secret-min-32-chars
+      JWT_MFA_SECRET: dev-shared-jwt-mfa-secret-min-32-chars
+      REFRESH_TOKEN_PEPPER: dev-refresh-token-pepper-16chars
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
@@ -127,7 +131,8 @@ services:
       context: ./services/user-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/user-service/.env
+      - path: ./services/user-service/.env
+        required: false
     environment:
       NODE_ENV: development
       PORT: 3000
@@ -154,7 +159,8 @@ services:
     volumes:
       - ./services/product-service/seed-data/image:/app/seed-data/image
     env_file:
-      - ./services/product-service/.env
+      - path: ./services/product-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -188,7 +194,8 @@ services:
       context: ./services/cart-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/cart-service/.env
+      - path: ./services/cart-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -215,7 +222,8 @@ services:
       context: ./services/order-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/order-service/.env
+      - path: ./services/order-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -239,7 +247,8 @@ services:
       context: ./services/payment-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/payment-service/.env
+      - path: ./services/payment-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -262,7 +271,8 @@ services:
       context: ./services/inventory-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/inventory-service/.env
+      - path: ./services/inventory-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -283,7 +293,8 @@ services:
       context: ./services/shipping-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/shipping-service/.env
+      - path: ./services/shipping-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -306,7 +317,8 @@ services:
       context: ./services/review-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/review-service/.env
+      - path: ./services/review-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -323,7 +335,8 @@ services:
       context: ./services/notification-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/notification-service/.env
+      - path: ./services/notification-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -364,7 +377,8 @@ services:
       context: ./services/analytics-service
       dockerfile: Dockerfile
     env_file:
-      - ./services/analytics-service/.env
+      - path: ./services/analytics-service/.env
+        required: false
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
@@ -391,9 +405,11 @@ services:
       context: ./services/api-gateway
       dockerfile: Dockerfile
     env_file:
-      - ./services/api-gateway/.env
+      - path: ./services/api-gateway/.env
+        required: false
     environment:
       <<: *shared-jwt-gateway-secret
+      APP_NAME: api-gateway
       APP_ENV: development
       PORT: 8080
       REQUEST_TIMEOUT: 45s

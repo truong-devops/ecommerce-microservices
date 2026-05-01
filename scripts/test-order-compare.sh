@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BASE_TEST_SCRIPT="$REPO_ROOT/scripts/test-order-service.sh"
+
+JWT_SECRET="${JWT_SECRET:-dev-shared-jwt-access-secret-min-32-chars}"
+
+wait_for_health() {
+  local base_url="$1"
+  local label="$2"
+  local timeout_sec="${3:-90}"
+  local start_epoch
+  start_epoch="$(date +%s)"
+
+  while true; do
+    if curl -fsS "$base_url/health" >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if (( "$(date +%s)" - start_epoch >= timeout_sec )); then
+      echo "$label is not healthy within ${timeout_sec}s: $base_url/health" >&2
+      return 1
+    fi
+
+    sleep 1
+  done
+}
+
+echo "==> Test legacy order-service on :3022"
+wait_for_health "http://localhost:3022/api/v1" "legacy order-service"
+BASE_URL="http://localhost:3022/api/v1" JWT_SECRET="$JWT_SECRET" bash "$BASE_TEST_SCRIPT"
+
+echo
+echo "==> Test go order-service on :3032"
+wait_for_health "http://localhost:3032/api/v1" "go order-service"
+BASE_URL="http://localhost:3032/api/v1" JWT_SECRET="$JWT_SECRET" bash "$BASE_TEST_SCRIPT"
+
+echo
+echo "Both legacy and go order smoke tests passed"

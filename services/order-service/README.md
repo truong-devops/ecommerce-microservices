@@ -1,29 +1,11 @@
 # order-service
 
-Production-ready NestJS order service for order lifecycle management.
+Go implementation for order lifecycle management with API/business parity target to legacy NestJS order-service.
 
-## Container-first run (recommended)
-
-Run everything for this service using Docker only:
+## Container-first run
 
 1. `cd services/order-service`
-2. `npm run docker:up`
-3. `npm run docker:migrate`
-4. `npm run docker:logs`
+2. `docker compose -f docker-compose.dev.yml up -d --build`
+3. Smoke test from repo root:
 
-From repo root, run smoke test:
-
-`./scripts/test-order-service.sh`
-
-## Stop service
-
-From `services/order-service/`:
-
-`npm run docker:down`
-
-## Notes
-
-- This service is designed to run container-first for local dev and deployment parity.
-- `docker-compose.dev.yml` starts `postgres`, `redis`, and `order-service`.
-- Postgres/Redis are internal-only in this compose file (no host port publish) to avoid port conflicts.
-- Environment template is `services/order-service/.env.example`.
+`BASE_URL=http://localhost:3011/api/v1 JWT_SECRET=dev-shared-jwt-access-secret-min-32-chars ./scripts/test-order-service.sh`

@@ -19,15 +19,15 @@ export class HealthService {
   }
 
   async getReadiness(): Promise<Record<string, unknown>> {
-    const clickhouse = await this.analyticsRepository.ping();
+    const postgres = await this.analyticsRepository.ping();
     const redis = this.redisService.isEnabled() ? await this.redisService.ping() : true;
 
-    if (!clickhouse || !redis) {
+    if (!postgres || !redis) {
       throw new ServiceUnavailableException({
         code: ErrorCode.SERVICE_UNAVAILABLE,
         message: 'Dependencies are not ready',
         details: {
-          clickhouse,
+          postgres,
           redis
         }
       });
@@ -36,7 +36,7 @@ export class HealthService {
     return {
       status: 'ready',
       dependencies: {
-        clickhouse,
+        postgres,
         redis
       },
       timestamp: new Date().toISOString()

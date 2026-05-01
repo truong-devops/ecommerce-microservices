@@ -84,24 +84,6 @@ services:
       timeout: 5s
       retries: 20
 
-  analytics-clickhouse:
-    image: clickhouse/clickhouse-server:24.3
-    restart: unless-stopped
-    environment:
-      CLICKHOUSE_DB: ecommerce_analytics
-      CLICKHOUSE_USER: analytics
-      CLICKHOUSE_PASSWORD: analytics_password
-    ports:
-      - '8123:8123'
-      - '9000:9000'
-    volumes:
-      - analytics_clickhouse_data:/var/lib/clickhouse
-    healthcheck:
-      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
   api-gateway:
     build:
       context: ./services/api-gateway
@@ -147,4 +129,3 @@ services:
 volumes:
   postgres_data:
   mongo_data:
-  analytics_clickhouse_data:

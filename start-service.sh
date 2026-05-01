@@ -46,10 +46,10 @@ start_npm_service() {
     env_file="$1"
     service_dir="$2"
     service_name="$3"
+    unset TS_NODE_COMPILER_OPTIONS TS_NODE_PROJECT TS_NODE_FILES || true
     set -a
     source "$env_file"
     set +a
-    export TS_NODE_COMPILER_OPTIONS='"'"'{"ignoreDeprecations":"6.0","rootDir":"./src"}'"'"'
     cd "'"$ROOT_DIR"'"
     npm run start:dev --workspace "services/$service_name"
   ' _ "$env_file" "$service_dir" "$service" &
@@ -104,8 +104,17 @@ if [[ ! -f "$LOCAL_COMPOSE_FILE" ]]; then
   exit 1
 fi
 
+INFRA_SERVICES=(
+  "zookeeper"
+  "kafka"
+  "postgres"
+  "redis"
+  "mongo"
+  "api-gateway"
+)
+
 echo "==> Starting local infrastructure from docker-compose.local.yml"
-docker compose -f "$LOCAL_COMPOSE_FILE" up -d --remove-orphans
+docker compose -f "$LOCAL_COMPOSE_FILE" up -d --remove-orphans "${INFRA_SERVICES[@]}"
 
 for svc in "${SERVICES_NPM[@]}"; do
   start_npm_service "$svc"

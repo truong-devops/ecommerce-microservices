@@ -1,60 +1,61 @@
 import { HttpStatus, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ClickHouseClient, createClient } from '@clickhouse/client';
+import { Pool, QueryResultRow } from 'pg';
 import { ErrorCode } from '../../../common/constants/error-code.enum';
 import { AppException } from '../../../common/utils/app-exception.util';
 import { AppLogger } from '../../../common/utils/app-logger.util';
 import { AnalyticsDateRange, AnalyticsEventRecord } from '../entities/analytics-event-record.type';
 
 interface OverviewRow {
-  totalEvents: string | number;
-  uniqueOrders: string | number;
-  uniquePayments: string | number;
-  uniqueShipments: string | number;
-  capturedAmount: string | number;
-  refundedAmount: string | number;
+  total_events: string | number | null;
+  unique_orders: string | number | null;
+  unique_payments: string | number | null;
+  unique_shipments: string | number | null;
+  captured_amount: string | number | null;
+  refunded_amount: string | number | null;
 }
 
 interface TimeseriesRow {
   bucket: string;
-  eventType: string;
-  totalEvents: string | number;
+  event_type: string;
+  total_events: string | number;
 }
 
 interface PaymentsSummaryRow {
-  eventType: string;
+  event_type: string;
   status: string | null;
-  totalEvents: string | number;
-  totalAmount: string | number;
-  totalRefundedAmount: string | number;
+  total_events: string | number;
+  total_amount: string | number;
+  total_refunded_amount: string | number;
 }
 
 interface ShippingSummaryRow {
-  eventType: string;
+  event_type: string;
   status: string | null;
-  totalEvents: string | number;
+  total_events: string | number;
 }
 
 @Injectable()
 export class AnalyticsRepository implements OnModuleDestroy {
-  private readonly client: ClickHouseClient;
+  private readonly pool: Pool;
+  private readonly schemaPromise: Promise<void>;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: AppLogger
   ) {
-    this.client = createClient({
-      url: this.configService.getOrThrow<string>('clickhouse.url'),
-      database: this.configService.get<string>('clickhouse.database', 'ecommerce_analytics'),
-      username: this.configService.get<string>('clickhouse.username', 'default'),
-      password: this.configService.get<string>('clickhouse.password', ''),
-      request_timeout: this.configService.get<number>('clickhouse.requestTimeoutMs', 10000)
+    this.pool = new Pool({
+      connectionString: this.configService.getOrThrow<string>('postgres.url'),
+      ssl: this.configService.get<boolean>('postgres.ssl', false) ? { rejectUnauthorized: false } : undefined,
+      max: this.configService.get<number>('postgres.poolMax', 10)
     });
+    this.schemaPromise = this.ensureSchema();
   }
 
   async ping(): Promise<boolean> {
     try {
-      await this.client.ping();
+      await this.schemaPromise;
+      await this.pool.query('SELECT 1');
       return true;
     } catch {
       return false;
@@ -63,26 +64,22 @@ export class AnalyticsRepository implements OnModuleDestroy {
 
   async hasEventKey(eventKey: string): Promise<boolean> {
     try {
-      const result = await this.client.query({
-        query: `
-          SELECT count() AS count
+      await this.schemaPromise;
+      const result = await this.pool.query<{ exists: number }>(
+        `
+          SELECT 1::int AS exists
           FROM analytics_events_raw
-          WHERE event_key = {eventKey:String}
+          WHERE event_key = $1
           LIMIT 1
         `,
-        format: 'JSONEachRow',
-        query_params: {
-          eventKey
-        }
-      });
+        [eventKey]
+      );
 
-      const rows = await result.json<{ count: string | number }>();
-      const count = Number(rows[0]?.count ?? 0);
-      return count > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       this.logger.error(
         JSON.stringify({
-          message: 'ClickHouse query failed for dedupe check',
+          message: 'Postgres query failed for dedupe check',
           error: (error as Error).message
         }),
         undefined,
@@ -97,34 +94,95 @@ export class AnalyticsRepository implements OnModuleDestroy {
   }
 
   async insertEvent(record: AnalyticsEventRecord): Promise<void> {
+    await this.schemaPromise;
+    const client = await this.pool.connect();
+
     try {
-      await this.client.insert({
-        table: 'analytics_events_raw',
-        values: [
-          {
-            event_key: record.eventKey,
-            event_type: record.eventType,
-            source_service: record.sourceService,
-            occurred_at: record.occurredAt,
-            seller_id: record.sellerId,
-            user_id: record.userId,
-            order_id: record.orderId,
-            payment_id: record.paymentId,
-            shipment_id: record.shipmentId,
-            amount: record.amount,
-            refunded_amount: record.refundedAmount,
-            currency: record.currency,
-            status: record.status,
-            payload_json: record.payloadJson,
-            created_at: record.createdAt
-          }
-        ],
-        format: 'JSONEachRow'
-      });
+      await client.query('BEGIN');
+      const inserted = await client.query(
+        `
+          INSERT INTO analytics_events_raw (
+            event_key,
+            event_type,
+            source_service,
+            occurred_at,
+            seller_id,
+            user_id,
+            order_id,
+            payment_id,
+            shipment_id,
+            amount,
+            refunded_amount,
+            currency,
+            status,
+            payload_json,
+            created_at
+          )
+          VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15
+          )
+          ON CONFLICT (event_key) DO NOTHING
+        `,
+        [
+          record.eventKey,
+          record.eventType,
+          record.sourceService,
+          record.occurredAt,
+          record.sellerId,
+          record.userId,
+          record.orderId,
+          record.paymentId,
+          record.shipmentId,
+          record.amount,
+          record.refundedAmount,
+          record.currency,
+          record.status,
+          record.payloadJson,
+          record.createdAt
+        ]
+      );
+
+      if (inserted.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return;
+      }
+
+      const sellerId = record.sellerId ?? '';
+      const amount = record.amount ?? 0;
+      const refundedAmount = record.refundedAmount ?? 0;
+      await client.query(
+        `
+          INSERT INTO seller_daily_metrics (
+            bucket_date,
+            seller_id,
+            event_type,
+            total_events,
+            total_amount,
+            total_refunded_amount
+          )
+          VALUES (
+            date_trunc('day', $1::timestamptz)::date,
+            $2,
+            $3,
+            1,
+            $4::numeric(18,2),
+            $5::numeric(18,2)
+          )
+          ON CONFLICT (bucket_date, seller_id, event_type)
+          DO UPDATE SET
+            total_events = seller_daily_metrics.total_events + 1,
+            total_amount = seller_daily_metrics.total_amount + EXCLUDED.total_amount,
+            total_refunded_amount = seller_daily_metrics.total_refunded_amount + EXCLUDED.total_refunded_amount
+        `,
+        [record.occurredAt, sellerId, record.eventType, amount, refundedAmount]
+      );
+
+      await client.query('COMMIT');
     } catch (error) {
+      await client.query('ROLLBACK');
       this.logger.error(
         JSON.stringify({
-          message: 'ClickHouse insert failed',
+          message: 'Postgres insert failed',
           eventKey: record.eventKey,
           eventType: record.eventType,
           error: (error as Error).message
@@ -137,35 +195,44 @@ export class AnalyticsRepository implements OnModuleDestroy {
         code: ErrorCode.ANALYTICS_QUERY_FAILED,
         message: 'Failed to persist analytics event'
       });
+    } finally {
+      client.release();
     }
   }
 
   async queryOverview(range: AnalyticsDateRange): Promise<Record<string, number>> {
+    await this.schemaPromise;
     const rows = await this.query<OverviewRow>(
       `
         SELECT
-          count() AS totalEvents,
-          uniqExactIf(order_id, isNotNull(order_id)) AS uniqueOrders,
-          uniqExactIf(payment_id, isNotNull(payment_id)) AS uniquePayments,
-          uniqExactIf(shipment_id, isNotNull(shipment_id)) AS uniqueShipments,
-          sumIf(ifNull(amount, 0), event_type IN ('payment.captured', 'payment.authorized')) AS capturedAmount,
-          sumIf(ifNull(refunded_amount, 0), event_type IN ('payment.refunded', 'payment.partially-refunded', 'payment.chargeback')) AS refundedAmount
+          (
+            SELECT COALESCE(SUM(total_events), 0)
+            FROM seller_daily_metrics
+            WHERE bucket_date >= ($1::timestamptz AT TIME ZONE 'UTC')::date
+              AND bucket_date < ($2::timestamptz AT TIME ZONE 'UTC')::date
+              AND ($3 = '' OR seller_id = $3)
+          ) AS total_events,
+          COUNT(DISTINCT order_id) FILTER (WHERE order_id IS NOT NULL) AS unique_orders,
+          COUNT(DISTINCT payment_id) FILTER (WHERE payment_id IS NOT NULL) AS unique_payments,
+          COUNT(DISTINCT shipment_id) FILTER (WHERE shipment_id IS NOT NULL) AS unique_shipments,
+          COALESCE(SUM(CASE WHEN event_type IN ('payment.captured', 'payment.authorized') THEN COALESCE(amount, 0) ELSE 0 END), 0) AS captured_amount,
+          COALESCE(SUM(CASE WHEN event_type IN ('payment.refunded', 'payment.partially-refunded', 'payment.chargeback') THEN COALESCE(refunded_amount, 0) ELSE 0 END), 0) AS refunded_amount
         FROM analytics_events_raw
-        WHERE occurred_at >= parseDateTime64BestEffort({from:String})
-          AND occurred_at < parseDateTime64BestEffort({to:String})
-          AND ({sellerId:String} = '' OR seller_id = {sellerId:String})
+        WHERE occurred_at >= $1::timestamptz
+          AND occurred_at < $2::timestamptz
+          AND ($3 = '' OR seller_id = $3)
       `,
-      { ...range }
+      [range.from, range.to, range.sellerId]
     );
 
     const row = rows[0];
     return {
-      totalEvents: toNumber(row?.totalEvents),
-      uniqueOrders: toNumber(row?.uniqueOrders),
-      uniquePayments: toNumber(row?.uniquePayments),
-      uniqueShipments: toNumber(row?.uniqueShipments),
-      capturedAmount: toNumber(row?.capturedAmount),
-      refundedAmount: toNumber(row?.refundedAmount)
+      totalEvents: toNumber(row?.total_events),
+      uniqueOrders: toNumber(row?.unique_orders),
+      uniquePayments: toNumber(row?.unique_payments),
+      uniqueShipments: toNumber(row?.unique_shipments),
+      capturedAmount: toNumber(row?.captured_amount),
+      refundedAmount: toNumber(row?.refunded_amount)
     };
   }
 
@@ -174,108 +241,120 @@ export class AnalyticsRepository implements OnModuleDestroy {
     interval: 'hour' | 'day',
     eventType?: string
   ): Promise<Array<{ bucket: string; eventType: string; totalEvents: number }>> {
-    const bucketExpression = interval === 'hour' ? 'toStartOfHour(occurred_at)' : 'toStartOfDay(occurred_at)';
-
-    const rows = await this.query<TimeseriesRow>(
-      `
-        SELECT
-          toString(${bucketExpression}) AS bucket,
-          event_type AS eventType,
-          count() AS totalEvents
-        FROM analytics_events_raw
-        WHERE occurred_at >= parseDateTime64BestEffort({from:String})
-          AND occurred_at < parseDateTime64BestEffort({to:String})
-          AND ({sellerId:String} = '' OR seller_id = {sellerId:String})
-          AND ({eventType:String} = '' OR event_type = {eventType:String})
-        GROUP BY bucket, eventType
-        ORDER BY bucket ASC, eventType ASC
-      `,
-      {
-        ...range,
-        eventType: (eventType ?? '').trim()
-      }
-    );
+    await this.schemaPromise;
+    const trimmedEventType = (eventType ?? '').trim();
+    const sellerId = range.sellerId;
+    const rows = interval === 'day'
+      ? await this.query<TimeseriesRow>(
+          `
+            SELECT
+              to_char(bucket_date::timestamp AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"00:00:00.000\"Z\"') AS bucket,
+              event_type,
+              SUM(total_events)::bigint AS total_events
+            FROM seller_daily_metrics
+            WHERE bucket_date >= ($1::timestamptz AT TIME ZONE 'UTC')::date
+              AND bucket_date < ($2::timestamptz AT TIME ZONE 'UTC')::date
+              AND ($3 = '' OR seller_id = $3)
+              AND ($4 = '' OR event_type = $4)
+            GROUP BY bucket, event_type
+            ORDER BY bucket ASC, event_type ASC
+          `,
+          [range.from, range.to, sellerId, trimmedEventType]
+        )
+      : await this.query<TimeseriesRow>(
+          `
+            SELECT
+              to_char(date_trunc('hour', occurred_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:00:00.000\"Z\"') AS bucket,
+              event_type,
+              COUNT(*)::bigint AS total_events
+            FROM analytics_events_raw
+            WHERE occurred_at >= $1::timestamptz
+              AND occurred_at < $2::timestamptz
+              AND ($3 = '' OR seller_id = $3)
+              AND ($4 = '' OR event_type = $4)
+            GROUP BY bucket, event_type
+            ORDER BY bucket ASC, event_type ASC
+          `,
+          [range.from, range.to, sellerId, trimmedEventType]
+        );
 
     return rows.map((row) => ({
       bucket: row.bucket,
-      eventType: row.eventType,
-      totalEvents: toNumber(row.totalEvents)
+      eventType: row.event_type,
+      totalEvents: toNumber(row.total_events)
     }));
   }
 
   async queryPaymentsSummary(
     range: AnalyticsDateRange
   ): Promise<Array<{ eventType: string; status: string | null; totalEvents: number; totalAmount: number; totalRefundedAmount: number }>> {
+    await this.schemaPromise;
     const rows = await this.query<PaymentsSummaryRow>(
       `
         SELECT
-          event_type AS eventType,
+          event_type,
           status,
-          count() AS totalEvents,
-          sum(ifNull(amount, 0)) AS totalAmount,
-          sum(ifNull(refunded_amount, 0)) AS totalRefundedAmount
+          COUNT(*)::bigint AS total_events,
+          COALESCE(SUM(COALESCE(amount, 0)), 0) AS total_amount,
+          COALESCE(SUM(COALESCE(refunded_amount, 0)), 0) AS total_refunded_amount
         FROM analytics_events_raw
-        WHERE occurred_at >= parseDateTime64BestEffort({from:String})
-          AND occurred_at < parseDateTime64BestEffort({to:String})
-          AND ({sellerId:String} = '' OR seller_id = {sellerId:String})
+        WHERE occurred_at >= $1::timestamptz
+          AND occurred_at < $2::timestamptz
+          AND ($3 = '' OR seller_id = $3)
           AND event_type LIKE 'payment.%'
-        GROUP BY eventType, status
-        ORDER BY eventType ASC, status ASC NULLS FIRST
+        GROUP BY event_type, status
+        ORDER BY event_type ASC, status ASC NULLS FIRST
       `,
-      { ...range }
+      [range.from, range.to, range.sellerId]
     );
 
     return rows.map((row) => ({
-      eventType: row.eventType,
+      eventType: row.event_type,
       status: row.status,
-      totalEvents: toNumber(row.totalEvents),
-      totalAmount: toNumber(row.totalAmount),
-      totalRefundedAmount: toNumber(row.totalRefundedAmount)
+      totalEvents: toNumber(row.total_events),
+      totalAmount: toNumber(row.total_amount),
+      totalRefundedAmount: toNumber(row.total_refunded_amount)
     }));
   }
 
   async queryShippingSummary(range: AnalyticsDateRange): Promise<Array<{ eventType: string; status: string | null; totalEvents: number }>> {
+    await this.schemaPromise;
     const rows = await this.query<ShippingSummaryRow>(
       `
         SELECT
-          event_type AS eventType,
+          event_type,
           status,
-          count() AS totalEvents
+          COUNT(*)::bigint AS total_events
         FROM analytics_events_raw
-        WHERE occurred_at >= parseDateTime64BestEffort({from:String})
-          AND occurred_at < parseDateTime64BestEffort({to:String})
-          AND ({sellerId:String} = '' OR seller_id = {sellerId:String})
+        WHERE occurred_at >= $1::timestamptz
+          AND occurred_at < $2::timestamptz
+          AND ($3 = '' OR seller_id = $3)
           AND event_type LIKE 'shipment.%'
-        GROUP BY eventType, status
-        ORDER BY eventType ASC, status ASC NULLS FIRST
+        GROUP BY event_type, status
+        ORDER BY event_type ASC, status ASC NULLS FIRST
       `,
-      { ...range }
+      [range.from, range.to, range.sellerId]
     );
 
     return rows.map((row) => ({
-      eventType: row.eventType,
+      eventType: row.event_type,
       status: row.status,
-      totalEvents: toNumber(row.totalEvents)
+      totalEvents: toNumber(row.total_events)
     }));
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.client.close();
+    await this.pool.end();
   }
 
-  private async query<T>(query: string, queryParams: Record<string, unknown>): Promise<T[]> {
+  private async query<T extends QueryResultRow>(query: string, params: unknown[]): Promise<T[]> {
     try {
-      const result = await this.client.query({
-        query,
-        format: 'JSONEachRow',
-        query_params: queryParams
-      });
-
-      return result.json<T>();
+      const result = await this.pool.query<T>(query, params);
+      return result.rows;
     } catch (error) {
       this.logger.error(
         JSON.stringify({
-          message: 'ClickHouse analytics query failed',
+          message: 'Postgres analytics query failed',
           error: (error as Error).message
         }),
         undefined,
@@ -287,6 +366,53 @@ export class AnalyticsRepository implements OnModuleDestroy {
         message: 'Analytics storage query failed'
       });
     }
+  }
+
+  private async ensureSchema(): Promise<void> {
+    const ddl = `
+      CREATE TABLE IF NOT EXISTS analytics_events_raw (
+        event_key TEXT PRIMARY KEY,
+        event_type TEXT NOT NULL,
+        source_service TEXT NULL,
+        occurred_at TIMESTAMPTZ NOT NULL,
+        seller_id TEXT NULL,
+        user_id TEXT NULL,
+        order_id TEXT NULL,
+        payment_id TEXT NULL,
+        shipment_id TEXT NULL,
+        amount NUMERIC(18, 2) NULL,
+        refunded_amount NUMERIC(18, 2) NULL,
+        currency TEXT NULL,
+        status TEXT NULL,
+        payload_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS seller_daily_metrics (
+        bucket_date DATE NOT NULL,
+        seller_id TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        total_events BIGINT NOT NULL DEFAULT 0,
+        total_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
+        total_refunded_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
+        PRIMARY KEY (bucket_date, seller_id, event_type)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_occurred_at
+        ON analytics_events_raw (occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_seller_id
+        ON analytics_events_raw (seller_id);
+      CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_event_type
+        ON analytics_events_raw (event_type);
+      CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_order_id
+        ON analytics_events_raw (order_id);
+      CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_payment_id
+        ON analytics_events_raw (payment_id);
+      CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_shipment_id
+        ON analytics_events_raw (shipment_id);
+    `;
+
+    await this.pool.query(ddl);
   }
 }
 

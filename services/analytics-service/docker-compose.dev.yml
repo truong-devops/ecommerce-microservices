@@ -1,17 +1,14 @@
 services:
-  clickhouse:
-    image: clickhouse/clickhouse-server:24.3
+  postgres:
+    image: postgres:16-alpine
     environment:
-      CLICKHOUSE_DB: ecommerce_analytics
-      CLICKHOUSE_USER: analytics
-      CLICKHOUSE_PASSWORD: analytics_password
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce
+      POSTGRES_DB: ecommerce
     ports:
-      - '8123:8123'
-      - '9000:9000'
-    volumes:
-      - analytics_service_ch_data:/var/lib/clickhouse
+      - '5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -33,23 +30,19 @@ services:
     environment:
       APP_ENV: development
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
-      CLICKHOUSE_URL: http://clickhouse:8123
-      CLICKHOUSE_DATABASE: ecommerce_analytics
-      CLICKHOUSE_USERNAME: analytics
-      CLICKHOUSE_PASSWORD: analytics_password
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DB_SSL: 'false'
+      DB_POOL_MAX: 10
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: host.docker.internal:9092
     ports:
       - '3010:3010'
     depends_on:
-      clickhouse:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
     extra_hosts:
       - 'host.docker.internal:host-gateway'
-
-volumes:
-  analytics_service_ch_data:

@@ -5,12 +5,10 @@ export default () => ({
     port: Number(process.env.PORT ?? 3010),
     apiPrefix: process.env.API_PREFIX ?? 'api/v1'
   },
-  clickhouse: {
-    url: process.env.CLICKHOUSE_URL ?? 'http://localhost:8123',
-    database: process.env.CLICKHOUSE_DATABASE ?? 'ecommerce_analytics',
-    username: process.env.CLICKHOUSE_USERNAME ?? 'default',
-    password: process.env.CLICKHOUSE_PASSWORD ?? '',
-    requestTimeoutMs: Number(process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS ?? 10000)
+  postgres: {
+    url: process.env.DATABASE_URL ?? 'postgresql://ecommerce:ecommerce@localhost:5432/ecommerce',
+    ssl: process.env.DB_SSL === 'true',
+    poolMax: Number(process.env.DB_POOL_MAX ?? 10)
   },
   redis: {
     enabled: process.env.REDIS_ENABLED === 'true',

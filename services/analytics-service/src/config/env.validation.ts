@@ -6,11 +6,9 @@ export const envValidationSchema = Joi.object({
   PORT: Joi.number().default(3010),
   API_PREFIX: Joi.string().default('api/v1'),
 
-  CLICKHOUSE_URL: Joi.string().uri().required(),
-  CLICKHOUSE_DATABASE: Joi.string().default('ecommerce_analytics'),
-  CLICKHOUSE_USERNAME: Joi.string().default('default'),
-  CLICKHOUSE_PASSWORD: Joi.string().allow('').default(''),
-  CLICKHOUSE_REQUEST_TIMEOUT_MS: Joi.number().integer().min(1000).default(10000),
+  DATABASE_URL: Joi.string().uri().required(),
+  DB_SSL: Joi.boolean().default(false),
+  DB_POOL_MAX: Joi.number().integer().min(1).max(100).default(10),
 
   REDIS_ENABLED: Joi.boolean().default(false),
   REDIS_URL: Joi.string().uri().allow('').optional(),

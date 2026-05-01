@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: ecommerce
       POSTGRES_PASSWORD: ecommerce
       POSTGRES_DB: ecommerce
-    volumes:
-      - notification_service_pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
       interval: 5s
@@ -29,14 +27,14 @@ services:
       - ./.env.example
     environment:
       APP_ENV: development
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       KAFKA_ENABLED: 'false'
       KAFKA_BROKERS: host.docker.internal:9092
     ports:
-      - '3009:3009'
+      - '3012:3009'
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,6 +43,3 @@ services:
     restart: unless-stopped
     extra_hosts:
       - 'host.docker.internal:host-gateway'
-
-volumes:
-  notification_service_pg_data:

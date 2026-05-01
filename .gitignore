@@ -36,3 +36,7 @@ node_modules/
 dist/
 build/
 .cache/
+
+# Go local caches
+.gocache/
+.gomodcache/

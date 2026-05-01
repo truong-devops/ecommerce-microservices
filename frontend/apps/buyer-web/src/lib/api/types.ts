@@ -43,6 +43,9 @@ export interface ProductDetail {
   description: string;
   brand: string | null;
   categoryId: string;
+  slug: string;
+  sellerId: string;
+  status: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
   image: string;
   images: string[];
   price: number;
@@ -51,6 +54,21 @@ export interface ProductDetail {
   compareAtPrice: number | null;
   discountPercent: number;
   stock: number | null;
+  attributes: Record<string, string | number | boolean | null>;
+  variants: ProductDetailVariant[];
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface ProductDetailVariant {
+  sku: string;
+  name: string;
+  price: number;
+  currency: string;
+  compareAtPrice: number | null;
+  discountPercent: number;
+  isDefault: boolean;
+  metadata: Record<string, string | number | boolean | null>;
 }
 
 export type ProductSortBy = 'createdAt' | 'updatedAt' | 'name' | 'minPrice';
@@ -87,6 +105,73 @@ export interface ListProductsInput {
   brand?: string;
   sortBy?: ProductSortBy;
   sortOrder?: ProductSortOrder;
+}
+
+export type ReviewStatus = 'PUBLISHED' | 'HIDDEN' | 'REJECTED' | 'DELETED';
+export type ReviewSortBy = 'createdAt' | 'updatedAt' | 'rating';
+export type ReviewSortOrder = 'ASC' | 'DESC';
+
+export interface ReviewReply {
+  content: string;
+  repliedBy: string;
+  repliedAt: string;
+}
+
+export interface ReviewItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  sellerId: string;
+  buyerId: string;
+  rating: number;
+  title: string | null;
+  content: string;
+  images: string[];
+  status: ReviewStatus;
+  moderationReason: string | null;
+  moderatedBy: string | null;
+  moderatedAt: string | null;
+  reply: ReviewReply | null;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewListOutput {
+  items: ReviewItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface ListReviewsInput {
+  page?: number;
+  pageSize?: number;
+  productId?: string;
+  rating?: number;
+  search?: string;
+  sortBy?: ReviewSortBy;
+  sortOrder?: ReviewSortOrder;
+}
+
+export interface ReviewSummary {
+  productId: string;
+  averageRating: number;
+  totalReviews: number;
+  starDistribution: Record<string, number>;
+}
+
+export interface CreateReviewInput {
+  orderId: string;
+  productId: string;
+  sellerId: string;
+  rating: number;
+  title?: string;
+  content: string;
+  images?: string[];
 }
 
 export interface BuyerApiMeta {

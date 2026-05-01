@@ -7,7 +7,7 @@ services:
       POSTGRES_DB: ecommerce_user
     restart: unless-stopped
     ports:
-      - '5434:5432'
+      - '5435:5432'
     volumes:
       - user_service_pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,26 +21,31 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env.dev
+      - ./.env
     environment:
       NODE_ENV: development
-      PORT: 3000
-      DB_TYPE: postgres
-      DB_HOST: ${DB_HOST:-user-service-db}
+      SERVICE_NAME: user-service
+      PORT: 3013
+      API_PREFIX: api/v1
+      DB_HOST: user-service-db
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       DB_NAME: ecommerce_user
       DB_SSL: 'false'
       DB_MIGRATIONS_RUN: 'true'
-      KAFKA_ENABLED: 'false'
+      MIGRATION_FILE: migrations/0001_init_user_service_go.sql
+      KAFKA_ENABLED: ${KAFKA_ENABLED:-false}
+      KAFKA_CLIENT_ID: ${KAFKA_CLIENT_ID:-user-service}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-host.docker.internal:9092}
+      KAFKA_USER_TOPIC: ${KAFKA_USER_TOPIC:-user.registered}
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     depends_on:
       user-service-db:
         condition: service_healthy
     ports:
-      - '3100:3000'
+      - '3110:3013'
     restart: unless-stopped
 
 volumes:

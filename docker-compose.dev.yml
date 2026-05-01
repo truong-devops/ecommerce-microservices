@@ -232,12 +232,29 @@ services:
       - path: ./services/order-service/.env
         required: false
     environment:
-      <<: *shared-jwt-access-secret
+      APP_NAME: order-service
       APP_ENV: development
+      PORT: 3002
+      API_PREFIX: api/v1
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
+      IDEMPOTENCY_RECORD_TTL_MINUTES: 60
+      IDEMPOTENCY_LOCK_TTL_SECONDS: 30
+      DISPATCH_INTERVAL_MS: 3000
+      DISPATCH_BATCH_SIZE: 50
+      DISPATCH_MAX_RETRY: 10
+      KAFKA_ENABLED: 'true'
       KAFKA_BROKERS: kafka:29092
+      ORDER_EVENTS_TOPIC: order.events
+      INVENTORY_EVENTS_TOPIC: inventory.events
+      PAYMENT_EVENTS_TOPIC: payment.events
+      NOTIFICATION_EVENTS_TOPIC: notification.events
+      ANALYTICS_EVENTS_TOPIC: analytics.events
+      AUDIT_EVENTS_TOPIC: audit.events
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_order_service.sql
     ports:
       - '3002:3002'
     depends_on:

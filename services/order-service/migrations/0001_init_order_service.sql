@@ -1,10 +1,30 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TYPE order_status AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'FAILED');
-CREATE TYPE role AS ENUM ('CUSTOMER', 'ADMIN', 'SUPPORT', 'WAREHOUSE', 'SELLER', 'SUPER_ADMIN');
-CREATE TYPE outbox_status AS ENUM ('PENDING', 'PUBLISHED', 'FAILED');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'order_status') THEN
+    CREATE TYPE order_status AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'FAILED');
+  END IF;
+END
+$$;
 
-CREATE TABLE orders (
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
+    CREATE TYPE role AS ENUM ('CUSTOMER', 'ADMIN', 'SUPPORT', 'WAREHOUSE', 'SELLER', 'SUPER_ADMIN');
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'outbox_status') THEN
+    CREATE TYPE outbox_status AS ENUM ('PENDING', 'PUBLISHED', 'FAILED');
+  END IF;
+END
+$$;
+
+CREATE TABLE IF NOT EXISTS orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number varchar(32) NOT NULL UNIQUE,
   user_id uuid NOT NULL,
@@ -19,10 +39,10 @@ CREATE TABLE orders (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_orders_user_id ON orders(user_id);
-CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id varchar(128) NOT NULL,
@@ -33,9 +53,9 @@ CREATE TABLE order_items (
   total_price numeric(14, 2) NOT NULL
 );
 
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 
-CREATE TABLE order_status_histories (
+CREATE TABLE IF NOT EXISTS order_status_histories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   from_status order_status,
@@ -46,9 +66,9 @@ CREATE TABLE order_status_histories (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_order_status_histories_order_id ON order_status_histories(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_histories_order_id ON order_status_histories(order_id);
 
-CREATE TABLE order_audit_logs (
+CREATE TABLE IF NOT EXISTS order_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL,
   action varchar(64) NOT NULL,
@@ -59,9 +79,9 @@ CREATE TABLE order_audit_logs (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_order_audit_logs_order_id ON order_audit_logs(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_audit_logs_order_id ON order_audit_logs(order_id);
 
-CREATE TABLE idempotency_records (
+CREATE TABLE IF NOT EXISTS idempotency_records (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
   idempotency_key varchar(128) NOT NULL,
@@ -74,9 +94,9 @@ CREATE TABLE idempotency_records (
   UNIQUE(user_id, idempotency_key)
 );
 
-CREATE INDEX idx_idempotency_records_expires_at ON idempotency_records(expires_at);
+CREATE INDEX IF NOT EXISTS idx_idempotency_records_expires_at ON idempotency_records(expires_at);
 
-CREATE TABLE outbox_events (
+CREATE TABLE IF NOT EXISTS outbox_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   aggregate_type varchar(64) NOT NULL,
   aggregate_id uuid NOT NULL,
@@ -89,6 +109,6 @@ CREATE TABLE outbox_events (
   published_at timestamptz
 );
 
-CREATE INDEX idx_outbox_events_status ON outbox_events(status);
-CREATE INDEX idx_outbox_events_created_at ON outbox_events(created_at);
-CREATE INDEX idx_outbox_events_next_retry_at ON outbox_events(next_retry_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_events_status ON outbox_events(status);
+CREATE INDEX IF NOT EXISTS idx_outbox_events_created_at ON outbox_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_outbox_events_next_retry_at ON outbox_events(next_retry_at);

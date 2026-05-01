@@ -4,9 +4,9 @@ Tài liệu này giải thích ngắn gọn `order-service` trong monorepo để
 
 ## 1) Gốc service ở đâu?
 
-Gốc của service là:
+Gốc của service (NestJS legacy) là:
 
-`services/order-service/`
+`services/order-service-nest/`
 
 Mọi đường dẫn bên dưới đều tính từ thư mục này.
 

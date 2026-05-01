@@ -29,6 +29,7 @@ export interface BuyerUser {
   id: string;
   name: string;
   email: string;
+  role: string;
   phone: string;
   address: string;
   gender: BuyerGender;
@@ -139,6 +140,7 @@ function toBuyerUser(authUser: BuyerAuthUser, profile: BuyerProfile): BuyerUser 
   return {
     id: authUser.id,
     email: authUser.email,
+    role: authUser.role,
     name: profile.name,
     phone: profile.phone,
     address: profile.address,
@@ -238,7 +240,7 @@ function readSession(): BuyerAuthSession | null {
       return null;
     }
 
-    const expiresInRaw = value.expiresIn;
+    const expiresInRaw = (value as { expiresIn?: unknown }).expiresIn;
     const normalizedExpiresIn =
       typeof expiresInRaw === 'number'
         ? expiresInRaw

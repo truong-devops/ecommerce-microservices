@@ -11,19 +11,24 @@ interface ProductVariant {
   currency: string;
   compareAtPrice: number | null;
   isDefault: boolean;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface BackendProduct {
   id: string;
-  sellerId?: string | null;
+  sellerId: string;
   name: string;
+  slug: string;
   description: string | null;
   categoryId: string;
   brand: string | null;
+  status: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
   attributes?: Record<string, unknown> | null;
   images: string[];
   minPrice: number;
   variants: ProductVariant[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface RouteContext {
@@ -61,22 +66,31 @@ function toProductDetail(product: BackendProduct): ProductDetail {
   const defaultVariant = product.variants.find((variant) => variant.isDefault) ?? product.variants[0] ?? null;
   const price = sanitizePrice(defaultVariant?.price ?? product.minPrice);
   const compareAtPrice = sanitizeCompareAtPrice(defaultVariant?.compareAtPrice ?? null, price);
+  const currency = sanitizeCurrency(defaultVariant?.currency);
+  const normalizedImages = product.images.length > 0 ? product.images : [FALLBACK_IMAGE];
+  const variants = toVariants(product.variants, currency);
 
   return {
     id: product.id,
-    sellerId: typeof product.sellerId === 'string' && product.sellerId.trim().length > 0 ? product.sellerId.trim() : null,
     title: product.name?.trim() || 'Unnamed product',
     description: product.description?.trim() || 'Product description is being updated.',
     brand: product.brand?.trim() || null,
     categoryId: product.categoryId?.trim() || 'uncategorized',
-    image: product.images[0] ?? FALLBACK_IMAGE,
-    images: product.images.length > 0 ? product.images : [FALLBACK_IMAGE],
+    slug: product.slug?.trim() || product.id,
+    sellerId: product.sellerId?.trim() || '',
+    status: sanitizeStatus(product.status),
+    image: normalizedImages[0] ?? FALLBACK_IMAGE,
+    images: normalizedImages,
     price,
-    currency: sanitizeCurrency(defaultVariant?.currency),
+    currency,
     defaultSku: sanitizeSku(defaultVariant?.sku),
     compareAtPrice,
     discountPercent: calculateDiscountPercent(price, compareAtPrice),
-    stock: extractStock(product.attributes)
+    stock: extractStock(product.attributes),
+    attributes: sanitizeFlatRecord(product.attributes),
+    variants,
+    createdAt: sanitizeIsoDate(product.createdAt),
+    updatedAt: sanitizeIsoDate(product.updatedAt)
   };
 }
 
@@ -101,6 +115,13 @@ function sanitizeCurrency(value: string | undefined): string {
   return /^[A-Z]{3}$/.test(normalized) ? normalized : 'USD';
 }
 
+function sanitizeStatus(value: BackendProduct['status'] | undefined): ProductDetail['status'] {
+  if (value === 'ACTIVE' || value === 'ARCHIVED' || value === 'DRAFT' || value === 'HIDDEN') {
+    return value;
+  }
+  return 'ACTIVE';
+}
+
 function sanitizeSku(value: string | undefined): string | null {
   if (!value) {
     return null;
@@ -116,6 +137,82 @@ function calculateDiscountPercent(price: number, compareAtPrice: number | null):
   }
 
   return Math.max(0, Math.round(((compareAtPrice - price) / compareAtPrice) * 100));
+}
+
+function sanitizeIsoDate(value: string | undefined): string | null {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) {
+    return null;
+  }
+
+  return new Date(timestamp).toISOString();
+}
+
+function sanitizeFlatRecord(
+  source: Record<string, unknown> | null | undefined
+): Record<string, string | number | boolean | null> {
+  if (!source) {
+    return {};
+  }
+
+  return Object.entries(source).reduce<Record<string, string | number | boolean | null>>((accumulator, [key, value]) => {
+    const normalizedKey = key.trim();
+    if (!normalizedKey) {
+      return accumulator;
+    }
+
+    const normalizedValue = sanitizePrimitive(value);
+    if (normalizedValue !== undefined) {
+      accumulator[normalizedKey] = normalizedValue;
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function sanitizePrimitive(value: unknown): string | number | boolean | null | undefined {
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  return undefined;
+}
+
+function toVariants(
+  variants: ProductVariant[],
+  fallbackCurrency: string
+): ProductDetail['variants'] {
+  return variants.map((variant) => {
+    const variantPrice = sanitizePrice(variant.price);
+    const variantCompareAt = sanitizeCompareAtPrice(variant.compareAtPrice ?? null, variantPrice);
+
+    return {
+      sku: sanitizeSku(variant.sku) ?? 'N/A',
+      name: variant.name?.trim() || 'Standard',
+      price: variantPrice,
+      currency: sanitizeCurrency(variant.currency) || fallbackCurrency,
+      compareAtPrice: variantCompareAt,
+      discountPercent: calculateDiscountPercent(variantPrice, variantCompareAt),
+      isDefault: Boolean(variant.isDefault),
+      metadata: sanitizeFlatRecord(variant.metadata)
+    };
+  });
 }
 
 function extractStock(attributes?: Record<string, unknown> | null): number | null {

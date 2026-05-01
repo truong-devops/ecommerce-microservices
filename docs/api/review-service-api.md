@@ -31,7 +31,9 @@
 
 ### `CreateReviewDto`
 
-- `orderId`, `productId`, `sellerId` (UUID, required)
+- `orderId` (UUID, required)
+- `productId` (required, pattern id linh hoạt: `^[A-Za-z0-9][A-Za-z0-9._:-]{5,127}$`)
+- `sellerId` (UUID, required)
 - `rating` (required, int 1..5)
 - `title` (optional, max 120)
 - `content` (required, max 2000)
@@ -40,7 +42,8 @@
 ### `ListReviewsDto` (query)
 
 - `page`, `pageSize` (max 100)
-- `productId`, `sellerId`, `buyerId` (UUID optional)
+- `productId` (optional, pattern id linh hoạt: `^[A-Za-z0-9][A-Za-z0-9._:-]{5,127}$`)
+- `sellerId`, `buyerId` (UUID optional)
 - `rating` (1..5)
 - `status`: `PUBLISHED | HIDDEN | REJECTED | DELETED`
 - `search`

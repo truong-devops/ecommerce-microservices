@@ -65,7 +65,7 @@ export class ReviewService {
         page,
         pageSize,
         totalItems,
-        totalPages: Math.ceil(totalItems / pageSize)
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize))
       }
     };
   }

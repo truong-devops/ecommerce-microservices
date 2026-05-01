@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, IsUUID, Length, Matches, Max, Min } from 'class-validator';
 import { ReviewStatus } from '../enums/review-status.enum';
 
 export enum ReviewSortBy {
@@ -27,7 +27,9 @@ export class ListReviewsDto {
   @IsOptional()
   pageSize?: number;
 
-  @IsUUID()
+  @IsString()
+  @Length(6, 128)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9._:-]{5,127}$/)
   @IsOptional()
   productId?: string;
 

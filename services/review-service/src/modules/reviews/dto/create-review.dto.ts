@@ -1,11 +1,13 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, IsUUID, Length, Matches, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateReviewDto {
   @IsUUID()
   orderId!: string;
 
-  @IsUUID()
+  @IsString()
+  @Length(6, 128)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9._:-]{5,127}$/)
   productId!: string;
 
   @IsUUID()

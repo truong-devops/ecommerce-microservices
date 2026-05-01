@@ -1,36 +1,34 @@
-CREATE DATABASE IF NOT EXISTS ecommerce_analytics;
+CREATE TABLE IF NOT EXISTS analytics_events_raw (
+  event_key TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  source_service TEXT NULL,
+  occurred_at TIMESTAMPTZ NOT NULL,
+  seller_id TEXT NULL,
+  user_id TEXT NULL,
+  order_id TEXT NULL,
+  payment_id TEXT NULL,
+  shipment_id TEXT NULL,
+  amount NUMERIC(18, 2) NULL,
+  refunded_amount NUMERIC(18, 2) NULL,
+  currency TEXT NULL,
+  status TEXT NULL,
+  payload_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-CREATE TABLE IF NOT EXISTS ecommerce_analytics.analytics_events_raw (
-  event_key String,
-  event_type LowCardinality(String),
-  source_service LowCardinality(Nullable(String)),
-  occurred_at DateTime64(3, 'UTC'),
-  seller_id Nullable(String),
-  user_id Nullable(String),
-  order_id Nullable(String),
-  payment_id Nullable(String),
-  shipment_id Nullable(String),
-  amount Nullable(Decimal(18, 2)),
-  refunded_amount Nullable(Decimal(18, 2)),
-  currency LowCardinality(Nullable(String)),
-  status LowCardinality(Nullable(String)),
-  payload_json String,
-  created_at DateTime64(3, 'UTC') DEFAULT now64(3)
-)
-ENGINE = MergeTree
-PARTITION BY toYYYYMM(occurred_at)
-ORDER BY (event_type, occurred_at, event_key)
-TTL toDateTime(occurred_at) + INTERVAL 365 DAY
-SETTINGS index_granularity = 8192;
+CREATE TABLE IF NOT EXISTS seller_daily_metrics (
+  bucket_date DATE NOT NULL,
+  seller_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  total_events BIGINT NOT NULL DEFAULT 0,
+  total_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
+  total_refunded_amount NUMERIC(18, 2) NOT NULL DEFAULT 0,
+  PRIMARY KEY (bucket_date, seller_id, event_type)
+);
 
-ALTER TABLE ecommerce_analytics.analytics_events_raw
-  ADD INDEX IF NOT EXISTS idx_seller_id seller_id TYPE bloom_filter(0.01) GRANULARITY 64;
-
-ALTER TABLE ecommerce_analytics.analytics_events_raw
-  ADD INDEX IF NOT EXISTS idx_order_id order_id TYPE bloom_filter(0.01) GRANULARITY 64;
-
-ALTER TABLE ecommerce_analytics.analytics_events_raw
-  ADD INDEX IF NOT EXISTS idx_payment_id payment_id TYPE bloom_filter(0.01) GRANULARITY 64;
-
-ALTER TABLE ecommerce_analytics.analytics_events_raw
-  ADD INDEX IF NOT EXISTS idx_shipment_id shipment_id TYPE bloom_filter(0.01) GRANULARITY 64;
+CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_occurred_at ON analytics_events_raw (occurred_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_seller_id ON analytics_events_raw (seller_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_event_type ON analytics_events_raw (event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_order_id ON analytics_events_raw (order_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_payment_id ON analytics_events_raw (payment_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_shipment_id ON analytics_events_raw (shipment_id);

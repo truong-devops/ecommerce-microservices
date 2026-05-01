@@ -14,10 +14,10 @@ coverage/
 .turbo/
 .expo/
 
-# Env
-.env
-.env.local
-.env.*.local
+# Env đang dev nên push luôn .env
+# .env
+# .env.local
+# .env.*.local
 
 # IDE/OS
 .DS_Store

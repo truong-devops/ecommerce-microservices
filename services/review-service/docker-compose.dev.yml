@@ -1,29 +1,32 @@
 services:
   mongo:
     image: mongo:7
-    command: ['--bind_ip_all']
-    ports:
-      - '27019:27017'
+    command: ["--bind_ip_all"]
     volumes:
       - review_service_mongo_data:/data/db
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.runCommand({ ping: 1 })']
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   review-service:
+    image: ecommerce-microservices-review-service
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - ./.env.example
+      - ./.env
     environment:
+      APP_NAME: review-service
       APP_ENV: development
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      PORT: 3009
+      API_PREFIX: api/v1
       MONGODB_URI: mongodb://mongo:27017/ecommerce_review
+      MONGODB_DATABASE: ecommerce_review
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
     ports:
-      - '3009:3009'
+      - "3012:3009"
     depends_on:
       mongo:
         condition: service_healthy

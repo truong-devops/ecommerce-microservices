@@ -313,6 +313,7 @@ services:
 
   review-service:
     <<: *service-defaults
+    image: ecommerce-microservices-review-service
     build:
       context: ./services/review-service
       dockerfile: Dockerfile

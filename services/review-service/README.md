@@ -1,31 +1,19 @@
-# review-service
+# review-service-go
 
-Production-ready NestJS review service for marketplace product reviews.
+Go prototype of review-service with clean architecture (`handler -> service -> repository`) and MongoDB.
 
-## Container-first run (recommended)
+## Endpoints
 
-1. `cd services/review-service`
-2. `npm run docker:up`
-3. `npm run docker:logs`
+- `GET /health`
+- `GET /ready`
+- `GET /live`
+- `GET /api/v1/reviews`
+- `GET /api/v1/reviews/{id}`
+- `POST /api/v1/reviews`
+- `PATCH /api/v1/reviews/{id}`
+- `DELETE /api/v1/reviews/{id}`
+- `GET /api/v1/reviews/products/{productId}/summary`
+- `PATCH /api/v1/reviews/{id}/moderation`
+- `POST /api/v1/reviews/{id}/reply`
 
-From repo root, run smoke test:
-
-`./scripts/test-review-service.sh`
-
-## Stop service
-
-From `services/review-service/`:
-
-`npm run docker:down`
-
-## Local scripts
-
-- `npm run start:dev`
-- `npm run build`
-- `npm run test`
-
-## Notes
-
-- This service follows `docs/development/code-standards.md`.
-- `docker-compose.dev.yml` starts `mongo` and `review-service`.
-- Environment template is `services/review-service/.env.example`.
+Compatibility aliases are also mounted under `/api/reviews/*` and `/api/*` health routes.

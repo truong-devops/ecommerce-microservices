@@ -186,7 +186,7 @@ SELLER_TOKEN="$(make_token "$SELLER_ID" "$SELLER_EMAIL" "SELLER")"
 ADMIN_TOKEN="$(make_token "$ADMIN_ID" "$ADMIN_EMAIL" "ADMIN")"
 
 ORDER_ID="${ORDER_ID:-$(generate_uuid)}"
-PRODUCT_ID="${PRODUCT_ID:-$(generate_uuid)}"
+PRODUCT_ID="${PRODUCT_ID:-prd-$(date +%s)-$$}"
 
 echo "Using ORDER_ID=$ORDER_ID PRODUCT_ID=$PRODUCT_ID"
 

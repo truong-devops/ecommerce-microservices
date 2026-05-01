@@ -3,10 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMPOSE_FILE="$REPO_ROOT/services/user-service-nest/docker-compose.dev.yml"
-BASE_URL="${BASE_URL:-http://localhost:3120/api/v1}"
+COMPOSE_FILE="$REPO_ROOT/services/user-service/docker-compose.dev.yml"
+BASE_URL="${BASE_URL:-http://localhost:3110/api/v1}"
 KEEP_UP="${KEEP_UP:-0}"
-RUN_E2E="${RUN_E2E:-1}"
+RUN_GO_TEST="${RUN_GO_TEST:-1}"
 
 RESPONSE_STATUS=""
 RESPONSE_BODY=""
@@ -119,19 +119,19 @@ trap teardown EXIT
 require_cmd docker
 require_cmd curl
 require_cmd node
-
-if command -v npm >/dev/null 2>&1; then
-  NPM_BIN="npm"
-elif command -v npm.cmd >/dev/null 2>&1; then
-  NPM_BIN="npm.cmd"
-else
-  echo "Missing npm executable (npm or npm.cmd)." >&2
-  exit 1
-fi
+require_cmd go
 
 print_step "Starting user-service + PostgreSQL with Docker Compose"
 docker compose -f "$COMPOSE_FILE" up --build -d user-service-db user-service
 docker compose -f "$COMPOSE_FILE" ps
+
+if [[ "$RUN_GO_TEST" == "1" ]]; then
+  print_step "Running go test suite"
+  (
+    cd "$REPO_ROOT/services/user-service"
+    go test ./...
+  )
+fi
 
 print_step "Waiting for user-service health endpoint"
 for i in $(seq 1 60); do
@@ -151,7 +151,7 @@ for i in $(seq 1 60); do
 done
 
 TIMESTAMP="$(date +%s)"
-EMAIL="docker.user.${TIMESTAMP}@example.com"
+EMAIL="go.user.${TIMESTAMP}@example.com"
 
 print_step "GET /health"
 call_api GET /health
@@ -160,7 +160,7 @@ assert_success_true
 echo "Health endpoint OK"
 
 print_step "POST /users (create user)"
-CREATE_PAYLOAD="{\"email\":\"$EMAIL\",\"firstName\":\"Docker\",\"lastName\":\"User\",\"phone\":\"+84901234567\",\"role\":\"buyer\"}"
+CREATE_PAYLOAD="{\"email\":\"$EMAIL\",\"firstName\":\"Go\",\"lastName\":\"User\",\"phone\":\"+84901234567\",\"role\":\"buyer\"}"
 call_api POST /users "$CREATE_PAYLOAD"
 assert_status 201
 assert_success_true
@@ -218,37 +218,32 @@ print_step "PATCH /users/:id/status"
 call_api PATCH "/users/$USER_ID/status" '{"status":"active"}'
 assert_status 200
 assert_success_true
-UPDATED_STATUS="$(json_get "$RESPONSE_BODY" "data.status" || true)"
-if [[ "$UPDATED_STATUS" != "active" ]]; then
-  echo "Expected status=active, got $UPDATED_STATUS" >&2
+STATUS="$(json_get "$RESPONSE_BODY" "data.status" || true)"
+if [[ "$STATUS" != "active" ]]; then
+  echo "Expected status=active, got $STATUS" >&2
   echo "Body: $RESPONSE_BODY" >&2
   exit 1
 fi
 echo "Update status OK"
 
-print_step "DELETE /users/:id (soft delete)"
+print_step "DELETE /users/:id"
 call_api DELETE "/users/$USER_ID"
 assert_status 200
 assert_success_true
 DELETED_STATUS="$(json_get "$RESPONSE_BODY" "data.status" || true)"
 if [[ "$DELETED_STATUS" != "deleted" ]]; then
-  echo "Expected status=deleted after remove, got $DELETED_STATUS" >&2
+  echo "Expected status=deleted after delete, got $DELETED_STATUS" >&2
   echo "Body: $RESPONSE_BODY" >&2
   exit 1
 fi
-echo "Soft delete OK"
+echo "Delete user OK"
 
 print_step "GET /users/:id after delete -> 404"
 call_api GET "/users/$USER_ID"
 assert_status 404
 assert_error_code USER_NOT_FOUND
-echo "Not-found after soft delete OK"
-
-if [[ "$RUN_E2E" == "1" ]]; then
-  print_step "Running user-service e2e suite"
-  cd "$REPO_ROOT"
-  "$NPM_BIN" run test:e2e --workspace services/user-service-nest
-fi
+echo "Not found after delete OK"
 
 echo
-echo "All user-service Docker smoke tests passed."
+
+echo "All smoke tests passed for user-service"

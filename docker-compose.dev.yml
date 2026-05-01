@@ -35,7 +35,7 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://${KAFKA_ADVERTISED_HOST:-localhost}:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -135,8 +135,9 @@ services:
         required: false
     environment:
       NODE_ENV: development
+      SERVICE_NAME: user-service
       PORT: 3000
-      DB_TYPE: postgres
+      API_PREFIX: api/v1
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -144,11 +145,17 @@ services:
       DB_NAME: ecommerce_user
       DB_SSL: 'false'
       DB_MIGRATIONS_RUN: 'true'
-      KAFKA_ENABLED: 'false'
+      MIGRATION_FILE: migrations/0001_init_user_service_go.sql
+      KAFKA_ENABLED: ${USER_SERVICE_KAFKA_ENABLED:-false}
+      KAFKA_CLIENT_ID: ${USER_SERVICE_KAFKA_CLIENT_ID:-user-service}
+      KAFKA_BROKERS: ${USER_SERVICE_KAFKA_BROKERS:-kafka:29092}
+      KAFKA_USER_TOPIC: ${USER_SERVICE_KAFKA_USER_TOPIC:-user.registered}
     ports:
       - '3100:3000'
     depends_on:
       postgres:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   product-service:

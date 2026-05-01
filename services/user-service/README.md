@@ -1,66 +1,52 @@
 # user-service
 
-NestJS user domain service in ecommerce monorepo.
+Go implementation of `user-service`, designed to run in parallel with the existing NestJS service.
+Business logic and API behavior are aligned with `services/user-service-nest` including:
 
-## API
+- soft-delete + revive deleted user by email
+- response envelope/error codes
+- Kafka `user.registered` publishing
+- request-id propagation (`X-Request-ID`)
 
-- `GET /api/v1/health` and `GET /api/health`
-- `POST /api/v1/users`
-- `GET /api/v1/users`
-- `GET /api/v1/users/:id`
-- `PATCH /api/v1/users/:id`
-- `PATCH /api/v1/users/:id/status`
-- `DELETE /api/v1/users/:id`
+## Endpoints
+
+- `GET /api/health`
+- `GET /api/v1/health`
+- `GET /api/ready`
+- `GET /api/v1/ready`
+- `POST /api/v1/users` (also `/api/users`)
+- `GET /api/v1/users` (also `/api/users`)
+- `GET /api/v1/users/{id}`
+- `PATCH /api/v1/users/{id}`
+- `PATCH /api/v1/users/{id}/status`
+- `DELETE /api/v1/users/{id}`
+
+## Run locally
+
+```bash
+cd services/user-service
+go mod tidy
+go run ./cmd/server
+```
 
 ## Environment
 
-Copy `.env.example` to `.env.dev` and update values:
+Use local file `services/user-service/.env` (no `.env.example`).
 
-- `DB_*` for PostgreSQL connection
-- `KAFKA_*` for publishing `user.registered`
+Supported config styles:
 
-## Run
-
-From repository root:
-
-- `npm run dev --workspace services/user-service`
-- `npm run build --workspace services/user-service`
-- `npm run start --workspace services/user-service`
+- `DB_*` (`DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL`) similar to old service
+- or `DATABASE_URL` shortcut
+- `KAFKA_*` for `user.registered` producer
 
 ## Docker
 
-Run `user-service` + PostgreSQL in isolation:
+```bash
+docker compose -f services/user-service/docker-compose.dev.yml up --build -d
+```
 
-- `docker compose -f services/user-service/docker-compose.dev.yml up --build -d`
-- Health check: `curl http://localhost:3100/api/v1/health`
-- Stop: `docker compose -f services/user-service/docker-compose.dev.yml down`
-- Stop + remove DB volume: `docker compose -f services/user-service/docker-compose.dev.yml down -v`
-- Check running services: `docker compose -f services/user-service/docker-compose.dev.yml ps`
+## Test Kafka E2E
 
-Build production image:
-
-- `docker build -f services/user-service/Dockerfile.prod -t user-service:prod services/user-service`
-- `docker run --rm -p 3000:3000 --env-file services/user-service/.env.dev user-service:prod`
-
-DB host mode:
-
-- Default (DB in same compose): `DB_HOST=user-service-db`
-- DB outside compose (host machine): run with `DB_HOST=host.docker.internal`:
-  - `DB_HOST=host.docker.internal docker compose -f services/user-service/docker-compose.dev.yml up --build -d user-service`
-
-## Migration
-
-- `npm run migration:run --workspace services/user-service`
-- `npm run migration:revert --workspace services/user-service`
-- Phase A rollback helper:
-  - `./scripts/rollback-user-service-profile-phase-a.sh`
-
-## Test
-
-- `npm run test:e2e --workspace services/user-service`
-
-The e2e suite uses `sqljs` in test mode and mocks Kafka publisher.
-
-## Phase A QA
-
-- Checklist: `docs/operations/buyer-profile-phase-a-qa-checklist.md`
+```bash
+BASE_URL=http://localhost:3110/api/v1 bash scripts/test-user-service-go-kafka.sh
+```

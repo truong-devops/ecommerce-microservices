@@ -350,7 +350,9 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       REDIS_URL: redis://redis:6379
-      KAFKA_ENABLED: 'false'
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: /migrations/0001_init_notification_service.sql
+      KAFKA_ENABLED: 'true'
       KAFKA_BROKERS: kafka:29092
     ports:
       - '3011:3009'

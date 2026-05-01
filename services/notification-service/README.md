@@ -1,34 +1,35 @@
 # notification-service
 
-Production-ready NestJS notification service for async event notifications and manual campaign send.
+Go implementation of `notification-service` with API/auth/business behavior aligned to the legacy NestJS service.
 
-## Container-first run (recommended)
+## Endpoints
 
-Run everything for this service using Docker only:
+- `GET /api/v1/health`
+- `GET /api/v1/ready`
+- `GET /api/v1/live`
+- `POST /api/v1/notifications`
+- `GET /api/v1/notifications`
+- `GET /api/v1/notifications/{id}`
+- `PATCH /api/v1/notifications/{id}/read`
 
-1. `cd services/notification-service`
-2. `npm run docker:up`
-3. `npm run docker:migrate`
-4. `npm run docker:logs`
+## Run locally
 
-From repo root, run smoke test:
+```bash
+cd services/notification-service
+cp .env.example .env
+GOCACHE=../../.gocache GOMODCACHE=../../.gomodcache go run ./cmd/server
+```
 
-`./scripts/test-notification-service.sh`
+## Test parity (smoke)
 
-## Stop service
+From repo root:
 
-From `services/notification-service/`:
-
-`npm run docker:down`
-
-## Local scripts
-
-- `npm run start:dev`
-- `npm run build`
-- `npm run test`
+```bash
+BASE_URL=http://localhost:3009/api/v1 JWT_SECRET=dev-shared-jwt-access-secret-min-32-chars ./scripts/test-notification-service.sh
+```
 
 ## Notes
 
-- This service follows `docs/development/code-standards.md`.
-- `docker-compose.dev.yml` starts `postgres`, `redis`, and `notification-service`.
-- Environment template is `services/notification-service/.env.example`.
+- Uses PostgreSQL for notifications/inbox/attempts.
+- Uses Redis for JWT revocation check when `REDIS_ENABLED=true`.
+- Includes Kafka consumer for `notification.events` and background dispatcher with retry backoff.

@@ -1,7 +1,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN set -eux; \
   npm config set fetch-retries 5; \
   npm config set fetch-retry-factor 2; \
@@ -9,9 +9,9 @@ RUN set -eux; \
   npm config set fetch-retry-maxtimeout 120000; \
   npm config set fetch-timeout 120000; \
   for i in 1 2 3; do \
-    npm ci --omit=dev --no-audit --no-fund && break; \
-    if [ "$i" -eq 3 ]; then echo "npm ci deps failed after 3 attempts"; exit 1; fi; \
-    echo "npm ci deps failed (attempt $i), retrying..."; \
+    npm install --omit=dev --no-audit --no-fund && break; \
+    if [ "$i" -eq 3 ]; then echo "npm install deps failed after 3 attempts"; exit 1; fi; \
+    echo "npm install deps failed (attempt $i), retrying..."; \
     sleep $((i*10)); \
   done; \
   npm cache clean --force
@@ -19,7 +19,7 @@ RUN set -eux; \
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN set -eux; \
   npm config set fetch-retries 5; \
   npm config set fetch-retry-factor 2; \
@@ -27,9 +27,9 @@ RUN set -eux; \
   npm config set fetch-retry-maxtimeout 120000; \
   npm config set fetch-timeout 120000; \
   for i in 1 2 3; do \
-    npm ci --no-audit --no-fund && break; \
-    if [ "$i" -eq 3 ]; then echo "npm ci builder failed after 3 attempts"; exit 1; fi; \
-    echo "npm ci builder failed (attempt $i), retrying..."; \
+    npm install --no-audit --no-fund && break; \
+    if [ "$i" -eq 3 ]; then echo "npm install builder failed after 3 attempts"; exit 1; fi; \
+    echo "npm install builder failed (attempt $i), retrying..."; \
     sleep $((i*10)); \
   done; \
   npm cache clean --force

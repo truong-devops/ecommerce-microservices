@@ -50,6 +50,8 @@ func New(
 }
 
 func mountUsersRoutes(r chi.Router, base string, h *handler.UserHandler) {
+	r.Get(base+"/me", h.GetMe)
+	r.Patch(base+"/me", h.UpdateMe)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Post(base, h.CreateUser)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Get(base, h.ListUsers)
 	r.With(auth.RequireSelfOrRoles("id", auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Get(base+"/{id}", h.GetUserByID)

@@ -76,15 +76,15 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
       locale === 'vi'
         ? {
             all: text.home.allCategories,
-            fashion: 'Thoi trang',
-            electronics: 'Dien tu',
-            beautyHealth: 'Sac dep & Suc khoe',
-            homeLiving: 'Nha cua & Doi song',
-            momBaby: 'Me & Be',
-            sportsOutdoor: 'The thao & Du lich',
-            books: 'Nha sach',
-            vehicles: 'O to & Xe may',
-            other: 'Khac'
+            fashion: 'Thời trang',
+            electronics: 'Điện tử',
+            beautyHealth: 'Sắc đẹp & Sức khoẻ',
+            homeLiving: 'Nhà cửa & Đời sống',
+            momBaby: 'Mẹ & Bé',
+            sportsOutdoor: 'Thẻ thao & Du lịch',
+            books: 'Nhà sách',
+            vehicles: 'Ô tô & Xe máy',
+            other: 'Khác'
           }
         : {
             all: text.home.allCategories,

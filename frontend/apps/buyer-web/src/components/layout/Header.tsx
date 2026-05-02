@@ -103,6 +103,9 @@ export function Header({ keywords }: HeaderProps) {
 
             {ready && user ? (
               <>
+                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/chat">
+                  Chat
+                </Link>
                 <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
                   {text.header.orders}
                 </Link>

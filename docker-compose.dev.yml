@@ -265,6 +265,8 @@ services:
       DISPATCH_INTERVAL_MS: 3000
       DISPATCH_BATCH_SIZE: 50
       DISPATCH_MAX_RETRY: 10
+      SEND_MESSAGE_RATE_RPS: 5
+      SEND_MESSAGE_RATE_BURST: 20
       KAFKA_ENABLED: 'true'
       KAFKA_BROKERS: kafka:29092
       ORDER_EVENTS_TOPIC: order.events
@@ -409,6 +411,44 @@ services:
       redis:
         condition: service_healthy
 
+  chat-service:
+    <<: *service-defaults
+    build:
+      context: ./services/chat-service
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./services/chat-service/.env
+        required: false
+    environment:
+      <<: *shared-jwt-access-secret
+      APP_NAME: chat-service
+      APP_ENV: development
+      PORT: 3012
+      API_PREFIX: api/v1
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DATABASE: ecommerce_chat
+      REDIS_ENABLED: 'true'
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      KAFKA_ENABLED: 'true'
+      KAFKA_CLIENT_ID: chat-service
+      KAFKA_BROKERS: kafka:29092
+      CHAT_EVENTS_TOPIC: chat.events
+      NOTIFICATION_EVENTS_TOPIC: notification.events
+      ANALYTICS_EVENTS_TOPIC: analytics.events
+      DISPATCH_INTERVAL_MS: 3000
+      DISPATCH_BATCH_SIZE: 50
+      DISPATCH_MAX_RETRY: 10
+    ports:
+      - '3012:3012'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
   notification-service:
     <<: *service-defaults
     build:
@@ -493,6 +533,8 @@ services:
       REVIEW_SERVICE_URL: http://review-service:3009
       NOTIFICATION_SERVICE_URL: http://notification-service:3009
       ANALYTICS_SERVICE_URL: http://analytics-service:3010
+      CHAT_SERVICE_URL: http://chat-service:3012
+      CHAT_SERVICE_TIMEOUT: 24h
     ports:
       - '8080:8080'
     depends_on:
@@ -515,6 +557,8 @@ services:
       shipping-service:
         condition: service_started
       review-service:
+        condition: service_started
+      chat-service:
         condition: service_started
       notification-service:
         condition: service_started

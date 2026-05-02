@@ -428,6 +428,15 @@ func mapEventToNotifications(eventType string, payload map[string]any) []reposit
 		return one(domain.NotificationChannelInApp, domain.NotificationCategoryShipping, "Shipment failed", "Shipment "+shipmentID+" failed to deliver.")
 	case "shipment.cancelled":
 		return one(domain.NotificationChannelInApp, domain.NotificationCategoryShipping, "Shipment cancelled", "Shipment "+shipmentID+" has been cancelled.")
+	case "chat.message.created":
+		text := strings.TrimSpace(getNestedString(payload, "message", "text"))
+		if text == "" {
+			text = "You have a new message."
+		}
+		if len(text) > 120 {
+			text = text[:120] + "..."
+		}
+		return one(domain.NotificationChannelInApp, domain.NotificationCategorySystem, "New message", text)
 	default:
 		return nil
 	}
@@ -441,6 +450,22 @@ func resolveRecipientID(eventType string, payload map[string]any) string {
 		return getString(payload, "userId")
 	case strings.HasPrefix(eventType, "shipment."):
 		return getString(payload, "buyerId")
+	case strings.HasPrefix(eventType, "chat."):
+		recipientID := getString(payload, "recipientId")
+		if recipientID != "" {
+			return recipientID
+		}
+		buyerID := getString(payload, "buyerId")
+		sellerID := getString(payload, "sellerId")
+		senderID := getString(payload, "senderId")
+		switch senderID {
+		case buyerID:
+			return sellerID
+		case sellerID:
+			return buyerID
+		default:
+			return ""
+		}
 	default:
 		return ""
 	}
@@ -456,6 +481,26 @@ func getString(payload map[string]any, key string) string {
 		return ""
 	}
 	return strings.TrimSpace(s)
+}
+
+func getNestedString(payload map[string]any, parentKey, childKey string) string {
+	parent, ok := payload[parentKey]
+	if !ok || parent == nil {
+		return ""
+	}
+	obj, ok := parent.(map[string]any)
+	if !ok {
+		return ""
+	}
+	value, ok := obj[childKey]
+	if !ok || value == nil {
+		return ""
+	}
+	text, ok := value.(string)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(text)
 }
 
 func fallback(value, defaultValue string) string {

@@ -467,3 +467,74 @@ export interface ShipmentTrackingEventsOutput {
   shipmentId: string;
   events: ShipmentTrackingEvent[];
 }
+
+export interface BuyerChatLastMessage {
+  messageId: string;
+  senderId: string;
+  textPreview: string;
+  sentAt: string;
+}
+
+export interface BuyerChatConversation {
+  id: string;
+  type: string;
+  buyerId: string;
+  sellerId: string;
+  context: {
+    productId?: string | null;
+    orderId?: string | null;
+    shopId?: string | null;
+  };
+  unread: {
+    buyer: number;
+    seller: number;
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: BuyerChatLastMessage;
+}
+
+export interface BuyerChatConversationsOutput {
+  items: BuyerChatConversation[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface BuyerChatMessage {
+  id: string;
+  conversationId: string;
+  seq: number;
+  clientMessageId?: string;
+  senderId: string;
+  senderRole: string;
+  kind: string;
+  text: string;
+  sentAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
+  readByBuyerAt?: string | null;
+  readBySellerAt?: string | null;
+}
+
+export interface BuyerChatMessagesOutput {
+  items: BuyerChatMessage[];
+}
+
+export interface CreateBuyerChatConversationInput {
+  sellerId: string;
+  orderId?: string;
+  productId?: string;
+  shopId?: string;
+  firstMessage?: string;
+  clientMessageId?: string;
+}
+
+export interface SendBuyerChatMessageInput {
+  text: string;
+  clientMessageId?: string;
+}

@@ -118,6 +118,20 @@ interface NotificationListOutput {
   pagination: PaginationOutput;
 }
 
+interface UpstreamMeta {
+  pagination?: PaginationOutput;
+}
+
+interface UpstreamEnvelope<T> {
+  success: boolean;
+  data?: T;
+  meta?: UpstreamMeta;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+}
+
 interface DailyMetricBucket {
   bucket: string;
   totalEvents: number;
@@ -481,35 +495,22 @@ function normalizeSellerId(raw: string | null): string {
 }
 
 async function fetchOrderCount(accessToken: string, status: string): Promise<number> {
-  const data = await requestUpstream<OrderListOutput>(
+  const response = await requestUpstreamEnvelope<unknown>(
     `${serviceBaseUrls.order}/orders?page=1&pageSize=1&status=${encodeURIComponent(status)}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
+    accessToken
   );
-
-  return sanitizeNumber(data.pagination.totalItems);
+  const parsed = parseListResponse<unknown>(response);
+  return sanitizeNumber(parsed.pagination.totalItems);
 }
 
 async function fetchRecentOrders(accessToken: string): Promise<OrderRecord[]> {
-  const data = await requestUpstream<OrderListOutput>(
+  const response = await requestUpstreamEnvelope<unknown>(
     `${serviceBaseUrls.order}/orders?page=1&pageSize=100&sortBy=createdAt&sortOrder=DESC`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
+    accessToken
   );
+  const parsed = parseListResponse<OrderRecord>(response);
 
-  if (!Array.isArray(data.items)) {
-    return [];
-  }
-
-  return data.items.map((order) => ({
+  return parsed.items.map((order) => ({
     id: typeof order.id === 'string' ? order.id : '',
     status: typeof order.status === 'string' ? order.status : '',
     items: Array.isArray(order.items) ? order.items : [],
@@ -520,21 +521,13 @@ async function fetchRecentOrders(accessToken: string): Promise<OrderRecord[]> {
 }
 
 async function fetchManagedProducts(accessToken: string): Promise<ManagedProduct[]> {
-  const data = await requestUpstream<ProductListOutput>(
+  const response = await requestUpstreamEnvelope<unknown>(
     `${serviceBaseUrls.product}/products/my?page=1&pageSize=100&sortBy=updatedAt&sortOrder=DESC`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
+    accessToken
   );
+  const parsed = parseListResponse<ManagedProduct>(response);
 
-  if (!Array.isArray(data.items)) {
-    return [];
-  }
-
-  return data.items.map((product) => ({
+  return parsed.items.map((product) => ({
     id: typeof product.id === 'string' ? product.id : '',
     name: typeof product.name === 'string' ? product.name : '',
     images: Array.isArray(product.images) ? product.images : [],
@@ -547,15 +540,15 @@ async function fetchLatestNotifications(accessToken: string): Promise<Notificati
 
   for (const baseUrl of candidates) {
     try {
-      return await requestUpstream<NotificationListOutput>(
+      const response = await requestUpstreamEnvelope<unknown>(
         `${baseUrl}/notifications?page=1&pageSize=8&sortBy=createdAt&sortOrder=DESC`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }
+        accessToken
       );
+      const parsed = parseListResponse<NotificationItem>(response);
+      return {
+        items: parsed.items,
+        pagination: parsed.pagination
+      };
     } catch (error) {
       if (
         error instanceof UpstreamHttpError &&
@@ -577,6 +570,89 @@ async function fetchLatestNotifications(accessToken: string): Promise<Notificati
       totalPages: 0
     }
   };
+}
+
+async function requestUpstreamEnvelope<T>(url: string, accessToken: string): Promise<UpstreamEnvelope<T>> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      },
+      cache: 'no-store'
+    });
+  } catch {
+    throw new UpstreamHttpError(503, 'UPSTREAM_UNAVAILABLE', 'Cannot connect to upstream service', true);
+  }
+
+  const raw = await response.text();
+  const parsed = safeParseJson(raw) as UpstreamEnvelope<T> | null;
+  if (!response.ok) {
+    const code = parsed?.error?.code ?? `HTTP_${response.status}`;
+    const message = parsed?.error?.message ?? `Upstream request failed with status ${response.status}`;
+    throw new UpstreamHttpError(response.status, code, message);
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new UpstreamHttpError(502, 'INVALID_UPSTREAM_RESPONSE', 'Upstream returned non-JSON response');
+  }
+  if (!parsed.success) {
+    throw new UpstreamHttpError(response.status, parsed.error?.code ?? 'UPSTREAM_ERROR', parsed.error?.message ?? 'Upstream request failed');
+  }
+  return parsed;
+}
+
+function parseListResponse<T>(envelope: UpstreamEnvelope<unknown>): { items: T[]; pagination: PaginationOutput } {
+  const data = envelope.data;
+  let items: T[] = [];
+  let pagination: PaginationOutput = {
+    page: 1,
+    pageSize: 0,
+    totalItems: 0,
+    totalPages: 0
+  };
+
+  if (Array.isArray(data)) {
+    items = data as T[];
+    pagination = {
+      ...pagination,
+      pageSize: items.length,
+      totalItems: sanitizeNumber(envelope.meta?.pagination?.totalItems) || items.length,
+      totalPages: sanitizeNumber(envelope.meta?.pagination?.totalPages) || (items.length > 0 ? 1 : 0),
+      page: sanitizeNumber(envelope.meta?.pagination?.page) || 1
+    };
+    return { items, pagination };
+  }
+
+  if (data && typeof data === 'object') {
+    const dataObj = data as { items?: unknown; pagination?: Partial<PaginationOutput> };
+    if (Array.isArray(dataObj.items)) {
+      items = dataObj.items as T[];
+    }
+    const dataPagination = dataObj.pagination ?? {};
+    const metaPagination = envelope.meta?.pagination ?? {};
+    pagination = {
+      page: sanitizeNumber(dataPagination.page ?? metaPagination.page) || 1,
+      pageSize: sanitizeNumber(dataPagination.pageSize ?? metaPagination.pageSize) || items.length,
+      totalItems: sanitizeNumber(dataPagination.totalItems ?? metaPagination.totalItems) || items.length,
+      totalPages: sanitizeNumber(dataPagination.totalPages ?? metaPagination.totalPages) || (items.length > 0 ? 1 : 0)
+    };
+    return { items, pagination };
+  }
+
+  return { items, pagination };
+}
+
+function safeParseJson(raw: string): unknown | null {
+  if (!raw || raw.trim() === '') {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 function buildNotificationBaseCandidates(baseUrl: string): string[] {

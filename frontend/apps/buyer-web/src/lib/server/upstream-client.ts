@@ -5,6 +5,7 @@ const REVIEW_SERVICE_BASE_URL = process.env.REVIEW_SERVICE_BASE_URL ?? 'http://l
 const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:3002/api/v1';
 const PAYMENT_SERVICE_BASE_URL = process.env.PAYMENT_SERVICE_BASE_URL ?? 'http://localhost:3006/api/v1';
 const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? 'http://localhost:3008/api/v1';
+const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? 'http://localhost:3012/api/v1';
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
@@ -13,7 +14,8 @@ export const serviceBaseUrls = {
   review: REVIEW_SERVICE_BASE_URL,
   order: ORDER_SERVICE_BASE_URL,
   payment: PAYMENT_SERVICE_BASE_URL,
-  shipping: SHIPPING_SERVICE_BASE_URL
+  shipping: SHIPPING_SERVICE_BASE_URL,
+  chat: CHAT_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {

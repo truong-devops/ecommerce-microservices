@@ -44,6 +44,11 @@ Alias versioned tương ứng:
 - `GET /api/reviews`, `GET /api/reviews/*`
 - `GET /api/v1/reviews`, `GET /api/v1/reviews/*`
 
+### Chat websocket pass-through
+
+- `GET /api/chat/ws`
+- `GET /api/v1/chat/ws`
+
 ## Private routes (bắt buộc JWT)
 
 Gateway mount proxy theo prefix (forward raw path sang service đích):
@@ -57,6 +62,7 @@ Gateway mount proxy theo prefix (forward raw path sang service đích):
 - `/api/shipping/*` -> shipping service
 - `/api/notifications/*` -> notification service
 - `/api/analytics/*` -> analytics service
+- `/api/chat/*`, `/api/v1/chat/*` -> chat service
 
 Riêng product/review write methods được mở private qua method-based mount:
 

@@ -112,6 +112,7 @@ services:
       REVIEW_SERVICE_URL: http://host.docker.internal:3009
       NOTIFICATION_SERVICE_URL: http://host.docker.internal:3011
       ANALYTICS_SERVICE_URL: http://host.docker.internal:3010
+      CHAT_SERVICE_URL: http://host.docker.internal:3012
       AUTH_SERVICE_TIMEOUT: 20s
       USER_SERVICE_TIMEOUT: 8s
       PRODUCT_SERVICE_TIMEOUT: 20s
@@ -123,6 +124,7 @@ services:
       REVIEW_SERVICE_TIMEOUT: 8s
       NOTIFICATION_SERVICE_TIMEOUT: 8s
       ANALYTICS_SERVICE_TIMEOUT: 8s
+      CHAT_SERVICE_TIMEOUT: 24h
     ports:
       - '8080:8080'
 

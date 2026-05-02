@@ -21,14 +21,21 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt-access'
   }
 
   async validate(payload: AccessTokenPayload): Promise<RequestWithContext['user']> {
-    if (!payload.sub || !payload.email || !payload.role) {
+    if (
+      !payload.sub ||
+      !payload.email ||
+      !payload.role ||
+      !payload.sessionId ||
+      !payload.jti ||
+      payload.tokenVersion === undefined
+    ) {
       throw new UnauthorizedException({
         code: ErrorCode.UNAUTHORIZED,
         message: 'Invalid token payload'
       });
     }
 
-    if (payload.jti) {
+    try {
       const revoked = await this.redisService.get(`revoked:access:${payload.jti}`);
       if (revoked) {
         throw new UnauthorizedException({
@@ -36,6 +43,15 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt-access'
           message: 'Access token revoked'
         });
       }
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+
+      throw new UnauthorizedException({
+        code: ErrorCode.UNAUTHORIZED,
+        message: 'Unable to verify token revocation'
+      });
     }
 
     return {

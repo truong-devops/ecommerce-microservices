@@ -14,6 +14,8 @@ type Config struct {
 	APIPrefix       string
 	MongoURI        string
 	MongoDatabase   string
+	RedisEnabled    bool
+	RedisURL        string
 	JWTAccessSecret string
 }
 
@@ -24,6 +26,8 @@ func Load() (Config, error) {
 		APIPrefix:       getEnv("API_PREFIX", "api/v1"),
 		MongoURI:        strings.TrimSpace(os.Getenv("MONGODB_URI")),
 		MongoDatabase:   strings.TrimSpace(getEnv("MONGODB_DATABASE", "ecommerce_review")),
+		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "false")),
+		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
 		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
 	}
 
@@ -40,6 +44,9 @@ func Load() (Config, error) {
 	if len(cfg.JWTAccessSecret) < 32 {
 		return Config{}, fmt.Errorf("JWT_ACCESS_SECRET must have at least 32 characters")
 	}
+	if cfg.RedisEnabled && cfg.RedisURL == "" {
+		return Config{}, fmt.Errorf("REDIS_URL is required when REDIS_ENABLED=true")
+	}
 
 	return cfg, nil
 }
@@ -49,4 +56,13 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func parseBool(v string) bool {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "1", "true", "yes", "y":
+		return true
+	default:
+		return false
+	}
 }

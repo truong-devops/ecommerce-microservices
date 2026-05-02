@@ -565,7 +565,7 @@ func (r *PaymentRepository) ListRefundsByPaymentID(ctx context.Context, paymentI
 
 func (r *PaymentRepository) FindIdempotencyRecord(ctx context.Context, userID, key string) (*IdempotencyRecord, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, user_id, idempotency_key, request_hash, payment_id, response_status,
+		SELECT id, user_id, idempotency_key, request_hash, order_id AS payment_id, response_status,
 			response_body, expires_at, created_at
 		FROM idempotency_records
 		WHERE user_id = $1 AND idempotency_key = $2
@@ -589,7 +589,7 @@ func (r *PaymentRepository) CreateIdempotencyRecord(ctx context.Context, tx pgx.
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO idempotency_records (
-			user_id, idempotency_key, request_hash, payment_id,
+			user_id, idempotency_key, request_hash, order_id,
 			response_status, response_body, expires_at
 		)
 		VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -628,7 +628,7 @@ func (r *PaymentRepository) UpdateIdempotencyResult(
 		UPDATE idempotency_records
 		SET response_status = $1,
 			response_body = $2,
-			payment_id = $3,
+			order_id = $3,
 			expires_at = $4
 		WHERE user_id = $5 AND idempotency_key = $6 AND request_hash = $7
 	`,

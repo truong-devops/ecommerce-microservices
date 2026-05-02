@@ -44,7 +44,7 @@ gRPC **Protocol Buffer definitions** in `shared/proto` serve as the source of tr
    │  user · cart · order · payment · inventory                      │  │
    │  notification · review · analytics                              │  │
    ├─────────────────────────────────────────────────────────────────┤  │
-   │              NestJS Microservices (TypeScript)                   │  │
+   │              NestJS Microservices (TypeScript)                  │  │
    │  auth · product · shipping                                      │  │
    └──────────────────────────────┬──────────────────────────────────┘  │
                                   │ Kafka Events                        │

@@ -1,7 +1,8 @@
-﻿import {
+import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Optional,
   UnauthorizedException
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -11,6 +12,7 @@ import { ErrorCode } from '../constants/error-code.enum';
 import { Role } from '../constants/role.enum';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthenticatedUserContext, RequestWithContext } from '../types/request-context.type';
+import { RedisService } from '../utils/redis.service';
 
 interface AccessTokenPayload {
   sub?: string;
@@ -27,10 +29,11 @@ interface AccessTokenPayload {
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    @Optional() private readonly redisService?: RedisService
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass()
@@ -47,7 +50,14 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const token = authHeader.slice('Bearer '.length).trim();
-    request.user = this.verifyAndMapToken(token);
+    const user = this.verifyAndMapToken(token);
+
+    const revoked = await this.isAccessTokenRevoked(user.jti);
+    if (revoked) {
+      throw this.unauthorized('Access token revoked');
+    }
+
+    request.user = user;
     return true;
   }
 
@@ -90,7 +100,13 @@ export class JwtAuthGuard implements CanActivate {
       throw this.unauthorized('Token expired');
     }
 
-    if (!payload.sub || !payload.role) {
+    if (
+      !payload.sub ||
+      !payload.role ||
+      !payload.jti ||
+      !payload.sessionId ||
+      payload.tokenVersion === undefined
+    ) {
       throw this.unauthorized('Invalid token claims');
     }
 
@@ -132,5 +148,19 @@ export class JwtAuthGuard implements CanActivate {
       code: ErrorCode.UNAUTHORIZED,
       message
     });
+  }
+
+  private async isAccessTokenRevoked(jti: string): Promise<boolean> {
+    const client = this.redisService?.getClient();
+    if (!client) {
+      return false;
+    }
+
+    try {
+      const value = await client.get(`revoked:access:${jti}`);
+      return Boolean(value);
+    } catch {
+      throw this.unauthorized('Unable to verify token revocation');
+    }
   }
 }

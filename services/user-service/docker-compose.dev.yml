@@ -27,6 +27,7 @@ services:
       SERVICE_NAME: user-service
       PORT: 3013
       API_PREFIX: api/v1
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DB_HOST: user-service-db
       DB_PORT: 5432
       DB_USERNAME: postgres
@@ -35,6 +36,8 @@ services:
       DB_SSL: 'false'
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: migrations/0001_init_user_service_go.sql
+      REDIS_ENABLED: ${REDIS_ENABLED:-false}
+      REDIS_URL: ${REDIS_URL:-}
       KAFKA_ENABLED: ${KAFKA_ENABLED:-false}
       KAFKA_CLIENT_ID: ${KAFKA_CLIENT_ID:-user-service}
       KAFKA_BROKERS: ${KAFKA_BROKERS:-host.docker.internal:9092}

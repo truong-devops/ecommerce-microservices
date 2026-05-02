@@ -8,29 +8,35 @@ import (
 )
 
 type Config struct {
-	AppName        string
-	AppEnv         string
-	Port           int
-	APIPrefix      string
-	DatabaseURL    string
-	MigrationFile  string
-	RunMigrations  bool
-	KafkaEnabled   bool
-	KafkaClientID  string
-	KafkaBrokers   []string
-	KafkaUserTopic string
+	AppName         string
+	AppEnv          string
+	Port            int
+	APIPrefix       string
+	DatabaseURL     string
+	RedisEnabled    bool
+	RedisURL        string
+	JWTAccessSecret string
+	MigrationFile   string
+	RunMigrations   bool
+	KafkaEnabled    bool
+	KafkaClientID   string
+	KafkaBrokers    []string
+	KafkaUserTopic  string
 }
 
 func Load() (Config, error) {
 	cfg := Config{
-		AppName:        getEnvWithFallback("SERVICE_NAME", "APP_NAME", "user-service"),
-		AppEnv:         getEnvWithFallback("NODE_ENV", "APP_ENV", "development"),
-		APIPrefix:      strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
-		DatabaseURL:    strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		MigrationFile:  getEnv("MIGRATION_FILE", "migrations/0001_init_user_service_go.sql"),
-		RunMigrations:  parseBool(getEnv("DB_MIGRATIONS_RUN", "true")),
-		KafkaClientID:  getEnv("KAFKA_CLIENT_ID", "user-service"),
-		KafkaUserTopic: getEnv("KAFKA_USER_TOPIC", "user.registered"),
+		AppName:         getEnvWithFallback("SERVICE_NAME", "APP_NAME", "user-service"),
+		AppEnv:          getEnvWithFallback("NODE_ENV", "APP_ENV", "development"),
+		APIPrefix:       strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
+		DatabaseURL:     strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "false")),
+		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
+		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		MigrationFile:   getEnv("MIGRATION_FILE", "migrations/0001_init_user_service_go.sql"),
+		RunMigrations:   parseBool(getEnv("DB_MIGRATIONS_RUN", "true")),
+		KafkaClientID:   getEnv("KAFKA_CLIENT_ID", "user-service"),
+		KafkaUserTopic:  getEnv("KAFKA_USER_TOPIC", "user.registered"),
 	}
 
 	portStr := getEnv("PORT", "3000")
@@ -49,6 +55,12 @@ func Load() (Config, error) {
 
 	if cfg.APIPrefix == "" {
 		cfg.APIPrefix = "api/v1"
+	}
+	if len(cfg.JWTAccessSecret) < 32 {
+		return Config{}, fmt.Errorf("JWT_ACCESS_SECRET must be at least 32 characters")
+	}
+	if cfg.RedisEnabled && cfg.RedisURL == "" {
+		return Config{}, fmt.Errorf("REDIS_URL is required when REDIS_ENABLED=true")
 	}
 
 	cfg.KafkaEnabled = parseBool(getEnv("KAFKA_ENABLED", "false"))

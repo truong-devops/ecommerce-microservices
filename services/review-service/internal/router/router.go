@@ -14,14 +14,20 @@ import (
 	"go.uber.org/zap"
 )
 
-func New(cfg config.Config, logger *zap.Logger, reviewHandler *handler.ReviewHandler, healthHandler *handler.HealthHandler) http.Handler {
+func New(
+	cfg config.Config,
+	logger *zap.Logger,
+	revocationChecker auth.RevokedTokenChecker,
+	reviewHandler *handler.ReviewHandler,
+	healthHandler *handler.HealthHandler,
+) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Recovery(logger))
 	r.Use(middleware.Logger(logger))
 
-	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, logger)
-	optionalJWT := auth.OptionalJWT(cfg.JWTAccessSecret, logger)
+	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, revocationChecker, logger)
+	optionalJWT := auth.OptionalJWT(cfg.JWTAccessSecret, revocationChecker, logger)
 
 	// Compatibility health routes
 	r.Get("/health", healthHandler.Health)

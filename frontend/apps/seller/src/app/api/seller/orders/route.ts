@@ -1,4 +1,4 @@
-import type { SellerOrderListOutput, SellerOrderStatus } from '@/lib/api/types';
+import type { SellerOrder, SellerOrderItem, SellerOrderListOutput, SellerOrderStatus } from '@/lib/api/types';
 import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { fail, ok } from '@/lib/server/seller-api-response';
@@ -61,14 +61,14 @@ export async function GET(request: Request) {
   const upstreamUrl = `${serviceBaseUrls.order}/orders${suffix ? `?${suffix}` : ''}`;
 
   try {
-    const orders = await requestUpstream<SellerOrderListOutput>(upstreamUrl, {
+    const orders = await requestUpstream<unknown>(upstreamUrl, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     });
 
-    return ok(orders, 'backend');
+    return ok(normalizeOrderListOutput(orders, page ?? 1, Math.min(100, pageSize ?? 20)), 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -85,4 +85,165 @@ function parsePositiveInt(raw: string | null): number | null {
   }
 
   return Math.floor(value);
+}
+
+function normalizeOrderListOutput(payload: unknown, page: number, pageSize: number): SellerOrderListOutput {
+  if (isOrderListOutput(payload)) {
+    const items = payload.items.map(sanitizeOrder).filter((item): item is SellerOrder => item !== null);
+    return {
+      items,
+      pagination: {
+        page: sanitizePositiveInt(payload.pagination.page, page),
+        pageSize: sanitizePositiveInt(payload.pagination.pageSize, pageSize),
+        totalItems: sanitizeNonNegativeInt(payload.pagination.totalItems, items.length),
+        totalPages: sanitizePositiveInt(payload.pagination.totalPages, computeTotalPages(items.length, pageSize))
+      }
+    };
+  }
+
+  if (Array.isArray(payload)) {
+    const items = payload.map((item) => sanitizeOrder(item)).filter((item): item is SellerOrder => item !== null);
+    const totalItems = items.length;
+    return {
+      items,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages: computeTotalPages(totalItems, pageSize)
+      }
+    };
+  }
+
+  return {
+    items: [],
+    pagination: {
+      page,
+      pageSize,
+      totalItems: 0,
+      totalPages: 0
+    }
+  };
+}
+
+function sanitizeOrder(order: unknown): SellerOrder | null {
+  if (!isRecord(order)) {
+    return null;
+  }
+
+  const id = asString(order.id);
+  const orderNumber = asString(order.orderNumber);
+  const userId = asString(order.userId);
+  const status = asOrderStatus(order.status);
+  const currency = asString(order.currency);
+  const createdAt = asString(order.createdAt);
+  const updatedAt = asString(order.updatedAt);
+  if (!id || !orderNumber || !userId || !status || !currency || !createdAt || !updatedAt) {
+    return null;
+  }
+
+  return {
+    id,
+    orderNumber,
+    userId,
+    status,
+    currency,
+    subtotalAmount: asNumber(order.subtotalAmount),
+    shippingAmount: asNumber(order.shippingAmount),
+    discountAmount: asNumber(order.discountAmount),
+    totalAmount: asNumber(order.totalAmount),
+    note: asNullableString(order.note),
+    createdAt,
+    updatedAt,
+    items: Array.isArray(order.items)
+      ? order.items.map(sanitizeOrderItem).filter((item): item is SellerOrderItem => item !== null)
+      : []
+  };
+}
+
+function sanitizeOrderItem(item: unknown): SellerOrderItem | null {
+  if (!isRecord(item)) {
+    return null;
+  }
+
+  const id = asString(item.id);
+  const productId = asString(item.productId);
+  const sku = asString(item.sku);
+  const productName = asString(item.productName);
+  if (!id || !productId || !sku || !productName) {
+    return null;
+  }
+
+  return {
+    id,
+    productId,
+    sku,
+    productName,
+    quantity: asNumber(item.quantity),
+    unitPrice: asNumber(item.unitPrice),
+    totalPrice: asNumber(item.totalPrice)
+  };
+}
+
+function isOrderListOutput(value: unknown): value is SellerOrderListOutput {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const items = value.items;
+  const pagination = value.pagination;
+
+  return Array.isArray(items) && isRecord(pagination);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function sanitizePositiveInt(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 1) {
+    return fallback;
+  }
+  return Math.floor(value);
+}
+
+function sanitizeNonNegativeInt(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return fallback;
+  }
+  return Math.floor(value);
+}
+
+function computeTotalPages(totalItems: number, pageSize: number): number {
+  if (pageSize <= 0 || totalItems <= 0) {
+    return 0;
+  }
+
+  return Math.ceil(totalItems / pageSize);
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function asNullableString(value: unknown): string | null {
+  if (value == null) {
+    return null;
+  }
+
+  const normalized = asString(value);
+  return normalized ? normalized : null;
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function asOrderStatus(value: unknown): SellerOrderStatus | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const status = value.trim().toUpperCase();
+  return VALID_STATUSES.has(status as SellerOrderStatus) ? (status as SellerOrderStatus) : null;
 }

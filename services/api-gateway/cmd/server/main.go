@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"api-gateway/internal/auth"
 	"api-gateway/internal/config"
 	"api-gateway/internal/observability"
 	"api-gateway/internal/router"
@@ -31,9 +32,20 @@ func main() {
 	}()
 
 	metrics := observability.NewMetrics(cfg.AppName)
+	revocationChecker, err := auth.NewRedisRevocationChecker(cfg.RedisEnabled, cfg.RedisURL)
+	if err != nil {
+		logger.Fatal("failed to initialize token revocation checker", zap.Error(err))
+	}
+	defer func() {
+		closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer closeCancel()
+		if closeErr := revocationChecker.Close(closeCtx); closeErr != nil {
+			logger.Warn("failed to close token revocation checker", zap.Error(closeErr))
+		}
+	}()
 
 	// Extension point: initialize OpenTelemetry provider/tracing here.
-	handler, err := router.New(cfg, logger, metrics)
+	handler, err := router.New(cfg, logger, metrics, revocationChecker)
 	if err != nil {
 		logger.Fatal("failed to build router", zap.Error(err))
 	}

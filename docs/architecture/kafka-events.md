@@ -35,5 +35,11 @@ All contracts are strictly defined in `shared/kafka/`.
 - `notification.events`: Topic for queuing raw dispatch requests.
 - `analytics.events`: Firehose topic. All services can publish here for the `analytics-service` to ingest into ClickHouse.
 
+### 6. Chat Events
+- `chat.conversation.created`: Conversation lifecycle event.
+- `chat.message.created`: Fired whenever a new buyer/seller message is stored.
+- `chat.message.read`: Fired when participant marks conversation as read.
+- `chat.events`: Aggregated chat topic consumed by notification/analytics flows.
+
 ## The Outbox Pattern
 Services do not write to Kafka directly from business logic. They write to an `outbox_events` table in the same database transaction as the business entity. A separate asynchronous worker (`outbox_dispatcher.go` or NestJS equivalent) polls the outbox and publishes to Kafka, ensuring zero data loss if Kafka is temporarily down.

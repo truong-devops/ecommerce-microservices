@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { SellerDashboard } from '@/components/dashboard/seller-dashboard';
+import { SellerChatDrawer } from '@/components/dashboard/seller-chat-drawer';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { fetchSellerDashboard } from '@/lib/api/dashboard';
@@ -137,6 +138,8 @@ export default function SellerDashboardPage() {
           ) : null}
         </main>
       </div>
+
+      <SellerChatDrawer accessToken={accessToken} sellerId={user.id} />
     </div>
   );
 }

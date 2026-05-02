@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"user-service-go/internal/auth"
 	"user-service-go/internal/domain"
 	"user-service-go/internal/httpx"
 	"user-service-go/internal/service"
@@ -68,6 +69,21 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, r, http.StatusOK, user)
 }
 
+func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
+	session, ok := auth.UserFromContext(r.Context())
+	if !ok || strings.TrimSpace(session.UserID) == "" {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	user, err := h.userService.ResolveSelf(r.Context(), session.UserID, session.Email, session.Role)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, user)
+}
+
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var req service.UpdateUserRequest
@@ -77,6 +93,28 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated, err := h.userService.Update(r.Context(), id, req)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalError)
+		return
+	}
+
+	httpx.WriteSuccess(w, r, http.StatusOK, updated)
+}
+
+func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	session, ok := auth.UserFromContext(r.Context())
+	if !ok || strings.TrimSpace(session.UserID) == "" {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	var req service.UpdateUserRequest
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationError, "Validation failed", map[string]any{"body": err.Error()})
+		return
+	}
+
+	updated, err := h.userService.UpdateSelf(r.Context(), session.UserID, session.Email, session.Role, req)
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalError)
 		return

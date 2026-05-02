@@ -1,5 +1,7 @@
 emall.vn {
     tls internal
+    @api path /api/*
+    reverse_proxy @api host.docker.internal:8080
     reverse_proxy host.docker.internal:8888
 }
 

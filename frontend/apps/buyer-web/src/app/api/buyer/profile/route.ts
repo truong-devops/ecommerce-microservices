@@ -2,7 +2,7 @@ import { type AccessTokenClaims, decodeAccessToken, readBearerToken } from '@/li
 import type { BuyerGender, BuyerProfileOutput } from '@/lib/api/types';
 import { fail, ok } from '@/lib/server/buyer-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
-import { requestUpstream, serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client';
+import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface UpstreamUser {
   id: string;
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       return fail(401, 'UNAUTHORIZED', 'Invalid access token payload');
     }
 
-    const profile = await resolveOrCreateUpstreamUser(accessToken, claims);
+    const profile = await resolveOrCreateUpstreamUser(accessToken);
 
     return ok(toBuyerProfile(profile, claims.email), 'backend');
   } catch (error) {
@@ -89,9 +89,7 @@ export async function PATCH(request: Request) {
       return fail(400, payloadBuildResult.code, payloadBuildResult.message);
     }
 
-    const targetUser = await resolveOrCreateUpstreamUser(accessToken, claims);
-
-    const updated = await requestUpstream<UpstreamUser>(`${serviceBaseUrls.user}/users/${encodeURIComponent(targetUser.id)}`, {
+    const updated = await requestUpstream<UpstreamUser>(`${serviceBaseUrls.user}/users/me`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -389,74 +387,11 @@ function fallbackNameFromEmail(email: string): string {
   return fallback.trim() || 'Buyer';
 }
 
-async function resolveOrCreateUpstreamUser(accessToken: string, claims: AccessTokenClaims): Promise<UpstreamUser> {
-  try {
-    return await fetchUpstreamUserById(accessToken, claims.sub);
-  } catch (error) {
-    if (!isUserNotFoundError(error)) {
-      throw error;
-    }
-  }
-
-  const existingByEmail = await findUpstreamUserByEmail(accessToken, claims.email);
-  if (existingByEmail) {
-    return existingByEmail;
-  }
-
-  const { firstName, lastName } = splitFullName(fallbackNameFromEmail(claims.email));
-
-  try {
-    return await requestUpstream<UpstreamUser>(`${serviceBaseUrls.user}/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({
-        email: claims.email.trim().toLowerCase(),
-        firstName,
-        lastName
-      })
-    });
-  } catch (error) {
-    if (!(error instanceof UpstreamHttpError) || error.code !== 'USER_EMAIL_EXISTS') {
-      throw error;
-    }
-  }
-
-  const fallbackExisting = await findUpstreamUserByEmail(accessToken, claims.email);
-  if (fallbackExisting) {
-    return fallbackExisting;
-  }
-
-  throw new UpstreamHttpError(404, 'USER_NOT_FOUND', 'User not found');
-}
-
-async function fetchUpstreamUserById(accessToken: string, userId: string): Promise<UpstreamUser> {
-  return requestUpstream<UpstreamUser>(`${serviceBaseUrls.user}/users/${encodeURIComponent(userId)}`, {
+async function resolveOrCreateUpstreamUser(accessToken: string): Promise<UpstreamUser> {
+  return requestUpstream<UpstreamUser>(`${serviceBaseUrls.user}/users/me`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
   });
-}
-
-async function findUpstreamUserByEmail(accessToken: string, email: string): Promise<UpstreamUser | null> {
-  const normalizedEmail = email.trim().toLowerCase();
-  const users = await requestUpstream<UpstreamUser[]>(
-    `${serviceBaseUrls.user}/users?page=1&pageSize=50&search=${encodeURIComponent(normalizedEmail)}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
-  );
-
-  const exact = users.find((user) => user.email?.trim().toLowerCase() === normalizedEmail);
-  return exact ?? null;
-}
-
-function isUserNotFoundError(error: unknown): boolean {
-  return error instanceof UpstreamHttpError && error.status === 404;
 }

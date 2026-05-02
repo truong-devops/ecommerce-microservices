@@ -404,3 +404,75 @@ export interface SellerShipmentTrackingEventsOutput {
   shipmentId: string;
   events: SellerShipmentTrackingEvent[];
 }
+
+export interface SellerChatLastMessage {
+  messageId: string;
+  senderId: string;
+  textPreview: string;
+  sentAt: string;
+}
+
+export interface SellerChatConversation {
+  id: string;
+  type: string;
+  buyerId: string;
+  sellerId: string;
+  context: {
+    productId?: string | null;
+    orderId?: string | null;
+    shopId?: string | null;
+  };
+  unread: {
+    buyer: number;
+    seller: number;
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: SellerChatLastMessage;
+}
+
+export interface SellerChatConversationsOutput {
+  items: SellerChatConversation[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface SellerChatMessage {
+  id: string;
+  conversationId: string;
+  seq: number;
+  clientMessageId?: string;
+  senderId: string;
+  senderRole: string;
+  kind: string;
+  text: string;
+  sentAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
+  readByBuyerAt?: string | null;
+  readBySellerAt?: string | null;
+}
+
+export interface SellerChatMessagesOutput {
+  items: SellerChatMessage[];
+}
+
+export interface CreateSellerChatConversationInput {
+  buyerId: string;
+  sellerId?: string;
+  orderId?: string;
+  productId?: string;
+  shopId?: string;
+  firstMessage?: string;
+  clientMessageId?: string;
+}
+
+export interface SendSellerChatMessageInput {
+  text: string;
+  clientMessageId?: string;
+}

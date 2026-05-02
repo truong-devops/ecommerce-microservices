@@ -16,6 +16,7 @@ Tài liệu này được tổng hợp trực tiếp từ source code trong `ser
 - [Review Service](./review-service-api.md)
 - [Notification Service](./notification-service-api.md)
 - [Analytics Service](./analytics-service-api.md)
+- [Chat Service](./chat-service-api.md)
 
 ## Quy ước đọc nhanh
 

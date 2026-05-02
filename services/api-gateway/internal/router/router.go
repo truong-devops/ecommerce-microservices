@@ -71,6 +71,8 @@ func New(
 		public.Method(http.MethodGet, "/api/reviews/*", proxies[config.ServiceReview])
 		public.Method(http.MethodGet, "/api/v1/reviews", proxies[config.ServiceReview])
 		public.Method(http.MethodGet, "/api/v1/reviews/*", proxies[config.ServiceReview])
+		public.Method(http.MethodGet, "/api/chat/ws", proxies[config.ServiceChat])
+		public.Method(http.MethodGet, "/api/v1/chat/ws", proxies[config.ServiceChat])
 	})
 
 	r.Group(func(private chi.Router) {
@@ -88,6 +90,8 @@ func New(
 		mountPrefix(private, "/api/shipping", proxies[config.ServiceShipping])
 		mountPrefix(private, "/api/notifications", proxies[config.ServiceNotification])
 		mountPrefix(private, "/api/analytics", proxies[config.ServiceAnalytics])
+		mountPrefix(private, "/api/chat", proxies[config.ServiceChat])
+		mountPrefix(private, "/api/v1/chat", proxies[config.ServiceChat])
 
 		mountMethodPrefix(private, http.MethodPost, "/api/products", proxies[config.ServiceProduct])
 		mountMethodPrefix(private, http.MethodPut, "/api/products", proxies[config.ServiceProduct])

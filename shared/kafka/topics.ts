@@ -27,6 +27,9 @@
   CART_ITEM_UPDATED: 'cart.item-updated',
   CART_ITEM_REMOVED: 'cart.item-removed',
   CART_CLEARED: 'cart.cleared',
+  CHAT_CONVERSATION_CREATED: 'chat.conversation.created',
+  CHAT_MESSAGE_CREATED: 'chat.message.created',
+  CHAT_MESSAGE_READ: 'chat.message.read',
   ORDER_EVENTS: 'order.events',
   SHIPPING_EVENTS: 'shipping.events',
   REVIEW_EVENTS: 'review.events',
@@ -35,6 +38,7 @@
   USER_EVENTS: 'user.events',
   PRODUCT_EVENTS: 'product.events',
   CART_EVENTS: 'cart.events',
+  CHAT_EVENTS: 'chat.events',
   NOTIFICATION_EVENTS: 'notification.events',
   ANALYTICS_EVENTS: 'analytics.events',
   AUDIT_EVENTS: 'audit.events'

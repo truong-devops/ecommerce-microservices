@@ -140,6 +140,63 @@ func (s *UserService) FindOne(ctx context.Context, id string) (*domain.User, err
 	return user, nil
 }
 
+func (s *UserService) ResolveSelf(ctx context.Context, subjectID, email, role string) (*domain.User, error) {
+	subjectID = strings.TrimSpace(subjectID)
+	email = strings.ToLower(strings.TrimSpace(email))
+	if subjectID == "" || email == "" {
+		return nil, httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+	}
+
+	if byID, err := s.repo.FindByID(ctx, subjectID); err != nil {
+		return nil, err
+	} else if byID != nil {
+		return byID, nil
+	}
+
+	if byEmail, err := s.repo.FindByEmailAnyStatus(ctx, email); err != nil {
+		return nil, err
+	} else if byEmail != nil && byEmail.Status != domain.UserStatusDeleted {
+		return byEmail, nil
+	}
+
+	firstName, lastName := splitNameFromEmail(email)
+	created, err := s.repo.Create(ctx, repository.CreateUserInput{
+		Email:         email,
+		FirstName:     firstName,
+		LastName:      lastName,
+		Phone:         nil,
+		Address:       nil,
+		Gender:        domain.UserGenderUnspecified,
+		DateOfBirth:   nil,
+		AvatarURL:     nil,
+		Role:          mapTokenRoleToDomainRole(role),
+		Status:        domain.UserStatusActive,
+		EmailVerified: true,
+	})
+	if err != nil {
+		if isUniqueViolation(err) {
+			existing, findErr := s.repo.FindByEmailAnyStatus(ctx, email)
+			if findErr != nil {
+				return nil, findErr
+			}
+			if existing != nil && existing.Status != domain.UserStatusDeleted {
+				return existing, nil
+			}
+		}
+		return nil, err
+	}
+
+	return created, nil
+}
+
+func (s *UserService) UpdateSelf(ctx context.Context, subjectID, email, role string, req UpdateUserRequest) (*domain.User, error) {
+	self, err := s.ResolveSelf(ctx, subjectID, email, role)
+	if err != nil {
+		return nil, err
+	}
+	return s.Update(ctx, self.ID, req)
+}
+
 func (s *UserService) Update(ctx context.Context, id string, req UpdateUserRequest) (*domain.User, error) {
 	_, err := s.FindOne(ctx, id)
 	if err != nil {
@@ -462,4 +519,59 @@ func (o *OptionalNullableString) UnmarshalJSON(data []byte) error {
 	}
 	o.Null = false
 	return json.Unmarshal(data, &o.Value)
+}
+
+func splitNameFromEmail(email string) (string, string) {
+	base := strings.TrimSpace(strings.Split(email, "@")[0])
+	if base == "" {
+		return "Buyer", "User"
+	}
+
+	parts := strings.FieldsFunc(base, func(r rune) bool {
+		return r == '.' || r == '_' || r == '-' || r == '+'
+	})
+	if len(parts) == 0 {
+		return "Buyer", "User"
+	}
+
+	first := strings.TrimSpace(parts[0])
+	last := first
+	if len(parts) > 1 {
+		last = strings.TrimSpace(parts[len(parts)-1])
+	}
+
+	first = capitalizeFirst(strings.ToLower(first))
+	last = capitalizeFirst(strings.ToLower(last))
+	if first == "" {
+		first = "Buyer"
+	}
+	if last == "" {
+		last = "User"
+	}
+
+	if len(first) > 100 {
+		first = first[:100]
+	}
+	if len(last) > 100 {
+		last = last[:100]
+	}
+	return first, last
+}
+
+func mapTokenRoleToDomainRole(role string) domain.UserRole {
+	switch strings.ToUpper(strings.TrimSpace(role)) {
+	case "SELLER":
+		return domain.UserRoleSeller
+	case "ADMIN", "SUPER_ADMIN", "SUPPORT":
+		return domain.UserRoleAdmin
+	default:
+		return domain.UserRoleBuyer
+	}
+}
+
+func capitalizeFirst(value string) string {
+	if value == "" {
+		return value
+	}
+	return strings.ToUpper(value[:1]) + value[1:]
 }

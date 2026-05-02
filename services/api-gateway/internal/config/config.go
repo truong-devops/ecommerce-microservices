@@ -28,6 +28,8 @@ type Config struct {
 	AppEnv             string
 	Port               string
 	JWTSecret          string
+	RedisEnabled       bool
+	RedisURL           string
 	CORSAllowedOrigins []string
 	Server             ServerConfig
 	RateLimit          RateLimitConfig
@@ -86,6 +88,8 @@ func Load() (*Config, error) {
 		AppEnv:             getEnv("APP_ENV", "development"),
 		Port:               getEnv("PORT", "8080"),
 		JWTSecret:          jwtSecret,
+		RedisEnabled:       parseBoolEnv("REDIS_ENABLED", false),
+		RedisURL:           strings.TrimSpace(os.Getenv("REDIS_URL")),
 		CORSAllowedOrigins: splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "*")),
 		Server: ServerConfig{
 			RequestTimeout:  requestTimeout,
@@ -96,6 +100,9 @@ func Load() (*Config, error) {
 			Burst: rateLimitBurst,
 		},
 		Services: map[string]ServiceConfig{},
+	}
+	if cfg.RedisEnabled && cfg.RedisURL == "" {
+		return nil, fmt.Errorf("REDIS_URL is required when REDIS_ENABLED=true")
 	}
 
 	serviceEnvs := []struct {
@@ -205,4 +212,17 @@ func parseIntEnv(key string, fallback int) (int, error) {
 		return 0, fmt.Errorf("invalid int %s=%q: %w", key, value, err)
 	}
 	return v, nil
+}
+
+func parseBoolEnv(key string, fallback bool) bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if value == "" {
+		return fallback
+	}
+	switch value {
+	case "1", "true", "yes", "y":
+		return true
+	default:
+		return false
+	}
 }

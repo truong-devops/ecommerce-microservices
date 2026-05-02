@@ -386,7 +386,7 @@ func (r *OrderRepository) ListOrders(ctx context.Context, query ListOrdersQuery,
 		orderDir = "ASC"
 	}
 
-	args = append(args, query.PageSize, (query.Page-1)*query.PageSize)
+	args = append(args, (query.Page-1)*query.PageSize, query.PageSize)
 	offsetPos := len(args) - 1
 	limitPos := len(args)
 

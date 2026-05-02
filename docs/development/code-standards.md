@@ -31,9 +31,42 @@ This document defines one coding style and one project organization style so the
 - SHOULD name booleans with `is/has/can/should` prefix.
 - SHOULD use explicit names, avoid unclear abbreviations.
 
-## 5. Backend Folder Structure (NestJS)
+## 5. Backend Folder Structure
 
-Each service SHOULD follow this layout:
+### 5a. Go Services (user, cart, order, payment, inventory, notification, review, analytics)
+
+Each Go service MUST follow this layout:
+
+```txt
+services/<service-name>/
+  cmd/
+    server/
+      main.go
+  internal/
+    auth/           # JWT middleware, role checks
+    config/         # Environment parsing, startup validation
+    domain/         # Domain models, enums, constants
+    handler/        # HTTP handlers (thin, delegate to service)
+    httpx/          # Response envelope, error helpers
+    middleware/     # Request-ID, logging, CORS
+    repository/     # Database access layer
+    router/         # Route registration (chi)
+    service/        # Business logic
+    events/         # Kafka producer/consumer
+  migrations/
+  go.mod
+  go.sum
+  Dockerfile
+```
+
+- MUST keep feature code by layer (`handler`, `service`, `repository`).
+- MUST keep handler thin; business logic goes to service layer.
+- MUST keep DB access in repository layer.
+- MUST use `internal/` to prevent external imports.
+
+### 5b. NestJS Services (auth, product, shipping)
+
+Each NestJS service SHOULD follow this layout:
 
 ```txt
 services/<service-name>/
@@ -158,15 +191,15 @@ Pagination SHOULD use:
 
 ## 9. Error Handling Rules
 
-- MUST handle exceptions through global exception filter.
-- MUST define and reuse business error codes from `shared/constants/error-codes.ts`.
+- MUST handle exceptions through global error handler (NestJS: global exception filter; Go: centralized error response in `httpx`).
+- MUST define and reuse business error codes (NestJS: from `shared/constants/error-codes.ts`; Go: from `internal/domain/errors.go` or `internal/httpx`).
 - MUST NOT return stack trace to clients in production.
 - MUST log at least: `requestId`, `service`, `path`, `method`, `statusCode`, `durationMs`.
 - SHOULD add retry/circuit-breaker for external dependency failures.
 
 ## 10. Validation Rules
 
-Backend:
+Backend (NestJS — auth, product, shipping):
 
 - MUST validate all input DTOs using `class-validator`.
 - MUST use global `ValidationPipe` with:
@@ -175,6 +208,12 @@ Backend:
   - `forbidNonWhitelisted: true`
 - MUST validate at boundary (controller/message handler), not deep inside service only.
 - SHOULD validate environment variables at startup using Joi/Zod.
+
+Backend (Go — all other services):
+
+- MUST validate all input at the handler layer before calling service.
+- MUST validate environment variables at startup in `internal/config`.
+- MUST return standard error envelope for validation failures (`400` status).
 
 Frontend:
 
@@ -206,11 +245,12 @@ Use this block when prompting AI tools:
 
 ```txt
 Generate code for this monorepo following docs/development/code-standards.md strictly.
-Use TypeScript and existing project architecture.
+For Go services: use Go 1.22, chi router, pgx for PostgreSQL, and follow cmd/internal layout.
+For NestJS services (auth, product, shipping): use TypeScript and existing NestJS architecture.
 Keep backend runtime code inside services/*, shared contracts in shared/*.
 Use REST for client-facing APIs, gRPC for internal sync calls, Kafka for async events.
 Follow naming: camelCase, PascalCase, UPPER_SNAKE_CASE, kebab-case file/folder.
-Use DTO validation + standard response/error envelope.
+Use input validation + standard response/error envelope.
 Return complete file-level patches (no pseudo-code) and include tests.
 If assumptions are needed, list them explicitly before code.
 ```

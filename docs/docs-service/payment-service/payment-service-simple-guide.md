@@ -12,56 +12,42 @@ Moi duong dan ben duoi deu tinh tu thu muc nay.
 
 ## 2) Doc tu dau de hieu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/payments/controllers/payments.controller.ts`
-4. `src/modules/payments/services/payments.service.ts`
-5. `src/modules/payments/services/outbox-dispatcher.service.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/payment_handler.go`
+3. `internal/service/payment_service.go`
+4. `internal/repository/payment_repository.go`
+5. `internal/events/outbox_dispatcher.go`
 
-Chi can nam 5 file nay la hieu phan lon luong nghiep vu.
+Chỉ cần nắm 5 file này là hiểu phần lớn luồng nghiệp vụ.
 
 ## 3) Thu muc/file dung de lam gi?
 
-### Khoi dong va wiring
+### Khởi động và wiring
 
-- `src/main.ts`: khoi dong NestJS, prefix `/api/v1`, global middleware/filter/interceptor/validation.
-- `src/app.module.ts`: noi config, TypeORM Postgres, Redis, JWT guard global, `HealthModule`, `PaymentsModule`.
+- `cmd/server/main.go`: khởi động service, prefix `/api/v1`, global middleware.
+- `internal/config/`: load env cho app/db/redis/jwt/kafka/payment gateway.
 
-### Cau hinh
+### Cấu hình
 
-- `src/config/configuration.ts`: map bien moi truong cho app/db/redis/jwt/kafka/payment gateway.
-- `src/config/env.validation.ts`: validate env bang Joi, thieu env quan trong se fail startup.
+- `internal/config/config.go`: map biến môi trường thành struct.
+- Validate env khi khởi động.
 
-### Common (dung chung)
+### Common (dùng chung)
 
-- `src/common/middlewares/request-id.middleware.ts`: tao/gan `x-request-id`.
-- `src/common/interceptors/logging.interceptor.ts`: structured log co `requestId`, `path`, `method`, `statusCode`, `durationMs`.
-- `src/common/interceptors/response.interceptor.ts`: boc response chuan `success/data/meta`.
-- `src/common/filters/http-exception.filter.ts`: chuan hoa envelope loi.
-- `src/common/guards/jwt-auth.guard.ts`: check JWT access token.
-- `src/common/guards/roles.guard.ts`: check role theo `@Roles(...)`.
-- `src/common/decorators/public.decorator.ts`: danh dau route public.
-- `src/common/decorators/current-user.decorator.ts`: lay user context tu request.
+- `internal/middleware/`: middleware HTTP (`x-request-id`, logging, JWT auth, RBAC).
+- `internal/httpx/`: helper trả response chuẩn và xử lý lỗi.
 
-### Payments module (nghiep vu chinh)
+### Payments module (nghiệp vụ chính)
 
-- `src/modules/payments/payments.module.ts`: gom controller/service/repository/provider/strategy.
-- `src/modules/payments/controllers/payments.controller.ts`: dinh nghia REST API payment.
-- `src/modules/payments/services/payments.service.ts`: logic payment intent, webhook callback, refund, chargeback basic.
-- `src/modules/payments/services/idempotency.service.ts`: xu ly idempotency cho intent va webhook.
-- `src/modules/payments/services/outbox-dispatcher.service.ts`: doc outbox va publish event theo retry/backoff.
-- `src/modules/payments/services/events-publisher.service.ts`: publish Kafka den `payment.events`, `notification.events`, `analytics.events`.
-- `src/modules/payments/providers/payment-gateway-provider.interface.ts`: contract gateway.
-- `src/modules/payments/providers/mock-payment-gateway.provider.ts`: provider local de dev/test.
-- `src/modules/payments/providers/vnpay-payment-gateway.provider.ts`: provider VNPAY (tao url + verify callback + refund request model).
-- `src/modules/payments/entities/*.entity.ts`: schema TypeORM cho bang payment.
-- `src/modules/payments/repositories/*.repository.ts`: truy cap DB theo tung bang.
-- `src/modules/payments/dto/*.dto.ts`: validate input cho endpoint.
+- `internal/handler/`: định nghĩa REST API payment (`chi` router).
+- `internal/service/`: logic payment intent, webhook callback, refund, chargeback basic, xử lý idempotency.
+- `internal/repository/`: thao tác DB theo từng bảng (payments, transactions, history, audit, idempotency, outbox).
+- `internal/events/`: publish Kafka đến `payment.events`, xử lý outbox dispatcher.
+- `internal/provider/` (hoặc tương đương): tích hợp gateway (mock và VNPAY).
 
 ### Health module
 
-- `src/modules/health/controllers/health.controller.ts`: `/health`, `/ready`, `/live`.
-- `src/modules/health/services/health.service.ts`: check Postgres + Redis readiness.
+- `internal/handler/health.go`: `/health`, `/ready`, `/live`.
 
 ### Migration
 
@@ -69,22 +55,17 @@ Chi can nam 5 file nay la hieu phan lon luong nghiep vu.
 
 ### Test
 
-- `src/modules/payments/services/*.spec.ts`: unit test cho payments/idempotency/outbox.
-- `src/common/guards/jwt-auth.guard.spec.ts`: unit test guard auth.
-- `src/modules/payments/providers/vnpay-payment-gateway.provider.spec.ts`: unit test VNPAY signer/parser.
-- `scripts/test-payment-service.sh` (o root repo): smoke test API end-to-end.
+- `scripts/test-payment-service.sh` (ở root repo): smoke test API end-to-end.
 
 ## 4) Luong request tong quat
 
-1. Request vao API `/api/v1/*`.
-2. `request-id.middleware` gan `x-request-id`.
-3. `jwt-auth.guard` kiem tra token (route public dung `@Public`).
-4. `roles.guard` kiem tra role endpoint.
-5. Controller goi `payments.service.ts`.
-6. Service validate nghiep vu + state transition + ownership.
-7. Write APIs chay transaction de ghi business data + outbox trong cung DB transaction.
-8. `response.interceptor` tra envelope thanh cong.
-9. Neu loi, `http-exception.filter` tra envelope loi + business error code.
+1. Request vào API `/api/v1/*`.
+2. Middleware gắn `x-request-id`, kiểm tra JWT token, và kiểm tra role.
+3. Handler nhận request, validate input và gọi method tương ứng trong `service`.
+4. Service validate nghiệp vụ + state transition + ownership.
+5. Write APIs chạy transaction (`pgx`) để ghi business data + outbox trong cùng DB transaction.
+6. Handler dùng `httpx` trả envelope thành công.
+7. Nếu lỗi, handler trả envelope lỗi + business error code.
 
 ## 5) API chinh
 

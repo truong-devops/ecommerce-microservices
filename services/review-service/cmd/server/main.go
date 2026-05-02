@@ -54,8 +54,17 @@ func main() {
 	reviewService := service.NewReviewService(reviewRepo)
 	reviewHandler := handler.NewReviewHandler(reviewService)
 	healthHandler := handler.NewHealthHandler(cfg.AppName, cfg.AppEnv, mongoClient)
+	redisService, err := service.NewRedisService(cfg.RedisEnabled, cfg.RedisURL)
+	if err != nil {
+		logger.Fatal("failed to init redis", zap.Error(err))
+	}
+	defer func() {
+		closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer closeCancel()
+		_ = redisService.Close(closeCtx)
+	}()
 
-	httpHandler := router.New(cfg, logger, reviewHandler, healthHandler)
+	httpHandler := router.New(cfg, logger, redisService, reviewHandler, healthHandler)
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),

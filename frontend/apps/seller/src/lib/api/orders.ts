@@ -53,10 +53,10 @@ function withAuth(accessToken: string, init?: RequestInit): RequestInit {
 }
 
 export function listSellerOrders(accessToken: string, params?: ListSellerOrdersInput): Promise<SellerOrderListOutput> {
-  return requestSellerApi<SellerOrderListOutput>(`/api/seller/orders${buildQuery(params)}`, withAuth(accessToken, {
+  return requestSellerApi<unknown>(`/api/seller/orders${buildQuery(params)}`, withAuth(accessToken, {
     method: 'GET',
     cache: 'no-store'
-  }));
+  })).then((payload) => normalizeSellerOrderListOutput(payload, params));
 }
 
 export function getSellerOrderById(accessToken: string, orderId: string): Promise<SellerOrder> {
@@ -88,4 +88,48 @@ export function updateSellerOrderStatus(
       body: JSON.stringify(payload)
     })
   );
+}
+
+function normalizeSellerOrderListOutput(payload: unknown, params?: ListSellerOrdersInput): SellerOrderListOutput {
+  const page = Math.max(1, params?.page ?? 1);
+  const pageSize = Math.max(1, Math.min(100, params?.pageSize ?? 20));
+
+  if (isOrderListOutput(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload)) {
+    return {
+      items: payload as SellerOrder[],
+      pagination: {
+        page,
+        pageSize,
+        totalItems: payload.length,
+        totalPages: payload.length === 0 ? 0 : Math.ceil(payload.length / pageSize)
+      }
+    };
+  }
+
+  return {
+    items: [],
+    pagination: {
+      page,
+      pageSize,
+      totalItems: 0,
+      totalPages: 0
+    }
+  };
+}
+
+function isOrderListOutput(value: unknown): value is SellerOrderListOutput {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<SellerOrderListOutput>;
+  if (!Array.isArray(candidate.items)) {
+    return false;
+  }
+
+  return Boolean(candidate.pagination && typeof candidate.pagination === 'object');
 }

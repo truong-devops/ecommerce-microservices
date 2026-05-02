@@ -5,11 +5,20 @@ import (
 	"net/http"
 	"strings"
 
-	"order-service/internal/domain"
-	"order-service/internal/httpx"
+	"user-service-go/internal/domain"
+	"user-service-go/internal/httpx"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
+)
+
+const (
+	RoleCustomer   = "CUSTOMER"
+	RoleAdmin      = "ADMIN"
+	RoleSupport    = "SUPPORT"
+	RoleSeller     = "SELLER"
+	RoleSuperAdmin = "SUPER_ADMIN"
 )
 
 type RevokedTokenChecker interface {
@@ -19,7 +28,7 @@ type RevokedTokenChecker interface {
 func RequireJWT(secret string, checker RevokedTokenChecker, logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := httpx.ExtractBearerToken(r.Header.Get("Authorization"))
+			token := extractBearerToken(r.Header.Get("Authorization"))
 			if token == "" {
 				httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
 				return
@@ -31,7 +40,6 @@ func RequireJWT(secret string, checker RevokedTokenChecker, logger *zap.Logger) 
 				httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
 				return
 			}
-
 			if checker != nil {
 				revoked, checkErr := checker.IsAccessTokenRevoked(r, user.JTI)
 				if checkErr != nil {
@@ -50,16 +58,16 @@ func RequireJWT(secret string, checker RevokedTokenChecker, logger *zap.Logger) 
 	}
 }
 
-func RequireRoles(roles ...domain.Role) func(http.Handler) http.Handler {
-	allowed := make(map[domain.Role]struct{}, len(roles))
+func RequireRoles(roles ...string) func(http.Handler) http.Handler {
+	allowed := make(map[string]struct{}, len(roles))
 	for _, role := range roles {
-		allowed[role] = struct{}{}
+		allowed[strings.ToUpper(strings.TrimSpace(role))] = struct{}{}
 	}
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, ok := UserFromContext(r.Context())
-			if !ok {
+			if !ok || user.UserID == "" {
 				httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
 				return
 			}
@@ -74,7 +82,37 @@ func RequireRoles(roles ...domain.Role) func(http.Handler) http.Handler {
 	}
 }
 
-func parseUserFromToken(tokenString, secret string) (domain.UserContext, error) {
+func RequireSelfOrRoles(param string, roles ...string) func(http.Handler) http.Handler {
+	allowed := make(map[string]struct{}, len(roles))
+	for _, role := range roles {
+		allowed[strings.ToUpper(strings.TrimSpace(role))] = struct{}{}
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, ok := UserFromContext(r.Context())
+			if !ok || user.UserID == "" {
+				httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+				return
+			}
+
+			resourceID := strings.TrimSpace(chi.URLParam(r, param))
+			if resourceID != "" && resourceID == user.UserID {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if _, exists := allowed[user.Role]; !exists {
+				httpx.WriteError(w, r, http.StatusForbidden, domain.ErrorCodeForbidden, "Insufficient role", nil)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func parseUserFromToken(tokenString, secret string) (User, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -82,27 +120,25 @@ func parseUserFromToken(tokenString, secret string) (domain.UserContext, error) 
 		return []byte(secret), nil
 	})
 	if err != nil || !token.Valid {
-		return domain.UserContext{}, fmt.Errorf("invalid token")
+		return User{}, fmt.Errorf("invalid token")
 	}
 
 	mapClaims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return domain.UserContext{}, fmt.Errorf("invalid token claims")
+		return User{}, fmt.Errorf("invalid token claims")
 	}
 
 	userID := claimAsString(mapClaims, "sub")
-	email := claimAsString(mapClaims, "email")
-	role := domain.Role(strings.ToUpper(claimAsString(mapClaims, "role")))
+	role := strings.ToUpper(claimAsString(mapClaims, "role"))
 	sessionID := claimAsString(mapClaims, "sessionId")
 	jti := claimAsString(mapClaims, "jti")
-
-	if userID == "" || role == "" || !domain.IsValidRole(role) || sessionID == "" || jti == "" {
-		return domain.UserContext{}, fmt.Errorf("missing required token claims")
+	if userID == "" || role == "" || sessionID == "" || jti == "" {
+		return User{}, fmt.Errorf("missing required token claims")
 	}
 
-	return domain.UserContext{
+	return User{
 		UserID:       userID,
-		Email:        email,
+		Email:        claimAsString(mapClaims, "email"),
 		Role:         role,
 		SessionID:    sessionID,
 		JTI:          jti,
@@ -110,13 +146,21 @@ func parseUserFromToken(tokenString, secret string) (domain.UserContext, error) 
 	}, nil
 }
 
+func extractBearerToken(header string) string {
+	value := strings.TrimSpace(header)
+	if value == "" || !strings.HasPrefix(strings.ToLower(value), "bearer ") {
+		return ""
+	}
+	return strings.TrimSpace(value[7:])
+}
+
 func claimAsString(claims jwt.MapClaims, key string) string {
 	value, ok := claims[key]
 	if !ok || value == nil {
 		return ""
 	}
-	if s, ok := value.(string); ok {
-		return strings.TrimSpace(s)
+	if v, ok := value.(string); ok {
+		return strings.TrimSpace(v)
 	}
 	return ""
 }

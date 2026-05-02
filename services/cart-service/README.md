@@ -1,6 +1,6 @@
 # cart-service
 
-Go implementation for cart-service with API/business parity target to legacy NestJS cart-service.
+Go implementation for cart-service.
 
 ## Container-first run
 

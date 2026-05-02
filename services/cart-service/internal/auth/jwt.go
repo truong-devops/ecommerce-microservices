@@ -32,7 +32,7 @@ func RequireJWT(secret string, checker RevokedTokenChecker, logger *zap.Logger) 
 				return
 			}
 
-			if user.JTI != "" && checker != nil {
+			if checker != nil {
 				revoked, checkErr := checker.IsAccessTokenRevoked(r, user.JTI)
 				if checkErr != nil {
 					logger.Error("token revocation check failed", zap.Error(checkErr))
@@ -93,8 +93,10 @@ func parseUserFromToken(tokenString, secret string) (domain.UserContext, error) 
 	userID := claimAsString(mapClaims, "sub")
 	email := claimAsString(mapClaims, "email")
 	role := domain.Role(strings.ToUpper(claimAsString(mapClaims, "role")))
+	sessionID := claimAsString(mapClaims, "sessionId")
+	jti := claimAsString(mapClaims, "jti")
 
-	if userID == "" || role == "" || !domain.IsValidRole(role) {
+	if userID == "" || role == "" || !domain.IsValidRole(role) || sessionID == "" || jti == "" {
 		return domain.UserContext{}, fmt.Errorf("missing required token claims")
 	}
 
@@ -102,8 +104,8 @@ func parseUserFromToken(tokenString, secret string) (domain.UserContext, error) 
 		UserID:       userID,
 		Email:        email,
 		Role:         role,
-		SessionID:    claimAsString(mapClaims, "sessionId"),
-		JTI:          claimAsString(mapClaims, "jti"),
+		SessionID:    sessionID,
+		JTI:          jti,
 		TokenVersion: claimAsInt(mapClaims, "tokenVersion"),
 	}, nil
 }

@@ -1,6 +1,6 @@
 # analytics-service
 
-Go implementation of `analytics-service`, aligned with the current NestJS service behavior.
+Go implementation of `analytics-service`.
 
 - Auth + role guard (`SELLER | ADMIN | SUPPORT | SUPER_ADMIN`)
 - Response envelope (`success`, `data`, `meta`)

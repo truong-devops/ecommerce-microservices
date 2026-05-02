@@ -263,6 +263,9 @@ function makeToken(userId: string, email: string, role: Role): string {
       sub: userId,
       email,
       role,
+      sessionId: randomUUID(),
+      jti: randomUUID(),
+      tokenVersion: 0,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 3600
     })

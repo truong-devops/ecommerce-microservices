@@ -1,6 +1,6 @@
 # payment-service
 
-Go implementation for payment lifecycle with API/business parity target to legacy NestJS payment-service.
+Go implementation for payment lifecycle.
 
 ## Quick start
 

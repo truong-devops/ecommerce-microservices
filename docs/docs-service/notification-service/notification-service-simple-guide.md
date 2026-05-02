@@ -12,58 +12,42 @@ Moi duong dan ben duoi deu tinh tu thu muc nay.
 
 ## 2) Doc tu dau de hieu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/notifications/controllers/notifications.controller.ts`
-4. `src/modules/notifications/services/notifications.service.ts`
-5. `src/modules/notifications/services/notification-events-consumer.service.ts`
-6. `src/modules/notifications/services/notification-dispatcher.service.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/notification_handler.go`
+3. `internal/service/notification_service.go`
+4. `internal/events/notification_events_consumer.go`
+5. `internal/events/notification_dispatcher.go`
 
-Chi can nam 6 file nay la hieu phan lon luong nghiep vu.
+Chỉ cần nắm 5 file này là hiểu phần lớn luồng nghiệp vụ.
 
 ## 3) Thu muc/file dung de lam gi?
 
-### Khoi dong va wiring
+### Khởi động và wiring
 
-- `src/main.ts`: khoi dong NestJS, gan middleware/filter/interceptor/validation global.
-- `src/app.module.ts`: noi config, TypeORM Postgres, global guards, `HealthModule`, `NotificationsModule`.
+- `cmd/server/main.go`: khởi động service, gắn middleware, router.
+- `internal/config/`: map biến môi trường thành object config app/db/redis/jwt/dispatch/kafka.
+- Validate env bằng struct tags.
 
-### Cau hinh
+### Common (dùng chung)
 
-- `src/config/configuration.ts`: map bien moi truong thanh object config app/db/redis/jwt/dispatch/kafka.
-- `src/config/env.validation.ts`: validate env bang Joi, thieu env quan trong se fail startup.
+- `internal/middleware/`: middleware HTTP (`x-request-id`, logging, JWT auth, RBAC).
+- `internal/httpx/`: helper trả response chuẩn và xử lý lỗi JSON.
 
-### Common (dung chung)
+### Notifications module (nghiệp vụ chính)
 
-- `src/common/middlewares/request-id.middleware.ts`: tao/gan `x-request-id`.
-- `src/common/interceptors/logging.interceptor.ts`: log request co cau truc.
-- `src/common/interceptors/response.interceptor.ts`: boc response chuan `success/data/meta`.
-- `src/common/filters/http-exception.filter.ts`: chuan hoa loi JSON.
-- `src/common/guards/jwt-auth.guard.ts`: check JWT.
-- `src/common/guards/roles.guard.ts`: check role voi `@Roles(...)`.
-- `src/common/decorators/public.decorator.ts`: danh dau route public.
-- `src/common/decorators/current-user.decorator.ts`: lay user context tu request.
-
-### Notifications module (nghiep vu chinh)
-
-- `src/modules/notifications/notifications.module.ts`: gom controller/service/repository/strategy/consumer/dispatcher.
-- `src/modules/notifications/controllers/notifications.controller.ts`: dinh nghia REST API notifications.
-- `src/modules/notifications/services/notifications.service.ts`: logic manual campaign, list/get/mark read, map event vao notification record.
-- `src/modules/notifications/services/notification-events-consumer.service.ts`: consume topic `notification.events` voi idempotency.
-- `src/modules/notifications/services/notification-dispatcher.service.ts`: worker nen dispatch pending/failed theo retry backoff.
-- `src/modules/notifications/services/mock-notification-provider.service.ts`: provider mock de dispatch (de thay the bang provider that sau).
+- `internal/handler/`: định nghĩa REST API notifications (`chi` router).
+- `internal/service/`: logic manual campaign, list/get/mark read, map event vào notification record.
+- `internal/events/`: consume topic `notification.events` với idempotency và worker dispatcher chạy nền.
+- `internal/provider/`: mock provider để dispatch.
 
 ### Entity + Repository
 
-- `src/modules/notifications/entities/notification.entity.ts`: bang `notifications`.
-- `src/modules/notifications/entities/notification-attempt.entity.ts`: bang `notification_attempts`.
-- `src/modules/notifications/entities/inbox-event.entity.ts`: bang `inbox_events` cho idempotency consumer.
-- `src/modules/notifications/repositories/*.repository.ts`: thao tac DB theo tung bang.
+- `internal/domain/`: schema entities notifications, attempts, inbox events.
+- `internal/repository/`: thao tác DB theo từng bảng.
 
 ### Health module
 
-- `src/modules/health/controllers/health.controller.ts`: `/health`, `/ready`, `/live`.
-- `src/modules/health/services/health.service.ts`: check Postgres + Redis (neu bat).
+- `internal/handler/health.go`: `/health`, `/ready`, `/live`.
 
 ### Migration
 
@@ -71,14 +55,11 @@ Chi can nam 6 file nay la hieu phan lon luong nghiep vu.
 
 ## 4) Luong request tong quat
 
-1. Request vao API `/api/v1/*`.
-2. `request-id.middleware` gan `x-request-id`.
-3. `jwt-auth.guard` kiem tra token (neu route khong `@Public`).
-4. `roles.guard` kiem tra role endpoint.
-5. Controller goi `notifications.service.ts`.
-6. Service validate nghiep vu va goi repository.
-7. `response.interceptor` tra response envelope.
-8. Neu loi, `http-exception.filter` tra error envelope.
+1. Request vào API `/api/v1/*`.
+2. Middleware gắn `x-request-id`, kiểm tra token và role.
+3. Handler nhận request và gọi method trong `service`.
+4. Service validate nghiệp vụ và gọi repository.
+5. Handler dùng `httpx` trả response chuẩn hoặc trả lỗi JSON.
 
 ## 5) Luong event consume (Kafka -> DB)
 
@@ -155,13 +136,12 @@ Smoke test tu root repo:
 
 ## 10) File nen doc theo thu tu
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/notifications/controllers/notifications.controller.ts`
-4. `src/modules/notifications/services/notifications.service.ts`
-5. `src/modules/notifications/repositories/`
-6. `src/modules/notifications/entities/`
-7. `src/modules/notifications/services/notification-events-consumer.service.ts`
-8. `src/modules/notifications/services/notification-dispatcher.service.ts`
-9. `migrations/0001_init_notification_service.sql`
-10. `scripts/test-notification-service.sh` (o root repo)
+1. `cmd/server/main.go`
+2. `internal/handler/notification_handler.go`
+3. `internal/service/notification_service.go`
+4. `internal/repository/`
+5. `internal/domain/`
+6. `internal/events/notification_events_consumer.go`
+7. `internal/events/notification_dispatcher.go`
+8. `migrations/0001_init_notification_service.sql`
+9. `scripts/test-notification-service.sh` (ở root repo)

@@ -30,7 +30,7 @@ Before contributing, familiarise yourself with the project structure:
 | Path | Role |
 |---|---|
 | `services/` | 12 independently deployable microservices |
-| `packages/backend-shared/` | NestJS runtime shared library (guards, pipes, interceptors, DTOs) |
+| `packages/backend-shared/` | NestJS runtime shared library (guards, pipes, interceptors, DTOs) — used by remaining NestJS services only |
 | `shared/` | Language-neutral contracts — proto, Kafka events, TypeScript types |
 | `frontend/` | Buyer, seller, and moderator applications + shared frontend packages |
 | `infrastructure/` | Docker, K3s manifests, Kafka, monitoring, logging, Terraform |
@@ -317,7 +317,7 @@ Shared contracts are the most high-impact changes in this monorepo. Handle them 
 
 ### Changing `packages/backend-shared/`
 
-This library is imported by all NestJS services. Any interface or export change is effectively a breaking change across the entire backend. Discuss with the team before modifying public APIs.
+This library is imported by the remaining NestJS services (`auth-service`, `product-service`, `shipping-service`). Any interface or export change is a breaking change for those services. The 8 Go services maintain their own `internal/` packages and are not affected. Discuss with the team before modifying public APIs.
 
 ---
 

@@ -38,9 +38,11 @@ const (
 )
 
 type UserContext struct {
-	UserID string
-	Email  string
-	Role   Role
+	UserID    string
+	Email     string
+	Role      Role
+	JTI       string
+	SessionID string
 }
 
 type ReviewReply struct {

@@ -66,8 +66,17 @@ func main() {
 	userService := service.NewUserService(userRepo, userEventsPublisher)
 	userHandler := handler.NewUserHandler(userService)
 	healthHandler := handler.NewHealthHandler(cfg.AppName, userService)
+	redisService, err := service.NewRedisService(cfg.RedisEnabled, cfg.RedisURL)
+	if err != nil {
+		logger.Fatal("failed to init redis", zap.Error(err))
+	}
+	defer func() {
+		closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer closeCancel()
+		_ = redisService.Close(closeCtx)
+	}()
 
-	httpHandler := router.New(cfg, logger, userHandler, healthHandler)
+	httpHandler := router.New(cfg, logger, redisService, userHandler, healthHandler)
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),

@@ -18,14 +18,19 @@ import (
 	"go.uber.org/zap"
 )
 
-func New(cfg *config.Config, logger *zap.Logger, metrics *observability.Metrics) (http.Handler, error) {
+func New(
+	cfg *config.Config,
+	logger *zap.Logger,
+	metrics *observability.Metrics,
+	revocationChecker auth.RevokedTokenChecker,
+) (http.Handler, error) {
 	proxies, err := buildProxies(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	healthHandler := handlers.NewHealthHandler(cfg, logger)
-	jwtMiddleware := auth.Middleware(cfg.JWTSecret, logger)
+	jwtMiddleware := auth.Middleware(cfg.JWTSecret, revocationChecker, logger)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID())
@@ -139,4 +144,3 @@ func mountMethodPrefix(r chi.Router, method, prefix string, h http.Handler) {
 	r.Method(method, prefix+"/", h)
 	r.Method(method, prefix+"/*", h)
 }
-

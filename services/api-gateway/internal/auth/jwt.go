@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Middleware(secret string, logger *zap.Logger) func(http.Handler) http.Handler {
+func Middleware(secret string, checker RevokedTokenChecker, logger *zap.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			requestID := middleware.RequestIDFromContext(r.Context())
@@ -45,6 +45,23 @@ func Middleware(secret string, logger *zap.Logger) func(http.Handler) http.Handl
 			if !ok {
 				response.Error(w, http.StatusUnauthorized, apperrors.CodeUnauthorized, "Invalid token claims", requestID)
 				return
+			}
+			jti := claimAsString(mapClaims, "jti")
+			if jti == "" {
+				response.Error(w, http.StatusUnauthorized, apperrors.CodeUnauthorized, "Invalid token claims", requestID)
+				return
+			}
+			if checker != nil {
+				revoked, checkErr := checker.IsAccessTokenRevoked(r, jti)
+				if checkErr != nil {
+					logger.Error("token revocation check failed", zap.Error(checkErr))
+					response.Error(w, http.StatusUnauthorized, apperrors.CodeUnauthorized, "Invalid token", requestID)
+					return
+				}
+				if revoked {
+					response.Error(w, http.StatusUnauthorized, apperrors.CodeUnauthorized, "Access token revoked", requestID)
+					return
+				}
 			}
 
 			userID := claimAsString(mapClaims, "user_id")

@@ -1,6 +1,6 @@
 # notification-service
 
-Go implementation of `notification-service` with API/auth/business behavior aligned to the legacy NestJS service.
+Go implementation of `notification-service`.
 
 ## Endpoints
 

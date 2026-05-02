@@ -60,13 +60,13 @@ function buildOrderQuery(params?: ListOrdersInput): string {
 export function fetchBuyerOrders(input: AuthRequestInit & { params?: ListOrdersInput }): Promise<OrderListOutput> {
   const { accessToken, params, ...init } = input;
 
-  return requestBuyerApi<OrderListOutput>(`/api/buyer/orders${buildOrderQuery(params)}`,
+  return requestBuyerApi<unknown>(`/api/buyer/orders${buildOrderQuery(params)}`,
     withAuth(accessToken, {
       method: 'GET',
       cache: 'no-store',
       ...init
     })
-  );
+  ).then((payload) => normalizeOrderListOutput(payload, params));
 }
 
 export function createBuyerOrder(input: AuthRequestInit & { payload: CreateOrderInput; idempotencyKey: string }): Promise<Order> {
@@ -134,4 +134,48 @@ export function fetchBuyerOrderStatusHistory(input: AuthRequestInit & { orderId:
       ...init
     })
   );
+}
+
+function normalizeOrderListOutput(payload: unknown, params?: ListOrdersInput): OrderListOutput {
+  const page = Math.max(1, params?.page ?? 1);
+  const pageSize = Math.max(1, Math.min(100, params?.pageSize ?? 20));
+
+  if (isOrderListOutput(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload)) {
+    return {
+      items: payload as Order[],
+      pagination: {
+        page,
+        pageSize,
+        totalItems: payload.length,
+        totalPages: payload.length === 0 ? 0 : Math.ceil(payload.length / pageSize)
+      }
+    };
+  }
+
+  return {
+    items: [],
+    pagination: {
+      page,
+      pageSize,
+      totalItems: 0,
+      totalPages: 0
+    }
+  };
+}
+
+function isOrderListOutput(value: unknown): value is OrderListOutput {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<OrderListOutput>;
+  if (!Array.isArray(candidate.items)) {
+    return false;
+  }
+
+  return Boolean(candidate.pagination && typeof candidate.pagination === 'object');
 }

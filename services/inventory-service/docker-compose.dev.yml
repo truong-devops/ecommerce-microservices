@@ -5,10 +5,16 @@ services:
       POSTGRES_USER: ecommerce
       POSTGRES_PASSWORD: ecommerce
       POSTGRES_DB: ecommerce
-    volumes:
-      - inventory_service_pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -20,18 +26,34 @@ services:
     env_file:
       - ./.env.example
     environment:
+      APP_NAME: inventory-service
       APP_ENV: development
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      PORT: 3007
+      API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      REDIS_ENABLED: 'false'
+      REDIS_URL: redis://redis:6379
+      RESERVATION_DEFAULT_TTL_MINUTES: 10
+      RESERVATION_EXPIRE_CHECK_INTERVAL_MS: 15000
+      RESERVATION_EXPIRE_BATCH_SIZE: 200
+      OUTBOX_DISPATCH_INTERVAL_MS: 3000
+      OUTBOX_BATCH_SIZE: 50
+      OUTBOX_MAX_RETRY: 10
+      KAFKA_ENABLED: 'false'
+      KAFKA_CLIENT_ID: inventory-service
       KAFKA_BROKERS: host.docker.internal:9092
+      INVENTORY_EVENTS_TOPIC: inventory.events
+      KAFKA_CONSUMER_GROUP_ID: inventory-service-group
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_inventory_service.sql
     ports:
       - '3007:3007'
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     extra_hosts:
       - 'host.docker.internal:host-gateway'
-
-volumes:
-  inventory_service_pg_data:

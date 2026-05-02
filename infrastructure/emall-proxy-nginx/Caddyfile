@@ -1,0 +1,14 @@
+emall.vn {
+    tls internal
+    reverse_proxy host.docker.internal:8888
+}
+
+seller.emall.vn {
+    tls internal
+    reverse_proxy host.docker.internal:6789
+}
+
+moderator.emall.vn {
+    tls internal
+    reverse_proxy host.docker.internal:1111
+}

@@ -1,7 +1,7 @@
 services:
   nginx:
     image: nginx:alpine
-    container_name: emall-dev-proxy
+    container_name: emall-dev-proxy1
     ports:
       - "80:80"
     volumes:

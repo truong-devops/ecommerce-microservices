@@ -1,4 +1,4 @@
-﻿services:
+services:
   redis:
     image: redis:7-alpine
     healthcheck:
@@ -13,8 +13,6 @@
       POSTGRES_USER: ecommerce
       POSTGRES_PASSWORD: ecommerce
       POSTGRES_DB: ecommerce
-    volumes:
-      - cart_service_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
       interval: 5s
@@ -26,19 +24,37 @@
       context: .
       dockerfile: Dockerfile
     env_file:
-      - ./.env.dev
+      - ./.env.example
     environment:
+      APP_NAME: cart-service
+      APP_ENV: development
+      PORT: 3011
+      API_PREFIX: api/v1
+      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      REDIS_ENABLED: 'true'
+      REDIS_URL: redis://redis:6379
+      CART_TTL_SECONDS: 259200
+      CART_MAX_QTY_PER_ITEM: 99
+      CART_DEFAULT_CURRENCY: USD
+      CART_PERSISTENCE_ENABLED: 'true'
+      KAFKA_ENABLED: 'false'
+      KAFKA_CLIENT_ID: cart-service
+      KAFKA_BROKERS: host.docker.internal:9092
+      CART_EVENTS_TOPIC: cart.events
+      CART_VALIDATE_EXTERNAL: 'false'
+      PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:3003/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://host.docker.internal:3006/api/v1
+      DEPENDENCY_TIMEOUT_MS: 5000
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_cart_service.sql
     ports:
-      - '3004:3004'
+      - '3011:3011'
     depends_on:
-      redis:
-        condition: service_healthy
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     extra_hosts:
       - 'host.docker.internal:host-gateway'
-
-volumes:
-  cart_service_postgres_data:

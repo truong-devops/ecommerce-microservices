@@ -205,14 +205,29 @@ services:
         required: false
     environment:
       <<: *shared-jwt-access-secret
+      APP_NAME: cart-service
       APP_ENV: development
+      PORT: 3004
+      API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DB_SSL: 'false'
+      REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_ENABLED: 'false'
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      CART_TTL_SECONDS: 259200
+      CART_MAX_QTY_PER_ITEM: 99
+      CART_DEFAULT_CURRENCY: USD
+      CART_PERSISTENCE_ENABLED: 'false'
+      KAFKA_ENABLED: 'false'
+      KAFKA_CLIENT_ID: cart-service
+      KAFKA_BROKERS: kafka:29092
+      CART_EVENTS_TOPIC: cart.events
+      CART_VALIDATE_EXTERNAL: 'false'
       PRODUCT_SERVICE_BASE_URL: http://product-service:3003/api/v1
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:3007/api/v1
+      DEPENDENCY_TIMEOUT_MS: 5000
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_cart_service.sql
     ports:
       - '3004:3004'
     depends_on:
@@ -275,10 +290,22 @@ services:
         required: false
     environment:
       <<: *shared-jwt-access-secret
+      APP_NAME: payment-service
       APP_ENV: development
+      PORT: 3006
+      API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
+      PAYMENT_GATEWAY: mock
       KAFKA_BROKERS: kafka:29092
+      ORDER_EVENTS_TOPIC: order.events
+      ORDER_EVENTS_CONSUMER_GROUP: payment-service-order-events-group
+      PAYMENT_EVENTS_TOPIC: payment.events
+      NOTIFICATION_EVENTS_TOPIC: notification.events
+      ANALYTICS_EVENTS_TOPIC: analytics.events
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_payment_service.sql
     ports:
       - '3006:3006'
     depends_on:
@@ -299,14 +326,33 @@ services:
         required: false
     environment:
       <<: *shared-jwt-access-secret
+      APP_NAME: inventory-service
       APP_ENV: development
+      PORT: 3007
+      API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
-      KAFKA_BROKERS: kafka:29092
+      DB_SSL: 'false'
+      REDIS_ENABLED: 'false'
+      REDIS_URL: redis://redis:6379
+      RESERVATION_DEFAULT_TTL_MINUTES: 10
+      RESERVATION_EXPIRE_CHECK_INTERVAL_MS: 15000
+      RESERVATION_EXPIRE_BATCH_SIZE: 200
+      OUTBOX_DISPATCH_INTERVAL_MS: 3000
+      OUTBOX_BATCH_SIZE: 50
+      OUTBOX_MAX_RETRY: 10
       KAFKA_ENABLED: 'false'
+      KAFKA_CLIENT_ID: inventory-service
+      KAFKA_CONSUMER_GROUP_ID: inventory-service-group
+      KAFKA_BROKERS: kafka:29092
+      INVENTORY_EVENTS_TOPIC: inventory.events
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_inventory_service.sql
     ports:
       - '3007:3007'
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       kafka:
         condition: service_healthy

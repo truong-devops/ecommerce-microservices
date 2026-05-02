@@ -1,6 +1,6 @@
 # order-service
 
-Go implementation for order lifecycle management with API/business parity target to legacy NestJS order-service.
+Go implementation for order lifecycle management.
 
 ## Container-first run
 

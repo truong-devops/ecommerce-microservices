@@ -1,6 +1,6 @@
 # inventory-service
 
-Go implementation for inventory lifecycle management with API/business parity target to legacy NestJS inventory-service.
+Go implementation for inventory lifecycle management.
 
 ## Container-first run
 

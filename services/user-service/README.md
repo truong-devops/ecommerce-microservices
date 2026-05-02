@@ -1,6 +1,6 @@
 # user-service
 
-Go implementation of `user-service`, designed to run in parallel with the existing NestJS service.
+Go implementation of `user-service`.
 Business logic and API behavior are aligned with `services/user-service-nest` including:
 
 - soft-delete + revive deleted user by email

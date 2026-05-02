@@ -12,60 +12,46 @@ Moi duong dan ben duoi deu tinh tu thu muc nay.
 
 ## 2) Doc tu dau de hieu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/inventory/controllers/inventory.controller.ts`
-4. `src/modules/inventory/services/inventory.service.ts`
-5. `src/modules/inventory/services/outbox-dispatcher.service.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/inventory_handler.go`
+3. `internal/service/inventory_service.go`
+4. `internal/repository/inventory_repository.go`
+5. `internal/events/outbox_dispatcher.go`
 
-Chi can nam 5 file nay la hieu phan lon luong hoat dong.
+Chỉ cần nắm 5 file này là hiểu phần lớn luồng hoạt động.
 
 ## 3) Thu muc/file dung de lam gi?
 
-### Khoi dong va wiring
+### Khởi động và wiring
 
-- `src/main.ts`: khoi dong NestJS, gan middleware/filter/interceptor/validation global.
-- `src/app.module.ts`: noi config, Postgres, guards global, `HealthModule`, `InventoryModule`.
+- `cmd/server/main.go`: khởi động service, gắn middleware, router.
+- `internal/config/`: load env cho app/db/kafka.
 
-### Cau hinh
+### Cấu hình
 
-- `src/config/configuration.ts`: map bien moi truong thanh object config.
-- `src/config/env.validation.ts`: validate env bang Joi, thieu env se fail startup.
+- `internal/config/config.go`: map biến môi trường thành struct.
+- Validate env khi khởi động.
 
-### Common (dung chung)
+### Common (dùng chung)
 
-- `src/common/middlewares/request-id.middleware.ts`: tao/gan `x-request-id`.
-- `src/common/interceptors/logging.interceptor.ts`: log request co cau truc.
-- `src/common/interceptors/response.interceptor.ts`: boc response chuan `success/data/meta`.
-- `src/common/filters/http-exception.filter.ts`: chuan hoa loi JSON.
-- `src/common/guards/jwt-auth.guard.ts`: kiem tra bearer token va JWT payload.
-- `src/common/guards/roles.guard.ts`: kiem tra role voi `@Roles(...)`.
-- `src/common/decorators/current-user.decorator.ts`: lay user tu request context.
-- `src/common/decorators/public.decorator.ts`: danh dau route public.
-- `src/common/decorators/roles.decorator.ts`: khai bao role endpoint.
+- `internal/middleware/`: middleware HTTP (`x-request-id`, logging, JWT auth, RBAC).
+- `internal/httpx/`: helper trả response chuẩn và xử lý lỗi JSON.
 
-### Inventory module (nghiep vu chinh)
+### Inventory module (nghiệp vụ chính)
 
-- `src/modules/inventory/inventory.module.ts`: gom controller, services, repositories, entities.
-- `src/modules/inventory/controllers/inventory.controller.ts`: dinh nghia REST API inventory.
-- `src/modules/inventory/services/inventory.service.ts`: logic chinh validate stock, adjust, reserve, release, confirm, expire.
-- `src/modules/inventory/services/events-publisher.service.ts`: publish Kafka event.
-- `src/modules/inventory/services/outbox-dispatcher.service.ts`: doc `outbox_events` va publish theo retry/backoff.
-- `src/modules/inventory/services/reservation-expirer.service.ts`: job nen tu dong expire ACTIVE reservations.
-- `src/modules/inventory/services/inventory-events-consumer.service.ts`: consumer skeleton cho `order.cancelled`.
+- `internal/handler/`: định nghĩa REST API inventory (`chi` router).
+- `internal/service/`: logic chính validate stock, adjust, reserve, release, confirm, expire.
+- `internal/events/`: publish Kafka event, `outbox_dispatcher` và `inventory_events_consumer` (ví dụ cho `order.cancelled`).
+- `internal/service/reservation_expirer.go`: job nền tự động expire ACTIVE reservations.
 
 ### Entity + Repository
 
-- `src/modules/inventory/entities/inventory-item.entity.ts`: bang ton kho theo SKU.
-- `src/modules/inventory/entities/inventory-reservation.entity.ts`: bang giu hang theo order.
-- `src/modules/inventory/entities/inventory-movement.entity.ts`: bang audit trail cho moi bien dong stock.
-- `src/modules/inventory/entities/outbox-event.entity.ts`: bang outbox de publish event an toan.
-- `src/modules/inventory/repositories/*.repository.ts`: thao tac DB theo tung bang.
+- `internal/domain/`: các entity như `inventory_item`, `inventory_reservation`, `inventory_movement`, `outbox_event`.
+- `internal/repository/`: thao tác DB theo từng bảng.
 
 ### Health module
 
-- `src/modules/health/controllers/health.controller.ts`: `/health`, `/ready`, `/live`.
-- `src/modules/health/services/health.service.ts`: check service va Postgres.
+- `internal/handler/health.go`: `/health`, `/ready`, `/live`.
 
 ### Migration
 
@@ -97,15 +83,12 @@ Chi can nam 5 file nay la hieu phan lon luong hoat dong.
 
 ## 5) Luong request tong quat
 
-1. Request vao API `/api/v1/*` hoac route compatibility `/api/*`.
-2. `request-id.middleware` gan `x-request-id`.
-3. `jwt-auth.guard` kiem tra token neu route khong public.
-4. `roles.guard` kiem tra role endpoint.
-5. Controller goi `inventory.service.ts`.
-6. Service validate nghiep vu va goi repositories.
-7. Voi write API, service chay transaction de cap nhat stock/reservation/movement/outbox cung luc.
-8. `response.interceptor` tra response chuan.
-9. Neu co loi, `http-exception.filter` tra loi chuan.
+1. Request vào API `/api/v1/*` hoặc route compatibility `/api/*`.
+2. Middleware gắn `x-request-id`, kiểm tra JWT token, và kiểm tra role.
+3. Handler nhận request và gọi method tương ứng trong `service`.
+4. Service validate nghiệp vụ và gọi `repository`.
+5. Với write API, service chạy transaction (`pgx`) để cập nhật stock/reservation/movement/outbox cùng lúc.
+6. Handler dùng `httpx` trả response chuẩn hoặc trả lỗi JSON.
 
 ## 6) Nghiep vu chinh
 
@@ -235,15 +218,13 @@ Script smoke test hien tai cover:
 
 ## 11) File nen doc theo thu tu
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/inventory/controllers/inventory.controller.ts`
-4. `src/modules/inventory/services/inventory.service.ts`
-5. `src/modules/inventory/repositories/`
-6. `src/modules/inventory/entities/`
-7. `src/modules/inventory/services/reservation-expirer.service.ts`
-8. `src/modules/inventory/services/inventory-events-consumer.service.ts`
-9. `src/modules/inventory/services/outbox-dispatcher.service.ts`
-10. `migrations/0001_init_inventory_service.sql`
-11. `test/app.e2e.spec.ts`
-12. `scripts/test-inventory-service.sh` (o root repo)
+1. `cmd/server/main.go`
+2. `internal/handler/inventory_handler.go`
+3. `internal/service/inventory_service.go`
+4. `internal/repository/`
+5. `internal/domain/`
+6. `internal/service/reservation_expirer.go`
+7. `internal/events/inventory_events_consumer.go`
+8. `internal/events/outbox_dispatcher.go`
+9. `migrations/0001_init_inventory_service.sql`
+10. `scripts/test-inventory-service.sh` (ở root repo)

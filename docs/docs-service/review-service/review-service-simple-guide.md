@@ -12,51 +12,40 @@ Mọi đường dẫn bên dưới đều tính từ thư mục này.
 
 ## 2) Đọc từ đâu để hiểu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/reviews/controllers/review.controller.ts`
-4. `src/modules/reviews/services/review.service.ts`
-5. `src/modules/reviews/repositories/review.repository.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/review_handler.go`
+3. `internal/service/review_service.go`
+4. `internal/repository/review_repository.go`
 
-Chỉ cần nắm 5 file này là hiểu phần lớn luồng hoạt động.
+Chỉ cần nắm 4 file này là hiểu phần lớn luồng hoạt động.
 
 ## 3) Thư mục/file dùng để làm gì?
 
 ### Khởi động và wiring
 
-- `src/main.ts`: khởi động NestJS, gắn middleware/filter/interceptor/validation global.
-- `src/app.module.ts`: nối config, MongoDB, guards global, `HealthModule`, `ReviewsModule`.
+- `cmd/server/main.go`: khởi động service, gắn middleware, router.
+- `internal/config/`: load env cho app/mongo.
 
 ### Cấu hình
 
-- `src/config/configuration.ts`: map biến môi trường thành object config.
-- `src/config/env.validation.ts`: validate env bằng Joi, thiếu env sẽ fail startup.
+- `internal/config/config.go`: map biến môi trường thành struct.
+- Validate env khi khởi động.
 
 ### Common (dùng chung)
 
-- `src/common/middlewares/request-id.middleware.ts`: tạo/gắn `x-request-id`.
-- `src/common/interceptors/logging.interceptor.ts`: log request có cấu trúc.
-- `src/common/interceptors/response.interceptor.ts`: bọc response chuẩn `success/data/meta`.
-- `src/common/filters/http-exception.filter.ts`: chuẩn hóa lỗi JSON.
-- `src/common/guards/jwt-auth.guard.ts`: kiểm tra JWT (hỗ trợ public route với optional token).
-- `src/common/guards/roles.guard.ts`: kiểm tra role với `@Roles(...)`.
-- `src/common/decorators/current-user.decorator.ts`: lấy user từ request context.
-- `src/common/decorators/public.decorator.ts`: đánh dấu route public.
-- `src/common/decorators/roles.decorator.ts`: khai báo role endpoint.
+- `internal/middleware/`: middleware HTTP (`x-request-id`, logging, JWT auth, RBAC).
+- `internal/httpx/`: helper trả response chuẩn và xử lý lỗi JSON.
 
 ### Reviews module (nghiệp vụ chính)
 
-- `src/modules/reviews/review.module.ts`: gom controller, service, repository, JWT strategy.
-- `src/modules/reviews/controllers/review.controller.ts`: định nghĩa REST API review.
-- `src/modules/reviews/services/review.service.ts`: logic chính create/list/get/update/delete/moderate/reply/summary.
-- `src/modules/reviews/repositories/review.repository.ts`: thao tác MongoDB (query list, duplicate check, summary aggregate).
-- `src/modules/reviews/entities/review.entity.ts`: schema Mongoose + indexes.
-- `src/modules/reviews/enums/review-status.enum.ts`: trạng thái review (`PUBLISHED|HIDDEN|REJECTED|DELETED`).
+- `internal/handler/`: định nghĩa REST API review (`chi` router).
+- `internal/service/`: logic chính create/list/get/update/delete/moderate/reply/summary.
+- `internal/repository/`: thao tác MongoDB (query list, duplicate check, summary aggregate).
+- `internal/domain/`: schema bson struct, model review và các enum trạng thái.
 
 ### Health module
 
-- `src/modules/health/controllers/health.controller.ts`: `/health`, `/ready`, `/live`.
-- `src/modules/health/services/health.service.ts`: check trạng thái kết nối MongoDB.
+- `internal/handler/health.go`: `/health`, `/ready`, `/live`.
 
 ### Test + docker
 
@@ -64,16 +53,11 @@ Chỉ cần nắm 5 file này là hiểu phần lớn luồng hoạt động.
 - `docker-compose.dev.yml`: stack local `mongo` + `review-service`.
 - `scripts/test-review-service.sh` (ở root repo): smoke test end-to-end.
 
-## 4) Luồng request tổng quát
-
 1. Request vào API `/api/v1/*`.
-2. `request-id.middleware` gắn `x-request-id`.
-3. `jwt-auth.guard` kiểm tra access token (hoặc bỏ qua nếu route public không có token).
-4. `roles.guard` kiểm tra role endpoint (nếu có `@Roles`).
-5. Controller gọi `review.service.ts`.
-6. Service validate nghiệp vụ và gọi repository.
-7. `response.interceptor` trả response chuẩn.
-8. Nếu có lỗi, `http-exception.filter` trả lỗi chuẩn.
+2. Middleware gắn `x-request-id`, kiểm tra JWT token, và kiểm tra role.
+3. Handler nhận request và gọi method trong `service`.
+4. Service validate nghiệp vụ và gọi repository.
+5. Handler dùng `httpx` trả response chuẩn hoặc trả lỗi JSON.
 
 ## 5) Luồng create review (quan trọng)
 
@@ -148,11 +132,9 @@ Indexes:
 
 ## 10) File nên đọc theo thứ tự
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/reviews/controllers/review.controller.ts`
-4. `src/modules/reviews/services/review.service.ts`
-5. `src/modules/reviews/repositories/review.repository.ts`
-6. `src/modules/reviews/entities/review.entity.ts`
-7. `test/review-api.e2e.spec.ts`
-8. `scripts/test-review-service.sh` (ở root repo)
+1. `cmd/server/main.go`
+2. `internal/handler/review_handler.go`
+3. `internal/service/review_service.go`
+4. `internal/repository/review_repository.go`
+5. `internal/domain/review.go`
+6. `scripts/test-review-service.sh` (ở root repo)

@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
   <img src="https://img.shields.io/badge/Apache_Kafka-2.x-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/>
   <img src="https://img.shields.io/badge/Kubernetes-K3s-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Turborepo-Monorepo-EF4444?style=for-the-badge&logo=turborepo&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Services_in_Go-9/12-00ADD8?style=for-the-badge&logo=go&logoColor=white"/>
 </p>
 
 <h1 align="center">Ecommerce Microservices Platform</h1>
@@ -18,7 +18,7 @@
 
 ## Architecture Overview
 
-The system is composed of **12 independent microservices**, each owning its own data store, deployment lifecycle, and domain boundary. All external traffic enters through a high-performance **API Gateway written in Go**, which handles authentication, rate limiting, and intelligent reverse proxying to downstream NestJS services.
+The system is composed of **12 independent microservices**, each owning its own data store, deployment lifecycle, and domain boundary. The majority of backend services (9 out of 12) are now written in **Go**, following a migration from NestJS. Three services — `auth-service`, `product-service`, and `shipping-service` — remain on **NestJS/TypeScript**. All external traffic enters through a high-performance **API Gateway written in Go**, which handles authentication, rate limiting, and intelligent reverse proxying to downstream services.
 
 Communication between services is **dual-mode**:
 - **Synchronous**: HTTP/REST with per-service timeout contracts enforced at the gateway layer
@@ -40,9 +40,12 @@ gRPC **Protocol Buffer definitions** in `shared/proto` serve as the source of tr
               ┌───────────────────────┘      └──────────────────────────┐
               │                                                         │
    ┌──────────▼──────────────────────────────────────────────────────┐  │
-   │                     NestJS Microservices                        │  │
-   │  auth · user · product · cart · order · payment                 │  │
-   │  inventory · shipping · review · notification · analytics       │  │
+   │                Go Microservices (chi · pgx · zap)               │  │
+   │  user · cart · order · payment · inventory                      │  │
+   │  notification · review · analytics                              │  │
+   ├─────────────────────────────────────────────────────────────────┤  │
+   │              NestJS Microservices (TypeScript)                   │  │
+   │  auth · product · shipping                                      │  │
    └──────────────────────────────┬──────────────────────────────────┘  │
                                   │ Kafka Events                        │
                          ┌────────▼────────┐                            │
@@ -72,8 +75,30 @@ The single ingress point for all client traffic, built in **Go 1.22** for maximu
 
 Internal package layout follows Go idiomatic layering: `internal/auth`, `internal/config`, `internal/handlers`, `internal/middleware`, `internal/observability`, `internal/proxy`, `internal/router`.
 
-### Domain Services — NestJS / TypeScript
-All 11 domain services are built with **NestJS 10** on **TypeScript 5.6**. Each service applies the same structural discipline:
+### Domain Services — Go (majority)
+8 out of 11 domain services have been migrated to **Go 1.22**. Each Go service follows a clean architecture with idiomatic package layout:
+
+| Concern | Library / Pattern |
+|---|---|
+| HTTP Router | `go-chi/chi v5` |
+| Database (PostgreSQL) | `jackc/pgx v5` |
+| Database (MongoDB) | `go.mongodb.org/mongo-driver` |
+| JWT Auth | `golang-jwt/jwt v5` |
+| Logging | `uber-go/zap` |
+| Kafka | `IBM/sarama` or `segmentio/kafka-go` |
+| Configuration | Environment variables with startup validation |
+
+Internal package layout per Go service: `cmd/server` (entrypoint), `internal/auth`, `internal/config`, `internal/domain`, `internal/handler`, `internal/httpx`, `internal/middleware`, `internal/repository`, `internal/router`, `internal/service`, `internal/events`.
+
+**Go services:** user · cart · order · payment · inventory · notification · review · analytics
+
+### Domain Services — NestJS / TypeScript (remaining)
+The following 3 services remain on **NestJS 10** with **TypeScript 5.6**:
+- `auth-service` — JWT, TOTP, OAuth
+- `product-service` — Catalog, search, media (MongoDB)
+- `shipping-service` — Carrier integration, tracking
+
+Each NestJS service applies:
 - Module-scoped dependency injection with `@nestjs/common`
 - Schema-validated configuration via `@nestjs/config` + `Joi`
 - Global JWT + RBAC guards registered at the application level
@@ -94,9 +119,9 @@ All 11 domain services are built with **NestJS 10** on **TypeScript 5.6**. Each 
 
 ### Authentication & Security
 - **JWT Access Tokens** — RS256 signed, validated at both gateway and service layers
-- **TOTP / 2FA** — `speakeasy` library for HMAC-based one-time passwords
-- **Password Hashing** — `bcryptjs` with adaptive work factor
-- **Role-Based Access Control** — `JwtAuthGuard` + `RolesGuard` applied globally, overridable per route
+- **TOTP / 2FA** — `speakeasy` library for HMAC-based one-time passwords (auth-service / NestJS)
+- **Password Hashing** — `bcryptjs` with adaptive work factor (auth-service / NestJS)
+- **Role-Based Access Control** — JWT middleware + role checks applied globally in each service (Go: custom middleware, NestJS: `JwtAuthGuard` + `RolesGuard`)
 
 ---
 
@@ -108,20 +133,21 @@ ecommerce-microservices/
 ├── services/                     # 12 independently deployable microservices
 │   ├── api-gateway/              # Go — reverse proxy, auth, rate limiting
 │   ├── auth-service/             # NestJS — JWT, TOTP, OAuth
-│   ├── user-service/             # NestJS — profile, address management
+│   ├── user-service/             # Go — profile, address management
 │   ├── product-service/          # NestJS — catalog, search, media
-│   ├── inventory-service/        # NestJS — stock reservation, alerts
-│   ├── cart-service/             # NestJS — shopping cart, price snapshot
-│   ├── order-service/            # NestJS — checkout saga, order lifecycle
-│   ├── payment-service/          # NestJS — payment gateway, webhooks
+│   ├── inventory-service/        # Go — stock reservation, alerts
+│   ├── cart-service/             # Go — shopping cart, price snapshot
+│   ├── order-service/            # Go — checkout saga, order lifecycle
+│   ├── payment-service/          # Go — payment gateway, webhooks
 │   ├── shipping-service/         # NestJS — carrier integration, tracking
-│   ├── review-service/           # NestJS — ratings, UGC moderation
-│   ├── notification-service/     # NestJS — email, push, in-app
-│   └── analytics-service/        # NestJS — event ingestion, ClickHouse OLAP
+│   ├── review-service/           # Go — ratings, UGC moderation
+│   ├── notification-service/     # Go — email, push, in-app
+│   └── analytics-service/        # Go — event ingestion, ClickHouse OLAP
 │
 ├── packages/
 │   └── backend-shared/           # NestJS runtime library (shared guards,
 │                                 #   interceptors, pipes, decorators, DTOs)
+│                                 #   Used by remaining NestJS services only
 │
 ├── shared/                       # Language-neutral cross-service contracts
 │   ├── proto/                    # gRPC Protocol Buffer definitions
@@ -190,10 +216,12 @@ ecommerce-microservices/
 ### Layered Shared Code Boundary
 The project enforces a strict **two-tier sharing model**:
 
-- **`packages/backend-shared`** — NestJS-specific runtime library. Contains production-ready guards, interceptors, pipes, decorators, DTOs, and database helpers. Imported only by NestJS services.
-- **`shared/`** — Neutral, framework-agnostic contracts. Consumed by backend services, frontend apps, and tooling alike. This layer has zero NestJS or framework dependencies.
+- **`packages/backend-shared`** — NestJS-specific runtime library. Contains production-ready guards, interceptors, pipes, decorators, DTOs, and database helpers. Imported only by the remaining NestJS services (`auth-service`, `product-service`, `shipping-service`).
+- **`shared/`** — Neutral, framework-agnostic contracts. Consumed by all backend services (Go and NestJS), frontend apps, and tooling alike. This layer has zero framework dependencies.
 
-This boundary ensures the neutral contracts remain portable and the NestJS-specific optimizations stay out of frontend bundles.
+Go services implement their own middleware, auth, and response envelope logic in `internal/` packages, following Go idiomatic patterns rather than importing from `packages/backend-shared`.
+
+This boundary ensures the neutral contracts remain portable, NestJS-specific optimizations stay contained, and Go services remain self-sufficient.
 
 ### Kubernetes-Native Deployment
 Kubernetes manifests are structured with **Kustomize overlays**, separating base resources from environment-specific configuration. Includes:

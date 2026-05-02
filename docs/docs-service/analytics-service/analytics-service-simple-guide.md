@@ -8,30 +8,28 @@ Tai lieu nay giai thich ngan gon `analytics-service` trong monorepo de de onboar
 
 ## 2) Doc tu dau de hieu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/analytics/controllers/analytics.controller.ts`
-4. `src/modules/analytics/services/analytics.service.ts`
-5. `src/modules/analytics/repositories/analytics.repository.ts`
-6. `src/modules/analytics/services/analytics-events-consumer.service.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/analytics_handler.go`
+3. `internal/service/analytics_service.go`
+4. `internal/repository/analytics_repository.go`
+5. `internal/events/analytics_events_consumer.go`
 
 ## 3) Architecture tong quat
 
-- Runtime: NestJS + TypeScript.
+- Runtime: Go 1.22.
 - Storage: ClickHouse (`analytics_events_raw`).
 - Async ingest: Kafka consumer topic `analytics.events`.
-- Idempotency ingest: Redis optional (`REDIS_ENABLED=true`) va fallback dedupe bang ClickHouse.
-- AuthZ: global `JwtAuthGuard` + `RolesGuard`.
+- Idempotency ingest: Redis optional (`REDIS_ENABLED=true`) và fallback dedupe bằng ClickHouse.
+- AuthZ: JWT auth và role check middleware.
 
 ## 4) Thu muc/file chinh
 
-- `src/common/*`: decorators, guards, filter, interceptors, middleware, logger, redis helper.
-- `src/config/configuration.ts`: map env cho app/clickhouse/redis/kafka/ingest.
-- `src/config/env.validation.ts`: Joi schema cho startup validation.
-- `src/modules/analytics/repositories/analytics.repository.ts`: insert/query ClickHouse.
-- `src/modules/analytics/services/analytics-event-normalizer.service.ts`: parse event + hash `eventKey`.
-- `src/modules/analytics/services/analytics.service.ts`: business scope, date-range validation, query orchestration.
-- `src/modules/analytics/services/analytics-events-consumer.service.ts`: Kafka consumer lifecycle.
+- `internal/middleware/`: auth, RBAC, logger, request ID.
+- `internal/config/`: map env cho app/clickhouse/redis/kafka/ingest, startup validation.
+- `internal/repository/`: insert/query ClickHouse.
+- `internal/service/analytics_event_normalizer.go`: parse event + hash `eventKey`.
+- `internal/service/analytics_service.go`: business scope, date-range validation, query orchestration.
+- `internal/events/analytics_events_consumer.go`: Kafka consumer lifecycle.
 
 ## 5) API chinh
 
@@ -73,9 +71,9 @@ Table: `ecommerce_analytics.analytics_events_raw`
 
 ## 8) Health endpoints
 
-- `GET /api/v1/health` va `GET /api/health`
-- `GET /api/v1/ready` va `GET /api/ready`
-- `GET /api/v1/live` va `GET /api/live`
+- `GET /health` và `GET /api/v1/health`
+- `GET /ready` và `GET /api/v1/ready`
+- `GET /live` và `GET /api/v1/live`
 
 Readiness check:
 
@@ -86,9 +84,8 @@ Readiness check:
 
 Tu `services/analytics-service/`:
 
-1. `npm run docker:up`
-2. `npm run docker:migrate`
-3. `npm run docker:logs`
+1. Start dependencies (ClickHouse, Kafka, Redis)
+2. `go run cmd/server/main.go`
 
 Smoke test tu root repo:
 

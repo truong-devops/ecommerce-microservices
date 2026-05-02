@@ -2,7 +2,7 @@
 
 Runtime utilities for backend services.
 
-This package is for NestJS-oriented backend runtime components:
+This package is for NestJS-oriented backend runtime components. It is used ONLY by the remaining NestJS services (`auth-service`, `product-service`, `shipping-service`). Go services do not use this package.
 
 - guards, pipes, interceptors, filters
 - base entities and shared database abstractions

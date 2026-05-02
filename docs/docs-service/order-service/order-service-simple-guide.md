@@ -4,9 +4,9 @@ Tài liệu này giải thích ngắn gọn `order-service` trong monorepo để
 
 ## 1) Gốc service ở đâu?
 
-Gốc của service (NestJS legacy) là:
+Gốc của service là:
 
-`services/order-service-nest/`
+`services/order-service/`
 
 Mọi đường dẫn bên dưới đều tính từ thư mục này.
 
@@ -24,46 +24,34 @@ Chỉ cần nắm 5 file này là hiểu phần lớn luồng hoạt động.
 
 ### Khởi động và wiring
 
-- `src/main.ts`: khởi động NestJS, gắn middleware/filter/interceptor/validation global.
-- `src/app.module.ts`: nối config, database, guards global, `HealthModule`, `OrdersModule`.
+- `cmd/server/main.go`: khởi động service, gắn middleware, router.
+- `internal/config/`: load env.
+- `internal/app/` (hoặc tương tự): nối config, database, handler.
 
 ### Cấu hình
 
-- `src/config/configuration.ts`: map biến môi trường thành object config.
-- `src/config/env.validation.ts`: validate env bằng Joi, thiếu env sẽ fail startup.
+- `internal/config/config.go`: map biến môi trường thành struct.
+- Validate env khi khởi động.
 
 ### Common (dùng chung)
 
-- `src/common/middlewares/request-id.middleware.ts`: tạo/gắn `x-request-id`.
-- `src/common/interceptors/logging.interceptor.ts`: log request có cấu trúc.
-- `src/common/interceptors/response.interceptor.ts`: bọc response chuẩn `success/data/meta`.
-- `src/common/filters/http-exception.filter.ts`: chuẩn hóa lỗi JSON.
-- `src/common/guards/jwt-auth.guard.ts`: kiểm tra JWT.
-- `src/common/guards/roles.guard.ts`: kiểm tra role với `@Roles(...)`.
-- `src/common/decorators/current-user.decorator.ts`: lấy user từ request context.
-- `src/common/decorators/public.decorator.ts`: đánh dấu route public.
-- `src/common/decorators/roles.decorator.ts`: khai báo role endpoint.
+- `internal/middleware/`: middleware HTTP (`x-request-id`, logging, JWT auth, RBAC).
+- `internal/httpx/`: helper trả response chuẩn và xử lý lỗi.
 
 ### Orders module (nghiệp vụ chính)
 
-- `src/modules/orders/orders.module.ts`: gom controller, service, repository, strategy.
-- `src/modules/orders/controllers/orders.controller.ts`: định nghĩa REST API order.
-- `src/modules/orders/services/orders.service.ts`: logic chính create/list/get/cancel/update status.
-- `src/modules/orders/services/idempotency.service.ts`: xử lý `Idempotency-Key` và replay.
-- `src/modules/orders/services/order-number.service.ts`: sinh `orderNumber`.
-- `src/modules/orders/services/events-publisher.service.ts`: publish Kafka.
-- `src/modules/orders/services/outbox-dispatcher.service.ts`: đọc `outbox_events` và publish theo retry/backoff.
+- `internal/handler/`: định nghĩa REST API order (`chi` router).
+- `internal/service/`: logic chính create/list/get/cancel/update status, xử lý idempotency, outbox.
+- `internal/domain/`: state machine và transition hợp lệ (`OrderStatus`).
+- `internal/events/`: publish Kafka.
 
 ### Entity + Repository
 
-- `src/modules/orders/entities/*.entity.ts`: schema TypeORM cho orders/items/history/audit/idempotency/outbox.
-- `src/modules/orders/repositories/*.repository.ts`: thao tác DB theo từng bảng.
-- `src/modules/orders/entities/order-status.enum.ts`: state machine và transition hợp lệ.
+- `internal/repository/`: thao tác DB theo từng bảng (orders/items/history/audit/idempotency/outbox).
 
 ### Health module
 
-- `src/modules/health/controllers/health.controller.ts`: `/health`, `/ready`, `/live`.
-- `src/modules/health/services/health.service.ts`: check Postgres + Redis.
+- `internal/handler/health.go`: `/health`, `/ready`, `/live`.
 
 ### Migration
 
@@ -72,14 +60,11 @@ Chỉ cần nắm 5 file này là hiểu phần lớn luồng hoạt động.
 ## 4) Luồng request tổng quát
 
 1. Request vào API `/api/v1/*`.
-2. `request-id.middleware` gắn `x-request-id`.
-3. `jwt-auth.guard` kiểm tra access token.
-4. `roles.guard` kiểm tra role endpoint.
-5. Controller gọi `orders.service.ts`.
-6. Service validate nghiệp vụ và gọi repositories.
-7. Với write API: chạy transaction để ghi order + history + audit + outbox.
-8. `response.interceptor` trả response chuẩn.
-9. Nếu có lỗi, `http-exception.filter` trả lỗi chuẩn.
+2. Middleware gắn `x-request-id`, kiểm tra JWT token, và kiểm tra role.
+3. Handler nhận request và gọi method tương ứng trong `service`.
+4. Service validate nghiệp vụ và gọi `repository`.
+5. Với write API: chạy transaction (`pgx`) để ghi order + history + audit + outbox.
+6. Handler dùng `httpx` trả response hoặc lỗi chuẩn.
 
 ## 5) Luồng create order (quan trọng)
 
@@ -158,13 +143,10 @@ Mục tiêu: giảm rủi ro mất event khi service crash.
 
 ## 10) File nên đọc theo thứ tự
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/orders/controllers/orders.controller.ts`
-4. `src/modules/orders/services/orders.service.ts`
-5. `src/modules/orders/repositories/`
-6. `src/modules/orders/entities/`
-7. `src/modules/orders/services/idempotency.service.ts`
-8. `src/modules/orders/services/outbox-dispatcher.service.ts`
-9. `migrations/0001_init_order_service.sql`
-10. `scripts/test-order-service.sh` (ở root repo)
+1. `cmd/server/main.go`
+2. `internal/handler/order_handler.go`
+3. `internal/service/order_service.go`
+4. `internal/repository/order_repository.go`
+5. `internal/domain/order.go`
+6. `migrations/0001_init_order_service.sql`
+7. `scripts/test-order-service.sh` (ở root repo)

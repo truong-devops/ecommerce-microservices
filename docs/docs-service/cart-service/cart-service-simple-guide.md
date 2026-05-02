@@ -1,4 +1,4 @@
-﻿# Cart Service - Simple Guide
+# Cart Service - Simple Guide
 
 Tai lieu nay giai thich ngan gon `cart-service` trong monorepo de de onboard va maintain.
 
@@ -12,54 +12,39 @@ Moi duong dan ben duoi deu tinh tu thu muc nay.
 
 ## 2) Doc tu dau de hieu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/cart/controllers/cart.controller.ts`
-4. `src/modules/cart/services/cart.service.ts`
-5. `src/modules/cart/repositories/cart-cache.repository.ts`
-6. `src/modules/cart/repositories/cart-persistence.repository.ts`
-7. `src/modules/cart/services/cart-events-publisher.service.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/cart_handler.go`
+3. `internal/service/cart_service.go`
+4. `internal/repository/cart_cache_repository.go`
+5. `internal/repository/cart_persistence_repository.go`
+6. `internal/events/cart_events_publisher.go`
 
-Chi can nam 7 file nay la hieu phan lon luong nghiep vu.
+Chỉ cần nắm 6 file này là hiểu phần lớn luồng nghiệp vụ.
 
 ## 3) Thu muc/file dung de lam gi?
 
-### Khoi dong va wiring
+### Khởi động và wiring
 
-- `src/main.ts`: khoi dong NestJS, gan middleware/filter/interceptor/validation global.
-- `src/app.module.ts`: noi config, redis, postgres(optional), global guards, `HealthModule`, `CartModule`.
+- `cmd/server/main.go`: khởi động service, gắn middleware.
+- `internal/config/`: map biến môi trường thành object config cho app/redis/cart/db/jwt/kafka.
+- Validate env khi khởi động.
 
-### Cau hinh
+### Common (dùng chung)
 
-- `src/config/configuration.ts`: map bien moi truong thanh object config cho app/redis/cart/db/jwt/kafka/dependencies.
-- `src/config/env.validation.ts`: validate env bang Joi, thieu env quan trong se fail startup.
+- `internal/middleware/`: middleware HTTP (`x-request-id`, logging, JWT auth, RBAC).
+- `internal/httpx/`: helper trả response chuẩn và xử lý lỗi JSON.
 
-### Common (dung chung)
+### Cart module (nghiệp vụ chính)
 
-- `src/common/middlewares/request-id.middleware.ts`: tao/gan `x-request-id`.
-- `src/common/interceptors/logging.interceptor.ts`: log request co cau truc.
-- `src/common/interceptors/response.interceptor.ts`: boc response chuan `success/data/meta`.
-- `src/common/filters/http-exception.filter.ts`: chuan hoa error envelope.
-- `src/common/guards/jwt-auth.guard.ts`: verify access token.
-- `src/common/guards/roles.guard.ts`: check role voi `@Roles(...)`.
-- `src/common/decorators/public.decorator.ts`: danh dau route public.
-- `src/common/decorators/current-user.decorator.ts`: lay user context tu request.
-
-### Cart module (nghiep vu chinh)
-
-- `src/modules/cart/controllers/cart.controller.ts`: dinh nghia REST API cart.
-- `src/modules/cart/services/cart.service.ts`: logic chinh get/add/update/remove/clear/validate cart.
-- `src/modules/cart/repositories/cart-cache.repository.ts`: repository Redis, luu key `cart:{userId}`.
-- `src/modules/cart/repositories/cart-persistence.repository.ts`: persistence Postgres optional (`CART_PERSISTENCE_ENABLED=true`).
-- `src/modules/cart/services/cart-validation-client.service.ts`: check external voi product/inventory service (optional).
-- `src/modules/cart/services/cart-events-publisher.service.ts`: publish Kafka best-effort.
-- `src/modules/cart/entities/cart.types.ts`: model `CartSnapshot`, `CartItem`, `CartValidationIssue`.
-- `src/modules/cart/entities/cart-record.entity.ts`, `cart-item-record.entity.ts`: TypeORM entities cho persistence.
+- `internal/handler/`: định nghĩa REST API cart (`chi` router).
+- `internal/service/`: logic chính get/add/update/remove/clear/validate cart.
+- `internal/repository/`: repository Redis (`cart_cache_repository.go`) và Postgres (`cart_persistence_repository.go`).
+- `internal/events/`: publish Kafka best-effort.
+- `internal/domain/`: model `CartSnapshot`, `CartItem`, các entity database.
 
 ### Health module
 
-- `src/modules/health/controllers/health.controller.ts`: `/api/v1/health`, `/api/v1/ready`, `/api/v1/live` va tuong duong `/api/*`.
-- `src/modules/health/services/health.service.ts`: check redis + postgres(optional).
+- `internal/handler/health.go`: `/api/v1/health`, `/api/v1/ready`, `/api/v1/live`.
 
 ### Migration
 
@@ -67,21 +52,19 @@ Chi can nam 7 file nay la hieu phan lon luong nghiep vu.
 
 ### Test + Docker
 
-- `test/app.e2e-spec.ts`: e2e test luong chinh (health, auth fail, validation fail, CRUD, conflict, forbidden).
+- `scripts/test-cart-service.sh` (ở root repo): smoke test luồng chính (health, auth fail, validation fail, CRUD, conflict, forbidden).
 - `docker-compose.dev.yml`: stack local `cart-service + redis + postgres`.
 
 ## 4) Luong request tong quat
 
-1. Request vao API `/api/v1/cart*` hoac `/api/cart*`.
-2. `request-id.middleware` gan `x-request-id`.
-3. `jwt-auth.guard` kiem tra bearer token.
-4. `roles.guard` chi cho role `BUYER` thao tac cart.
-5. Controller goi `cart.service.ts`.
-6. Service load cart tu Redis; neu miss thi fallback Postgres (neu persistence bat), neu van miss thi tao cart rong.
-7. Service merge/update/remove item, recalculate totals, tang version.
-8. Service persist write-through vao Redis va Postgres (neu bat persistence).
-9. Service publish Kafka event theo best-effort (khong rollback business khi publish fail).
-10. `response.interceptor` tra envelope thanh cong; loi di qua `http-exception.filter`.
+1. Request vào API `/api/v1/cart*` hoặc `/api/cart*`.
+2. Middleware gắn `x-request-id`, kiểm tra JWT token, và kiểm tra role `BUYER`.
+3. Handler nhận request và gọi method tương ứng trong `service`.
+4. Service load cart từ Redis; nếu miss thì fallback Postgres, nếu vẫn miss thì tạo cart rỗng.
+5. Service merge/update/remove item, recalculate totals, tăng version.
+6. Service persist write-through vào Redis và Postgres (nếu bật persistence).
+7. Service publish Kafka event theo best-effort (không rollback business khi publish fail).
+8. Handler dùng `httpx` trả envelope thành công hoặc lỗi.
 
 ## 5) Business rules quan trong
 
@@ -160,13 +143,11 @@ Tu root repo:
 
 ## 10) File nen doc theo thu tu
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/cart/controllers/cart.controller.ts`
-4. `src/modules/cart/services/cart.service.ts`
-5. `src/modules/cart/repositories/cart-cache.repository.ts`
-6. `src/modules/cart/repositories/cart-persistence.repository.ts`
-7. `src/modules/cart/services/cart-validation-client.service.ts`
-8. `src/modules/cart/services/cart-events-publisher.service.ts`
-9. `src/modules/cart/entities/cart.types.ts`
-10. `test/app.e2e-spec.ts`
+1. `cmd/server/main.go`
+2. `internal/handler/cart_handler.go`
+3. `internal/service/cart_service.go`
+4. `internal/repository/cart_cache_repository.go`
+5. `internal/repository/cart_persistence_repository.go`
+6. `internal/events/cart_events_publisher.go`
+7. `internal/domain/cart.go`
+8. `scripts/test-cart-service.sh`

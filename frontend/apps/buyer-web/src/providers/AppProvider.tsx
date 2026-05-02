@@ -90,6 +90,15 @@ interface AddToCartPayload {
   currency?: string;
 }
 
+interface UpdateCartItemPayload {
+  title?: string;
+  image?: string;
+  unitPrice?: number;
+  stock?: number | null;
+  sku?: string | null;
+  currency?: string;
+}
+
 interface CartActionResult {
   ok: boolean;
   message?: string;
@@ -112,6 +121,7 @@ interface CartContextValue {
   cartTotal: number;
   addToCart: (payload: AddToCartPayload, quantity?: number) => CartActionResult;
   setItemQuantity: (productId: string, quantity: number) => CartActionResult;
+  updateCartItem: (productId: string, payload: UpdateCartItemPayload) => CartActionResult;
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
 }
@@ -797,6 +807,99 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [cartItems, locale, persistCartItems]
   );
 
+  const updateCartItem = useCallback(
+    (productId: string, payload: UpdateCartItemPayload): CartActionResult => {
+      const normalizedId = productId.trim();
+      if (!isValidProductId(normalizedId)) {
+        return {
+          ok: false,
+          message: messages[locale].product.notFound
+        };
+      }
+
+      const current = cartItems.find((item) => item.productId === normalizedId);
+      if (!current) {
+        return {
+          ok: false,
+          message: messages[locale].product.notFound
+        };
+      }
+
+      const nextTitle = typeof payload.title === 'string' ? payload.title.trim() || current.title : current.title;
+      const nextImage = typeof payload.image === 'string' ? payload.image.trim() || current.image : current.image;
+      const nextSku = typeof payload.sku === 'string' ? payload.sku.trim() || null : payload.sku === null ? null : current.sku;
+      const nextUnitPrice = payload.unitPrice ?? current.unitPrice;
+      const nextStockRaw = payload.stock === undefined ? current.stock : payload.stock;
+      const normalizedStock =
+        nextStockRaw === null
+          ? null
+          : typeof nextStockRaw === 'number' && Number.isFinite(nextStockRaw) && nextStockRaw >= 0
+            ? Math.floor(nextStockRaw)
+            : null;
+      const nextCurrency =
+        typeof payload.currency === 'string' && /^[A-Z]{3}$/.test(payload.currency.trim().toUpperCase())
+          ? payload.currency.trim().toUpperCase()
+          : payload.currency === undefined
+            ? current.currency
+            : null;
+
+      if (!Number.isFinite(nextUnitPrice) || nextUnitPrice < 0 || !nextTitle || !nextImage || nextCurrency === null) {
+        return {
+          ok: false,
+          message: messages[locale].product.loadError
+        };
+      }
+
+      if (nextStockRaw !== null && nextStockRaw !== undefined && normalizedStock === null) {
+        return {
+          ok: false,
+          message: messages[locale].product.invalidQuantity
+        };
+      }
+
+      if (normalizedStock !== null && normalizedStock <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.stockOut
+        };
+      }
+
+      const finalQuantity = normalizedStock !== null ? Math.min(current.quantity, normalizedStock) : current.quantity;
+      if (finalQuantity <= 0) {
+        return {
+          ok: false,
+          message: messages[locale].product.stockOut
+        };
+      }
+
+      const nextItems = cartItems.map((item) =>
+        item.productId === normalizedId
+          ? {
+              ...item,
+              title: nextTitle,
+              image: nextImage,
+              unitPrice: nextUnitPrice,
+              stock: normalizedStock,
+              quantity: finalQuantity,
+              sku: nextSku,
+              currency: nextCurrency
+            }
+          : item
+      );
+      persistCartItems(nextItems);
+
+      if (normalizedStock !== null && finalQuantity < current.quantity) {
+        return {
+          ok: true,
+          message: messages[locale].product.maxStockReached
+        };
+      }
+
+      return { ok: true };
+    },
+    [cartItems, locale, persistCartItems]
+  );
+
   const removeFromCart = useCallback(
     (productId: string) => {
       const normalizedId = productId.trim();
@@ -844,6 +947,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cartTotal,
       addToCart,
       setItemQuantity,
+      updateCartItem,
       removeFromCart,
       clearCart
     }),
@@ -855,7 +959,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cartTotal,
       clearCart,
       removeFromCart,
-      setItemQuantity
+      setItemQuantity,
+      updateCartItem
     ]
   );
 

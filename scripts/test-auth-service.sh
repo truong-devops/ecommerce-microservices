@@ -8,12 +8,33 @@ NEW_PASSWORD="${AUTH_TEST_NEW_PASSWORD:-StrongPass456}"
 
 RESPONSE_STATUS=""
 RESPONSE_BODY=""
+PYTHON_CMD=()
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Missing required command: $1" >&2
     exit 1
   fi
+}
+
+resolve_python_cmd() {
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD=(python3)
+    return
+  fi
+
+  if command -v python >/dev/null 2>&1; then
+    PYTHON_CMD=(python)
+    return
+  fi
+
+  if command -v py >/dev/null 2>&1; then
+    PYTHON_CMD=(py -3)
+    return
+  fi
+
+  echo "Missing required command: python3/python/py" >&2
+  exit 1
 }
 
 print_step() {
@@ -65,7 +86,7 @@ assert_status_in() {
 json_field() {
   local json_input="$1"
   local path="$2"
-  JSON_INPUT="$json_input" python3 - "$path" <<'PY'
+  JSON_INPUT="$json_input" "${PYTHON_CMD[@]}" - "$path" <<'PY'
 import json
 import os
 import sys
@@ -110,7 +131,7 @@ assert_error_code() {
 }
 
 require_cmd curl
-require_cmd python3
+resolve_python_cmd
 
 print_step "Health checks"
 call_api GET /health

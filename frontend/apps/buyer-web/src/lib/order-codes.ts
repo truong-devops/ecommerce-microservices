@@ -5,6 +5,14 @@ export function formatOrderCode(orderNumber: string | null | undefined, fallback
   return formatCode(source, 'EMX');
 }
 
+export function formatCustomerCode(userId: string | null | undefined): string {
+  return formatCode((userId ?? '').trim(), 'CUS');
+}
+
+export function formatSellerCode(sellerId: string | null | undefined): string {
+  return formatCode((sellerId ?? '').trim(), 'SEL');
+}
+
 function formatCode(raw: string, prefix: string): string {
   if (!raw) {
     return `${prefix}0000000`;

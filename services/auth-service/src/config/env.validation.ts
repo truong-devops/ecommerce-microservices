@@ -12,9 +12,9 @@ export const envValidationSchema = Joi.object({
   REDIS_URL: Joi.string().uri().required(),
 
   JWT_ACCESS_SECRET: Joi.string().min(32).required(),
-  JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
+  JWT_ACCESS_EXPIRES_IN: Joi.string().default('8h'),
   JWT_REFRESH_SECRET: Joi.string().min(32).required(),
-  JWT_REFRESH_EXPIRES_IN: Joi.string().default('30d'),
+  JWT_REFRESH_EXPIRES_IN: Joi.string().default('45d'),
   JWT_MFA_SECRET: Joi.string().min(32).required(),
   JWT_MFA_EXPIRES_IN: Joi.string().default('10m'),
 

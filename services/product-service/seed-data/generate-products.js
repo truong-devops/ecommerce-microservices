@@ -1,4 +1,4 @@
-const sellerId = "0e37febf-88bc-448d-ac49-86f1d3c40e2a";
+const sellerId = process.env.SELLER_ID || process.env.DEFAULT_SELLER_ID || "a3a17e36-4e73-4021-b9e5-08a5b5920a7f";
 
 const categories = [
   {

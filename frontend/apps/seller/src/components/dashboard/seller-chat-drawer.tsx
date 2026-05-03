@@ -9,6 +9,7 @@ import {
   sendSellerChatMessage
 } from '@/lib/api/chat';
 import { SellerApiClientError } from '@/lib/api/client';
+import { formatCustomerCode } from '@/lib/order-codes';
 import type { SellerChatConversation, SellerChatMessage } from '@/lib/api/types';
 
 interface SellerChatDrawerProps {
@@ -17,6 +18,10 @@ interface SellerChatDrawerProps {
 }
 
 type SellerMessageView = SellerChatMessage & { localState?: 'pending' | 'failed' };
+
+const SELLER_DRAWER_WIDTH_CLASS = 'w-[650px]';
+const SELLER_DRAWER_LIST_WIDTH_CLASS = 'w-[210px]';
+const SELLER_POLL_INTERVAL_MS = 7000;
 
 export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProps) {
   const [open, setOpen] = useState(false);
@@ -39,14 +44,27 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
     [conversations, selectedConversationId]
   );
 
-  const loadConversations = useCallback(async () => {
+  const resolveBuyerDisplayName = useCallback((conversation: SellerChatConversation): string => {
+    const nameFromContext = (conversation.context?.buyerName ?? '').trim();
+    if (nameFromContext) {
+      return nameFromContext;
+    }
+
+    const code = conversation.buyerCode || formatCustomerCode(conversation.buyerId);
+    return `Khách hàng ${code}`;
+  }, []);
+
+  const loadConversations = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!open) return;
 
-    setLoadingConversations(true);
-    setErrorMessage('');
+    if (!silent) {
+      setLoadingConversations(true);
+      setErrorMessage('');
+    }
     try {
       const result = await listSellerChatConversations(accessToken, { page: 1, pageSize: 50 });
-      const nextItems = Array.isArray(result.items) ? result.items : [];
+      const rawItems = Array.isArray(result.items) ? result.items : [];
+      const nextItems = dedupeSellerConversations(rawItems);
       setConversations(nextItems);
 
       if (!selectedConversationId && nextItems.length > 0) {
@@ -55,17 +73,23 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
         setSelectedConversationId(nextItems[0]?.id ?? '');
       }
     } catch (error) {
-      setErrorMessage(error instanceof SellerApiClientError ? error.message : 'Không thể tải hội thoại');
+      if (!silent) {
+        setErrorMessage(error instanceof SellerApiClientError ? error.message : 'Không thể tải hội thoại');
+      }
     } finally {
-      setLoadingConversations(false);
+      if (!silent) {
+        setLoadingConversations(false);
+      }
     }
   }, [accessToken, open, selectedConversationId]);
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!open || !selectedConversationId) return;
 
-    setLoadingMessages(true);
-    setErrorMessage('');
+    if (!silent) {
+      setLoadingMessages(true);
+      setErrorMessage('');
+    }
     try {
       const result = await listSellerChatMessages(accessToken, selectedConversationId, { limit: 50 });
       setMessages(Array.isArray(result.items) ? result.items.map((item) => ({ ...item })) : []);
@@ -84,9 +108,13 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
         )
       );
     } catch (error) {
-      setErrorMessage(error instanceof SellerApiClientError ? error.message : 'Không thể tải tin nhắn');
+      if (!silent) {
+        setErrorMessage(error instanceof SellerApiClientError ? error.message : 'Không thể tải tin nhắn');
+      }
     } finally {
-      setLoadingMessages(false);
+      if (!silent) {
+        setLoadingMessages(false);
+      }
     }
   }, [accessToken, open, selectedConversationId]);
 
@@ -160,9 +188,9 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
   useEffect(() => {
     if (!open) return;
     const timer = setInterval(() => {
-      void loadConversations();
-      void loadMessages();
-    }, 7000);
+      void loadConversations({ silent: true });
+      void loadMessages({ silent: true });
+    }, SELLER_POLL_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [open, loadConversations, loadMessages]);
 
@@ -199,8 +227,8 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
       </div>
 
       {open ? (
-        <aside className="fixed bottom-3 right-14 top-16 z-40 hidden w-[380px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl lg:flex">
-          <div className="flex w-[170px] flex-col border-r border-slate-200">
+        <aside className={`fixed bottom-3 right-14 top-16 z-40 hidden ${SELLER_DRAWER_WIDTH_CLASS} overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl lg:flex`}>
+          <div className={`flex ${SELLER_DRAWER_LIST_WIDTH_CLASS} flex-col border-r border-slate-200`}>
             <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
               <p className="text-sm font-semibold text-[#ee4d2d]">Chat</p>
               <button
@@ -232,7 +260,7 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
                       onClick={() => setSelectedConversationId(item.id)}
                       className={`w-full px-3 py-2 text-left ${selectedConversationId === item.id ? 'bg-[#fff7f3]' : 'hover:bg-slate-50'}`}
                     >
-                      <p className="truncate text-xs font-semibold text-slate-700">Buyer: {item.buyerId.slice(0, 8)}</p>
+                      <p className="truncate text-xs font-semibold text-slate-700">{resolveBuyerDisplayName(item)}</p>
                       <p className="truncate text-[11px] text-slate-500">{item.lastMessage?.textPreview ?? '...'}</p>
                       {(item.unread?.seller ?? 0) > 0 ? (
                         <span className="mt-1 inline-flex rounded-full bg-[#ee4d2d] px-1.5 py-0.5 text-[10px] text-white">
@@ -249,7 +277,7 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="border-b border-slate-200 px-3 py-2">
               <p className="truncate text-sm font-medium text-slate-700">
-                {selectedConversation ? `Hội thoại ${selectedConversation.id.slice(0, 8)}...` : 'Chọn hội thoại'}
+                {selectedConversation ? resolveBuyerDisplayName(selectedConversation) : 'Chọn hội thoại'}
               </p>
             </div>
 
@@ -259,9 +287,17 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
 
               {messages.map((item) => {
                 const mine = item.senderId === sellerId;
+                const senderCode =
+                  item.senderCode ||
+                  (mine
+                    ? selectedConversation?.context?.sellerName || selectedConversation?.sellerCode || ''
+                    : selectedConversation
+                      ? resolveBuyerDisplayName(selectedConversation)
+                      : formatCustomerCode(item.senderId));
                 return (
                   <div key={item.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-lg px-2.5 py-1.5 text-xs ${mine ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 text-slate-800'}`}>
+                      {!mine ? <p className="mb-1 text-[10px] font-medium text-slate-500">{senderCode}</p> : null}
                       <p>{item.text}</p>
                       <p className={`mt-1 text-[10px] ${mine ? 'text-orange-100' : 'text-slate-400'}`}>{new Date(item.sentAt).toLocaleTimeString()}</p>
                       {mine && item.localState === 'pending' ? <p className="text-[10px] text-orange-100">Sending...</p> : null}
@@ -303,4 +339,38 @@ export function SellerChatDrawer({ accessToken, sellerId }: SellerChatDrawerProp
       ) : null}
     </>
   );
+}
+
+function dedupeSellerConversations(items: SellerChatConversation[]): SellerChatConversation[] {
+  const byBuyer = new Map<string, SellerChatConversation>();
+
+  for (const item of items) {
+    const key = item.buyerId || item.id;
+    const current = byBuyer.get(key);
+    if (!current || compareConversationPriority(item, current) < 0) {
+      byBuyer.set(key, item);
+    }
+  }
+
+  return [...byBuyer.values()].sort(compareConversationPriority);
+}
+
+function compareConversationPriority(a: SellerChatConversation, b: SellerChatConversation): number {
+  const aUpdated = Date.parse(a.updatedAt || '');
+  const bUpdated = Date.parse(b.updatedAt || '');
+
+  const aScore = Number.isFinite(aUpdated) ? aUpdated : 0;
+  const bScore = Number.isFinite(bUpdated) ? bUpdated : 0;
+
+  if (aScore !== bScore) {
+    return bScore - aScore;
+  }
+
+  const aUnread = a.unread?.seller ?? 0;
+  const bUnread = b.unread?.seller ?? 0;
+  if (aUnread !== bUnread) {
+    return bUnread - aUnread;
+  }
+
+  return a.id.localeCompare(b.id);
 }

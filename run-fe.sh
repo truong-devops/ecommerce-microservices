@@ -5,8 +5,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 APPS=(
   "frontend/apps/buyer-web"
-  "frontend/apps/moderator"
   "frontend/apps/seller"
+  "frontend/apps/moderator"
 )
 
 for app in "${APPS[@]}"; do
@@ -42,4 +42,4 @@ APPLESCRIPT
   sleep 0.2
 done
 
-echo "Da mo 3 tab terminal va chay npm run dev cho buyer-web, moderator, seller."
+echo "Da mo 3 tab terminal va chay npm run dev cho buyer-web, seller, moderator."

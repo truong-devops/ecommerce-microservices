@@ -51,6 +51,13 @@ export function Header({ keywords }: HeaderProps) {
     return `/search?${query.toString()}`;
   };
 
+  const handleOpenChatDrawer = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('buyer-chat:open', { detail: {} }));
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-brand-gradient text-white shadow-sm">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-3 py-3 md:px-4 md:py-4">
@@ -103,9 +110,13 @@ export function Header({ keywords }: HeaderProps) {
 
             {ready && user ? (
               <>
-                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/chat">
+                <button
+                  type="button"
+                  onClick={handleOpenChatDrawer}
+                  className="rounded-sm hover:text-white focus-visible:outline-white"
+                >
                   Chat
-                </Link>
+                </button>
                 <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
                   {text.header.orders}
                 </Link>

@@ -55,9 +55,11 @@ const (
 )
 
 type ConversationContext struct {
-	ProductID *string
-	OrderID   *string
-	ShopID    *string
+	ProductID  *string
+	OrderID    *string
+	ShopID     *string
+	BuyerName  *string
+	SellerName *string
 }
 
 type LastMessage struct {

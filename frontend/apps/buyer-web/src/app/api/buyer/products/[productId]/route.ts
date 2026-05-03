@@ -1,4 +1,5 @@
 import type { ProductDetail } from '@/lib/api/types';
+import { formatSellerCode } from '@/lib/order-codes';
 import { isValidProductId } from '@/lib/product-id';
 import { ok, fail } from '@/lib/server/buyer-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
@@ -17,6 +18,7 @@ interface ProductVariant {
 interface BackendProduct {
   id: string;
   sellerId: string;
+  sellerCode?: string;
   name: string;
   slug: string;
   description: string | null;
@@ -78,6 +80,7 @@ function toProductDetail(product: BackendProduct): ProductDetail {
     categoryId: product.categoryId?.trim() || 'uncategorized',
     slug: product.slug?.trim() || product.id,
     sellerId: product.sellerId?.trim() || '',
+    sellerCode: normalizeSellerCode(product.sellerCode, product.sellerId),
     status: sanitizeStatus(product.status),
     image: normalizedImages[0] ?? FALLBACK_IMAGE,
     images: normalizedImages,
@@ -92,6 +95,14 @@ function toProductDetail(product: BackendProduct): ProductDetail {
     createdAt: sanitizeIsoDate(product.createdAt),
     updatedAt: sanitizeIsoDate(product.updatedAt)
   };
+}
+
+function normalizeSellerCode(rawCode: string | undefined, sellerId: string): string {
+  const normalized = (rawCode ?? '').trim().toUpperCase();
+  if (/^SEL\d{7,}$/.test(normalized)) {
+    return normalized;
+  }
+  return formatSellerCode(sellerId);
 }
 
 function sanitizePrice(value: number): number {

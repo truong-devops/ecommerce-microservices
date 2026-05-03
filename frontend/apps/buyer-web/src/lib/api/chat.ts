@@ -29,13 +29,13 @@ export function listBuyerChatConversations(input: AuthRequestInit & { page?: num
   if (typeof pageSize === 'number') params.set('pageSize', String(pageSize));
   const suffix = params.toString();
 
-  return requestBuyerApi<BuyerChatConversationsOutput>(`/api/buyer/chat/conversations${suffix ? `?${suffix}` : ''}`,
+  return requestBuyerApi<unknown>(`/api/buyer/chat/conversations${suffix ? `?${suffix}` : ''}`,
     withAuth(accessToken, {
       method: 'GET',
       cache: 'no-store',
       ...init
     })
-  );
+  ).then(normalizeConversationList);
 }
 
 export function createBuyerChatConversation(input: AuthRequestInit & { payload: CreateBuyerChatConversationInput }): Promise<BuyerChatConversation> {
@@ -103,4 +103,57 @@ export function markBuyerChatRead(input: AuthRequestInit & { conversationId: str
       ...init
     })
   );
+}
+
+function normalizeConversationList(payload: unknown): BuyerChatConversationsOutput {
+  if (Array.isArray(payload)) {
+    return {
+      items: dedupeBySeller(payload as BuyerChatConversation[])
+    };
+  }
+
+  if (payload && typeof payload === 'object' && Array.isArray((payload as { items?: unknown }).items)) {
+    const normalized = payload as BuyerChatConversationsOutput;
+    return {
+      ...normalized,
+      items: dedupeBySeller(normalized.items ?? [])
+    };
+  }
+
+  return {
+    items: []
+  };
+}
+
+function dedupeBySeller(items: BuyerChatConversation[]): BuyerChatConversation[] {
+  const map = new Map<string, BuyerChatConversation>();
+
+  for (const item of items) {
+    const key = item.sellerId || item.id;
+    const current = map.get(key);
+    if (!current || comparePriority(item, current) < 0) {
+      map.set(key, item);
+    }
+  }
+
+  return [...map.values()].sort(comparePriority);
+}
+
+function comparePriority(a: BuyerChatConversation, b: BuyerChatConversation): number {
+  const aUpdated = Date.parse(a.updatedAt || '');
+  const bUpdated = Date.parse(b.updatedAt || '');
+  const aScore = Number.isFinite(aUpdated) ? aUpdated : 0;
+  const bScore = Number.isFinite(bUpdated) ? bUpdated : 0;
+
+  if (aScore !== bScore) {
+    return bScore - aScore;
+  }
+
+  const aUnread = a.unread?.buyer ?? 0;
+  const bUnread = b.unread?.buyer ?? 0;
+  if (aUnread !== bUnread) {
+    return bUnread - aUnread;
+  }
+
+  return a.id.localeCompare(b.id);
 }

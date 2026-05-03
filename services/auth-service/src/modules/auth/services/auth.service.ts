@@ -104,6 +104,7 @@ export class AuthService {
 
     return {
       userId: createdUser.id,
+      userCode: formatRoleCode(createdUser.id, createdUser.role),
       email: createdUser.email,
       role: createdUser.role,
       emailVerificationRequired: true,
@@ -208,6 +209,7 @@ export class AuthService {
       sessionId: session.id,
       user: {
         id: user.id,
+        userCode: formatRoleCode(user.id, user.role),
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified,
@@ -708,4 +710,40 @@ export class AuthService {
   private isDevelopment(): boolean {
     return this.configService.get<string>('app.env') === 'development';
   }
+}
+
+function formatRoleCode(userId: string, role: Role): string {
+  if (role === Role.SELLER) {
+    return formatCode(userId, 'SEL');
+  }
+  return formatCode(userId, 'CUS');
+}
+
+function formatCode(raw: string, prefix: string): string {
+  const source = raw.trim();
+  if (!source) {
+    return `${prefix}0000000`;
+  }
+
+  const normalized = source.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const exactMatch = normalized.match(new RegExp(`^${prefix}(\\d{7,})$`));
+  if (exactMatch) {
+    return `${prefix}${exactMatch[1]}`;
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length >= 7) {
+    return `${prefix}${digits.slice(-7)}`;
+  }
+
+  return `${prefix}${String(stableHash(source)).padStart(7, '0')}`;
+}
+
+function stableHash(value: string): number {
+  const modulo = 10_000_000;
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % modulo;
+  }
+  return hash;
 }

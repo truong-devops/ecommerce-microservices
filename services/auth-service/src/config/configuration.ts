@@ -15,11 +15,11 @@ export default () => ({
   jwt: {
     access: {
       secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m'
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '8h'
     },
     refresh: {
       secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '30d'
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '45d'
     },
     mfa: {
       secret: process.env.JWT_MFA_SECRET,

@@ -45,6 +45,7 @@ export interface ProductDetail {
   categoryId: string;
   slug: string;
   sellerId: string;
+  sellerCode?: string;
   status: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
   image: string;
   images: string[];
@@ -73,6 +74,7 @@ export interface ProductDetailVariant {
 
 export interface BuyerShopDetail {
   sellerId: string;
+  sellerCode?: string;
   shopName: string;
   slogan: string;
   logoUrl: string;
@@ -479,11 +481,15 @@ export interface BuyerChatConversation {
   id: string;
   type: string;
   buyerId: string;
+  buyerCode?: string;
   sellerId: string;
+  sellerCode?: string;
   context: {
     productId?: string | null;
     orderId?: string | null;
     shopId?: string | null;
+    buyerName?: string | null;
+    sellerName?: string | null;
   };
   unread: {
     buyer: number;
@@ -511,6 +517,7 @@ export interface BuyerChatMessage {
   seq: number;
   clientMessageId?: string;
   senderId: string;
+  senderCode?: string;
   senderRole: string;
   kind: string;
   text: string;
@@ -530,6 +537,8 @@ export interface CreateBuyerChatConversationInput {
   orderId?: string;
   productId?: string;
   shopId?: string;
+  buyerName?: string;
+  sellerName?: string;
   firstMessage?: string;
   clientMessageId?: string;
 }

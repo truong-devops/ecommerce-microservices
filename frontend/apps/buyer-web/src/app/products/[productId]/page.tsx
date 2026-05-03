@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import { fetchProductDetail } from '@/lib/api/products';
+import { createBuyerChatConversation } from '@/lib/api/chat';
+import { fetchBuyerProducts, fetchBuyerShopDetail, fetchProductDetail } from '@/lib/api/products';
 import { createBuyerReview, fetchReviewsByProduct, fetchReviewSummaryByProduct } from '@/lib/api/reviews';
+import { formatSellerCode } from '@/lib/order-codes';
 import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
-import type { ProductDetail, ReviewItem, ReviewSummary } from '@/lib/api/types';
+import type { BuyerShopDetail, ProductDetail, ReviewItem, ReviewSummary } from '@/lib/api/types';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 type ProductPageStatus = 'loading' | 'error' | 'invalid-id' | 'not-found' | 'success';
@@ -44,6 +46,10 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [selectedVariantSku, setSelectedVariantSku] = useState<string | null>(null);
   const [reviewSummary, setReviewSummary] = useState<ReviewSummary | null>(null);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [shop, setShop] = useState<BuyerShopDetail | null>(null);
+  const [shopProductCount, setShopProductCount] = useState<number | null>(null);
+  const [shopLoading, setShopLoading] = useState(false);
+  const [shopErrorMessage, setShopErrorMessage] = useState('');
   const [reviewPageSize] = useState(10);
   const [selectedRatingFilter, setSelectedRatingFilter] = useState<number | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -124,7 +130,20 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         reviewSubmitSuccess: 'Gửi đánh giá thành công.',
         reviewSubmitFailed: 'Gửi đánh giá thất bại.',
         reviewOrderIdRequired: 'Vui lòng nhập mã đơn hàng hợp lệ.',
-        reviewContentRequired: 'Vui lòng nhập nội dung đánh giá.'
+        reviewContentRequired: 'Vui lòng nhập nội dung đánh giá.',
+        shopBlockTitle: 'THÔNG TIN SHOP',
+        shopOnlineLabel: 'Hoạt động',
+        shopUpdatedLabel: 'Cập nhật',
+        shopSellerLabel: 'Mã nhà bán',
+        shopProductsLabel: 'Sản phẩm',
+        shopCategoriesLabel: 'Danh mục nổi bật',
+        shopNavigationLabel: 'Menu shop',
+        chatNow: 'Chat Ngay',
+        viewShop: 'Xem Shop',
+        chatNeedLogin: 'Bạn cần đăng nhập để chat với nhà bán.',
+        chatCustomerOnly: 'Chỉ tài khoản CUSTOMER mới chat với nhà bán.',
+        chatCreateFailed: 'Không thể tạo hội thoại chat lúc này.',
+        chatCreating: 'Đang tạo...'
       }
     : {
         breadcrumbHome: 'Home',
@@ -168,7 +187,20 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         reviewSubmitSuccess: 'Review submitted successfully.',
         reviewSubmitFailed: 'Failed to submit review.',
         reviewOrderIdRequired: 'Please enter a valid order ID.',
-        reviewContentRequired: 'Please enter review content.'
+        reviewContentRequired: 'Please enter review content.',
+        shopBlockTitle: 'SHOP INFORMATION',
+        shopOnlineLabel: 'Status',
+        shopUpdatedLabel: 'Updated',
+        shopSellerLabel: 'Seller ID',
+        shopProductsLabel: 'Products',
+        shopCategoriesLabel: 'Featured categories',
+        shopNavigationLabel: 'Shop navigation',
+        chatNow: 'Chat now',
+        viewShop: 'View shop',
+        chatNeedLogin: 'You must login to chat with this seller.',
+        chatCustomerOnly: 'Only CUSTOMER accounts can chat with sellers.',
+        chatCreateFailed: 'Cannot create conversation right now.',
+        chatCreating: 'Creating...'
       };
 
   const maxQuantity = useMemo(() => {
@@ -263,6 +295,48 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
     void loadReviews(product.id, selectedRatingFilter);
   }, [loadReviews, product, selectedRatingFilter, status]);
+
+  const loadShop = useCallback(async (sellerId: string) => {
+    const normalizedSellerId = sellerId.trim();
+    if (!normalizedSellerId) {
+      setShop(null);
+      setShopProductCount(null);
+      return;
+    }
+
+    setShopLoading(true);
+    setShopErrorMessage('');
+
+    try {
+      const [shopDetail, productList] = await Promise.all([
+        fetchBuyerShopDetail(normalizedSellerId),
+        fetchBuyerProducts({
+          page: 1,
+          pageSize: 1,
+          sellerId: normalizedSellerId
+        })
+      ]);
+
+      setShop(shopDetail);
+      setShopProductCount(productList.pagination?.totalItems ?? productList.items.length ?? null);
+    } catch (error) {
+      setShop(null);
+      setShopProductCount(null);
+      setShopErrorMessage(error instanceof BuyerApiClientError ? error.message : text.product.loadError);
+    } finally {
+      setShopLoading(false);
+    }
+  }, [text.product.loadError]);
+
+  useEffect(() => {
+    if (status !== 'success' || !product?.sellerId) {
+      setShop(null);
+      setShopProductCount(null);
+      return;
+    }
+
+    void loadShop(product.sellerId);
+  }, [loadShop, product?.sellerId, status]);
 
   const handleSubmitReview = useCallback(async () => {
     if (!product || !user || !accessToken) {
@@ -382,6 +456,59 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
     router.push('/checkout');
   };
+
+  const handleChatNow = useCallback(async () => {
+    if (!product) {
+      return;
+    }
+
+    if (!accessToken || !user) {
+      setNotice(detailText.chatNeedLogin);
+      router.push('/login');
+      return;
+    }
+
+    const normalizedRole = String(user.role).toUpperCase();
+    if (normalizedRole !== 'CUSTOMER' && normalizedRole !== 'BUYER') {
+      setNotice(detailText.chatCustomerOnly);
+      return;
+    }
+
+    const targetSellerId = (shop?.sellerId ?? product.sellerId ?? '').trim();
+    if (!targetSellerId) {
+      setNotice(detailText.chatCreateFailed);
+      return;
+    }
+
+    setNotice('');
+
+    try {
+      const conversation = await createBuyerChatConversation({
+        accessToken,
+        payload: {
+          sellerId: targetSellerId,
+          productId: product.id,
+          shopId: targetSellerId,
+          buyerName: user.name?.trim() || undefined,
+          sellerName: shop?.shopName?.trim() || undefined
+        }
+      });
+
+      openBuyerChatDrawer({
+        conversationId: conversation.id,
+        sellerId: targetSellerId,
+        sellerName: shop?.shopName || undefined,
+        productId: product.id
+      });
+    } catch (error) {
+      setNotice(error instanceof BuyerApiClientError ? error.message : detailText.chatCreateFailed);
+      openBuyerChatDrawer({
+        sellerId: targetSellerId,
+        sellerName: shop?.shopName || undefined,
+        productId: product.id
+      });
+    }
+  }, [accessToken, detailText.chatCreateFailed, detailText.chatCustomerOnly, detailText.chatNeedLogin, product, router, shop?.sellerId, shop?.shopName, user]);
 
   const isOutOfStock = availableStock !== null && availableStock <= 0;
 
@@ -640,6 +767,83 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             </section>
 
             <section className="rounded-md bg-white p-4 shadow-card md:p-6">
+              <h2 className="mb-4 text-xl font-semibold text-slate-900">{detailText.shopBlockTitle}</h2>
+
+              {shopLoading ? (
+                <p className="text-sm text-slate-600">{text.product.loading}</p>
+              ) : null}
+
+              {!shopLoading && shopErrorMessage ? (
+                <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{shopErrorMessage}</p>
+              ) : null}
+
+              {!shopLoading && !shopErrorMessage && shop ? (
+                <article className="overflow-hidden rounded-md border border-slate-200">
+                  <div className="h-1.5" style={{ backgroundColor: normalizeColor(shop.accentColor) }} />
+                  <div className="grid gap-4 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <div className="grid gap-3 md:grid-cols-[72px_minmax(0,1fr)] md:items-center">
+                      {shop.logoUrl ? (
+                        <img src={shop.logoUrl} alt={shop.shopName} className="h-[72px] w-[72px] rounded-full border border-slate-200 object-cover" />
+                      ) : (
+                        <div className="grid h-[72px] w-[72px] place-items-center rounded-full bg-slate-100 text-xs text-slate-500">SHOP</div>
+                      )}
+
+                      <div>
+                        <p className="text-xl font-semibold text-slate-900">{shop.shopName}</p>
+                        {shop.slogan ? <p className="mt-1 text-sm text-slate-600">{shop.slogan}</p> : null}
+                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-500">
+                          <p>
+                            {detailText.shopOnlineLabel}: <span className="font-semibold text-slate-700">{formatActiveLabel(shop.updatedAt, locale)}</span>
+                          </p>
+                          <p>
+                            {detailText.shopUpdatedLabel}: <span className="font-semibold text-slate-700">{formatDateLabel(shop.updatedAt, locale)}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleChatNow();
+                        }}
+                        className="h-10 rounded-md border border-brand-500 px-4 text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
+                      >
+                        {detailText.chatNow}
+                      </button>
+                      <Link
+                        href={`/shops/${encodeURIComponent(product.sellerId)}`}
+                        className="inline-flex h-10 items-center rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-600"
+                      >
+                        {detailText.viewShop}
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 border-t border-slate-200 px-4 py-3 text-sm text-slate-700 md:grid-cols-2 lg:grid-cols-4">
+                    <p>
+                      {detailText.shopSellerLabel}:{' '}
+                      <span className="font-medium text-slate-900">{shop.sellerCode || formatSellerCode(shop.sellerId)}</span>
+                    </p>
+                    <p>
+                      {detailText.shopProductsLabel}:{' '}
+                      <span className="font-medium text-slate-900">{shopProductCount ?? 0}</span>
+                    </p>
+                    <p>
+                      {detailText.shopCategoriesLabel}:{' '}
+                      <span className="font-medium text-slate-900">{shop.featuredCategories.length}</span>
+                    </p>
+                    <p>
+                      {detailText.shopNavigationLabel}:{' '}
+                      <span className="font-medium text-slate-900">{shop.navItems.length}</span>
+                    </p>
+                  </div>
+                </article>
+              ) : null}
+            </section>
+
+            <section className="rounded-md bg-white p-4 shadow-card md:p-6">
               <h2 className="mb-4 text-xl font-semibold text-slate-900">{detailText.productInfo}</h2>
 
               <div className="grid gap-3 border-t border-slate-100 pt-4 text-sm md:grid-cols-[220px_minmax(0,1fr)]">
@@ -657,7 +861,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 </div>
                 <div className="contents">
                   <p className="text-slate-500">{detailText.seller}</p>
-                  <p className="font-medium text-slate-800">{product.sellerId || 'N/A'}</p>
+                  <p className="font-medium text-slate-800">{product.sellerCode || formatSellerCode(product.sellerId)}</p>
                 </div>
                 <div className="contents">
                   <p className="text-slate-500">{detailText.createdAt}</p>
@@ -968,6 +1172,35 @@ function extractStockFromRecord(
   return null;
 }
 
+function formatActiveLabel(updatedAt: string, locale: 'en' | 'vi'): string {
+  const updated = new Date(updatedAt);
+  if (!Number.isFinite(updated.getTime())) {
+    return locale === 'vi' ? 'N/A' : 'N/A';
+  }
+
+  const deltaMs = Date.now() - updated.getTime();
+  const minutes = Math.max(0, Math.floor(deltaMs / 60000));
+
+  if (minutes < 1) {
+    return locale === 'vi' ? 'Vừa hoạt động' : 'Just active';
+  }
+  if (minutes < 60) {
+    return locale === 'vi' ? `${minutes} phút trước` : `${minutes}m ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return locale === 'vi' ? `${hours} giờ trước` : `${hours}h ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return locale === 'vi' ? `${days} ngày trước` : `${days}d ago`;
+}
+
+function normalizeColor(value: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(value.trim()) ? value.trim() : '#ee4d2d';
+}
+
 function renderStars(value: number): string {
   const rating = Math.max(0, Math.min(5, Math.round(value)));
   return `${'â˜…'.repeat(rating)}${'â˜†'.repeat(Math.max(0, 5 - rating))}`;
@@ -994,4 +1227,10 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
 }
 
+function openBuyerChatDrawer(detail: { sellerId?: string; sellerName?: string; productId?: string; conversationId?: string }) {
+  if (typeof window === 'undefined') {
+    return;
+  }
 
+  window.dispatchEvent(new CustomEvent('buyer-chat:open', { detail }));
+}

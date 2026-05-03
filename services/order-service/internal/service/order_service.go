@@ -531,15 +531,17 @@ func (s *OrderService) enqueueOrderEvent(ctx context.Context, tx pgx.Tx, eventTy
 		Payload: map[string]any{
 			"orderId":     order.ID,
 			"orderNumber": order.OrderNumber,
+			"orderCode":   formatOrderCode(order.OrderNumber, order.ID),
 			"userId":      order.UserID,
+			"userCode":    formatCode(order.UserID, "CUS"),
 			"status":      order.Status,
 			"totalAmount": order.TotalAmount,
 			"currency":    order.Currency,
 			"metadata": map[string]any{
-				"requestId": requestID,
+				"requestId":  requestID,
 				"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
-				"actorId":   actor.UserID,
-				"actorRole": actor.Role,
+				"actorId":    actor.UserID,
+				"actorRole":  actor.Role,
 			},
 		},
 	})
@@ -549,20 +551,22 @@ func toOrderResponse(order domain.Order) map[string]any {
 	items := make([]map[string]any, 0, len(order.Items))
 	for _, item := range order.Items {
 		items = append(items, map[string]any{
-			"id":         item.ID,
-			"productId":  item.ProductID,
-			"sku":        item.SKU,
+			"id":          item.ID,
+			"productId":   item.ProductID,
+			"sku":         item.SKU,
 			"productName": item.ProductNameSnapshot,
-			"quantity":   item.Quantity,
-			"unitPrice":  item.UnitPrice,
-			"totalPrice": item.TotalPrice,
+			"quantity":    item.Quantity,
+			"unitPrice":   item.UnitPrice,
+			"totalPrice":  item.TotalPrice,
 		})
 	}
 
 	resp := map[string]any{
 		"id":             order.ID,
 		"orderNumber":    order.OrderNumber,
+		"orderCode":      formatOrderCode(order.OrderNumber, order.ID),
 		"userId":         order.UserID,
+		"userCode":       formatCode(order.UserID, "CUS"),
 		"status":         order.Status,
 		"currency":       order.Currency,
 		"subtotalAmount": order.SubtotalAmount,
@@ -709,4 +713,41 @@ func (s *OrderService) generateOrderNumber() string {
 	// Keep <= 32 chars for orders.order_number varchar(32).
 	// Format length: 4 + 8 + 1 + 10 + 1 + 6 = 30.
 	return fmt.Sprintf("ORD-%s-%010d-%06d", date, now.Unix(), seq)
+}
+
+func formatOrderCode(orderNumber string, fallbackID string) string {
+	source := strings.TrimSpace(orderNumber)
+	if source == "" {
+		source = strings.TrimSpace(fallbackID)
+	}
+	return formatCode(source, "EMX")
+}
+
+func formatCode(raw string, prefix string) string {
+	source := strings.TrimSpace(raw)
+	if source == "" {
+		return prefix + "0000000"
+	}
+
+	normalized := strings.ToUpper(source)
+	digits := make([]rune, 0, len(normalized))
+	for _, r := range normalized {
+		if r >= '0' && r <= '9' {
+			digits = append(digits, r)
+		}
+	}
+	if len(digits) >= 7 {
+		return prefix + string(digits[len(digits)-7:])
+	}
+
+	return fmt.Sprintf("%s%07d", prefix, stableHash(source))
+}
+
+func stableHash(value string) int {
+	const modulo = 10_000_000
+	hash := 0
+	for _, r := range value {
+		hash = (hash*31 + int(r)) % modulo
+	}
+	return hash
 }

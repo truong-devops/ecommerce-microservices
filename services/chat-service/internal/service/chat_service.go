@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,8 @@ type CreateConversationRequest struct {
 	OrderID         *string `json:"orderId,omitempty"`
 	ProductID       *string `json:"productId,omitempty"`
 	ShopID          *string `json:"shopId,omitempty"`
+	BuyerName       *string `json:"buyerName,omitempty"`
+	SellerName      *string `json:"sellerName,omitempty"`
 	FirstMessage    *string `json:"firstMessage,omitempty"`
 	ClientMessageID *string `json:"clientMessageId,omitempty"`
 }
@@ -58,11 +61,13 @@ func (s *ChatService) CreateConversation(ctx context.Context, user domain.UserCo
 	}
 
 	contextData := domain.ConversationContext{
-		OrderID:   normalizeOptional(req.OrderID),
-		ProductID: normalizeOptional(req.ProductID),
-		ShopID:    normalizeOptional(req.ShopID),
+		OrderID:    normalizeOptional(req.OrderID),
+		ProductID:  normalizeOptional(req.ProductID),
+		ShopID:     normalizeOptional(req.ShopID),
+		BuyerName:  normalizeOptional(req.BuyerName),
+		SellerName: normalizeOptional(req.SellerName),
 	}
-	key := buildConversationKey(buyerID, sellerID, contextData)
+	key := buildConversationKey(buyerID, sellerID)
 
 	conversation, created, err := s.repo.CreateConversation(ctx, repository.CreateConversationInput{
 		Key:      key,
@@ -92,11 +97,15 @@ func (s *ChatService) CreateConversation(ctx context.Context, user domain.UserCo
 		if err := s.repo.InsertOutboxEvent(ctx, conversation.ID, domain.EventConversationCreated, map[string]any{
 			"conversationId": conversation.ID,
 			"buyerId":        conversation.BuyerID,
+			"buyerCode":      formatUserCode(conversation.BuyerID, domain.RoleCustomer),
 			"sellerId":       conversation.SellerID,
+			"sellerCode":     formatUserCode(conversation.SellerID, domain.RoleSeller),
 			"context": map[string]any{
-				"productId": conversation.Context.ProductID,
-				"orderId":   conversation.Context.OrderID,
-				"shopId":    conversation.Context.ShopID,
+				"productId":  conversation.Context.ProductID,
+				"orderId":    conversation.Context.OrderID,
+				"shopId":     conversation.Context.ShopID,
+				"buyerName":  conversation.Context.BuyerName,
+				"sellerName": conversation.Context.SellerName,
 			},
 			"metadata": buildEventMetadata(ctx, user, time.Now().UTC()),
 		}); err != nil {
@@ -207,10 +216,14 @@ func (s *ChatService) SendMessage(ctx context.Context, user domain.UserContext, 
 	payload := map[string]any{
 		"conversationId": conversationID,
 		"buyerId":        conversation.BuyerID,
+		"buyerCode":      formatUserCode(conversation.BuyerID, domain.RoleCustomer),
 		"sellerId":       conversation.SellerID,
+		"sellerCode":     formatUserCode(conversation.SellerID, domain.RoleSeller),
 		"senderId":       user.UserID,
+		"senderCode":     formatUserCode(user.UserID, user.Role),
 		"senderRole":     user.Role,
 		"recipientId":    recipientID,
+		"recipientCode":  formatUserCode(recipientID, oppositeRole(user.Role)),
 		"metadata":       buildEventMetadata(ctx, user, now),
 		"message": map[string]any{
 			"id":              "",
@@ -218,6 +231,7 @@ func (s *ChatService) SendMessage(ctx context.Context, user domain.UserContext, 
 			"seq":             0,
 			"clientMessageId": clientMessageID,
 			"senderId":        user.UserID,
+			"senderCode":      formatUserCode(user.UserID, user.Role),
 			"senderRole":      user.Role,
 			"kind":            domain.MessageKindText,
 			"text":            text,
@@ -277,8 +291,11 @@ func (s *ChatService) MarkRead(ctx context.Context, user domain.UserContext, con
 	payload := map[string]any{
 		"conversationId": conversationID,
 		"buyerId":        conversation.BuyerID,
+		"buyerCode":      formatUserCode(conversation.BuyerID, domain.RoleCustomer),
 		"sellerId":       conversation.SellerID,
+		"sellerCode":     formatUserCode(conversation.SellerID, domain.RoleSeller),
 		"readerId":       user.UserID,
+		"readerCode":     formatUserCode(user.UserID, user.Role),
 		"readerRole":     user.Role,
 		"readAt":         now.Format(time.RFC3339Nano),
 		"modifiedCount":  modifiedCount,
@@ -292,6 +309,7 @@ func (s *ChatService) MarkRead(ctx context.Context, user domain.UserContext, con
 		"type":           domain.EventMessageRead,
 		"conversationId": conversationID,
 		"readerId":       user.UserID,
+		"readerCode":     formatUserCode(user.UserID, user.Role),
 		"readerRole":     user.Role,
 		"readAt":         now.Format(time.RFC3339Nano),
 	})
@@ -299,6 +317,7 @@ func (s *ChatService) MarkRead(ctx context.Context, user domain.UserContext, con
 	return map[string]any{
 		"conversationId": conversationID,
 		"readerId":       user.UserID,
+		"readerCode":     formatUserCode(user.UserID, user.Role),
 		"readerRole":     user.Role,
 		"readAt":         now.Format(time.RFC3339Nano),
 		"modifiedCount":  modifiedCount,
@@ -363,14 +382,18 @@ func hasConversationAccess(user domain.UserContext, conversation domain.Conversa
 
 func conversationToResponse(conversation domain.Conversation) map[string]any {
 	resp := map[string]any{
-		"id":       conversation.ID,
-		"type":     conversation.Type,
-		"buyerId":  conversation.BuyerID,
-		"sellerId": conversation.SellerID,
+		"id":         conversation.ID,
+		"type":       conversation.Type,
+		"buyerId":    conversation.BuyerID,
+		"buyerCode":  formatUserCode(conversation.BuyerID, domain.RoleCustomer),
+		"sellerId":   conversation.SellerID,
+		"sellerCode": formatUserCode(conversation.SellerID, domain.RoleSeller),
 		"context": map[string]any{
-			"productId": conversation.Context.ProductID,
-			"orderId":   conversation.Context.OrderID,
-			"shopId":    conversation.Context.ShopID,
+			"productId":  conversation.Context.ProductID,
+			"orderId":    conversation.Context.OrderID,
+			"shopId":     conversation.Context.ShopID,
+			"buyerName":  conversation.Context.BuyerName,
+			"sellerName": conversation.Context.SellerName,
 		},
 		"unread": map[string]any{
 			"buyer":  conversation.Unread.Buyer,
@@ -399,6 +422,7 @@ func messageToResponse(message domain.Message) map[string]any {
 		"seq":             message.Seq,
 		"clientMessageId": message.ClientMessageID,
 		"senderId":        message.SenderID,
+		"senderCode":      formatUserCode(message.SenderID, message.SenderRole),
 		"senderRole":      message.SenderRole,
 		"kind":            message.Kind,
 		"text":            message.Text,
@@ -423,18 +447,8 @@ func messageToResponse(message domain.Message) map[string]any {
 	return resp
 }
 
-func buildConversationKey(buyerID, sellerID string, context domain.ConversationContext) string {
-	parts := []string{strings.TrimSpace(buyerID), strings.TrimSpace(sellerID)}
-	if context.OrderID != nil {
-		parts = append(parts, "order:"+strings.TrimSpace(*context.OrderID))
-	}
-	if context.ProductID != nil {
-		parts = append(parts, "product:"+strings.TrimSpace(*context.ProductID))
-	}
-	if context.ShopID != nil {
-		parts = append(parts, "shop:"+strings.TrimSpace(*context.ShopID))
-	}
-	return strings.Join(parts, "|")
+func buildConversationKey(buyerID, sellerID string) string {
+	return strings.Join([]string{strings.TrimSpace(buyerID), strings.TrimSpace(sellerID)}, "|")
 }
 
 func normalizeOptional(value *string) *string {
@@ -475,6 +489,72 @@ func buildEventMetadata(ctx context.Context, user domain.UserContext, occurredAt
 		"requestId":  middleware.RequestIDFromContext(ctx),
 		"occurredAt": occurredAt.UTC().Format(time.RFC3339Nano),
 		"actorId":    user.UserID,
+		"actorCode":  formatUserCode(user.UserID, user.Role),
 		"actorRole":  user.Role,
 	}
+}
+
+func oppositeRole(role domain.Role) domain.Role {
+	switch role {
+	case domain.RoleSeller:
+		return domain.RoleCustomer
+	default:
+		return domain.RoleSeller
+	}
+}
+
+func formatUserCode(userID string, role domain.Role) string {
+	switch role {
+	case domain.RoleSeller:
+		return formatCode(userID, "SEL")
+	default:
+		return formatCode(userID, "CUS")
+	}
+}
+
+func formatCode(raw, prefix string) string {
+	source := strings.TrimSpace(raw)
+	if source == "" {
+		return prefix + "0000000"
+	}
+
+	normalized := strings.ToUpper(source)
+	normalized = strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			return r
+		case r >= '0' && r <= '9':
+			return r
+		default:
+			return -1
+		}
+	}, normalized)
+
+	digits := make([]rune, 0, len(normalized))
+	for _, r := range normalized {
+		if r >= '0' && r <= '9' {
+			digits = append(digits, r)
+		}
+	}
+	if len(digits) >= 7 {
+		return prefix + string(digits[len(digits)-7:])
+	}
+	return prefix + leftPadInt(stableHash(source), 7)
+}
+
+func stableHash(value string) int {
+	const modulo = 10_000_000
+	hash := 0
+	for _, r := range value {
+		hash = (hash*31 + int(r)) % modulo
+	}
+	return hash
+}
+
+func leftPadInt(value int, width int) string {
+	raw := strconv.Itoa(value)
+	if len(raw) >= width {
+		return raw
+	}
+	return strings.Repeat("0", width-len(raw)) + raw
 }

@@ -7,17 +7,9 @@ import (
 )
 
 func TestBuildConversationKey(t *testing.T) {
-	orderID := "order-123"
-	productID := "product-abc"
-	shopID := "shop-1"
+	key := buildConversationKey("buyer-1", "seller-1")
 
-	key := buildConversationKey("buyer-1", "seller-1", domain.ConversationContext{
-		OrderID:   &orderID,
-		ProductID: &productID,
-		ShopID:    &shopID,
-	})
-
-	expected := "buyer-1|seller-1|order:order-123|product:product-abc|shop:shop-1"
+	expected := "buyer-1|seller-1"
 	if key != expected {
 		t.Fatalf("expected key %q, got %q", expected, key)
 	}

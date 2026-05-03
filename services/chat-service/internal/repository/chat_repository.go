@@ -102,9 +102,11 @@ func (r *ChatRepository) CreateConversation(ctx context.Context, input CreateCon
 		BuyerID:  input.BuyerID,
 		SellerID: input.SellerID,
 		Context: conversationContextDoc{
-			ProductID: input.Context.ProductID,
-			OrderID:   input.Context.OrderID,
-			ShopID:    input.Context.ShopID,
+			ProductID:  input.Context.ProductID,
+			OrderID:    input.Context.OrderID,
+			ShopID:     input.Context.ShopID,
+			BuyerName:  input.Context.BuyerName,
+			SellerName: input.Context.SellerName,
 		},
 		Unread:    conversationUnreadDoc{},
 		NextSeq:   0,
@@ -700,9 +702,11 @@ func parseObjectID(id string) (primitive.ObjectID, error) {
 }
 
 type conversationContextDoc struct {
-	ProductID *string `bson:"productId,omitempty"`
-	OrderID   *string `bson:"orderId,omitempty"`
-	ShopID    *string `bson:"shopId,omitempty"`
+	ProductID  *string `bson:"productId,omitempty"`
+	OrderID    *string `bson:"orderId,omitempty"`
+	ShopID     *string `bson:"shopId,omitempty"`
+	BuyerName  *string `bson:"buyerName,omitempty"`
+	SellerName *string `bson:"sellerName,omitempty"`
 }
 
 type conversationLastMessageDoc struct {
@@ -768,9 +772,11 @@ func mapConversation(doc conversationDoc) domain.Conversation {
 		BuyerID:  doc.BuyerID,
 		SellerID: doc.SellerID,
 		Context: domain.ConversationContext{
-			ProductID: doc.Context.ProductID,
-			OrderID:   doc.Context.OrderID,
-			ShopID:    doc.Context.ShopID,
+			ProductID:  doc.Context.ProductID,
+			OrderID:    doc.Context.OrderID,
+			ShopID:     doc.Context.ShopID,
+			BuyerName:  doc.Context.BuyerName,
+			SellerName: doc.Context.SellerName,
 		},
 		Unread:    domain.UnreadCount{Buyer: doc.Unread.Buyer, Seller: doc.Unread.Seller},
 		NextSeq:   doc.NextSeq,

@@ -8,6 +8,7 @@ import { ShopDecorRepository, UpsertShopDecorPayload } from '../repositories/sho
 
 interface ShopDecorResponse {
   sellerId: string;
+  sellerCode: string;
   shopName: string;
   slogan: string;
   logoUrl: string;
@@ -64,6 +65,7 @@ export class ShopDecorService {
 
     return {
       sellerId: source.sellerId,
+      sellerCode: formatSellerCode(source.sellerId),
       shopName: source.shopName,
       slogan: source.slogan ?? '',
       logoUrl: source.logoUrl ?? '',
@@ -81,6 +83,7 @@ export class ShopDecorService {
     const short = sellerId.slice(0, 8).toUpperCase();
     return {
       sellerId,
+      sellerCode: formatSellerCode(sellerId),
       shopName: `Shop ${short}`,
       slogan: 'Official store with trusted products and fast support.',
       logoUrl: '',
@@ -147,4 +150,30 @@ function normalizeAccentColor(value: string): string {
 
 function isStaff(role: Role): boolean {
   return role === Role.ADMIN || role === Role.MODERATOR || role === Role.SUPPORT || role === Role.SUPER_ADMIN;
+}
+
+function formatSellerCode(sellerId: string): string {
+  const source = sellerId.trim();
+  if (!source) {
+    return 'SEL0000000';
+  }
+  const normalized = source.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const exactMatch = normalized.match(/^SEL(\d{7,})$/);
+  if (exactMatch) {
+    return `SEL${exactMatch[1]}`;
+  }
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length >= 7) {
+    return `SEL${digits.slice(-7)}`;
+  }
+  return `SEL${String(stableHash(source)).padStart(7, '0')}`;
+}
+
+function stableHash(value: string): number {
+  const modulo = 10_000_000;
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % modulo;
+  }
+  return hash;
 }

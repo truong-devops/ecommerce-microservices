@@ -14,12 +14,15 @@ export async function listSellerChatConversations(accessToken: string, input?: {
   if (input?.pageSize) params.set('pageSize', String(input.pageSize));
   const suffix = params.toString();
 
-  return requestSellerApi<SellerChatConversationsOutput>(`/api/seller/chat/conversations${suffix ? `?${suffix}` : ''}`, {
+  const payload = await requestSellerApi<unknown>(`/api/seller/chat/conversations${suffix ? `?${suffix}` : ''}`, {
     method: 'GET',
+    cache: 'no-store',
     headers: {
       Authorization: `Bearer ${accessToken}`
     }
   });
+
+  return normalizeConversationList(payload);
 }
 
 export async function createSellerChatConversation(accessToken: string, payload: CreateSellerChatConversationInput): Promise<SellerChatConversation> {
@@ -46,6 +49,7 @@ export async function listSellerChatMessages(
     `/api/seller/chat/conversations/${encodeURIComponent(conversationId)}/messages${suffix ? `?${suffix}` : ''}`,
     {
       method: 'GET',
+      cache: 'no-store',
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
@@ -75,4 +79,57 @@ export async function markSellerChatRead(accessToken: string, conversationId: st
     },
     body: JSON.stringify({})
   });
+}
+
+function normalizeConversationList(payload: unknown): SellerChatConversationsOutput {
+  if (Array.isArray(payload)) {
+    return {
+      items: dedupeByBuyer(payload as SellerChatConversation[])
+    };
+  }
+
+  if (payload && typeof payload === 'object' && Array.isArray((payload as { items?: unknown }).items)) {
+    const normalized = payload as SellerChatConversationsOutput;
+    return {
+      ...normalized,
+      items: dedupeByBuyer(normalized.items ?? [])
+    };
+  }
+
+  return {
+    items: []
+  };
+}
+
+function dedupeByBuyer(items: SellerChatConversation[]): SellerChatConversation[] {
+  const map = new Map<string, SellerChatConversation>();
+
+  for (const item of items) {
+    const key = item.buyerId || item.id;
+    const current = map.get(key);
+    if (!current || comparePriority(item, current) < 0) {
+      map.set(key, item);
+    }
+  }
+
+  return [...map.values()].sort(comparePriority);
+}
+
+function comparePriority(a: SellerChatConversation, b: SellerChatConversation): number {
+  const aUpdated = Date.parse(a.updatedAt || '');
+  const bUpdated = Date.parse(b.updatedAt || '');
+  const aScore = Number.isFinite(aUpdated) ? aUpdated : 0;
+  const bScore = Number.isFinite(bUpdated) ? bUpdated : 0;
+
+  if (aScore !== bScore) {
+    return bScore - aScore;
+  }
+
+  const aUnread = a.unread?.seller ?? 0;
+  const bUnread = b.unread?.seller ?? 0;
+  if (aUnread !== bUnread) {
+    return bUnread - aUnread;
+  }
+
+  return a.id.localeCompare(b.id);
 }

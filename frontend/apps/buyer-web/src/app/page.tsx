@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BuyerChatDrawer } from '@/components/home/buyer-chat-drawer';
 import { CategorySection } from '@/components/home/CategorySection';
 import { FlashSaleSection } from '@/components/home/FlashSaleSection';
 import { MallSection } from '@/components/home/MallSection';
@@ -11,7 +10,7 @@ import { Header } from '@/components/layout/Header';
 import { fetchHomeSections } from '@/lib/api/home';
 import { BuyerApiClientError } from '@/lib/api/client';
 import type { HomeSectionsData } from '@/lib/api/types';
-import { useAuth, useLanguage } from '@/providers/AppProvider';
+import { useLanguage } from '@/providers/AppProvider';
 
 type HomeStatus = 'loading' | 'error' | 'success';
 
@@ -26,7 +25,6 @@ const emptyHomeSections: HomeSectionsData = {
 
 export default function HomePage() {
   const { text } = useLanguage();
-  const { accessToken, user } = useAuth();
   const [status, setStatus] = useState<HomeStatus>('loading');
   const [error, setError] = useState('');
   const [sections, setSections] = useState<HomeSectionsData>(emptyHomeSections);
@@ -146,7 +144,6 @@ export default function HomePage() {
         ) : null}
       </main>
 
-      <BuyerChatDrawer accessToken={accessToken} buyerId={user?.id ?? null} />
     </div>
   );
 }

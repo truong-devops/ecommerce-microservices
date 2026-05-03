@@ -34,7 +34,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccess(w, r, http.StatusCreated, user)
+	httpx.WriteSuccess(w, r, http.StatusCreated, withUserCodes(user))
 }
 
 func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,13 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccessWithPagination(w, r, http.StatusOK, users, httpx.Pagination{
+	mapped := make([]map[string]any, 0, len(users))
+	for i := range users {
+		item := users[i]
+		mapped = append(mapped, withUserCodes(&item))
+	}
+
+	httpx.WriteSuccessWithPagination(w, r, http.StatusOK, mapped, httpx.Pagination{
 		Page:       pagination.Page,
 		PageSize:   pagination.PageSize,
 		TotalItems: pagination.TotalItems,
@@ -66,7 +72,7 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccess(w, r, http.StatusOK, user)
+	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(user))
 }
 
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +87,7 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalError)
 		return
 	}
-	httpx.WriteSuccess(w, r, http.StatusOK, user)
+	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(user))
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +104,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccess(w, r, http.StatusOK, updated)
+	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(updated))
 }
 
 func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +126,7 @@ func (h *UserHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccess(w, r, http.StatusOK, updated)
+	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(updated))
 }
 
 func (h *UserHandler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +143,7 @@ func (h *UserHandler) UpdateUserStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccess(w, r, http.StatusOK, updated)
+	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(updated))
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +154,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.WriteSuccess(w, r, http.StatusOK, deleted)
+	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(deleted))
 }
 
 func parseListUsersQuery(r *http.Request) (domain.ListUsersQuery, error) {
@@ -219,4 +225,72 @@ func parseListUsersQuery(r *http.Request) (domain.ListUsersQuery, error) {
 		SortBy:    sortBy,
 		SortOrder: sortOrder,
 	}, nil
+}
+
+func withUserCodes(user *domain.User) map[string]any {
+	if user == nil {
+		return map[string]any{}
+	}
+
+	payload := map[string]any{
+		"id":            user.ID,
+		"userCode":      formatCode(user.ID, "USR"),
+		"email":         user.Email,
+		"firstName":     user.FirstName,
+		"lastName":      user.LastName,
+		"phone":         user.Phone,
+		"address":       user.Address,
+		"gender":        user.Gender,
+		"dateOfBirth":   user.DateOfBirth,
+		"avatarUrl":     user.AvatarURL,
+		"role":          user.Role,
+		"status":        user.Status,
+		"emailVerified": user.EmailVerified,
+		"createdAt":     user.CreatedAt,
+		"updatedAt":     user.UpdatedAt,
+	}
+
+	switch user.Role {
+	case domain.UserRoleSeller:
+		payload["sellerCode"] = formatCode(user.ID, "SEL")
+	default:
+		payload["customerCode"] = formatCode(user.ID, "CUS")
+	}
+
+	return payload
+}
+
+func formatCode(raw string, prefix string) string {
+	source := strings.TrimSpace(raw)
+	if source == "" {
+		return prefix + "0000000"
+	}
+
+	digits := make([]rune, 0, len(source))
+	for _, r := range strings.ToUpper(source) {
+		if r >= '0' && r <= '9' {
+			digits = append(digits, r)
+		}
+	}
+	if len(digits) >= 7 {
+		return prefix + string(digits[len(digits)-7:])
+	}
+	return prefix + leftPad7(stableHash(source))
+}
+
+func stableHash(value string) int {
+	const modulo = 10_000_000
+	hash := 0
+	for _, r := range value {
+		hash = (hash*31 + int(r)) % modulo
+	}
+	return hash
+}
+
+func leftPad7(value int) string {
+	raw := strconv.Itoa(value)
+	if len(raw) >= 7 {
+		return raw
+	}
+	return strings.Repeat("0", 7-len(raw)) + raw
 }

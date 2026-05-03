@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { AppProvider } from '@/providers/AppProvider';
+import { GlobalBuyerChat } from '@/components/home/global-buyer-chat';
 import { Footer } from '@/components/layout/Footer';
 import './globals.css';
 
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AppProvider>
           <div className="flex min-h-screen flex-col">
             <div className="flex-1">{children}</div>
+            <GlobalBuyerChat />
             <Footer />
           </div>
         </AppProvider>

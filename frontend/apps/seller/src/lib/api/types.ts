@@ -283,7 +283,9 @@ export interface SellerOrderItem {
 export interface SellerOrder {
   id: string;
   orderNumber: string;
+  orderCode?: string;
   userId: string;
+  userCode?: string;
   status: SellerOrderStatus;
   currency: string;
   subtotalAmount: number;
@@ -416,11 +418,15 @@ export interface SellerChatConversation {
   id: string;
   type: string;
   buyerId: string;
+  buyerCode?: string;
   sellerId: string;
+  sellerCode?: string;
   context: {
     productId?: string | null;
     orderId?: string | null;
     shopId?: string | null;
+    buyerName?: string | null;
+    sellerName?: string | null;
   };
   unread: {
     buyer: number;
@@ -448,6 +454,7 @@ export interface SellerChatMessage {
   seq: number;
   clientMessageId?: string;
   senderId: string;
+  senderCode?: string;
   senderRole: string;
   kind: string;
   text: string;
@@ -468,6 +475,8 @@ export interface CreateSellerChatConversationInput {
   orderId?: string;
   productId?: string;
   shopId?: string;
+  buyerName?: string;
+  sellerName?: string;
   firstMessage?: string;
   clientMessageId?: string;
 }

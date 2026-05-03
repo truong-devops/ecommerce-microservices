@@ -12,7 +12,7 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'eMall Seller Dashboard',
+  title: 'emall - Kênh người bán',
   description: 'Seller/admin dashboard for eMall with analytics and order operations overview.'
 };
 

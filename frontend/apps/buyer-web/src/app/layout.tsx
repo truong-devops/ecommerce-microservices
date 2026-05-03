@@ -6,7 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'E-Mall',
+  title: 'emall | Mua sắm online thật tiện lợi',
   description: 'Buyer-facing homepage scaffold inspired by modern marketplace patterns.'
 };
 

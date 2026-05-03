@@ -98,7 +98,9 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_EXPIRES_IN: 8h
       JWT_REFRESH_SECRET: dev-shared-jwt-refresh-secret-min-32-chars
+      JWT_REFRESH_EXPIRES_IN: 45d
       JWT_MFA_SECRET: dev-shared-jwt-mfa-secret-min-32-chars
       REFRESH_TOKEN_PEPPER: dev-refresh-token-pepper-16chars
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db

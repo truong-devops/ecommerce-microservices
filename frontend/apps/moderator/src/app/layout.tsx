@@ -11,7 +11,7 @@ const bodyFont = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'eMall Moderator Console',
+  title: 'emall | Quản lí khách hàng thật dễ dàng',
   description: 'Trust & Safety moderation workspace for eMall.'
 };
 

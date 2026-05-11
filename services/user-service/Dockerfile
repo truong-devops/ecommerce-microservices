@@ -12,5 +12,7 @@ WORKDIR /
 COPY --from=builder /user-service-go /user-service-go
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3005
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/user-service-go"]

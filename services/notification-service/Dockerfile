@@ -12,5 +12,7 @@ WORKDIR /
 COPY --from=builder /notification-service /notification-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3011
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/notification-service"]

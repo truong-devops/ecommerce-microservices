@@ -12,5 +12,7 @@ WORKDIR /
 COPY --from=builder /payment-service-go /payment-service-go
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3006
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/payment-service-go"]

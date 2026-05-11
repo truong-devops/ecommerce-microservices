@@ -97,6 +97,7 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      PORT: 8080
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       JWT_ACCESS_EXPIRES_IN: 8h
       JWT_REFRESH_SECRET: dev-shared-jwt-refresh-secret-min-32-chars
@@ -107,14 +108,14 @@ services:
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
     ports:
-      - '3001:3001'
+      - '12010:8080'
     healthcheck:
       test:
         [
           'CMD',
           'node',
           '-e',
-          "require('http').get('http://localhost:3001/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+          "require('http').get('http://localhost:8080/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
         ]
       interval: 10s
       timeout: 5s
@@ -138,7 +139,7 @@ services:
     environment:
       NODE_ENV: development
       SERVICE_NAME: user-service
-      PORT: 3005
+      PORT: 8080
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DB_HOST: postgres
@@ -156,7 +157,7 @@ services:
       KAFKA_BROKERS: ${USER_SERVICE_KAFKA_BROKERS:-kafka:29092}
       KAFKA_USER_TOPIC: ${USER_SERVICE_KAFKA_USER_TOPIC:-user.registered}
     ports:
-      - '3005:3005'
+      - '12011:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -178,20 +179,21 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      PORT: 8080
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: mongodb://mongo:27017/ecommerce_product
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
     ports:
-      - '3003:3003'
+      - '12012:8080'
     healthcheck:
       test:
         [
           'CMD',
           'node',
           '-e',
-          "require('http').get('http://localhost:3003/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+          "require('http').get('http://localhost:8080/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
         ]
       interval: 10s
       timeout: 5s
@@ -214,7 +216,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_NAME: cart-service
       APP_ENV: development
-      PORT: 3004
+      PORT: 8080
       API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       DB_SSL: 'false'
@@ -230,13 +232,13 @@ services:
       KAFKA_BROKERS: kafka:29092
       CART_EVENTS_TOPIC: cart.events
       CART_VALIDATE_EXTERNAL: 'false'
-      PRODUCT_SERVICE_BASE_URL: http://product-service:3003/api/v1
-      INVENTORY_SERVICE_BASE_URL: http://inventory-service:3007/api/v1
+      PRODUCT_SERVICE_BASE_URL: http://product-service:8080/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8080/api/v1
       DEPENDENCY_TIMEOUT_MS: 5000
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: migrations/0001_init_cart_service.sql
     ports:
-      - '3004:3004'
+      - '12015:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -256,7 +258,7 @@ services:
     environment:
       APP_NAME: order-service
       APP_ENV: development
-      PORT: 3002
+      PORT: 8080
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
@@ -280,7 +282,7 @@ services:
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: migrations/0001_init_order_service.sql
     ports:
-      - '3002:3002'
+      - '12016:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -301,7 +303,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_NAME: payment-service
       APP_ENV: development
-      PORT: 3006
+      PORT: 8080
       API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       REDIS_ENABLED: 'true'
@@ -316,7 +318,7 @@ services:
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: migrations/0001_init_payment_service.sql
     ports:
-      - '3006:3006'
+      - '12017:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -337,7 +339,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_NAME: inventory-service
       APP_ENV: development
-      PORT: 3007
+      PORT: 8080
       API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       DB_SSL: 'false'
@@ -357,7 +359,7 @@ services:
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: migrations/0001_init_inventory_service.sql
     ports:
-      - '3007:3007'
+      - '12013:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -377,7 +379,7 @@ services:
     environment:
       APP_NAME: shipping-service
       APP_ENV: development
-      PORT: 3008
+      PORT: 8080
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
@@ -399,7 +401,7 @@ services:
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: /migrations/0001_init_shipping_service.sql
     ports:
-      - '3008:3008'
+      - '12018:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -420,11 +422,12 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      PORT: 8080
       MONGODB_URI: mongodb://mongo:27017/ecommerce_review
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
     ports:
-      - '3009:3009'
+      - '12014:8080'
     depends_on:
       mongo:
         condition: service_healthy
@@ -443,7 +446,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_NAME: chat-service
       APP_ENV: development
-      PORT: 3012
+      PORT: 8080
       API_PREFIX: api/v1
       MONGO_URI: mongodb://mongo:27017
       MONGO_DATABASE: ecommerce_chat
@@ -460,7 +463,7 @@ services:
       DISPATCH_BATCH_SIZE: 50
       DISPATCH_MAX_RETRY: 10
     ports:
-      - '3012:3012'
+      - '12020:8080'
     depends_on:
       mongo:
         condition: service_healthy
@@ -480,6 +483,7 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      PORT: 8080
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       REDIS_URL: redis://redis:6379
       DB_MIGRATIONS_RUN: 'true'
@@ -487,7 +491,7 @@ services:
       KAFKA_ENABLED: 'true'
       KAFKA_BROKERS: kafka:29092
     ports:
-      - '3011:3011'
+      - '12019:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -507,6 +511,7 @@ services:
     environment:
       <<: *shared-jwt-access-secret
       APP_ENV: development
+      PORT: 8080
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       DB_SSL: 'false'
       DB_POOL_MAX: 10
@@ -514,7 +519,7 @@ services:
       KAFKA_ENABLED: 'false'
       KAFKA_BROKERS: kafka:29092
     ports:
-      - '3010:3010'
+      - '12021:8080'
     depends_on:
       postgres:
         condition: service_healthy
@@ -535,28 +540,28 @@ services:
       <<: *shared-jwt-gateway-secret
       APP_NAME: api-gateway
       APP_ENV: development
-      PORT: 3000
+      PORT: 8080
       REQUEST_TIMEOUT: 45s
       JWT_SECRET: dev-shared-jwt-access-secret-min-32-chars
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
-      AUTH_SERVICE_URL: http://auth-service:3001
+      AUTH_SERVICE_URL: http://auth-service:8080
       AUTH_SERVICE_TIMEOUT: 20s
-      USER_SERVICE_URL: http://user-service:3005
-      PRODUCT_SERVICE_URL: http://product-service:3003
+      USER_SERVICE_URL: http://user-service:8080
+      PRODUCT_SERVICE_URL: http://product-service:8080
       PRODUCT_SERVICE_TIMEOUT: 20s
-      CART_SERVICE_URL: http://cart-service:3004
-      ORDER_SERVICE_URL: http://order-service:3002
-      PAYMENT_SERVICE_URL: http://payment-service:3006
-      INVENTORY_SERVICE_URL: http://inventory-service:3007
-      SHIPPING_SERVICE_URL: http://shipping-service:3008
-      REVIEW_SERVICE_URL: http://review-service:3009
-      NOTIFICATION_SERVICE_URL: http://notification-service:3011
-      ANALYTICS_SERVICE_URL: http://analytics-service:3010
-      CHAT_SERVICE_URL: http://chat-service:3012
+      CART_SERVICE_URL: http://cart-service:8080
+      ORDER_SERVICE_URL: http://order-service:8080
+      PAYMENT_SERVICE_URL: http://payment-service:8080
+      INVENTORY_SERVICE_URL: http://inventory-service:8080
+      SHIPPING_SERVICE_URL: http://shipping-service:8080
+      REVIEW_SERVICE_URL: http://review-service:8080
+      NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      ANALYTICS_SERVICE_URL: http://analytics-service:8080
+      CHAT_SERVICE_URL: http://chat-service:8080
       CHAT_SERVICE_TIMEOUT: 24h
     ports:
-      - '3000:3000'
+      - '12000:8080'
     depends_on:
       auth-service:
         condition: service_healthy

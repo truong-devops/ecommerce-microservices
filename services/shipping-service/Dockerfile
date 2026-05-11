@@ -11,5 +11,7 @@ FROM gcr.io/distroless/static-debian12
 WORKDIR /
 COPY --from=builder /shipping-service /shipping-service
 COPY --from=builder /app/migrations /migrations
-EXPOSE 3008
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/shipping-service"]

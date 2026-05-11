@@ -12,5 +12,5 @@ WORKDIR /
 COPY --from=builder /payment-service-go /payment-service-go
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3012
+EXPOSE 3006
 ENTRYPOINT ["/payment-service-go"]

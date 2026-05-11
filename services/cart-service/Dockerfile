@@ -12,5 +12,5 @@ WORKDIR /
 COPY --from=builder /cart-service /cart-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3011
+EXPOSE 3004
 ENTRYPOINT ["/cart-service"]

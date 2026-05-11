@@ -138,7 +138,7 @@ services:
     environment:
       NODE_ENV: development
       SERVICE_NAME: user-service
-      PORT: 3000
+      PORT: 3005
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DB_HOST: postgres
@@ -156,7 +156,7 @@ services:
       KAFKA_BROKERS: ${USER_SERVICE_KAFKA_BROKERS:-kafka:29092}
       KAFKA_USER_TOPIC: ${USER_SERVICE_KAFKA_USER_TOPIC:-user.registered}
     ports:
-      - '3100:3000'
+      - '3005:3005'
     depends_on:
       postgres:
         condition: service_healthy
@@ -487,7 +487,7 @@ services:
       KAFKA_ENABLED: 'true'
       KAFKA_BROKERS: kafka:29092
     ports:
-      - '3011:3009'
+      - '3011:3011'
     depends_on:
       postgres:
         condition: service_healthy
@@ -535,14 +535,14 @@ services:
       <<: *shared-jwt-gateway-secret
       APP_NAME: api-gateway
       APP_ENV: development
-      PORT: 8080
+      PORT: 3000
       REQUEST_TIMEOUT: 45s
       JWT_SECRET: dev-shared-jwt-access-secret-min-32-chars
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       AUTH_SERVICE_URL: http://auth-service:3001
       AUTH_SERVICE_TIMEOUT: 20s
-      USER_SERVICE_URL: http://user-service:3000
+      USER_SERVICE_URL: http://user-service:3005
       PRODUCT_SERVICE_URL: http://product-service:3003
       PRODUCT_SERVICE_TIMEOUT: 20s
       CART_SERVICE_URL: http://cart-service:3004
@@ -551,12 +551,12 @@ services:
       INVENTORY_SERVICE_URL: http://inventory-service:3007
       SHIPPING_SERVICE_URL: http://shipping-service:3008
       REVIEW_SERVICE_URL: http://review-service:3009
-      NOTIFICATION_SERVICE_URL: http://notification-service:3009
+      NOTIFICATION_SERVICE_URL: http://notification-service:3011
       ANALYTICS_SERVICE_URL: http://analytics-service:3010
       CHAT_SERVICE_URL: http://chat-service:3012
       CHAT_SERVICE_TIMEOUT: 24h
     ports:
-      - '8080:8080'
+      - '3000:3000'
     depends_on:
       auth-service:
         condition: service_healthy

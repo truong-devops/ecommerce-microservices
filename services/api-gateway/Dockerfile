@@ -15,5 +15,5 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /
 COPY --from=builder /out/api-gateway /api-gateway
 
-EXPOSE 8080
+EXPOSE 3000
 ENTRYPOINT ["/api-gateway"]

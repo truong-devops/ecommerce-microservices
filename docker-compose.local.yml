@@ -94,7 +94,7 @@ services:
     environment:
       APP_NAME: api-gateway
       APP_ENV: development
-      PORT: 8080
+      PORT: 3000
       JWT_SECRET: ${JWT_ACCESS_SECRET:-change-me}
       CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:8081,http://localhost:19006
       REQUEST_TIMEOUT: 45s
@@ -102,7 +102,7 @@ services:
       RATE_LIMIT_RPS: 50
       RATE_LIMIT_BURST: 100
       AUTH_SERVICE_URL: http://host.docker.internal:3001
-      USER_SERVICE_URL: http://host.docker.internal:3100
+      USER_SERVICE_URL: http://host.docker.internal:3005
       PRODUCT_SERVICE_URL: http://host.docker.internal:3003
       CART_SERVICE_URL: http://host.docker.internal:3004
       ORDER_SERVICE_URL: http://host.docker.internal:3002
@@ -126,7 +126,7 @@ services:
       ANALYTICS_SERVICE_TIMEOUT: 8s
       CHAT_SERVICE_TIMEOUT: 24h
     ports:
-      - '8080:8080'
+      - '3000:3000'
 
 volumes:
   postgres_data:

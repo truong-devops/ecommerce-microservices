@@ -43,7 +43,7 @@ services:
       ANALYTICS_CONSUMER_GROUP: analytics-service-group
       INGEST_DEDUPE_TTL_SECONDS: 172800
     ports:
-      - '3012:3010'
+      - '3010:3010'
     depends_on:
       postgres:
         condition: service_healthy

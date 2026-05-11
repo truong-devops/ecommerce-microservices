@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:3008/api/v1}"
-JWT_SECRET="${JWT_SECRET:-change-me-shipping-access-secret-min-32}"
+JWT_SECRET="${JWT_SECRET:-dev-shared-jwt-access-secret-min-32-chars}"
 CUSTOMER_ID="${CUSTOMER_ID:-11111111-1111-4111-8111-111111111111}"
 SELLER_ID="${SELLER_ID:-22222222-2222-4222-8222-222222222222}"
 ADMIN_ID="${ADMIN_ID:-33333333-3333-4333-8333-333333333333}"
@@ -81,7 +81,9 @@ payload = b64(json.dumps({
     "sub": user_id,
     "email": email,
     "role": role,
+    "sessionId": "shipping-test-session-" + str(int(time.time())),
     "jti": "shipping-test-jti-" + str(int(time.time() * 1000)),
+    "tokenVersion": 1,
     "iat": int(time.time()),
     "exp": int(time.time()) + 3600
 }, separators=(',', ':')).encode('utf-8'))

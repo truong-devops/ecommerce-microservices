@@ -26,7 +26,10 @@ services:
     env_file:
       - ./.env.example
     environment:
+      APP_NAME: notification-service
       APP_ENV: development
+      PORT: 3011
+      API_PREFIX: api/v1
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       REDIS_ENABLED: 'true'
@@ -34,7 +37,7 @@ services:
       KAFKA_ENABLED: 'false'
       KAFKA_BROKERS: host.docker.internal:9092
     ports:
-      - '3012:3009'
+      - '3011:3011'
     depends_on:
       postgres:
         condition: service_healthy

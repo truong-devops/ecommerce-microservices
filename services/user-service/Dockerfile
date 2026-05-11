@@ -12,5 +12,5 @@ WORKDIR /
 COPY --from=builder /user-service-go /user-service-go
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3013
+EXPOSE 3005
 ENTRYPOINT ["/user-service-go"]

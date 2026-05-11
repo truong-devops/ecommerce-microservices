@@ -12,5 +12,5 @@ WORKDIR /
 COPY --from=builder /order-service /order-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3011
+EXPOSE 3002
 ENTRYPOINT ["/order-service"]

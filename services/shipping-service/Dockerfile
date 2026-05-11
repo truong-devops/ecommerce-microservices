@@ -11,5 +11,5 @@ FROM gcr.io/distroless/static-debian12
 WORKDIR /
 COPY --from=builder /shipping-service /shipping-service
 COPY --from=builder /app/migrations /migrations
-EXPOSE 3013
+EXPOSE 3008
 ENTRYPOINT ["/shipping-service"]

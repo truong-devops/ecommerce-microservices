@@ -12,5 +12,5 @@ WORKDIR /
 COPY --from=builder /notification-service /notification-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3009
+EXPOSE 3011
 ENTRYPOINT ["/notification-service"]

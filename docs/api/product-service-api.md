@@ -5,7 +5,6 @@
 - Service: `services/product-service`
 - Prefix mặc định: `/api/v1`
 - Base path: `/api/v1/products`
-- Có static assets: `/api/v1/products/assets/*`
 
 ## Health
 
@@ -38,7 +37,7 @@
 - `categoryId` (required)
 - `brand` (optional, max 128)
 - `attributes` (optional, object)
-- `images` (optional, array URL)
+- `images` (optional, array `objectKey`, ví dụ `products/product/abc-uuid.webp`)
 - `variants` (required, min 1 item)
   - `sku` (1..64, regex `[A-Za-z0-9._-]+`)
   - `name` (1..255)

@@ -3,7 +3,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -21,9 +20,6 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(appLogger);
   app.use(RequestIdMiddleware);
-  app.useStaticAssets(join(__dirname, '..', 'seed-data', 'image'), {
-    prefix: '/api/v1/products/assets/'
-  });
   app.useGlobalFilters(new HttpExceptionFilter(appLogger, configService));
   app.useGlobalInterceptors(new ResponseInterceptor(), new LoggingInterceptor(appLogger, configService));
   app.useGlobalPipes(

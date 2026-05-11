@@ -81,6 +81,8 @@ func New(
 		mountPrefix(private, "/api/auth", proxies[config.ServiceAuth])
 		mountPrefix(private, "/api/v1/auth", proxies[config.ServiceAuth])
 		mountPrefix(private, "/api/users", proxies[config.ServiceUser])
+		mountPrefix(private, "/api/media", proxies[config.ServiceMedia])
+		mountPrefix(private, "/api/v1/media", proxies[config.ServiceMedia])
 		mountPrefix(private, "/api/cart", proxies[config.ServiceCart])
 		mountPrefix(private, "/api/v1/cart", proxies[config.ServiceCart])
 		mountPrefix(private, "/api/orders", proxies[config.ServiceOrder])

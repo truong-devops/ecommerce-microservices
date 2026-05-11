@@ -8,6 +8,7 @@ Tài liệu này được tổng hợp trực tiếp từ source code trong `ser
 - [Auth Service](./auth-service-api.md)
 - [User Service](./user-service-api.md)
 - [Product Service](./product-service-api.md)
+- [Media Service](./media-service-api.md)
 - [Cart Service](./cart-service-api.md)
 - [Order Service](./order-service-api.md)
 - [Payment Service](./payment-service-api.md)

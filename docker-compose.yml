@@ -86,6 +86,18 @@ services:
       timeout: 3s
       retries: 20
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - '12030:9000'
+      - '12031:9001'
+
   auth-service:
     <<: *service-defaults
     build:
@@ -171,8 +183,6 @@ services:
     build:
       context: ./services/product-service
       dockerfile: Dockerfile
-    volumes:
-      - ./services/product-service/seed-data/image:/app/seed-data/image
     env_file:
       - path: ./services/product-service/.env
         required: false
@@ -203,6 +213,36 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  media-service:
+    <<: *service-defaults
+    build:
+      context: ./services/media-service
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./services/media-service/.env
+        required: false
+    environment:
+      <<: *shared-jwt-access-secret
+      APP_NAME: media-service
+      APP_ENV: development
+      PORT: 8080
+      API_PREFIX: api/v1
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ecommerce-media
+      MINIO_USE_SSL: 'false'
+      OBJECT_KEY_PREFIX: products
+      MEDIA_UPLOAD_DEFAULT_EXPIRY_SECONDS: 900
+      MEDIA_DOWNLOAD_DEFAULT_EXPIRY_SECONDS: 900
+      MEDIA_MAX_EXPIRY_SECONDS: 3600
+    ports:
+      - '12022:8080'
+    depends_on:
+      minio:
+        condition: service_started
 
   cart-service:
     <<: *service-defaults
@@ -550,6 +590,8 @@ services:
       USER_SERVICE_URL: http://user-service:8080
       PRODUCT_SERVICE_URL: http://product-service:8080
       PRODUCT_SERVICE_TIMEOUT: 20s
+      MEDIA_SERVICE_URL: http://media-service:8080
+      MEDIA_SERVICE_TIMEOUT: 20s
       CART_SERVICE_URL: http://cart-service:8080
       ORDER_SERVICE_URL: http://order-service:8080
       PAYMENT_SERVICE_URL: http://payment-service:8080
@@ -571,6 +613,8 @@ services:
         condition: service_started
       product-service:
         condition: service_healthy
+      media-service:
+        condition: service_started
       cart-service:
         condition: service_started
       order-service:
@@ -593,3 +637,4 @@ services:
 volumes:
   postgres_data:
   mongo_data:
+  minio_data:

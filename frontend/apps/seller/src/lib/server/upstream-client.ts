@@ -1,12 +1,13 @@
-const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:3001/api/v1';
-const ANALYTICS_SERVICE_BASE_URL = process.env.ANALYTICS_SERVICE_BASE_URL ?? 'http://localhost:3010/api/v1';
-const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:3002/api/v1';
-const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:3003/api/v1';
-const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? 'http://localhost:3008/api/v1';
-const NOTIFICATION_SERVICE_BASE_URL = process.env.NOTIFICATION_SERVICE_BASE_URL ?? 'http://localhost:3011/api/v1';
-const INVENTORY_SERVICE_BASE_URL = process.env.INVENTORY_SERVICE_BASE_URL ?? 'http://localhost:3007/api/v1';
-const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? 'http://localhost:3100/api/v1';
-const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? 'http://localhost:3012/api/v1';
+const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:12010/api/v1';
+const ANALYTICS_SERVICE_BASE_URL = process.env.ANALYTICS_SERVICE_BASE_URL ?? 'http://localhost:12021/api/v1';
+const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:12016/api/v1';
+const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:12012/api/v1';
+const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? 'http://localhost:12018/api/v1';
+const NOTIFICATION_SERVICE_BASE_URL = process.env.NOTIFICATION_SERVICE_BASE_URL ?? 'http://localhost:12019/api/v1';
+const INVENTORY_SERVICE_BASE_URL = process.env.INVENTORY_SERVICE_BASE_URL ?? 'http://localhost:12013/api/v1';
+const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? 'http://localhost:12011/api/v1';
+const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? 'http://localhost:12020/api/v1';
+const MEDIA_SERVICE_BASE_URL = process.env.MEDIA_SERVICE_BASE_URL ?? 'http://localhost:12022/api/v1';
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
@@ -17,7 +18,8 @@ export const serviceBaseUrls = {
   notification: NOTIFICATION_SERVICE_BASE_URL,
   inventory: INVENTORY_SERVICE_BASE_URL,
   user: USER_SERVICE_BASE_URL,
-  chat: CHAT_SERVICE_BASE_URL
+  chat: CHAT_SERVICE_BASE_URL,
+  media: MEDIA_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {

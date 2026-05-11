@@ -86,7 +86,7 @@ export class CreateProductDto {
   attributes?: Record<string, unknown>;
 
   @IsArray()
-  @Matches(/^[A-Za-z0-9][A-Za-z0-9/_\-.]{1,1023}$/, { each: true })
+  @Matches(/^(https?:\/\/\S+|[A-Za-z0-9][A-Za-z0-9/_\-.]{1,1023})$/, { each: true })
   @IsOptional()
   images?: string[];
 

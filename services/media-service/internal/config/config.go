@@ -16,10 +16,14 @@ type Config struct {
 	JWTAccessSecret string
 
 	MinIOEndpoint   string
+	MinIOPublicEndpoint string
 	MinIOAccessKey  string
 	MinIOSecretKey  string
 	MinIOBucket     string
+	MinIORegion     string
 	MinIOUseSSL     bool
+	MinIOPublicUseSSL bool
+	MinIOPublicRead bool
 	ObjectKeyPrefix string
 
 	DefaultUploadExpirySeconds   int
@@ -34,12 +38,16 @@ func Load() (Config, error) {
 		APIPrefix:       strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
 		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
 
-		MinIOEndpoint:   strings.TrimSpace(os.Getenv("MINIO_ENDPOINT")),
-		MinIOAccessKey:  strings.TrimSpace(os.Getenv("MINIO_ACCESS_KEY")),
-		MinIOSecretKey:  strings.TrimSpace(os.Getenv("MINIO_SECRET_KEY")),
-		MinIOBucket:     getEnv("MINIO_BUCKET", "ecommerce-media"),
-		MinIOUseSSL:     parseBool(getEnv("MINIO_USE_SSL", "false")),
-		ObjectKeyPrefix: strings.Trim(strings.TrimSpace(getEnv("OBJECT_KEY_PREFIX", "products")), "/"),
+		MinIOEndpoint:       strings.TrimSpace(os.Getenv("MINIO_ENDPOINT")),
+		MinIOPublicEndpoint: strings.TrimSpace(os.Getenv("MINIO_PUBLIC_ENDPOINT")),
+		MinIOAccessKey:      strings.TrimSpace(os.Getenv("MINIO_ACCESS_KEY")),
+		MinIOSecretKey:      strings.TrimSpace(os.Getenv("MINIO_SECRET_KEY")),
+		MinIOBucket:         getEnv("MINIO_BUCKET", "ecommerce-media"),
+		MinIORegion:         getEnv("MINIO_REGION", "us-east-1"),
+		MinIOUseSSL:         parseBool(getEnv("MINIO_USE_SSL", "false")),
+		MinIOPublicUseSSL:   parseBool(getEnv("MINIO_PUBLIC_USE_SSL", getEnv("MINIO_USE_SSL", "false"))),
+		MinIOPublicRead:     parseBool(getEnv("MINIO_PUBLIC_READ", "true")),
+		ObjectKeyPrefix:     strings.Trim(strings.TrimSpace(getEnv("OBJECT_KEY_PREFIX", "products")), "/"),
 
 		DefaultUploadExpirySeconds:   900,
 		DefaultDownloadExpirySeconds: 900,

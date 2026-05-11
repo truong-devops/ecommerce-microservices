@@ -6,6 +6,7 @@
   NotFoundException,
   UnprocessableEntityException
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ErrorCode } from '../../../common/constants/error-code.enum';
 import { BUYER_ROLES, Role, SELLER_ROLES, STAFF_ROLES } from '../../../common/constants/role.enum';
 import { AuthenticatedUserContext } from '../../../common/types/request-context.type';
@@ -54,11 +55,18 @@ interface ProductResponse {
 
 @Injectable()
 export class ProductsService {
+  private readonly mediaPublicBaseUrl: string;
+
   constructor(
+    private readonly configService: ConfigService,
     private readonly productsRepository: ProductsRepository,
     private readonly productSearchService: ProductSearchService,
     private readonly productEventsPublisherService: ProductEventsPublisherService
-  ) {}
+  ) {
+    this.mediaPublicBaseUrl = normalizeMediaPublicBaseUrl(
+      this.configService.get<string>('media.publicBaseUrl', 'http://localhost:12030/ecommerce-media')
+    );
+  }
 
   async createProduct(
     user: AuthenticatedUserContext,
@@ -84,13 +92,13 @@ export class ProductsService {
       brand: dto.brand?.trim() ?? null,
       status,
       attributes: dto.attributes ?? {},
-      images: (dto.images ?? []).map((value) => value.trim()),
+      images: normalizeImagesForStorage(dto.images ?? [], this.mediaPublicBaseUrl),
       variants,
       minPrice: computeMinPrice(variants)
     };
 
     const created = await this.productsRepository.createProduct(payload);
-    const response = toProductResponse(created);
+    const response = toProductResponse(created, this.mediaPublicBaseUrl);
 
     await Promise.all([
       this.productSearchService.indexProduct(toSearchableProduct(response)),
@@ -115,7 +123,7 @@ export class ProductsService {
     if (searchResult) {
       const documents = await this.productsRepository.findByIdsOrdered(searchResult.ids);
       return {
-        items: documents.map(toProductResponse),
+        items: documents.map((product) => toProductResponse(product, this.mediaPublicBaseUrl)),
         pagination: buildPagination(normalized.page!, normalized.pageSize!, searchResult.totalItems)
       };
     }
@@ -131,7 +139,7 @@ export class ProductsService {
     );
 
     return {
-      items: items.map(toProductResponse),
+      items: items.map((product) => toProductResponse(product, this.mediaPublicBaseUrl)),
       pagination: buildPagination(normalized.page!, normalized.pageSize!, totalItems)
     };
   }
@@ -158,7 +166,7 @@ export class ProductsService {
     if (searchResult) {
       const documents = await this.productsRepository.findByIdsOrdered(searchResult.ids);
       return {
-        items: documents.map(toProductResponse),
+        items: documents.map((product) => toProductResponse(product, this.mediaPublicBaseUrl)),
         pagination: buildPagination(normalized.page!, normalized.pageSize!, searchResult.totalItems)
       };
     }
@@ -168,7 +176,7 @@ export class ProductsService {
     });
 
     return {
-      items: items.map(toProductResponse),
+      items: items.map((product) => toProductResponse(product, this.mediaPublicBaseUrl)),
       pagination: buildPagination(normalized.page!, normalized.pageSize!, totalItems)
     };
   }
@@ -182,7 +190,7 @@ export class ProductsService {
       });
     }
 
-    return toProductResponse(product);
+    return toProductResponse(product, this.mediaPublicBaseUrl);
   }
 
   async updateProduct(
@@ -237,7 +245,7 @@ export class ProductsService {
     }
 
     if (dto.images) {
-      payload.images = dto.images.map((value) => value.trim());
+      payload.images = normalizeImagesForStorage(dto.images, this.mediaPublicBaseUrl);
     }
 
     if (dto.sellerId && isStaff(user.role)) {
@@ -266,7 +274,7 @@ export class ProductsService {
       });
     }
 
-    const response = toProductResponse(updated);
+    const response = toProductResponse(updated, this.mediaPublicBaseUrl);
 
     await Promise.all([
       this.productSearchService.indexProduct(toSearchableProduct(response)),
@@ -302,7 +310,7 @@ export class ProductsService {
       });
     }
 
-    const response = toProductResponse(updated);
+    const response = toProductResponse(updated, this.mediaPublicBaseUrl);
 
     await Promise.all([
       this.productSearchService.indexProduct(toSearchableProduct(response)),
@@ -328,7 +336,7 @@ export class ProductsService {
       });
     }
 
-    const response = toProductResponse(deleted);
+    const response = toProductResponse(deleted, this.mediaPublicBaseUrl);
 
     await Promise.all([
       this.productSearchService.deleteProduct(response.id),
@@ -531,10 +539,101 @@ function findDuplicate(values: string[]): string | null {
   return null;
 }
 
-function toProductResponse(product: ProductDocument | ProductResponse): ProductResponse {
+function normalizeImagesForStorage(images: string[], mediaPublicBaseUrl: string): string[] {
+  const normalized: string[] = [];
+
+  for (const rawImage of images) {
+    const value = normalizeImageForStorage(rawImage, mediaPublicBaseUrl);
+    if (!value) {
+      continue;
+    }
+
+    normalized.push(value);
+  }
+
+  return normalized;
+}
+
+function normalizeImageForStorage(imageValue: string, mediaPublicBaseUrl: string): string {
+  const value = imageValue.trim();
+  if (!value) {
+    return '';
+  }
+
+  if (isObjectKey(value)) {
+    return value;
+  }
+
+  const objectKey = extractObjectKeyFromPublicUrl(value, mediaPublicBaseUrl);
+  if (objectKey) {
+    return objectKey;
+  }
+
+  return value;
+}
+
+function resolveImagesForResponse(images: string[], mediaPublicBaseUrl: string): string[] {
+  return images.map((value) => resolveImageForResponse(value, mediaPublicBaseUrl)).filter((value) => value.length > 0);
+}
+
+function resolveImageForResponse(imageValue: string, mediaPublicBaseUrl: string): string {
+  const value = imageValue.trim();
+  if (!value) {
+    return '';
+  }
+
+  if (isObjectKey(value)) {
+    return `${mediaPublicBaseUrl}/${value}`;
+  }
+
+  return value;
+}
+
+function isObjectKey(value: string): boolean {
+  if (value.length < 3 || value.length > 1024) {
+    return false;
+  }
+
+  return /^[A-Za-z0-9][A-Za-z0-9/_\-.]+$/.test(value);
+}
+
+function extractObjectKeyFromPublicUrl(urlValue: string, mediaPublicBaseUrl: string): string | null {
+  try {
+    const imageURL = new URL(urlValue);
+    const baseURL = new URL(mediaPublicBaseUrl);
+
+    if (imageURL.origin !== baseURL.origin) {
+      return null;
+    }
+
+    const basePath = baseURL.pathname.replace(/\/+$/, '');
+    const imagePath = imageURL.pathname.replace(/\/+$/, '');
+
+    if (!basePath || !imagePath.startsWith(`${basePath}/`)) {
+      return null;
+    }
+
+    const objectKey = decodeURIComponent(imagePath.slice(basePath.length + 1));
+    if (!isObjectKey(objectKey)) {
+      return null;
+    }
+
+    return objectKey;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeMediaPublicBaseUrl(value: string): string {
+  const fallback = 'http://localhost:12030/ecommerce-media';
+  const raw = value?.trim() || fallback;
+  return raw.replace(/\/+$/, '');
+}
+
+function toProductResponse(product: ProductDocument | ProductResponse, mediaPublicBaseUrl: string): ProductResponse {
   if ('id' in product && typeof product.id === 'string' && 'variants' in product && Array.isArray(product.variants)) {
     if ((product as ProductResponse).createdAt && typeof (product as ProductResponse).createdAt === 'string') {
-      return enrichProductResponse(product as ProductResponse);
+      return enrichProductResponse(product as ProductResponse, mediaPublicBaseUrl);
     }
   }
 
@@ -549,7 +648,7 @@ function toProductResponse(product: ProductDocument | ProductResponse): ProductR
     brand: document.brand ?? null,
     status: document.status,
     attributes: document.attributes ?? {},
-    images: document.images ?? [],
+    images: resolveImagesForResponse(document.images ?? [], mediaPublicBaseUrl),
     variants: (document.variants ?? []).map((variant) => ({
       sku: variant.sku,
       name: variant.name,
@@ -563,14 +662,18 @@ function toProductResponse(product: ProductDocument | ProductResponse): ProductR
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
     deletedAt: document.deletedAt ? document.deletedAt.toISOString() : null
-  });
+  }, mediaPublicBaseUrl);
 }
 
 function enrichProductResponse(
-  input: Omit<ProductResponse, 'productCode' | 'sellerCode'> & Partial<Pick<ProductResponse, 'productCode' | 'sellerCode'>>
+  input: Omit<ProductResponse, 'productCode' | 'sellerCode'> & Partial<Pick<ProductResponse, 'productCode' | 'sellerCode'>>,
+  mediaPublicBaseUrl: string
 ): ProductResponse {
+  const normalizedImages = resolveImagesForResponse(input.images ?? [], mediaPublicBaseUrl);
+
   return {
     ...input,
+    images: normalizedImages,
     productCode: toDisplayCode(input.id, 'PRD'),
     sellerCode: toDisplayCode(input.sellerId, 'SEL')
   };

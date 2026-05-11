@@ -264,6 +264,7 @@ export interface UploadSellerProductImageInput {
 export interface UploadSellerProductImageOutput {
   fileName: string;
   folder: string;
+  objectKey: string;
   imageUrl: string;
   relativePath: string;
 }

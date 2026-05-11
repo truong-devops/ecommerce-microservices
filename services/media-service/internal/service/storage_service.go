@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"mime"
 	"net/http"
@@ -25,8 +26,9 @@ var (
 )
 
 type StorageService struct {
-	client *minio.Client
-	cfg    config.Config
+	client       *minio.Client
+	presignClient *minio.Client
+	cfg          config.Config
 }
 
 type PresignUploadRequest struct {
@@ -70,14 +72,29 @@ func NewStorageService(cfg config.Config) (*StorageService, error) {
 	client, err := minio.New(cfg.MinIOEndpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.MinIOAccessKey, cfg.MinIOSecretKey, ""),
 		Secure: cfg.MinIOUseSSL,
+		Region: cfg.MinIORegion,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	presignClient := client
+	if strings.TrimSpace(cfg.MinIOPublicEndpoint) != "" {
+		publicClient, publicErr := minio.New(cfg.MinIOPublicEndpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(cfg.MinIOAccessKey, cfg.MinIOSecretKey, ""),
+			Secure: cfg.MinIOPublicUseSSL,
+			Region: cfg.MinIORegion,
+		})
+		if publicErr != nil {
+			return nil, publicErr
+		}
+		presignClient = publicClient
+	}
+
 	return &StorageService{
-		client: client,
-		cfg:    cfg,
+		client:        client,
+		presignClient: presignClient,
+		cfg:           cfg,
 	}, nil
 }
 
@@ -86,13 +103,32 @@ func (s *StorageService) EnsureBucket(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("check media bucket failed: %w", err)
 	}
-	if exists {
-		return nil
+
+	if !exists {
+		if err := s.client.MakeBucket(ctx, s.cfg.MinIOBucket, minio.MakeBucketOptions{}); err != nil {
+			return fmt.Errorf("create media bucket failed: %w", err)
+		}
 	}
 
-	if err := s.client.MakeBucket(ctx, s.cfg.MinIOBucket, minio.MakeBucketOptions{}); err != nil {
-		return fmt.Errorf("create media bucket failed: %w", err)
+	if s.cfg.MinIOPublicRead {
+		if err := s.ensurePublicReadPolicy(ctx); err != nil {
+			return err
+		}
 	}
+
+	return nil
+}
+
+func (s *StorageService) ensurePublicReadPolicy(ctx context.Context) error {
+	policy, err := buildPublicReadPolicy(s.cfg.MinIOBucket)
+	if err != nil {
+		return fmt.Errorf("marshal media bucket policy failed: %w", err)
+	}
+
+	if err := s.client.SetBucketPolicy(ctx, s.cfg.MinIOBucket, policy); err != nil {
+		return fmt.Errorf("set media bucket policy failed: %w", err)
+	}
+
 	return nil
 }
 
@@ -130,7 +166,7 @@ func (s *StorageService) PresignUpload(ctx context.Context, req PresignUploadReq
 		return PresignUploadResponse{}, err
 	}
 
-	url, err := s.client.PresignedPutObject(ctx, s.cfg.MinIOBucket, objectKey, expiresIn)
+	url, err := s.presignClient.PresignedPutObject(ctx, s.cfg.MinIOBucket, objectKey, expiresIn)
 	if err != nil {
 		return PresignUploadResponse{}, httpx.NewAppError(http.StatusInternalServerError, domain.ErrorCodeInternalServerError, "failed to create upload URL", nil)
 	}
@@ -158,7 +194,7 @@ func (s *StorageService) PresignDownload(ctx context.Context, req PresignDownloa
 		return PresignDownloadResponse{}, err
 	}
 
-	url, err := s.client.PresignedGetObject(ctx, s.cfg.MinIOBucket, objectKey, expiresIn, nil)
+	url, err := s.presignClient.PresignedGetObject(ctx, s.cfg.MinIOBucket, objectKey, expiresIn, nil)
 	if err != nil {
 		return PresignDownloadResponse{}, httpx.NewAppError(http.StatusInternalServerError, domain.ErrorCodeInternalServerError, "failed to create download URL", nil)
 	}
@@ -231,4 +267,25 @@ func isValidObjectKey(value string) bool {
 		return false
 	}
 	return objectKeyRegex.MatchString(value)
+}
+
+func buildPublicReadPolicy(bucket string) (string, error) {
+	policy := map[string]any{
+		"Version": "2012-10-17",
+		"Statement": []map[string]any{
+			{
+				"Effect":    "Allow",
+				"Principal": map[string]string{"AWS": "*"},
+				"Action":    []string{"s3:GetObject"},
+				"Resource":  []string{fmt.Sprintf("arn:aws:s3:::%s/*", bucket)},
+			},
+		},
+	}
+
+	raw, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+
+	return string(raw), nil
 }

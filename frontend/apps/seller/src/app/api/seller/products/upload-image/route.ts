@@ -1,12 +1,19 @@
-import { mkdir, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
 import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/seller-api-response';
-import { serviceBaseUrls } from '@/lib/server/upstream-client';
+import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const PRODUCT_CREATE_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN']);
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const DEFAULT_MEDIA_PUBLIC_BASE_URL = 'http://127.0.0.1:12030/ecommerce-media';
+
+interface PresignUploadResponse {
+  objectKey: string;
+  method: string;
+  uploadUrl: string;
+  headers?: Record<string, string>;
+}
 
 export async function POST(request: Request) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
@@ -50,45 +57,86 @@ export async function POST(request: Request) {
   }
 
   const safeFolder = sanitizeFolder(folderRaw) || 'uncategorized';
-  const extension = inferExtension(file);
-  const originalBaseName = sanitizeFilenameBase(file.name);
-  const stampedName = `${originalBaseName}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
 
-  const repoRoot = await resolveRepoRoot();
-  if (!repoRoot) {
-    return fail(500, 'INTERNAL_ERROR', 'Cannot resolve repository root for image storage');
+  let presigned: PresignUploadResponse;
+  try {
+    presigned = await requestUpstream<PresignUploadResponse>(`${serviceBaseUrls.media}/media/presign-upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        entityType: 'product',
+        entityId: safeFolder,
+        fileName: normalizeFileName(file.name),
+        contentType: file.type
+      })
+    });
+  } catch {
+    return fail(502, 'MEDIA_PRESIGN_FAILED', 'Cannot create upload URL from media service');
   }
 
-  const assetsRoot = path.join(repoRoot, 'services', 'product-service', 'seed-data', 'image');
-  const folderPath = path.join(assetsRoot, safeFolder);
+  const uploadMethod = (presigned.method || 'PUT').toUpperCase();
+  if (uploadMethod !== 'PUT') {
+    return fail(502, 'MEDIA_PRESIGN_FAILED', 'Unsupported upload method from media service');
+  }
 
-  await mkdir(folderPath, { recursive: true });
+  let uploadResponse: Response;
+  try {
+    uploadResponse = await fetch(presigned.uploadUrl, {
+      method: uploadMethod,
+      headers: presigned.headers ?? {
+        'Content-Type': file.type
+      },
+      body: file
+    });
+  } catch {
+    return fail(502, 'MEDIA_UPLOAD_FAILED', 'Cannot upload file to object storage');
+  }
 
-  const destinationPath = path.join(folderPath, stampedName);
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(destinationPath, buffer);
+  if (!uploadResponse.ok) {
+    return fail(502, 'MEDIA_UPLOAD_FAILED', 'Object storage rejected uploaded file');
+  }
 
-  const assetBaseUrl = toAssetBaseUrl(serviceBaseUrls.product);
-  const imageUrl = `${assetBaseUrl}/${safeFolder}/${stampedName}`;
+  const objectKey = presigned.objectKey.trim();
+  if (!objectKey) {
+    return fail(502, 'MEDIA_UPLOAD_FAILED', 'Media service returned empty object key');
+  }
 
-  return ok({
-    fileName: stampedName,
-    folder: safeFolder,
-    imageUrl,
-    relativePath: `${safeFolder}/${stampedName}`
-  }, 'backend', 201);
+  const mediaPublicBaseUrl = normalizePublicBaseUrl(process.env.MEDIA_PUBLIC_BASE_URL ?? DEFAULT_MEDIA_PUBLIC_BASE_URL);
+  const imageUrl = `${mediaPublicBaseUrl}/${objectKey}`;
+
+  return ok(
+    {
+      fileName: extractFileNameFromObjectKey(objectKey),
+      folder: safeFolder,
+      objectKey,
+      imageUrl,
+      relativePath: objectKey
+    },
+    'backend',
+    201
+  );
 }
 
 function sanitizeFolder(value: string): string {
-  return value
+  const normalized = value
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9-_]/g, '-')
-    .replace(/\.{2,}/g, '-')
+    .replace(/[^a-z0-9_-]/g, '-')
     .replace(/-{2,}/g, '-')
     .replace(/(^-+|-+$)/g, '')
     .trim();
+
+  return normalized.slice(0, 64);
+}
+
+function normalizeFileName(fileName: string): string {
+  const safeBase = sanitizeFilenameBase(fileName);
+  const extension = inferExtension(fileName);
+  return `${safeBase}.${extension}`;
 }
 
 function sanitizeFilenameBase(fileName: string): string {
@@ -102,57 +150,29 @@ function sanitizeFilenameBase(fileName: string): string {
     .replace(/-{2,}/g, '-')
     .replace(/(^-+|-+$)/g, '');
 
-  return cleaned || 'image';
+  return (cleaned || 'image').slice(0, 96);
 }
 
-function inferExtension(file: File): string {
-  const fromName = path.extname(file.name).replace('.', '').toLowerCase();
-  if (fromName === 'jpg' || fromName === 'jpeg') {
-    return 'jpg';
+function inferExtension(fileName: string): string {
+  const extension = path.extname(fileName).replace('.', '').toLowerCase();
+  switch (extension) {
+    case 'jpg':
+    case 'jpeg':
+      return 'jpg';
+    case 'png':
+    case 'webp':
+    case 'gif':
+      return extension;
+    default:
+      return 'jpg';
   }
-  if (fromName === 'png' || fromName === 'webp' || fromName === 'gif') {
-    return fromName;
-  }
-
-  if (file.type === 'image/jpeg') {
-    return 'jpg';
-  }
-  if (file.type === 'image/png') {
-    return 'png';
-  }
-  if (file.type === 'image/webp') {
-    return 'webp';
-  }
-  if (file.type === 'image/gif') {
-    return 'gif';
-  }
-
-  return 'jpg';
 }
 
-function toAssetBaseUrl(productServiceBaseUrl: string): string {
-  const url = new URL(productServiceBaseUrl);
-  const normalizedHost = url.hostname === 'localhost' ? '127.0.0.1' : url.hostname;
-  const normalizedOrigin = `${url.protocol}//${normalizedHost}${url.port ? `:${url.port}` : ''}`;
-  return `${normalizedOrigin}/api/v1/products/assets`;
+function normalizePublicBaseUrl(raw: string): string {
+  return raw.trim().replace(/\/+$/, '');
 }
 
-async function resolveRepoRoot(): Promise<string | null> {
-  let current = process.cwd();
-
-  for (let depth = 0; depth < 8; depth += 1) {
-    const candidate = path.join(current, 'services', 'product-service', 'seed-data', 'image');
-    try {
-      await access(candidate);
-      return current;
-    } catch {
-      const parent = path.dirname(current);
-      if (parent === current) {
-        break;
-      }
-      current = parent;
-    }
-  }
-
-  return null;
+function extractFileNameFromObjectKey(objectKey: string): string {
+  const fileName = objectKey.split('/').filter(Boolean).pop();
+  return fileName || 'image';
 }

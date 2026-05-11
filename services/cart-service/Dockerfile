@@ -12,5 +12,7 @@ WORKDIR /
 COPY --from=builder /cart-service /cart-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3004
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/cart-service"]

@@ -11,5 +11,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /
 COPY --from=builder /chat-service /chat-service
 
-EXPOSE 3012
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/chat-service"]

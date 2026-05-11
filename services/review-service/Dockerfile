@@ -11,5 +11,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /
 COPY --from=builder /review-service-go /review-service-go
 
-EXPOSE 3009
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/review-service-go"]

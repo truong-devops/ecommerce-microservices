@@ -43,6 +43,7 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV PORT=8080
 
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/dist ./dist
@@ -51,5 +52,5 @@ COPY --chown=node:node package.json ./
 
 USER node
 
-EXPOSE 3001
+EXPOSE 8080
 CMD ["node", "dist/main.js"]

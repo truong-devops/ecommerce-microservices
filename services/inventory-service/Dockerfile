@@ -12,5 +12,7 @@ WORKDIR /
 COPY --from=builder /inventory-service /inventory-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3007
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/inventory-service"]

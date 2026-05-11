@@ -12,5 +12,7 @@ WORKDIR /
 COPY --from=builder /order-service /order-service
 COPY --from=builder /app/migrations /migrations
 
-EXPOSE 3002
+ENV PORT=8080
+
+EXPOSE 8080
 ENTRYPOINT ["/order-service"]

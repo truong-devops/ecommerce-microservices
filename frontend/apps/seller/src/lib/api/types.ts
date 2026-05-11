@@ -276,6 +276,7 @@ export interface SellerOrderItem {
   productId: string;
   sku: string;
   productName: string;
+  imageUrl?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

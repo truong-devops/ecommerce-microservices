@@ -1,5 +1,6 @@
 import type { SellerOrder } from '@/lib/api/types';
 import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
+import { enrichOrderWithProductImages } from '@/lib/server/order-product-images';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { fail, ok } from '@/lib/server/seller-api-response';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
@@ -40,7 +41,8 @@ export async function GET(request: Request, context: RouteContext) {
       }
     });
 
-    return ok(order, 'backend');
+    const enriched = await enrichOrderWithProductImages(order, accessToken);
+    return ok(enriched, 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }

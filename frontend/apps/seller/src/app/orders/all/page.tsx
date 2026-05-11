@@ -232,7 +232,12 @@ export default function AllOrdersPage() {
                             </Link>
                           </td>
                           <td className="px-4 py-3">{formatCustomerCode(order.userId)}</td>
-                          <td className="px-4 py-3">{toProductSummary(order)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <OrderItemThumbnail imageUrl={getPrimaryOrderImage(order)} />
+                              <span>{toProductSummary(order)}</span>
+                            </div>
+                          </td>
                           <td className="px-4 py-3">{formatCurrency(order.totalAmount, order.currency)}</td>
                           <td className="px-4 py-3">
                             <span className="rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-700">
@@ -257,6 +262,29 @@ export default function AllOrdersPage() {
       </div>
     </div>
   );
+}
+
+function getPrimaryOrderImage(order: SellerOrder): string | null {
+  for (const item of order.items) {
+    const imageUrl = item.imageUrl?.trim();
+    if (imageUrl) {
+      return imageUrl;
+    }
+  }
+
+  return null;
+}
+
+function OrderItemThumbnail({ imageUrl }: { imageUrl: string | null }) {
+  if (!imageUrl) {
+    return (
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-400">
+        N/A
+      </span>
+    );
+  }
+
+  return <img src={imageUrl} alt="Ảnh sản phẩm" className="h-10 w-10 rounded-md border border-slate-200 object-cover" loading="lazy" />;
 }
 
 function toProductSummary(order: SellerOrder): string {

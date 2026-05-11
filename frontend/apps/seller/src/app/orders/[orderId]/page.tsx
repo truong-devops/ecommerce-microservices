@@ -293,6 +293,7 @@ export default function SellerOrderDetailPage() {
                   <table className="w-full border-collapse text-left text-sm text-slate-700">
                     <thead className="bg-slate-50 text-sm font-medium text-slate-500">
                       <tr>
+                        <th className="px-3 py-2">Ảnh</th>
                         <th className="px-3 py-2">Tên sản phẩm</th>
                         <th className="px-3 py-2">SKU</th>
                         <th className="px-3 py-2">SL</th>
@@ -303,6 +304,9 @@ export default function SellerOrderDetailPage() {
                     <tbody>
                       {order.items.map((item) => (
                         <tr key={item.id} className="border-t border-slate-100">
+                          <td className="px-3 py-2">
+                            <OrderItemThumbnail imageUrl={item.imageUrl ?? null} />
+                          </td>
                           <td className="px-3 py-2">{item.productName}</td>
                           <td className="px-3 py-2">{item.sku}</td>
                           <td className="px-3 py-2">{item.quantity}</td>
@@ -417,6 +421,18 @@ export default function SellerOrderDetailPage() {
       </div>
     </div>
   );
+}
+
+function OrderItemThumbnail({ imageUrl }: { imageUrl: string | null }) {
+  if (!imageUrl) {
+    return (
+      <span className="inline-flex h-12 w-12 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-400">
+        N/A
+      </span>
+    );
+  }
+
+  return <img src={imageUrl} alt="Ảnh sản phẩm" className="h-12 w-12 rounded-md border border-slate-200 object-cover" loading="lazy" />;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

@@ -1,5 +1,6 @@
 import type { SellerOrder, SellerOrderItem, SellerOrderListOutput, SellerOrderStatus } from '@/lib/api/types';
 import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
+import { enrichOrderListWithProductImages } from '@/lib/server/order-product-images';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { fail, ok } from '@/lib/server/seller-api-response';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
@@ -68,7 +69,16 @@ export async function GET(request: Request) {
       }
     });
 
-    return ok(normalizeOrderListOutput(orders, page ?? 1, Math.min(100, pageSize ?? 20)), 'backend');
+    const normalized = normalizeOrderListOutput(orders, page ?? 1, Math.min(100, pageSize ?? 20));
+    const enrichedItems = await enrichOrderListWithProductImages(normalized.items, accessToken);
+
+    return ok(
+      {
+        ...normalized,
+        items: enrichedItems
+      },
+      'backend'
+    );
   } catch (error) {
     return toErrorResponse(error);
   }

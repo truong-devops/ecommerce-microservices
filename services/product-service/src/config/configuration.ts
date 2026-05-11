@@ -18,6 +18,9 @@
       secret: process.env.JWT_ACCESS_SECRET
     }
   },
+  media: {
+    publicBaseUrl: process.env.MEDIA_PUBLIC_BASE_URL ?? 'http://localhost:12030/ecommerce-media'
+  },
   kafka: {
     enabled: process.env.KAFKA_ENABLED === 'true',
     clientId: process.env.KAFKA_CLIENT_ID ?? 'product-service',

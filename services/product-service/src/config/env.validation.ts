@@ -13,6 +13,7 @@ export const envValidationSchema = Joi.object({
   REDIS_URL: Joi.string().uri().optional(),
 
   JWT_ACCESS_SECRET: Joi.string().min(32).required(),
+  MEDIA_PUBLIC_BASE_URL: Joi.string().uri().default('http://localhost:12030/ecommerce-media'),
 
   KAFKA_ENABLED: Joi.boolean().default(false),
   KAFKA_CLIENT_ID: Joi.string().default('product-service'),

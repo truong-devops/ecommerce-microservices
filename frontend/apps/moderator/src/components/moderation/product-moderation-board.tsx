@@ -6,7 +6,7 @@ interface ProductModerationBoardProps {
   onUpdateStatus: (productId: string, status: ModerationProductStatus) => void;
 }
 
-const PRODUCT_ASSET_BASE_URL = process.env.NEXT_PUBLIC_PRODUCT_ASSET_BASE_URL ?? 'http://localhost:3003/api/v1/products/assets';
+const PRODUCT_ASSET_BASE_URL = process.env.NEXT_PUBLIC_PRODUCT_ASSET_BASE_URL ?? 'http://localhost:12012/api/v1/products/assets';
 
 export function ProductModerationBoard({ items, loading, onUpdateStatus }: ProductModerationBoardProps) {
   if (loading) {
@@ -95,11 +95,25 @@ function resolveImageUrl(value: string | undefined): string {
   }
 
   if (/^https?:\/\//i.test(value)) {
-    return value;
+    return normalizeProductImageUrl(value);
   }
 
   const normalized = value.startsWith('/') ? value.slice(1) : value;
   return `${PRODUCT_ASSET_BASE_URL}/${normalized}`;
+}
+
+function normalizeProductImageUrl(raw: string): string {
+  const value = raw.trim();
+
+  if (value.startsWith('http://localhost:3003/')) {
+    return value.replace('http://localhost:3003/', 'http://localhost:12012/');
+  }
+
+  if (value.startsWith('http://127.0.0.1:3003/')) {
+    return value.replace('http://127.0.0.1:3003/', 'http://127.0.0.1:12012/');
+  }
+
+  return value;
 }
 
 function StatusChip({ status }: { status: ModerationProductStatus }) {

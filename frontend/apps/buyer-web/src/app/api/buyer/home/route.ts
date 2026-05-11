@@ -94,7 +94,7 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
       price,
       compareAtPrice,
       discountPercent,
-      image: product.images[0] ?? `https://picsum.photos/seed/product-${index + 1}/500/500`
+      image: normalizeProductImageUrl(product.images[0]) || `https://picsum.photos/seed/product-${index + 1}/500/500`
     };
   });
 
@@ -193,4 +193,25 @@ function calculateDiscountPercent(price: number, compareAtPrice: number): number
   }
 
   return Math.max(5, Math.round(((compareAtPrice - price) / compareAtPrice) * 100));
+}
+
+function normalizeProductImageUrl(raw: string | undefined): string {
+  if (!raw) {
+    return '';
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  if (trimmed.startsWith('http://localhost:3003/')) {
+    return trimmed.replace('http://localhost:3003/', 'http://localhost:12012/');
+  }
+
+  if (trimmed.startsWith('http://127.0.0.1:3003/')) {
+    return trimmed.replace('http://127.0.0.1:3003/', 'http://127.0.0.1:12012/');
+  }
+
+  return trimmed;
 }

@@ -13,6 +13,7 @@ const (
 	ServiceAuth         = "auth"
 	ServiceUser         = "user"
 	ServiceProduct      = "product"
+	ServiceMedia        = "media"
 	ServiceCart         = "cart"
 	ServiceOrder        = "order"
 	ServicePayment      = "payment"
@@ -114,6 +115,7 @@ func Load() (*Config, error) {
 		{ServiceAuth, "AUTH_SERVICE_URL", "AUTH_SERVICE_TIMEOUT"},
 		{ServiceUser, "USER_SERVICE_URL", "USER_SERVICE_TIMEOUT"},
 		{ServiceProduct, "PRODUCT_SERVICE_URL", "PRODUCT_SERVICE_TIMEOUT"},
+		{ServiceMedia, "MEDIA_SERVICE_URL", "MEDIA_SERVICE_TIMEOUT"},
 		{ServiceCart, "CART_SERVICE_URL", "CART_SERVICE_TIMEOUT"},
 		{ServiceOrder, "ORDER_SERVICE_URL", "ORDER_SERVICE_TIMEOUT"},
 		{ServicePayment, "PAYMENT_SERVICE_URL", "PAYMENT_SERVICE_TIMEOUT"},

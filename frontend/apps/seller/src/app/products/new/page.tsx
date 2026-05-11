@@ -85,6 +85,8 @@ const INITIAL_VARIANT: VariantFormState = {
 };
 
 const SKU_PATTERN = /^[A-Z0-9._-]+$/;
+const OBJECT_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9/_\-.]+$/;
+const DEFAULT_MEDIA_PUBLIC_BASE_URL = 'http://127.0.0.1:12030/ecommerce-media';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -243,12 +245,13 @@ export default function NewProductPage() {
       setWithoutGtin(!gtin);
 
       setUploadedImages(
-        (product.images ?? []).map((imageUrl) => ({
+        (product.images ?? []).map((imageValue) => ({
           id: createLocalId(),
-          fileName: extractImageFileName(imageUrl),
-          folder: extractImageFolder(imageUrl, product.categoryId ?? ''),
-          imageUrl,
-          relativePath: extractRelativePathFromUrl(imageUrl, product.categoryId ?? '')
+          fileName: extractImageFileName(imageValue),
+          folder: extractImageFolder(imageValue, product.categoryId ?? ''),
+          objectKey: extractObjectKey(imageValue),
+          imageUrl: resolvePreviewImageUrl(imageValue),
+          relativePath: extractRelativePath(imageValue, product.categoryId ?? '')
         }))
       );
     };
@@ -503,12 +506,12 @@ export default function NewProductPage() {
         slug: form.slug.trim() || undefined,
         brand: form.brand.trim() || undefined,
         description: form.description.trim() || undefined,
-        images: uploadedImages.map((image) => normalizeProductImageUrl(image.imageUrl)),
+        images: uploadedImages.map((image) => image.objectKey.trim()).filter(Boolean),
         variants: validatedVariants,
         attributes: {
           source: uploadedImages.length > 0 ? 'seller-upload' : 'manual-entry',
           folder: toCategoryFolder(categoryId),
-          uploadedImages: uploadedImages.map((item) => item.relativePath)
+          uploadedImages: uploadedImages.map((item) => item.objectKey)
         },
         status: isEditMode ? 'DRAFT' : intent === 'publish' && user.role !== 'SELLER' ? 'ACTIVE' : 'DRAFT'
       };
@@ -934,7 +937,7 @@ export default function NewProductPage() {
             <h4 className="mt-3 text-sm font-semibold text-slate-900">Danh mục & hình ảnh</h4>
             <p className="mt-2 text-sm text-slate-600">- Danh mục lấy từ database và giới hạn theo 5 nhóm chính của shop.</p>
             <p className="mt-1 text-sm text-slate-600">- Nếu danh mục chưa có, bạn nhập mới và hệ thống vẫn tạo sản phẩm bình thường.</p>
-            {/* <p className="mt-1 text-sm text-slate-600">- Hình upload sẽ lưu vào `services/product-service/seed-data/image/folder-name`.</p> */}
+            <p className="mt-1 text-sm text-slate-600">- Hình upload sẽ lưu trên MinIO thông qua media-service, sản phẩm lưu objectKey.</p>
             <p className="mt-2 text-sm text-slate-500">
               {isEditMode
                 ? 'Khi lưu chỉnh sửa từ màn Chi tiết, trạng thái sẽ chuyển về DRAFT để hệ thống kiểm duyệt lại.'
@@ -1158,16 +1161,6 @@ function createLocalId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function normalizeProductImageUrl(raw: string): string {
-  const value = raw.trim();
-
-  if (value.startsWith('http://localhost:3003/')) {
-    return value.replace('http://localhost:3003/', 'http://127.0.0.1:3003/');
-  }
-
-  return value;
-}
-
 function extractImageRatio(product: SellerProduct): '1:1' | '3:4' {
   const variant = product.variants.find((item) => item.isDefault) ?? product.variants[0];
   const metadata = variant?.metadata ?? {};
@@ -1182,24 +1175,18 @@ function extractGtin(product: SellerProduct): string {
   return typeof gtin === 'string' ? gtin : '';
 }
 
-function extractRelativePathFromUrl(imageUrl: string, categoryId: string): string {
-  try {
-    const parsed = new URL(imageUrl);
-    const marker = '/api/v1/products/assets/';
-    const index = parsed.pathname.indexOf(marker);
-    if (index >= 0) {
-      return parsed.pathname.slice(index + marker.length);
-    }
-  } catch {
-    // Ignore invalid URL and fallback below.
+function extractRelativePath(imageValue: string, categoryId: string): string {
+  const objectKey = extractObjectKey(imageValue);
+  if (OBJECT_KEY_PATTERN.test(objectKey)) {
+    return objectKey;
   }
 
   const fallbackFolder = toCategoryFolder(categoryId);
-  return `${fallbackFolder}/${extractImageFileName(imageUrl)}`;
+  return `${fallbackFolder}/${extractImageFileName(imageValue)}`;
 }
 
-function extractImageFolder(imageUrl: string, categoryId: string): string {
-  const relativePath = extractRelativePathFromUrl(imageUrl, categoryId);
+function extractImageFolder(imageValue: string, categoryId: string): string {
+  const relativePath = extractRelativePath(imageValue, categoryId);
   const parts = relativePath.split('/').filter(Boolean);
   if (parts.length >= 2) {
     return parts.slice(0, -1).join('/');
@@ -1208,12 +1195,57 @@ function extractImageFolder(imageUrl: string, categoryId: string): string {
   return toCategoryFolder(categoryId);
 }
 
-function extractImageFileName(imageUrl: string): string {
+function extractImageFileName(imageValue: string): string {
   try {
-    const parsed = new URL(imageUrl);
+    const parsed = new URL(imageValue);
     const pathname = parsed.pathname;
     return pathname.split('/').filter(Boolean).pop() ?? 'image';
   } catch {
-    return imageUrl.split('/').filter(Boolean).pop() ?? 'image';
+    return imageValue.split('/').filter(Boolean).pop() ?? 'image';
   }
+}
+
+function extractObjectKey(imageValue: string): string {
+  const value = imageValue.trim();
+  if (!value) {
+    return '';
+  }
+
+  if (OBJECT_KEY_PATTERN.test(value)) {
+    return value;
+  }
+
+  try {
+    const parsed = new URL(value);
+    const publicBasePath = new URL(getMediaPublicBaseUrl()).pathname.replace(/\/+$/, '');
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+    if (publicBasePath && normalizedPath.startsWith(`${publicBasePath}/`)) {
+      const extracted = decodeURIComponent(normalizedPath.slice(publicBasePath.length + 1));
+      if (OBJECT_KEY_PATTERN.test(extracted)) {
+        return extracted;
+      }
+    }
+  } catch {
+    return value;
+  }
+
+  return value;
+}
+
+function resolvePreviewImageUrl(imageValue: string): string {
+  const value = imageValue.trim();
+  if (!value) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  return `${getMediaPublicBaseUrl()}/${value}`;
+}
+
+function getMediaPublicBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL ?? DEFAULT_MEDIA_PUBLIC_BASE_URL;
+  return raw.trim().replace(/\/+$/, '');
 }

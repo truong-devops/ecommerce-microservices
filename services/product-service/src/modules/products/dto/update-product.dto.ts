@@ -8,7 +8,6 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  IsUrl,
   IsUUID,
   Length,
   Matches,
@@ -88,7 +87,7 @@ export class UpdateProductDto {
   attributes?: Record<string, unknown>;
 
   @IsArray()
-  @IsUrl({}, { each: true })
+  @Matches(/^(https?:\/\/\S+|[A-Za-z0-9][A-Za-z0-9/_\-.]{1,1023})$/, { each: true })
   @IsOptional()
   images?: string[];
 

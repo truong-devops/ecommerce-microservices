@@ -264,6 +264,7 @@ export interface UploadSellerProductImageInput {
 export interface UploadSellerProductImageOutput {
   fileName: string;
   folder: string;
+  objectKey: string;
   imageUrl: string;
   relativePath: string;
 }
@@ -275,6 +276,7 @@ export interface SellerOrderItem {
   productId: string;
   sku: string;
   productName: string;
+  imageUrl?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

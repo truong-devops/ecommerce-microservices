@@ -630,8 +630,8 @@ function parseListResponse<T>(envelope: UpstreamEnvelope<unknown>): { items: T[]
     if (Array.isArray(dataObj.items)) {
       items = dataObj.items as T[];
     }
-    const dataPagination = dataObj.pagination ?? {};
-    const metaPagination = envelope.meta?.pagination ?? {};
+    const dataPagination: Partial<PaginationOutput> = dataObj.pagination ?? {};
+    const metaPagination: Partial<PaginationOutput> = envelope.meta?.pagination ?? {};
     pagination = {
       page: sanitizeNumber(dataPagination.page ?? metaPagination.page) || 1,
       pageSize: sanitizeNumber(dataPagination.pageSize ?? metaPagination.pageSize) || items.length,
@@ -659,12 +659,12 @@ function buildNotificationBaseCandidates(baseUrl: string): string[] {
   const normalized = baseUrl.replace(/\/$/, '');
   const output = new Set<string>([normalized]);
 
-  if (normalized.includes('localhost:3009')) {
-    output.add(normalized.replace('localhost:3009', 'localhost:3011'));
+  if (normalized.includes('localhost:12014')) {
+    output.add(normalized.replace('localhost:12014', 'localhost:12019'));
   }
 
-  if (normalized.includes('localhost:3011')) {
-    output.add(normalized.replace('localhost:3011', 'localhost:3009'));
+  if (normalized.includes('localhost:12019')) {
+    output.add(normalized.replace('localhost:12019', 'localhost:12014'));
   }
 
   if (normalized.endsWith('/api/v1')) {

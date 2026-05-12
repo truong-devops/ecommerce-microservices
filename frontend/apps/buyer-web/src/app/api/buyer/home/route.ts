@@ -206,11 +206,11 @@ function normalizeProductImageUrl(raw: string | undefined): string {
   }
 
   if (trimmed.startsWith('http://localhost:3003/')) {
-    return trimmed.replace('http://localhost:3003/', 'http://localhost:12012/');
+    return trimmed.replace('http://localhost:3003/', 'http://localhost:12030/');
   }
 
   if (trimmed.startsWith('http://127.0.0.1:3003/')) {
-    return trimmed.replace('http://127.0.0.1:3003/', 'http://127.0.0.1:12012/');
+    return trimmed.replace('http://127.0.0.1:3003/', 'http://127.0.0.1:12030/');
   }
 
   return trimmed;

@@ -32,7 +32,7 @@ gRPC **Protocol Buffer definitions** in `shared/proto/` serve as the source of t
                         │   buyer-web · buyer (mobile) · seller · moderator   │
                         └────────────────────────┬────────────────────────────┘
                                                  │ HTTPS
-                                    ┌────────────▼────────────┐
+                                    ┌────────────▼─────────────┐
                                     │       API Gateway        │  Go · chi · JWT
                                     │  Rate Limit · CORS · WS  │  Prometheus · Zap
                                     └─────┬──────────────┬─────┘

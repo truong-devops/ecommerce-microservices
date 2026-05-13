@@ -75,9 +75,9 @@ Ghi chú theo yêu cầu:
 
 ---
 
-## 4) HIGH - Access token đi qua query string trên WebSocket
+## ~~4) HIGH - Access token đi qua query string trên WebSocket~~ `DONE`
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - FE gửi token qua query `?accessToken=...`.
   - BE chấp nhận token từ query.
@@ -88,15 +88,17 @@ Ghi chú theo yêu cầu:
 - Hậu quả:
   - Rủi ro lộ token trong logs/history/traces.
 - Fix Note:
-  - TODO
+  - Removed `accessToken` from WS query string in buyer/seller chat pages.
+  - Added WS auth extraction from `Sec-WebSocket-Protocol` (`access-token.<jwt>`) in chat JWT middleware.
 - Verification:
-  - TODO
+  - Chat pages now build WS URL with only `conversationId`.
+  - `go test ./...` passes in `services/chat-service`.
 
 ---
 
-## 5) HIGH - WebSocket `CheckOrigin` đang mở toàn bộ
+## ~~5) HIGH - WebSocket `CheckOrigin` đang mở toàn bộ~~ `DONE`
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - `CheckOrigin` luôn `return true`.
 - Tham chiếu:
@@ -104,15 +106,16 @@ Ghi chú theo yêu cầu:
 - Hậu quả:
   - Tăng bề mặt tấn công cross-origin WS.
 - Fix Note:
-  - TODO
+  - Replaced permissive `CheckOrigin` with allowlist-based origin validation.
+  - Added chat config `WS_ALLOWED_ORIGINS` with safe local defaults.
 - Verification:
-  - TODO
+  - `chat-service` compiles/tests successfully with new origin check path.
 
 ---
 
-## 6) HIGH - BFF frontend gọi trực tiếp từng service (lệch chuẩn qua gateway)
+## ~~6) HIGH - BFF frontend gọi trực tiếp từng service (lệch chuẩn qua gateway)~~ `DONE`
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - BFF buyer/seller đang gọi thẳng service URLs thay vì đi qua gateway.
 - Tham chiếu:
@@ -122,9 +125,10 @@ Ghi chú theo yêu cầu:
 - Hậu quả:
   - Auth/rate-limit/observability bị phân tán, khó governance.
 - Fix Note:
-  - TODO
+  - Switched default upstream base in buyer/seller BFF to `API_GATEWAY_BASE_URL` (`http://localhost:12000/api/v1`).
+  - Service-specific env vars still supported for overrides.
 - Verification:
-  - TODO
+  - Verified updated upstream-client defaults in both buyer-web and seller apps.
 
 ---
 

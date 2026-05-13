@@ -170,8 +170,8 @@ export default function BuyerChatPage() {
       wsRef.current = null;
     }
 
-    const wsUrl = `${CHAT_WS_BASE_URL}/api/v1/chat/ws?conversationId=${encodeURIComponent(selectedConversationId)}&accessToken=${encodeURIComponent(accessToken)}`;
-    const ws = new WebSocket(wsUrl);
+    const wsUrl = `${CHAT_WS_BASE_URL}/api/v1/chat/ws?conversationId=${encodeURIComponent(selectedConversationId)}`;
+    const ws = new WebSocket(wsUrl, ['chat.v1', `access-token.${accessToken}`]);
     wsRef.current = ws;
 
     ws.onopen = () => {

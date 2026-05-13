@@ -9,10 +9,11 @@ import (
 )
 
 type Config struct {
-	AppName   string
-	AppEnv    string
-	Port      int
-	APIPrefix string
+	AppName          string
+	AppEnv           string
+	Port             int
+	APIPrefix        string
+	WSAllowedOrigins []string
 
 	MongoURI      string
 	MongoDatabase string
@@ -40,17 +41,18 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		AppName:         getEnv("APP_NAME", "chat-service"),
-		AppEnv:          getEnv("APP_ENV", "development"),
-		APIPrefix:       strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
-		MongoURI:        strings.TrimSpace(os.Getenv("MONGO_URI")),
-		MongoDatabase:   getEnv("MONGO_DATABASE", "ecommerce_chat"),
-		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "true")),
-		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
-		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
-		KafkaEnabled:    parseBool(getEnv("KAFKA_ENABLED", "true")),
-		KafkaClientID:   getEnv("KAFKA_CLIENT_ID", "chat-service"),
-		KafkaBrokers:    parseCSV(getEnv("KAFKA_BROKERS", "localhost:9092")),
+		AppName:          getEnv("APP_NAME", "chat-service"),
+		AppEnv:           getEnv("APP_ENV", "development"),
+		APIPrefix:        strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
+		WSAllowedOrigins: parseCSV(getEnv("WS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:6789,http://localhost:8081,http://localhost:19006")),
+		MongoURI:         strings.TrimSpace(os.Getenv("MONGO_URI")),
+		MongoDatabase:    getEnv("MONGO_DATABASE", "ecommerce_chat"),
+		RedisEnabled:     parseBool(getEnv("REDIS_ENABLED", "true")),
+		RedisURL:         strings.TrimSpace(os.Getenv("REDIS_URL")),
+		JWTAccessSecret:  strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		KafkaEnabled:     parseBool(getEnv("KAFKA_ENABLED", "true")),
+		KafkaClientID:    getEnv("KAFKA_CLIENT_ID", "chat-service"),
+		KafkaBrokers:     parseCSV(getEnv("KAFKA_BROKERS", "localhost:9092")),
 
 		ChatEventsTopic:         getEnv("CHAT_EVENTS_TOPIC", "chat.events"),
 		NotificationEventsTopic: getEnv("NOTIFICATION_EVENTS_TOPIC", "notification.events"),

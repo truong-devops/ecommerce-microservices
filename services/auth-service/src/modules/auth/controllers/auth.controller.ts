@@ -92,6 +92,11 @@ export class AuthController {
     return this.authService.getSessions(currentUser);
   }
 
+  @Get('me')
+  getMe(@CurrentUser() currentUser: AuthenticatedUserContext): Promise<Record<string, unknown>> {
+    return this.authService.getMe(currentUser);
+  }
+
   @Delete('sessions/:sessionId')
   revokeSessionById(
     @CurrentUser() currentUser: AuthenticatedUserContext,

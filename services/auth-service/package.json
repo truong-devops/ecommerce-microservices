@@ -7,7 +7,7 @@
     "start": "node dist/main.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc -p tsconfig.build.json",
-    "lint": "echo 'lint scaffold pending'",
+    "lint": "tsc -p tsconfig.build.json --noEmit",
     "test": "jest --watchman=false --runInBand --passWithNoTests",
     "test:watch": "jest --watch --watchman=false",
     "test:cov": "jest --coverage --watchman=false"

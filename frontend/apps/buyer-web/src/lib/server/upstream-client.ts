@@ -1,11 +1,12 @@
-const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:12010/api/v1';
-const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? 'http://localhost:12011/api/v1';
-const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:12012/api/v1';
-const REVIEW_SERVICE_BASE_URL = process.env.REVIEW_SERVICE_BASE_URL ?? 'http://localhost:12014/api/v1';
-const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? 'http://localhost:12016/api/v1';
-const PAYMENT_SERVICE_BASE_URL = process.env.PAYMENT_SERVICE_BASE_URL ?? 'http://localhost:12017/api/v1';
-const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? 'http://localhost:12018/api/v1';
-const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? 'http://localhost:12020/api/v1';
+const API_GATEWAY_BASE_URL = process.env.API_GATEWAY_BASE_URL ?? 'http://localhost:12000/api/v1';
+const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const REVIEW_SERVICE_BASE_URL = process.env.REVIEW_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const ORDER_SERVICE_BASE_URL = process.env.ORDER_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const PAYMENT_SERVICE_BASE_URL = process.env.PAYMENT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,

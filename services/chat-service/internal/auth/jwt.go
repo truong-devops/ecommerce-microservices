@@ -9,8 +9,11 @@ import (
 	"chat-service/internal/httpx"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
+
+const wsTokenSubprotocolPrefix = "access-token."
 
 type RevokedTokenChecker interface {
 	IsAccessTokenRevoked(r *http.Request, jti string) (bool, error)
@@ -20,8 +23,8 @@ func RequireJWT(secret string, checker RevokedTokenChecker, logger *zap.Logger) 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := httpx.ExtractBearerToken(r.Header.Get("Authorization"))
-			if token == "" {
-				token = strings.TrimSpace(r.URL.Query().Get("accessToken"))
+			if token == "" && isWebSocketUpgradeRequest(r) {
+				token = extractTokenFromWebSocketSubprotocol(r)
 			}
 			if token == "" {
 				httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
@@ -51,6 +54,30 @@ func RequireJWT(secret string, checker RevokedTokenChecker, logger *zap.Logger) 
 			next.ServeHTTP(w, r.WithContext(WithUser(r.Context(), user)))
 		})
 	}
+}
+
+func isWebSocketUpgradeRequest(r *http.Request) bool {
+	if !strings.EqualFold(strings.TrimSpace(r.Header.Get("Upgrade")), "websocket") {
+		return false
+	}
+	connection := strings.ToLower(strings.TrimSpace(r.Header.Get("Connection")))
+	return strings.Contains(connection, "upgrade")
+}
+
+func extractTokenFromWebSocketSubprotocol(r *http.Request) string {
+	for _, protocol := range websocket.Subprotocols(r) {
+		p := strings.TrimSpace(protocol)
+		if p == "" {
+			continue
+		}
+		if strings.HasPrefix(strings.ToLower(p), wsTokenSubprotocolPrefix) {
+			token := strings.TrimSpace(p[len(wsTokenSubprotocolPrefix):])
+			if token != "" {
+				return token
+			}
+		}
+	}
+	return ""
 }
 
 func RequireRoles(roles ...domain.Role) func(http.Handler) http.Handler {

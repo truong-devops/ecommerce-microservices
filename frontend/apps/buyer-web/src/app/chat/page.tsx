@@ -17,7 +17,7 @@ function toWsBase(raw: string): string {
   return `ws://${raw}`;
 }
 
-const CHAT_WS_BASE_URL = toWsBase(process.env.NEXT_PUBLIC_CHAT_WS_BASE_URL ?? 'http://localhost:8080');
+const CHAT_WS_BASE_URL = toWsBase(process.env.NEXT_PUBLIC_CHAT_WS_BASE_URL ?? 'http://localhost:12000');
 type BuyerMessageView = BuyerChatMessage & { localState?: 'pending' | 'failed' };
 
 export default function BuyerChatPage() {
@@ -170,8 +170,8 @@ export default function BuyerChatPage() {
       wsRef.current = null;
     }
 
-    const wsUrl = `${CHAT_WS_BASE_URL}/api/v1/chat/ws?conversationId=${encodeURIComponent(selectedConversationId)}&accessToken=${encodeURIComponent(accessToken)}`;
-    const ws = new WebSocket(wsUrl);
+    const wsUrl = `${CHAT_WS_BASE_URL}/api/v1/chat/ws?conversationId=${encodeURIComponent(selectedConversationId)}`;
+    const ws = new WebSocket(wsUrl, ['chat.v1', `access-token.${accessToken}`]);
     wsRef.current = ws;
 
     ws.onopen = () => {

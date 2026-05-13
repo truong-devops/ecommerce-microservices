@@ -71,7 +71,7 @@ func main() {
 	chatService := service.NewChatService(repo, redisService, sendLimiter)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
-	chatHandler := handler.NewChatHandler(chatService, redisService)
+	chatHandler := handler.NewChatHandler(chatService, redisService, cfg.WSAllowedOrigins)
 	healthHandler := handler.NewHealthHandler(healthService)
 
 	httpHandler := router.New(cfg, logger, redisService, chatHandler, healthHandler)

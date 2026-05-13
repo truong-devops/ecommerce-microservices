@@ -77,7 +77,7 @@ func TestBuyerSellerChatFlowE2E(t *testing.T) {
 
 	chatService := service.NewChatService(chatRepo, redisService, service.NewSendRateLimiter(1000, 1000))
 	healthService := service.NewHealthService("chat-service", chatRepo, redisService)
-	chatHandler := handler.NewChatHandler(chatService, redisService)
+	chatHandler := handler.NewChatHandler(chatService, redisService, []string{"http://example.com"})
 	healthHandler := handler.NewHealthHandler(healthService)
 
 	cfg := config.Config{

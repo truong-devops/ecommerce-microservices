@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,12 +21,22 @@ import (
 )
 
 type ChatHandler struct {
-	chatService *service.ChatService
-	redis       *service.RedisService
+	chatService    *service.ChatService
+	redis          *service.RedisService
+	allowedOrigins map[string]struct{}
 }
 
-func NewChatHandler(chatService *service.ChatService, redis *service.RedisService) *ChatHandler {
-	return &ChatHandler{chatService: chatService, redis: redis}
+func NewChatHandler(chatService *service.ChatService, redis *service.RedisService, wsAllowedOrigins []string) *ChatHandler {
+	allowed := make(map[string]struct{}, len(wsAllowedOrigins))
+	for _, origin := range wsAllowedOrigins {
+		normalized := strings.TrimSpace(origin)
+		if normalized == "" {
+			continue
+		}
+		allowed[strings.ToLower(normalized)] = struct{}{}
+	}
+
+	return &ChatHandler{chatService: chatService, redis: redis, allowedOrigins: allowed}
 }
 
 func (h *ChatHandler) CreateConversation(w http.ResponseWriter, r *http.Request) {
@@ -159,8 +170,9 @@ func (h *ChatHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin: func(_ *http.Request) bool {
-			return true
+		Subprotocols:    []string{"chat.v1"},
+		CheckOrigin: func(req *http.Request) bool {
+			return h.isAllowedOrigin(req)
 		},
 	}
 
@@ -275,6 +287,22 @@ func (h *ChatHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			_ = writeJSON(map[string]any{"type": "error", "message": "unsupported event type"})
 		}
 	}
+}
+
+func (h *ChatHandler) isAllowedOrigin(r *http.Request) bool {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return false
+	}
+
+	parsed, err := url.Parse(origin)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return false
+	}
+
+	normalized := strings.ToLower(parsed.Scheme + "://" + parsed.Host)
+	_, ok := h.allowedOrigins[normalized]
+	return ok
 }
 
 type wsInboundMessage struct {

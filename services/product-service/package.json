@@ -11,7 +11,7 @@
     "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
     "docker:down": "docker compose -f docker-compose.dev.yml down --remove-orphans",
     "docker:logs": "docker compose -f docker-compose.dev.yml logs -f product-service",
-    "lint": "echo 'lint scaffold pending'",
+    "lint": "tsc -p tsconfig.build.json --noEmit",
     "test": "jest --watchman=false --runInBand --passWithNoTests",
     "test:watch": "jest --watch --watchman=false",
     "test:cov": "jest --coverage --watchman=false"

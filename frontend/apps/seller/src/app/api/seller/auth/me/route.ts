@@ -1,4 +1,4 @@
-import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
+import { readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/seller-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
@@ -12,35 +12,21 @@ export async function GET(request: Request) {
   }
 
   try {
-    await requestUpstream<Record<string, unknown>>(`${serviceBaseUrls.auth}/auth/sessions`, {
+    const profile = await requestUpstream<Record<string, unknown>>(`${serviceBaseUrls.auth}/auth/me`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     });
 
-    const claims = decodeAccessToken(accessToken);
-    if (!claims) {
-      return fail(401, 'UNAUTHORIZED', 'Invalid access token payload');
-    }
+    const user = (profile as { user?: { role?: unknown } }).user;
+    const role = typeof user?.role === 'string' ? user.role : '';
 
-    if (!DASHBOARD_ROLES.has(claims.role)) {
+    if (!DASHBOARD_ROLES.has(role)) {
       return fail(403, 'FORBIDDEN', 'Role is not allowed for seller dashboard');
     }
 
-    return ok(
-      {
-        user: {
-          id: claims.sub,
-          email: claims.email,
-          role: claims.role,
-          isEmailVerified: true,
-          // TODO(auth-service): replace default with real value when /auth/me endpoint exists.
-          mfaEnabled: false
-        }
-      },
-      'backend'
-    );
+    return ok(profile, 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -543,6 +543,27 @@ export class AuthService {
     };
   }
 
+  async getMe(currentUser: AuthenticatedUserContext): Promise<Record<string, unknown>> {
+    const user = await this.userRepository.findById(currentUser.userId);
+    if (!user) {
+      throw new NotFoundException({
+        code: ErrorCode.NOT_FOUND,
+        message: 'User not found'
+      });
+    }
+
+    return {
+      user: {
+        id: user.id,
+        userCode: formatRoleCode(user.id, user.role),
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+        mfaEnabled: user.mfaEnabled
+      }
+    };
+  }
+
   async revokeSessionById(currentUser: AuthenticatedUserContext, sessionId: string, request: RequestWithContext): Promise<Record<string, unknown>> {
     const session = await this.sessionService.getSessionById(sessionId);
     if (!session) {

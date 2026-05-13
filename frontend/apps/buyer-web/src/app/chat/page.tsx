@@ -17,7 +17,7 @@ function toWsBase(raw: string): string {
   return `ws://${raw}`;
 }
 
-const CHAT_WS_BASE_URL = toWsBase(process.env.NEXT_PUBLIC_CHAT_WS_BASE_URL ?? 'http://localhost:8080');
+const CHAT_WS_BASE_URL = toWsBase(process.env.NEXT_PUBLIC_CHAT_WS_BASE_URL ?? 'http://localhost:12000');
 type BuyerMessageView = BuyerChatMessage & { localState?: 'pending' | 'failed' };
 
 export default function BuyerChatPage() {

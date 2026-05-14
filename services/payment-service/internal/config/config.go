@@ -21,6 +21,9 @@ type Config struct {
 
 	JWTAccessSecret string
 
+	OrderServiceBaseURL string
+	DependencyTimeout   time.Duration
+
 	IdempotencyRecordTTLMinutes int
 	IdempotencyLockTTLSeconds   int
 	WebhookIdempotencyTTLMin    int
@@ -54,6 +57,10 @@ func Load() (Config, error) {
 		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "true")),
 		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
 		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		OrderServiceBaseURL: strings.TrimRight(
+			strings.TrimSpace(getEnv("ORDER_SERVICE_BASE_URL", "http://api-gateway:8080/api/v1")),
+			"/",
+		),
 
 		GatewayProvider: strings.ToLower(strings.TrimSpace(getEnv("PAYMENT_GATEWAY", "mock"))),
 
@@ -105,6 +112,12 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("WEBHOOK_IDEMPOTENCY_TTL_MINUTES must be >= 5")
 	}
 	cfg.WebhookIdempotencyTTLMin = webhookTTL
+
+	dependencyTimeoutMs, err := strconv.Atoi(getEnv("DEPENDENCY_TIMEOUT_MS", "5000"))
+	if err != nil || dependencyTimeoutMs < 100 {
+		return Config{}, fmt.Errorf("DEPENDENCY_TIMEOUT_MS must be >= 100")
+	}
+	cfg.DependencyTimeout = time.Duration(dependencyTimeoutMs) * time.Millisecond
 
 	intervalMs, err := strconv.Atoi(getEnv("OUTBOX_DISPATCH_INTERVAL_MS", "3000"))
 	if err != nil || intervalMs < 500 {

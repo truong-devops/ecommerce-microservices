@@ -66,14 +66,16 @@ type ListOrdersRequest struct {
 type OrderService struct {
 	repo              *repository.OrderRepository
 	idempotency       *IdempotencyService
+	productCatalog    *ProductCatalogClient
 	defaultStatusTime func() time.Time
 	orderSeq          uint64
 }
 
-func NewOrderService(repo *repository.OrderRepository, idem *IdempotencyService) *OrderService {
+func NewOrderService(repo *repository.OrderRepository, idem *IdempotencyService, productCatalog *ProductCatalogClient) *OrderService {
 	return &OrderService{
 		repo:              repo,
 		idempotency:       idem,
+		productCatalog:    productCatalog,
 		defaultStatusTime: func() time.Time { return time.Now().UTC() },
 	}
 }
@@ -111,21 +113,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, user domain.UserContext,
 		discountAmount = *req.DiscountAmount
 	}
 
-	normalizedItems := make([]repository.CreateOrderItemInput, 0, len(req.Items))
-	subtotal := 0.0
-	for _, item := range req.Items {
-		lineTotal := roundMoney(item.Quantity * item.UnitPrice)
-		subtotal += lineTotal
-		normalizedItems = append(normalizedItems, repository.CreateOrderItemInput{
-			ProductID:           strings.TrimSpace(item.ProductID),
-			SKU:                 strings.TrimSpace(item.SKU),
-			ProductNameSnapshot: strings.TrimSpace(item.ProductName),
-			Quantity:            int(math.Round(item.Quantity)),
-			UnitPrice:           roundMoney(item.UnitPrice),
-			TotalPrice:          lineTotal,
-		})
+	normalizedItems, subtotal, err := s.resolveAuthoritativeOrderItems(ctx, req)
+	if err != nil {
+		return nil, err
 	}
-	subtotal = roundMoney(subtotal)
 	total := roundMoney(subtotal + shippingAmount - discountAmount)
 	if total < 0 {
 		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Total amount must be greater than or equal to zero", nil)
@@ -670,6 +661,84 @@ func assertCanTransition(current, next domain.OrderStatus) error {
 
 func validationError(field, msg string) error {
 	return httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{field: msg})
+}
+
+func (s *OrderService) resolveAuthoritativeOrderItems(ctx context.Context, req CreateOrderRequest) ([]repository.CreateOrderItemInput, float64, error) {
+	if s.productCatalog == nil {
+		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Product catalog dependency is unavailable", nil)
+	}
+
+	currency := strings.ToUpper(strings.TrimSpace(req.Currency))
+	productCache := make(map[string]*CatalogProduct, len(req.Items))
+
+	normalizedItems := make([]repository.CreateOrderItemInput, 0, len(req.Items))
+	subtotal := 0.0
+	for idx, item := range req.Items {
+		productID := strings.TrimSpace(item.ProductID)
+		product, ok := productCache[productID]
+		if !ok {
+			var err error
+			product, err = s.productCatalog.GetProductByID(ctx, productID)
+			if err != nil {
+				return nil, 0, err
+			}
+			productCache[productID] = product
+		}
+
+		prefix := "items[" + strconv.Itoa(idx) + "]"
+		if product == nil {
+			return nil, 0, validationError(prefix+".productId", "product not found")
+		}
+		if product.Status != "ACTIVE" {
+			return nil, 0, validationError(prefix+".productId", "product is not active")
+		}
+
+		variant, found := findCatalogVariantBySKU(product.Variants, strings.TrimSpace(item.SKU))
+		if !found {
+			return nil, 0, validationError(prefix+".sku", "sku not found in product")
+		}
+		if variant.Currency == "" || variant.Currency != currency {
+			return nil, 0, validationError(prefix+".sku", "sku currency does not match order currency")
+		}
+
+		expectedPrice := roundMoney(variant.Price)
+		requestedPrice := roundMoney(item.UnitPrice)
+		if expectedPrice != requestedPrice {
+			return nil, 0, validationError(prefix+".unitPrice", "unitPrice mismatch with product catalog")
+		}
+
+		productNameSnapshot := strings.TrimSpace(variant.Name)
+		if productNameSnapshot == "" {
+			productNameSnapshot = product.Name
+		}
+		if productNameSnapshot == "" {
+			productNameSnapshot = strings.TrimSpace(item.ProductName)
+		}
+
+		quantity := int(math.Round(item.Quantity))
+		lineTotal := roundMoney(float64(quantity) * expectedPrice)
+		subtotal += lineTotal
+		normalizedItems = append(normalizedItems, repository.CreateOrderItemInput{
+			ProductID:           productID,
+			SKU:                 strings.TrimSpace(item.SKU),
+			ProductNameSnapshot: productNameSnapshot,
+			Quantity:            quantity,
+			UnitPrice:           expectedPrice,
+			TotalPrice:          lineTotal,
+		})
+	}
+
+	return normalizedItems, roundMoney(subtotal), nil
+}
+
+func findCatalogVariantBySKU(variants []CatalogVariant, sku string) (CatalogVariant, bool) {
+	target := strings.TrimSpace(sku)
+	for _, variant := range variants {
+		if strings.TrimSpace(variant.SKU) == target {
+			return variant, true
+		}
+	}
+	return CatalogVariant{}, false
 }
 
 func roundMoney(value float64) float64 {

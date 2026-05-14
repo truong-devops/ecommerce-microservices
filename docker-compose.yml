@@ -297,6 +297,8 @@ services:
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
+      PRODUCT_SERVICE_BASE_URL: http://product-service:8080/api/v1
+      DEPENDENCY_TIMEOUT_MS: 5000
       IDEMPOTENCY_RECORD_TTL_MINUTES: 60
       IDEMPOTENCY_LOCK_TTL_SECONDS: 30
       DISPATCH_INTERVAL_MS: 3000
@@ -341,6 +343,8 @@ services:
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
+      ORDER_SERVICE_BASE_URL: http://api-gateway:8080/api/v1
+      DEPENDENCY_TIMEOUT_MS: 5000
       PAYMENT_GATEWAY: mock
       KAFKA_BROKERS: kafka:29092
       ORDER_EVENTS_TOPIC: order.events

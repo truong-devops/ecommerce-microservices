@@ -91,6 +91,7 @@ type PaymentService struct {
 	repo          *repository.PaymentRepository
 	idempotency   *IdempotencyService
 	gateway       PaymentGateway
+	orderClient   *OrderClient
 	gatewayActive string
 	webhookTTLMin int
 }
@@ -99,6 +100,7 @@ func NewPaymentService(
 	repo *repository.PaymentRepository,
 	idempotency *IdempotencyService,
 	gateway PaymentGateway,
+	orderClient *OrderClient,
 	gatewayActive string,
 	webhookTTLMin int,
 ) *PaymentService {
@@ -106,6 +108,7 @@ func NewPaymentService(
 		repo:          repo,
 		idempotency:   idempotency,
 		gateway:       gateway,
+		orderClient:   orderClient,
 		gatewayActive: strings.ToLower(strings.TrimSpace(gatewayActive)),
 		webhookTTLMin: webhookTTLMin,
 	}
@@ -114,6 +117,7 @@ func NewPaymentService(
 func (s *PaymentService) CreatePaymentIntent(
 	ctx context.Context,
 	user domain.UserContext,
+	accessToken string,
 	requestID, idempotencyKey string,
 	req CreatePaymentIntentRequest,
 ) (map[string]any, int, error) {
@@ -129,6 +133,35 @@ func (s *PaymentService) CreatePaymentIntent(
 		return acquire.ResponseBody, http.StatusCreated, nil
 	}
 	defer s.idempotency.ReleaseLock(ctx, acquire.LockKey)
+
+	if s.orderClient == nil {
+		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Order service dependency is unavailable", nil)
+	}
+	orderSnapshot, err := s.orderClient.GetOrderByID(ctx, req.OrderID, accessToken)
+	if err != nil {
+		return nil, 0, err
+	}
+	if orderSnapshot.UserID == "" || orderSnapshot.UserID != user.UserID {
+		return nil, 0, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Order does not belong to current user", nil)
+	}
+	if !isPayableOrderStatus(orderSnapshot.Status) {
+		return nil, 0, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Order status is not payable", map[string]any{"status": orderSnapshot.Status})
+	}
+	if roundMoney(req.Amount) != orderSnapshot.TotalAmount || strings.ToUpper(strings.TrimSpace(req.Currency)) != orderSnapshot.Currency {
+		return nil, 0, httpx.NewAppError(
+			http.StatusUnprocessableEntity,
+			domain.ErrorCodePaymentAmountMismatch,
+			"Payment amount or currency does not match order",
+			map[string]any{
+				"orderAmount":     orderSnapshot.TotalAmount,
+				"orderCurrency":   orderSnapshot.Currency,
+				"requestAmount":   roundMoney(req.Amount),
+				"requestCurrency": strings.ToUpper(strings.TrimSpace(req.Currency)),
+			},
+		)
+	}
+	authoritativeAmount := orderSnapshot.TotalAmount
+	authoritativeCurrency := orderSnapshot.Currency
 
 	provider := s.gatewayActive
 	if req.Provider != nil && strings.TrimSpace(*req.Provider) != "" {
@@ -156,8 +189,8 @@ func (s *PaymentService) CreatePaymentIntent(
 
 	gatewayResult, err := s.gateway.CreatePaymentIntent(CreatePaymentIntentGatewayInput{
 		OrderID:         req.OrderID,
-		Amount:          req.Amount,
-		Currency:        req.Currency,
+		Amount:          authoritativeAmount,
+		Currency:        authoritativeCurrency,
 		Provider:        provider,
 		AutoCapture:     autoCapture,
 		SimulatedStatus: simulatedStatus,
@@ -177,11 +210,16 @@ func (s *PaymentService) CreatePaymentIntent(
 	if err != nil {
 		return nil, 0, err
 	}
-	if existing != nil {
-		return nil, 0, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Payment already exists for this order", nil)
+	if existing != nil && existing.UserID != user.UserID {
+		return nil, 0, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Order does not belong to current user", nil)
 	}
 
 	metadata := map[string]any{}
+	if existing != nil {
+		for k, v := range existing.Metadata {
+			metadata[k] = v
+		}
+	}
 	for k, v := range req.Metadata {
 		metadata[k] = v
 	}
@@ -194,35 +232,82 @@ func (s *PaymentService) CreatePaymentIntent(
 		metadata = nil
 	}
 
-	payment, err := s.repo.CreatePayment(ctx, tx, repository.CreatePaymentInput{
-		OrderID:           req.OrderID,
-		UserID:            user.UserID,
-		SellerID:          req.SellerID,
-		Provider:          provider,
-		ProviderPaymentID: strPtr(gatewayResult.ProviderPaymentID),
-		Status:            gatewayResult.Status,
-		Currency:          req.Currency,
-		Amount:            roundMoney(req.Amount),
-		RefundedAmount:    0,
-		Description:       trimAndNilIfEmpty(req.Description),
-		Metadata:          metadata,
-	})
-	if err != nil {
-		if repository.IsUniqueViolation(err) {
+	var (
+		payment              domain.Payment
+		auditAction          = "PAYMENT_INTENT_CREATED"
+		statusHistoryReason  = strPtr("Payment intent created")
+		isNewPaymentCreation = false
+	)
+	if existing == nil {
+		isNewPaymentCreation = true
+		payment, err = s.repo.CreatePayment(ctx, tx, repository.CreatePaymentInput{
+			OrderID:           req.OrderID,
+			UserID:            user.UserID,
+			SellerID:          req.SellerID,
+			Provider:          provider,
+			ProviderPaymentID: strPtr(gatewayResult.ProviderPaymentID),
+			Status:            gatewayResult.Status,
+			Currency:          authoritativeCurrency,
+			Amount:            authoritativeAmount,
+			RefundedAmount:    0,
+			Description:       trimAndNilIfEmpty(req.Description),
+			Metadata:          metadata,
+		})
+		if err != nil {
+			if repository.IsUniqueViolation(err) {
+				return nil, 0, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Payment already exists for this order", nil)
+			}
+			return nil, 0, err
+		}
+
+		if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+			PaymentID:     payment.ID,
+			FromStatus:    nil,
+			ToStatus:      payment.Status,
+			ChangedBy:     user.UserID,
+			ChangedByRole: user.Role,
+			Reason:        statusHistoryReason,
+		}); err != nil {
+			return nil, 0, err
+		}
+	} else {
+		if !canAttachIntentToExistingPayment(*existing) {
 			return nil, 0, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Payment already exists for this order", nil)
 		}
-		return nil, 0, err
-	}
+		auditAction = "PAYMENT_INTENT_ATTACHED_TO_PENDING_PAYMENT"
+		statusHistoryReason = strPtr("Payment intent attached to pending payment")
 
-	if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
-		PaymentID:     payment.ID,
-		FromStatus:    nil,
-		ToStatus:      payment.Status,
-		ChangedBy:     user.UserID,
-		ChangedByRole: user.Role,
-		Reason:        strPtr("Payment intent created"),
-	}); err != nil {
-		return nil, 0, err
+		updated := *existing
+		previousStatus := updated.Status
+		updated.Provider = provider
+		updated.ProviderPaymentID = strPtr(gatewayResult.ProviderPaymentID)
+		updated.Status = gatewayResult.Status
+		updated.Currency = authoritativeCurrency
+		updated.Amount = authoritativeAmount
+		updated.Description = trimAndNilIfEmpty(req.Description)
+		updated.Metadata = metadata
+		if updated.SellerID == nil && req.SellerID != nil && strings.TrimSpace(*req.SellerID) != "" {
+			trimmedSellerID := strings.TrimSpace(*req.SellerID)
+			updated.SellerID = &trimmedSellerID
+		}
+
+		payment, err = s.repo.SavePayment(ctx, tx, updated)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		if previousStatus != payment.Status {
+			if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+				PaymentID:     payment.ID,
+				FromStatus:    &previousStatus,
+				ToStatus:      payment.Status,
+				ChangedBy:     user.UserID,
+				ChangedByRole: user.Role,
+				Reason:        statusHistoryReason,
+			}); err != nil {
+				return nil, 0, err
+			}
+		}
 	}
 
 	if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
@@ -240,14 +325,15 @@ func (s *PaymentService) CreatePaymentIntent(
 
 	if err := s.repo.CreatePaymentAuditLog(ctx, tx, repository.CreatePaymentAuditLogInput{
 		PaymentID: payment.ID,
-		Action:    "PAYMENT_INTENT_CREATED",
+		Action:    auditAction,
 		ActorID:   user.UserID,
 		ActorRole: user.Role,
 		RequestID: requestID,
 		Metadata: map[string]any{
-			"orderId":  payment.OrderID,
-			"provider": provider,
-			"status":   payment.Status,
+			"orderId":    payment.OrderID,
+			"provider":   provider,
+			"status":     payment.Status,
+			"isNewOrder": isNewPaymentCreation,
 		},
 	}); err != nil {
 		return nil, 0, err
@@ -1019,6 +1105,45 @@ func assertCanTransition(currentStatus, nextStatus domain.PaymentStatus) error {
 func canReadPaymentRole(role domain.Role) bool {
 	switch role {
 	case domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin:
+		return true
+	default:
+		return false
+	}
+}
+
+func canAttachIntentToExistingPayment(payment domain.Payment) bool {
+	if payment.Status != domain.PaymentStatusPending {
+		return false
+	}
+	if payment.ProviderPaymentID != nil && strings.TrimSpace(*payment.ProviderPaymentID) != "" {
+		return false
+	}
+	return isAutoCreatedPayment(payment.Metadata)
+}
+
+func isAutoCreatedPayment(metadata map[string]any) bool {
+	if len(metadata) == 0 {
+		return false
+	}
+
+	value, ok := metadata["autoCreated"]
+	if !ok {
+		return false
+	}
+
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		return strings.EqualFold(strings.TrimSpace(v), "true")
+	default:
+		return false
+	}
+}
+
+func isPayableOrderStatus(status string) bool {
+	switch strings.ToUpper(strings.TrimSpace(status)) {
+	case "PENDING", "CONFIRMED":
 		return true
 	default:
 		return false

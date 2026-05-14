@@ -43,7 +43,14 @@ func (h *PaymentHandler) CreatePaymentIntent(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	result, status, err := h.paymentService.CreatePaymentIntent(r.Context(), user, requestID(r), strings.TrimSpace(r.Header.Get("Idempotency-Key")), req)
+	result, status, err := h.paymentService.CreatePaymentIntent(
+		r.Context(),
+		user,
+		httpx.ExtractBearerToken(r.Header.Get("Authorization")),
+		requestID(r),
+		strings.TrimSpace(r.Header.Get("Idempotency-Key")),
+		req,
+	)
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
 		return

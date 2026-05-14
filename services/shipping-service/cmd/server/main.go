@@ -64,7 +64,8 @@ func main() {
 	}()
 
 	repo := repository.NewShippingRepository(pool)
-	shippingService := service.NewShippingService(repo, cfg.WebhookIdempotencyTTLMinutes)
+	orderClient := service.NewOrderClient(cfg.OrderServiceBaseURL, cfg.DependencyTimeout)
+	shippingService := service.NewShippingService(repo, orderClient, cfg.WebhookSigningSecret, cfg.WebhookIdempotencyTTLMinutes)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	shippingHandler := handler.NewShippingHandler(shippingService)

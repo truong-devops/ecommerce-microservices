@@ -473,7 +473,11 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
 
     const detail = pendingOpenDetail;
     setPendingOpenDetail(null);
-    void ensureConversation(detail.sellerId, detail.productId, detail.sellerName);
+    const sellerId = detail.sellerId;
+    if (!sellerId) {
+      return;
+    }
+    void ensureConversation(sellerId, detail.productId, detail.sellerName);
   }, [accessToken, ensureConversation, open, pendingOpenDetail]);
 
   return (

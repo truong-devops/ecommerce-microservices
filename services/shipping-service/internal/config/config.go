@@ -22,6 +22,10 @@ type Config struct {
 
 	JWTAccessSecret string
 
+	OrderServiceBaseURL  string
+	DependencyTimeout    time.Duration
+	WebhookSigningSecret string
+
 	DispatchInterval time.Duration
 	DispatchBatch    int
 	DispatchMaxRetry int
@@ -51,6 +55,11 @@ func Load() (Config, error) {
 		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "true")),
 		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
 		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		OrderServiceBaseURL: strings.TrimRight(
+			strings.TrimSpace(getEnv("ORDER_SERVICE_BASE_URL", "http://order-service:8080/api/v1")),
+			"/",
+		),
+		WebhookSigningSecret: strings.TrimSpace(getEnv("SHIPPING_WEBHOOK_SIGNING_SECRET", "dev-shipping-webhook-signing-secret")),
 
 		DispatchInterval: 3 * time.Second,
 		DispatchBatch:    50,
@@ -107,6 +116,16 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("WEBHOOK_IDEMPOTENCY_TTL_MINUTES must be >= 5")
 	}
 	cfg.WebhookIdempotencyTTLMinutes = webhookTTL
+
+	dependencyTimeoutMs, err := strconv.Atoi(getEnv("DEPENDENCY_TIMEOUT_MS", "5000"))
+	if err != nil || dependencyTimeoutMs < 100 || dependencyTimeoutMs > 30000 {
+		return Config{}, fmt.Errorf("DEPENDENCY_TIMEOUT_MS must be between 100 and 30000")
+	}
+	cfg.DependencyTimeout = time.Duration(dependencyTimeoutMs) * time.Millisecond
+
+	if len(cfg.WebhookSigningSecret) < 16 {
+		return Config{}, fmt.Errorf("SHIPPING_WEBHOOK_SIGNING_SECRET must be at least 16 characters")
+	}
 
 	if cfg.RedisEnabled && cfg.RedisURL == "" {
 		return Config{}, fmt.Errorf("REDIS_URL is required when REDIS_ENABLED=true")

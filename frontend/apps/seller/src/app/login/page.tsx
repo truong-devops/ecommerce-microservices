@@ -13,12 +13,26 @@ export default function SellerLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOauthSubmitting, setIsOauthSubmitting] = useState(false);
+  const [oauthError, setOauthError] = useState('');
 
   useEffect(() => {
     if (ready && user) {
       router.replace('/');
     }
   }, [ready, user, router]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('oauthError');
+    if (message) {
+      setOauthError(message);
+    }
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -45,6 +59,15 @@ export default function SellerLoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setIsOauthSubmitting(true);
+    window.location.href = '/api/seller/auth/google/start';
   };
 
   return (
@@ -133,6 +156,7 @@ export default function SellerLoginPage() {
               />
 
               {error ? <p className="rounded-sm bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p> : null}
+              {oauthError ? <p className="rounded-sm bg-rose-50 px-3 py-2 text-sm text-rose-600">{oauthError}</p> : null}
 
               <button
                 type="submit"
@@ -156,8 +180,13 @@ export default function SellerLoginPage() {
                 <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
                   Facebook
                 </button>
-                <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
-                  Google
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={isOauthSubmitting}
+                  className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isOauthSubmitting ? 'Google...' : 'Google'}
                 </button>
               </div>
 

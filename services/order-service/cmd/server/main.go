@@ -65,7 +65,8 @@ func main() {
 
 	repo := repository.NewOrderRepository(pool)
 	idemService := service.NewIdempotencyService(repo, redisService, cfg.IdempotencyRecordTTLMinutes, cfg.IdempotencyLockTTLSeconds)
-	orderService := service.NewOrderService(repo, idemService)
+	productCatalogClient := service.NewProductCatalogClient(cfg.ProductServiceBaseURL, cfg.DependencyTimeout)
+	orderService := service.NewOrderService(repo, idemService, productCatalogClient)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	orderHandler := handler.NewOrderHandler(orderService)

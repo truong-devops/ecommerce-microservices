@@ -8,3 +8,4 @@ export * from './forgot-password.dto';
 export * from './reset-password.dto';
 export * from './change-password.dto';
 export * from './mfa-verify.dto';
+export * from './oauth-exchange-ticket.dto';

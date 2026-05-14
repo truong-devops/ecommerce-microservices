@@ -66,7 +66,8 @@ func main() {
 	repo := repository.NewPaymentRepository(pool)
 	idempotencyService := service.NewIdempotencyService(repo, redisService, cfg.IdempotencyRecordTTLMinutes, cfg.IdempotencyLockTTLSeconds)
 	gateway := service.NewMockPaymentGateway()
-	paymentService := service.NewPaymentService(repo, idempotencyService, gateway, cfg.GatewayProvider, cfg.WebhookIdempotencyTTLMin)
+	orderClient := service.NewOrderClient(cfg.OrderServiceBaseURL, cfg.DependencyTimeout)
+	paymentService := service.NewPaymentService(repo, idempotencyService, gateway, orderClient, cfg.GatewayProvider, cfg.WebhookIdempotencyTTLMin)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	paymentHandler := handler.NewPaymentHandler(paymentService)

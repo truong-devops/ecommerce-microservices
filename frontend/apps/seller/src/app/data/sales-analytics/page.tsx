@@ -74,7 +74,12 @@ export default function SellerSalesAnalyticsPage() {
       }
 
       if (ordersResult.status === 'rejected' || productsResult.status === 'rejected') {
-        const partialError = ordersResult.status === 'rejected' ? ordersResult.reason : productsResult.reason;
+        const partialError =
+          ordersResult.status === 'rejected'
+            ? ordersResult.reason
+            : productsResult.status === 'rejected'
+              ? productsResult.reason
+              : new Error('Unknown partial error');
         if (partialError instanceof SellerApiClientError) {
           setError(`Một phần dữ liệu chưa tải được: ${partialError.message}`);
         } else {

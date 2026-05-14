@@ -81,11 +81,6 @@ func (c *Consumer) handleMessage(ctx context.Context, msg kafka.Message) {
 		c.logger.Warn("skip order.cancelled due to empty orderId")
 		return
 	}
-	rawItems, ok := envelope.Payload["items"].([]any)
-	if !ok || len(rawItems) == 0 {
-		c.logger.Warn("skip order.cancelled due to missing items", zap.String("order_id", orderID))
-		return
-	}
 
 	requestID := fmt.Sprintf("kafka-%d-%d", msg.Partition, msg.Offset)
 	if meta, ok := envelope.Payload["metadata"].(map[string]any); ok {

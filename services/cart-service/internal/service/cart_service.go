@@ -100,41 +100,56 @@ func (s *CartService) AddItem(ctx context.Context, user domain.UserContext, requ
 	}
 
 	mergeKey := buildMergeKey(req.ProductID, req.VariantID, req.SellerID)
-	var affected *domain.CartItem
+	existingIndex := -1
+	nextQty := req.Quantity
 	for idx := range cart.Items {
-		item := &cart.Items[idx]
-		if buildMergeKey(item.ProductID, item.VariantID, item.SellerID) == mergeKey {
-			nextQty := item.Quantity + req.Quantity
-			if err := s.assertQuantity(nextQty); err != nil {
-				return domain.CartSnapshot{}, err
-			}
-			item.Quantity = nextQty
-			item.UnitPrice = roundMoney(req.UnitPrice)
-			item.Name = strings.TrimSpace(req.Name)
-			item.SKU = strings.TrimSpace(req.SKU)
-			if req.Image != nil {
-				item.Image = req.Image
-			}
-			if req.Metadata != nil {
-				item.Metadata = req.Metadata
-			}
-			item.LineTotal = roundMoney(item.UnitPrice * float64(item.Quantity))
-			affected = item
+		if buildMergeKey(cart.Items[idx].ProductID, cart.Items[idx].VariantID, cart.Items[idx].SellerID) == mergeKey {
+			existingIndex = idx
+			nextQty = cart.Items[idx].Quantity + req.Quantity
 			break
 		}
 	}
+	if err := s.assertQuantity(nextQty); err != nil {
+		return domain.CartSnapshot{}, err
+	}
 
-	if affected == nil {
+	candidate := domain.CartItem{
+		ProductID: strings.TrimSpace(req.ProductID),
+		VariantID: req.VariantID,
+		SKU:       strings.TrimSpace(req.SKU),
+		Name:      strings.TrimSpace(req.Name),
+		Image:     req.Image,
+		UnitPrice: roundMoney(req.UnitPrice),
+		Quantity:  nextQty,
+		SellerID:  strings.TrimSpace(req.SellerID),
+		Metadata:  req.Metadata,
+	}
+	resolved, issues, err := s.validationClient.ValidateAndResolveItem(ctx, candidate, cart.Currency, true)
+	if err != nil {
+		return domain.CartSnapshot{}, err
+	}
+	if len(issues) > 0 {
+		return domain.CartSnapshot{}, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, joinIssueMessages(issues), issues)
+	}
+
+	authoritativeName := strings.TrimSpace(resolved.Name)
+	if authoritativeName == "" {
+		authoritativeName = strings.TrimSpace(req.Name)
+	}
+	authoritativeUnitPrice := roundMoney(resolved.UnitPrice)
+
+	var affected *domain.CartItem
+	if existingIndex == -1 {
 		item := domain.CartItem{
 			ID:        uuid.NewString(),
 			ProductID: strings.TrimSpace(req.ProductID),
 			VariantID: req.VariantID,
 			SKU:       strings.TrimSpace(req.SKU),
-			Name:      strings.TrimSpace(req.Name),
+			Name:      authoritativeName,
 			Image:     req.Image,
-			UnitPrice: roundMoney(req.UnitPrice),
-			Quantity:  req.Quantity,
-			LineTotal: roundMoney(req.UnitPrice * float64(req.Quantity)),
+			UnitPrice: authoritativeUnitPrice,
+			Quantity:  nextQty,
+			LineTotal: roundMoney(authoritativeUnitPrice * float64(nextQty)),
 			SellerID:  strings.TrimSpace(req.SellerID),
 			Metadata:  req.Metadata,
 		}
@@ -143,14 +158,20 @@ func (s *CartService) AddItem(ctx context.Context, user domain.UserContext, requ
 		}
 		cart.Items = append(cart.Items, item)
 		affected = &cart.Items[len(cart.Items)-1]
-	}
-
-	issues, err := s.validationClient.ValidateItem(ctx, *affected, true)
-	if err != nil {
-		return domain.CartSnapshot{}, err
-	}
-	if len(issues) > 0 {
-		return domain.CartSnapshot{}, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, joinIssueMessages(issues), issues)
+	} else {
+		item := &cart.Items[existingIndex]
+		item.Quantity = nextQty
+		item.UnitPrice = authoritativeUnitPrice
+		item.Name = authoritativeName
+		item.SKU = strings.TrimSpace(req.SKU)
+		if req.Image != nil {
+			item.Image = req.Image
+		}
+		if req.Metadata != nil {
+			item.Metadata = req.Metadata
+		}
+		item.LineTotal = roundMoney(item.UnitPrice * float64(item.Quantity))
+		affected = item
 	}
 
 	s.recalculateCart(&cart, true)
@@ -202,16 +223,21 @@ func (s *CartService) UpdateItem(ctx context.Context, user domain.UserContext, r
 	if err := s.assertQuantity(req.Quantity); err != nil {
 		return domain.CartSnapshot{}, err
 	}
-	cart.Items[foundIdx].Quantity = req.Quantity
-	cart.Items[foundIdx].LineTotal = roundMoney(cart.Items[foundIdx].UnitPrice * float64(req.Quantity))
-
-	issues, err := s.validationClient.ValidateItem(ctx, cart.Items[foundIdx], true)
+	candidate := cart.Items[foundIdx]
+	candidate.Quantity = req.Quantity
+	resolved, issues, err := s.validationClient.ValidateAndResolveItem(ctx, candidate, cart.Currency, true)
 	if err != nil {
 		return domain.CartSnapshot{}, err
 	}
 	if len(issues) > 0 {
 		return domain.CartSnapshot{}, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, joinIssueMessages(issues), issues)
 	}
+	cart.Items[foundIdx].Quantity = req.Quantity
+	cart.Items[foundIdx].UnitPrice = roundMoney(resolved.UnitPrice)
+	if strings.TrimSpace(resolved.Name) != "" {
+		cart.Items[foundIdx].Name = strings.TrimSpace(resolved.Name)
+	}
+	cart.Items[foundIdx].LineTotal = roundMoney(cart.Items[foundIdx].UnitPrice * float64(req.Quantity))
 
 	s.recalculateCart(&cart, true)
 	if err := s.persistCart(ctx, &cart); err != nil {

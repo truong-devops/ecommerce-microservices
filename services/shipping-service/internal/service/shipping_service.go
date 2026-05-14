@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -88,6 +90,8 @@ type ShippingWebhookRequest struct {
 
 type ShippingService struct {
 	repo                        *repository.ShippingRepository
+	orderClient                 *OrderClient
+	webhookSigningSecret        string
 	webhookIdempotencyTTLMinute int
 }
 
@@ -132,16 +136,38 @@ func (n *NumberLike) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewShippingService(repo *repository.ShippingRepository, webhookIdempotencyTTLMinute int) *ShippingService {
-	return &ShippingService{repo: repo, webhookIdempotencyTTLMinute: webhookIdempotencyTTLMinute}
+func NewShippingService(repo *repository.ShippingRepository, orderClient *OrderClient, webhookSigningSecret string, webhookIdempotencyTTLMinute int) *ShippingService {
+	return &ShippingService{
+		repo:                        repo,
+		orderClient:                 orderClient,
+		webhookSigningSecret:        strings.TrimSpace(webhookSigningSecret),
+		webhookIdempotencyTTLMinute: webhookIdempotencyTTLMinute,
+	}
 }
 
-func (s *ShippingService) CreateShipment(ctx context.Context, user domain.UserContext, requestID string, req CreateShipmentRequest) (map[string]any, error) {
+func (s *ShippingService) CreateShipment(ctx context.Context, user domain.UserContext, accessToken, requestID string, req CreateShipmentRequest) (map[string]any, error) {
 	if err := requireStaff(user); err != nil {
 		return nil, err
 	}
 	if err := validateCreateShipmentRequest(req); err != nil {
 		return nil, err
+	}
+	if s.orderClient == nil {
+		return nil, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Order service dependency is unavailable", nil)
+	}
+
+	orderSnapshot, err := s.orderClient.GetOrderByID(ctx, req.OrderID, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	if orderSnapshot.UserID != req.BuyerID {
+		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "buyerId does not match order owner", nil)
+	}
+	if orderSnapshot.Currency != strings.ToUpper(strings.TrimSpace(req.Currency)) {
+		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "shipment currency does not match order currency", nil)
+	}
+	if !isOrderEligibleForShipment(orderSnapshot.Status) {
+		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "order status is not eligible for shipment creation", map[string]any{"status": orderSnapshot.Status})
 	}
 
 	tx, err := s.repo.BeginTx(ctx)
@@ -231,6 +257,9 @@ func (s *ShippingService) ListShipments(ctx context.Context, user domain.UserCon
 
 	if user.Role == domain.RoleCustomer {
 		req.BuyerID = &user.UserID
+	}
+	if user.Role == domain.RoleSeller {
+		req.SellerID = &user.UserID
 	}
 
 	items, totalItems, err := s.repo.ListShipments(ctx, repository.ListShipmentsQuery{
@@ -538,12 +567,15 @@ func (s *ShippingService) GetTrackingEvents(ctx context.Context, user domain.Use
 	}, nil
 }
 
-func (s *ShippingService) HandleProviderWebhook(ctx context.Context, requestID, provider string, req ShippingWebhookRequest) (map[string]any, error) {
+func (s *ShippingService) HandleProviderWebhook(ctx context.Context, requestID, provider, signature string, req ShippingWebhookRequest) (map[string]any, error) {
 	normalizedProvider := strings.ToLower(strings.TrimSpace(provider))
 	if normalizedProvider == "" {
 		return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "Invalid provider", nil)
 	}
 	if err := validateWebhookRequest(req); err != nil {
+		return nil, err
+	}
+	if err := s.verifyWebhookSignature(normalizedProvider, signature, req); err != nil {
 		return nil, err
 	}
 
@@ -686,9 +718,9 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 	orderID := asString(payload["orderId"])
 	buyerID := asString(payload["userId"])
 	sellerID := asString(payload["sellerId"])
-	if sellerID == "" {
-		sellerID = systemActorID
-	}
+	recipientName := asString(payload["recipientName"])
+	recipientPhone := asString(payload["recipientPhone"])
+	recipientAddress := asString(payload["recipientAddress"])
 	orderNumber := asString(payload["orderNumber"])
 	currency := strings.ToUpper(asString(payload["currency"]))
 	shippingFee := asNonNegativeNumber(payload["shippingAmount"])
@@ -696,7 +728,11 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 		shippingFee = ptrFloat(0)
 	}
 
-	if orderID == "" || buyerID == "" || !currencyRegex.MatchString(currency) {
+	// Skip auto-create when critical shipment fields are missing to avoid persisting placeholder data.
+	if !isUUIDStrict(orderID) || !isUUIDStrict(buyerID) || !isUUIDStrict(sellerID) || !currencyRegex.MatchString(currency) {
+		return nil
+	}
+	if !inLen(recipientName, 1, 255) || !inLen(recipientPhone, 1, 32) || !inLen(recipientAddress, 1, 500) {
 		return nil
 	}
 
@@ -718,16 +754,16 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 		OrderID:          orderID,
 		BuyerID:          buyerID,
 		SellerID:         sellerID,
-		Provider:         "system-auto",
+		Provider:         "order-event-auto",
 		AWB:              nil,
 		TrackingNumber:   nil,
 		Status:           domain.ShipmentStatusPending,
 		Currency:         currency,
 		ShippingFee:      roundMoney(*shippingFee),
 		CODAmount:        0,
-		RecipientName:    "Pending recipient info",
-		RecipientPhone:   "N/A",
-		RecipientAddress: "Pending address",
+		RecipientName:    recipientName,
+		RecipientPhone:   recipientPhone,
+		RecipientAddress: recipientAddress,
 		Note:             strPtr("Auto-created from order event"),
 		Metadata: map[string]any{
 			"source":      "order.events",
@@ -907,6 +943,9 @@ func ensureCanRead(user domain.UserContext, shipment domain.Shipment) error {
 	if user.Role == domain.RoleCustomer && shipment.BuyerID != user.UserID {
 		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Access denied for this shipment", nil)
 	}
+	if user.Role == domain.RoleSeller && shipment.SellerID != user.UserID {
+		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Access denied for this shipment", nil)
+	}
 	return nil
 }
 
@@ -953,6 +992,32 @@ func trackingEventResponse(event domain.ShipmentTrackingEvent) map[string]any {
 		"rawPayload":  event.RawPayload,
 		"createdAt":   event.CreatedAt.UTC().Format(time.RFC3339Nano),
 	}
+}
+
+func (s *ShippingService) verifyWebhookSignature(provider, signature string, req ShippingWebhookRequest) error {
+	secret := strings.TrimSpace(s.webhookSigningSecret)
+	if secret == "" {
+		return httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Webhook signing secret is not configured", nil)
+	}
+
+	provided := strings.TrimSpace(signature)
+	if provided == "" {
+		return httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Missing webhook signature", nil)
+	}
+	provided = strings.TrimPrefix(strings.ToLower(provided), "sha256=")
+
+	payloadCanonical := canonicalize(map[string]any{
+		"provider": provider,
+		"payload":  req,
+	})
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(payloadCanonical))
+	expected := hex.EncodeToString(mac.Sum(nil))
+
+	if subtle.ConstantTimeCompare([]byte(provided), []byte(expected)) != 1 {
+		return httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Invalid webhook signature", nil)
+	}
+	return nil
 }
 
 func hashWebhookPayload(provider string, req ShippingWebhookRequest) string {
@@ -1068,4 +1133,13 @@ func asNonNegativeNumber(v any) *float64 {
 func ptrFloat(v float64) *float64 {
 	vv := v
 	return &vv
+}
+
+func isOrderEligibleForShipment(status string) bool {
+	switch strings.ToUpper(strings.TrimSpace(status)) {
+	case "CONFIRMED", "PROCESSING", "SHIPPED":
+		return true
+	default:
+		return false
+	}
 }

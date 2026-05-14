@@ -21,6 +21,9 @@ type Config struct {
 
 	JWTAccessSecret string
 
+	ProductServiceBaseURL string
+	DependencyTimeout     time.Duration
+
 	IdempotencyRecordTTLMinutes int
 	IdempotencyLockTTLSeconds   int
 
@@ -52,6 +55,10 @@ func Load() (Config, error) {
 		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "true")),
 		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
 		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		ProductServiceBaseURL: strings.TrimRight(
+			strings.TrimSpace(getEnv("PRODUCT_SERVICE_BASE_URL", "http://product-service:8080/api/v1")),
+			"/",
+		),
 
 		KafkaEnabled:  parseBool(getEnv("KAFKA_ENABLED", "true")),
 		KafkaClientID: getEnv("KAFKA_CLIENT_ID", "order-service"),
@@ -96,6 +103,12 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("IDEMPOTENCY_LOCK_TTL_SECONDS must be >= 5")
 	}
 	cfg.IdempotencyLockTTLSeconds = idemLockTTL
+
+	dependencyTimeoutMs, err := strconv.Atoi(getEnv("DEPENDENCY_TIMEOUT_MS", "5000"))
+	if err != nil || dependencyTimeoutMs < 100 {
+		return Config{}, fmt.Errorf("DEPENDENCY_TIMEOUT_MS must be >= 100")
+	}
+	cfg.DependencyTimeout = time.Duration(dependencyTimeoutMs) * time.Millisecond
 
 	intervalMs, err := strconv.Atoi(getEnv("DISPATCH_INTERVAL_MS", "3000"))
 	if err != nil || intervalMs < 500 {

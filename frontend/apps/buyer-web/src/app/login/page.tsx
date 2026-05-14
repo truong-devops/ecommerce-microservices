@@ -15,12 +15,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOauthSubmitting, setIsOauthSubmitting] = useState(false);
+  const [oauthError, setOauthError] = useState('');
 
   useEffect(() => {
     if (ready && user) {
       router.replace(readReturnUrlFromWindow() ?? '/account');
     }
   }, [ready, router, user]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get('oauthError');
+    if (message) {
+      setOauthError(message);
+    }
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,6 +57,16 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setIsOauthSubmitting(true);
+    const returnUrl = readReturnUrlFromWindow() ?? '/account';
+    window.location.href = `/api/buyer/auth/google/start?returnUrl=${encodeURIComponent(returnUrl)}`;
   };
 
   const copy =
@@ -145,6 +169,7 @@ export default function LoginPage() {
               />
 
               {error ? <p className="rounded-sm bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
+              {oauthError ? <p className="rounded-sm bg-red-50 px-3 py-2 text-sm text-red-600">{oauthError}</p> : null}
 
               <button
                 type="submit"
@@ -168,8 +193,13 @@ export default function LoginPage() {
                 <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
                   {copy.socialFacebook}
                 </button>
-                <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
-                  {copy.socialGoogle}
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={isOauthSubmitting}
+                  className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isOauthSubmitting ? `${copy.socialGoogle}...` : copy.socialGoogle}
                 </button>
               </div>
 

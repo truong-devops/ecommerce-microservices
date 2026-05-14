@@ -55,7 +55,9 @@ const MAIN_SELLER_CATEGORIES = [
   { id: 'thoi-trang-nu', label: 'Thời trang nữ' }
 ] as const;
 
-const MAIN_SELLER_CATEGORY_MAP = new Map(MAIN_SELLER_CATEGORIES.map((category) => [category.id, category.label]));
+const MAIN_SELLER_CATEGORY_MAP: ReadonlyMap<string, string> = new Map(
+  MAIN_SELLER_CATEGORIES.map((category) => [category.id, category.label])
+);
 
 const FORM_TABS: Array<{ id: ProductFormTab; label: string }> = [
   { id: 'basic', label: 'Thông tin cơ bản' },

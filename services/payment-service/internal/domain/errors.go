@@ -10,6 +10,7 @@ const (
 	ErrorCodePaymentNotFound                = "PAYMENT_NOT_FOUND"
 	ErrorCodePaymentAlreadyCaptured         = "PAYMENT_ALREADY_CAPTURED"
 	ErrorCodePaymentAmountMismatch          = "PAYMENT_AMOUNT_MISMATCH"
+	ErrorCodePaymentCurrencyMismatch        = "PAYMENT_CURRENCY_MISMATCH"
 	ErrorCodeRefundAmountExceeded           = "REFUND_AMOUNT_EXCEEDED"
 	ErrorCodeIdempotencyConflict            = "IDEMPOTENCY_CONFLICT"
 	ErrorCodeWebhookIdempotencyConflict     = "WEBHOOK_IDEMPOTENCY_CONFLICT"

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
@@ -29,6 +29,14 @@ const validSortBy: Set<SortBy> = new Set(['createdAt', 'updatedAt', 'name', 'min
 const validSortOrder: Set<SortOrder> = new Set(['ASC', 'DESC']);
 
 export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-app-bg" />}>
+      <SearchPageContent />
+    </Suspense>
+  );
+}
+
+function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { text } = useLanguage();

@@ -487,3 +487,97 @@ export interface SendSellerChatMessageInput {
   text: string;
   clientMessageId?: string;
 }
+
+export type SellerVideoStatus =
+  | 'draft'
+  | 'processing'
+  | 'processing_failed'
+  | 'review_pending'
+  | 'published'
+  | 'hidden'
+  | 'rejected'
+  | 'archived';
+
+export interface SellerVideoProductInput {
+  productId: string;
+  sortOrder?: number;
+}
+
+export interface CreateSellerVideoInput {
+  title: string;
+  description?: string;
+  products: SellerVideoProductInput[];
+}
+
+export interface SellerVideoProduct {
+  productId: string;
+  sku: string | null;
+  name: string;
+  image: string | null;
+  price: number;
+  currency: string;
+  status: string;
+  sortOrder: number;
+  tagPosition: unknown | null;
+}
+
+export interface SellerVideo {
+  videoId: string;
+  sellerId: string;
+  title: string;
+  description: string | null;
+  status: SellerVideoStatus;
+  mediaObjectKey: string | null;
+  mediaUrl: string | null;
+  thumbnailObjectKey: string | null;
+  thumbnailUrl: string | null;
+  mimeType: string | null;
+  sizeBytes: number | null;
+  durationSec: number | null;
+  products: SellerVideoProduct[];
+  metrics: {
+    viewStartedCount: number;
+    qualifiedViewCount: number;
+    productClickCount: number;
+    addToCartCount: number;
+    ctr: number;
+    addToCartRate: number;
+    lastAggregatedAt: string | null;
+  };
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerVideoListOutput {
+  items: SellerVideo[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface PresignSellerVideoUploadInput {
+  videoId: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+export interface PresignSellerVideoUploadOutput {
+  objectKey: string;
+  method: string;
+  uploadUrl: string;
+  expiresAt: string;
+  headers: Record<string, string>;
+}
+
+export interface ConfirmSellerVideoMediaInput {
+  mediaObjectKey: string;
+  mediaUrl?: string;
+  mimeType: string;
+  sizeBytes?: number;
+  durationSec?: number;
+}

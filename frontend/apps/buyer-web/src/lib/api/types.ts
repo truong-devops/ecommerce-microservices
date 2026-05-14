@@ -547,3 +547,60 @@ export interface SendBuyerChatMessageInput {
   text: string;
   clientMessageId?: string;
 }
+
+export type BuyerVideoStatus = 'published';
+
+export interface BuyerVideoProduct {
+  productId: string;
+  sku: string | null;
+  name: string;
+  image: string | null;
+  price: number;
+  currency: string;
+  status: string;
+  sortOrder: number;
+  tagPosition: unknown | null;
+}
+
+export interface BuyerVideo {
+  videoId: string;
+  sellerId: string;
+  title: string;
+  description: string | null;
+  status: BuyerVideoStatus;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  durationSec: number | null;
+  products: BuyerVideoProduct[];
+  seller: {
+    sellerId: string;
+    sellerCode: string;
+    shopName: string;
+  };
+  metrics: {
+    qualifiedViewCount: number;
+    productClickCount: number;
+    addToCartCount: number;
+    ctr: number;
+    addToCartRate: number;
+  };
+  publishedAt: string | null;
+}
+
+export interface BuyerVideoFeedOutput {
+  items: BuyerVideo[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface TrackBuyerVideoEventInput {
+  productId?: string;
+  source?: string;
+  anonymousSessionId?: string;
+  clientEventId?: string;
+  watchTimeSec?: number;
+}

@@ -103,3 +103,38 @@ export interface UpdateModerationProductStatusInput {
   status: ModerationProductStatus;
   reason?: string;
 }
+
+export type ModerationVideoStatus = 'draft' | 'processing' | 'review_pending' | 'published' | 'hidden' | 'rejected' | 'archived';
+
+export interface ModerationVideoProduct {
+  productId: string;
+  name: string;
+  image: string | null;
+  price: number;
+  currency: string;
+  status: string;
+}
+
+export interface ModerationVideo {
+  videoId: string;
+  sellerId: string;
+  title: string;
+  description: string | null;
+  status: ModerationVideoStatus;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  products: ModerationVideoProduct[];
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModerationVideoListOutput {
+  items: ModerationVideo[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}

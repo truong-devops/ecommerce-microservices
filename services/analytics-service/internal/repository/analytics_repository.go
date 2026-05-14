@@ -390,6 +390,65 @@ func (r *AnalyticsRepository) QueryShippingSummary(ctx context.Context, rangeInp
 	return items, nil
 }
 
+func (r *AnalyticsRepository) QueryVideoSummary(ctx context.Context, rangeInput domain.AnalyticsDateRange, videoID string) ([]domain.VideoSummaryItem, error) {
+	rows, err := r.pool.Query(ctx, `
+      WITH video_events AS (
+        SELECT
+          COALESCE(payload_json->>'videoId', payload_json->'video'->>'videoId') AS video_id,
+          COALESCE(seller_id, payload_json->>'sellerId', payload_json->'video'->>'sellerId') AS resolved_seller_id,
+          event_type
+        FROM analytics_events_raw
+        WHERE occurred_at >= $1::timestamptz
+          AND occurred_at < $2::timestamptz
+          AND event_type LIKE 'video.%'
+          AND ($3 = '' OR COALESCE(seller_id, payload_json->>'sellerId', payload_json->'video'->>'sellerId') = $3)
+          AND ($4 = '' OR COALESCE(payload_json->>'videoId', payload_json->'video'->>'videoId') = $4)
+      )
+      SELECT
+        COALESCE(video_id, '') AS video_id,
+        COALESCE(resolved_seller_id, '') AS seller_id,
+        COUNT(*) FILTER (WHERE event_type IN ('video.view_started', 'video.view-started'))::bigint AS view_started_count,
+        COUNT(*) FILTER (WHERE event_type IN ('video.view_qualified', 'video.view-qualified'))::bigint AS qualified_view_count,
+        COUNT(*) FILTER (WHERE event_type IN ('video.product_clicked', 'video.product-clicked'))::bigint AS product_click_count,
+        COUNT(*) FILTER (WHERE event_type IN ('video.add_to_cart', 'video.add-to-cart'))::bigint AS add_to_cart_count
+      FROM video_events
+      WHERE COALESCE(video_id, '') <> ''
+      GROUP BY video_id, resolved_seller_id
+      ORDER BY qualified_view_count DESC, product_click_count DESC
+    `, rangeInput.From, rangeInput.To, rangeInput.SellerID, strings.TrimSpace(videoID))
+	if err != nil {
+		return nil, queryFailed("query video summary failed", err)
+	}
+	defer rows.Close()
+
+	items := make([]domain.VideoSummaryItem, 0)
+	for rows.Next() {
+		var item domain.VideoSummaryItem
+		if err := rows.Scan(
+			&item.VideoID,
+			&item.SellerID,
+			&item.ViewStartedCount,
+			&item.QualifiedViewCount,
+			&item.ProductClickCount,
+			&item.AddToCartCount,
+		); err != nil {
+			return nil, queryFailed("scan video summary failed", err)
+		}
+		if item.QualifiedViewCount > 0 {
+			item.ProductClickCTR = float64(item.ProductClickCount) / float64(item.QualifiedViewCount)
+		}
+		if item.ProductClickCount > 0 {
+			item.VideoToCartRate = float64(item.AddToCartCount) / float64(item.ProductClickCount)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, queryFailed("query video summary cursor failed", err)
+	}
+
+	return items, nil
+}
+
 func queryFailed(message string, err error) error {
 	return httpx.NewAppError(
 		http.StatusServiceUnavailable,

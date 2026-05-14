@@ -25,10 +25,12 @@ var (
 	objectKeyRegex  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9/_\-.]+$`)
 )
 
+const maxVideoUploadSizeBytes int64 = 50 * 1024 * 1024
+
 type StorageService struct {
-	client       *minio.Client
+	client        *minio.Client
 	presignClient *minio.Client
-	cfg          config.Config
+	cfg           config.Config
 }
 
 type PresignUploadRequest struct {
@@ -36,6 +38,7 @@ type PresignUploadRequest struct {
 	EntityID         string `json:"entityId"`
 	FileName         string `json:"fileName"`
 	ContentType      string `json:"contentType"`
+	SizeBytes        *int64 `json:"sizeBytes,omitempty"`
 	ExpiresInSeconds *int   `json:"expiresInSeconds,omitempty"`
 }
 
@@ -141,8 +144,14 @@ func (s *StorageService) Ready(ctx context.Context) error {
 }
 
 func (s *StorageService) PresignUpload(ctx context.Context, req PresignUploadRequest) (PresignUploadResponse, error) {
-	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(req.ContentType)), "image/") {
-		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "contentType must be image/*", nil)
+	contentType := strings.ToLower(strings.TrimSpace(req.ContentType))
+	if !isSupportedUploadContentType(contentType) {
+		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "contentType must be image/*, video/mp4, or video/webm", nil)
+	}
+	if isSupportedVideoContentType(contentType) {
+		if req.SizeBytes == nil || *req.SizeBytes < 1 || *req.SizeBytes > maxVideoUploadSizeBytes {
+			return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "video sizeBytes must be between 1 and 52428800", nil)
+		}
 	}
 
 	entityType := normalizeSegment(req.EntityType)
@@ -154,7 +163,7 @@ func (s *StorageService) PresignUpload(ctx context.Context, req PresignUploadReq
 		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "entityId is invalid", nil)
 	}
 
-	ext := normalizeExtension(req.FileName, req.ContentType)
+	ext := normalizeExtension(req.FileName, contentType)
 	if ext == "" {
 		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "unsupported file extension/contentType", nil)
 	}
@@ -256,9 +265,29 @@ func normalizeExtension(fileName, contentType string) string {
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg", ".avif":
 		return ext
+	case ".mp4":
+		if strings.EqualFold(strings.TrimSpace(contentType), "video/mp4") {
+			return ext
+		}
+	case ".webm":
+		if strings.EqualFold(strings.TrimSpace(contentType), "video/webm") {
+			return ext
+		}
 	default:
 		return ""
 	}
+
+	return ""
+}
+
+func isSupportedUploadContentType(contentType string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(contentType))
+	return strings.HasPrefix(normalized, "image/") || isSupportedVideoContentType(normalized)
+}
+
+func isSupportedVideoContentType(contentType string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(contentType))
+	return normalized == "video/mp4" || normalized == "video/webm"
 }
 
 func isValidObjectKey(value string) bool {

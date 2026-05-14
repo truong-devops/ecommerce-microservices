@@ -27,14 +27,16 @@ interface ProductSnapshot {
 @Injectable()
 export class ProductEventsPublisherService implements OnModuleInit, OnModuleDestroy {
   private producer: Producer | null = null;
-  private readonly topic: string;
+  private readonly productEventsTopic: string;
+  private readonly analyticsEventsTopic: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: AppLogger
   ) {
     const enabled = this.configService.get<boolean>('kafka.enabled', false);
-    this.topic = this.configService.get<string>('kafka.productEventsTopic', 'product.events');
+    this.productEventsTopic = this.configService.get<string>('kafka.productEventsTopic', 'product.events');
+    this.analyticsEventsTopic = this.configService.get<string>('kafka.analyticsEventsTopic', 'analytics.events');
 
     if (enabled) {
       const kafka = new Kafka({
@@ -92,6 +94,39 @@ export class ProductEventsPublisherService implements OnModuleInit, OnModuleDest
     await this.publish('product.deleted', product, actor, requestId);
   }
 
+  async publishVideoAnalyticsEvent(eventType: string, payload: Record<string, unknown>, eventKey: string): Promise<void> {
+    if (!this.producer) {
+      return;
+    }
+
+    const occurredAt = new Date().toISOString();
+    const event = {
+      eventType,
+      occurredAt,
+      payload,
+      metadata: {
+        occurredAt
+      }
+    };
+
+    try {
+      await this.producer.send({
+        topic: this.analyticsEventsTopic,
+        messages: [
+          {
+            key: eventType,
+            value: JSON.stringify(event),
+            headers: {
+              eventKey
+            }
+          }
+        ]
+      });
+    } catch (error) {
+      this.logger.warn(`Kafka publish failed for ${eventType}: ${String(error)}`, ProductEventsPublisherService.name);
+    }
+  }
+
   private async publish(
     eventType: string,
     payload: ProductSnapshot | (ProductSnapshot & { reason?: string | null }),
@@ -115,7 +150,7 @@ export class ProductEventsPublisherService implements OnModuleInit, OnModuleDest
 
     try {
       await this.producer.send({
-        topic: this.topic,
+        topic: this.productEventsTopic,
         messages: [
           {
             key: String(payload.id ?? ''),

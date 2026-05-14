@@ -232,6 +232,9 @@ func (s *ShippingService) ListShipments(ctx context.Context, user domain.UserCon
 	if user.Role == domain.RoleCustomer {
 		req.BuyerID = &user.UserID
 	}
+	if user.Role == domain.RoleSeller {
+		req.SellerID = &user.UserID
+	}
 
 	items, totalItems, err := s.repo.ListShipments(ctx, repository.ListShipmentsQuery{
 		Page:      req.Page,
@@ -686,9 +689,9 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 	orderID := asString(payload["orderId"])
 	buyerID := asString(payload["userId"])
 	sellerID := asString(payload["sellerId"])
-	if sellerID == "" {
-		sellerID = systemActorID
-	}
+	recipientName := asString(payload["recipientName"])
+	recipientPhone := asString(payload["recipientPhone"])
+	recipientAddress := asString(payload["recipientAddress"])
 	orderNumber := asString(payload["orderNumber"])
 	currency := strings.ToUpper(asString(payload["currency"]))
 	shippingFee := asNonNegativeNumber(payload["shippingAmount"])
@@ -696,7 +699,11 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 		shippingFee = ptrFloat(0)
 	}
 
-	if orderID == "" || buyerID == "" || !currencyRegex.MatchString(currency) {
+	// Skip auto-create when critical shipment fields are missing to avoid persisting placeholder data.
+	if !isUUIDStrict(orderID) || !isUUIDStrict(buyerID) || !isUUIDStrict(sellerID) || !currencyRegex.MatchString(currency) {
+		return nil
+	}
+	if !inLen(recipientName, 1, 255) || !inLen(recipientPhone, 1, 32) || !inLen(recipientAddress, 1, 500) {
 		return nil
 	}
 
@@ -718,16 +725,16 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 		OrderID:          orderID,
 		BuyerID:          buyerID,
 		SellerID:         sellerID,
-		Provider:         "system-auto",
+		Provider:         "order-event-auto",
 		AWB:              nil,
 		TrackingNumber:   nil,
 		Status:           domain.ShipmentStatusPending,
 		Currency:         currency,
 		ShippingFee:      roundMoney(*shippingFee),
 		CODAmount:        0,
-		RecipientName:    "Pending recipient info",
-		RecipientPhone:   "N/A",
-		RecipientAddress: "Pending address",
+		RecipientName:    recipientName,
+		RecipientPhone:   recipientPhone,
+		RecipientAddress: recipientAddress,
 		Note:             strPtr("Auto-created from order event"),
 		Metadata: map[string]any{
 			"source":      "order.events",
@@ -905,6 +912,9 @@ func requireStaff(user domain.UserContext) error {
 
 func ensureCanRead(user domain.UserContext, shipment domain.Shipment) error {
 	if user.Role == domain.RoleCustomer && shipment.BuyerID != user.UserID {
+		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Access denied for this shipment", nil)
+	}
+	if user.Role == domain.RoleSeller && shipment.SellerID != user.UserID {
 		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Access denied for this shipment", nil)
 	}
 	return nil

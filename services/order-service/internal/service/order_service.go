@@ -520,14 +520,18 @@ func (s *OrderService) enqueueOrderEvent(ctx context.Context, tx pgx.Tx, eventTy
 		AggregateID:   order.ID,
 		EventType:     eventType,
 		Payload: map[string]any{
-			"orderId":     order.ID,
-			"orderNumber": order.OrderNumber,
-			"orderCode":   formatOrderCode(order.OrderNumber, order.ID),
-			"userId":      order.UserID,
-			"userCode":    formatCode(order.UserID, "CUS"),
-			"status":      order.Status,
-			"totalAmount": order.TotalAmount,
-			"currency":    order.Currency,
+			"orderId":        order.ID,
+			"orderNumber":    order.OrderNumber,
+			"orderCode":      formatOrderCode(order.OrderNumber, order.ID),
+			"userId":         order.UserID,
+			"userCode":       formatCode(order.UserID, "CUS"),
+			"status":         order.Status,
+			"subtotalAmount": order.SubtotalAmount,
+			"shippingAmount": order.ShippingAmount,
+			"discountAmount": order.DiscountAmount,
+			"totalAmount":    order.TotalAmount,
+			"currency":       order.Currency,
+			"items":          mapOrderItemsForEvent(order.Items),
 			"metadata": map[string]any{
 				"requestId":  requestID,
 				"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
@@ -620,6 +624,22 @@ func validateCreateOrderRequest(req CreateOrderRequest) error {
 	}
 
 	return nil
+}
+
+func mapOrderItemsForEvent(items []domain.OrderItem) []map[string]any {
+	out := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		out = append(out, map[string]any{
+			"id":          item.ID,
+			"productId":   item.ProductID,
+			"sku":         item.SKU,
+			"productName": item.ProductNameSnapshot,
+			"quantity":    item.Quantity,
+			"unitPrice":   item.UnitPrice,
+			"totalPrice":  item.TotalPrice,
+		})
+	}
+	return out
 }
 
 func assertCanReadOrder(user domain.UserContext, order domain.Order) error {

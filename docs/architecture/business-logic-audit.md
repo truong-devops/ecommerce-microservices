@@ -78,7 +78,7 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
 
 ## 4) HIGH - Event contract mismatch giữa order và inventory
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - Inventory consumer xử lý `order.cancelled` nhưng yêu cầu có `payload.items`.
   - Order event hiện không publish `items`.
@@ -89,15 +89,16 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/inventory-service/internal/events/consumer.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/inventory-service/internal/events/consumer.go:74)
   - [services/inventory-service/internal/events/consumer.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/inventory-service/internal/events/consumer.go:84)
 - Fix Note:
-  - N/A
+  - Expanded order outbox payload with `items`, `shippingAmount`, `subtotalAmount`, `discountAmount`.
+  - Updated inventory consumer to release reservation by `orderId` on `order.cancelled` without requiring `items`.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/order-service` and `services/inventory-service`.
 
 ---
 
 ## 5) HIGH - Shipping auto-create dùng dữ liệu placeholder
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - Auto-create shipment dùng `Pending recipient info`, `N/A`, `Pending address`.
   - Thiếu `sellerId` thì fallback `systemActorID`.
@@ -109,15 +110,16 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:694)
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:728)
 - Fix Note:
-  - N/A
+  - Removed placeholder shipment auto-create behavior.
+  - Shipping auto-create now only runs when event payload includes valid `sellerId` + recipient fields; otherwise skip safely.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/shipping-service`.
 
 ---
 
 ## 6) HIGH - Seller có thể đọc shipment không thuộc mình
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - `ensureCanRead` chỉ check ownership cho `CUSTOMER`.
   - Không ép filter `sellerId = current seller` trong list.
@@ -127,9 +129,10 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:221)
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:906)
 - Fix Note:
-  - N/A
+  - Enforced seller ownership filter in shipment list (`sellerId = current seller`).
+  - Added seller ownership check in `ensureCanRead` for detail endpoints.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/shipping-service`.
 
 ---
 
@@ -213,9 +216,9 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
 | 1 | CRITICAL | Order | Order trust giá từ client | You | DONE | 2026-05-14 | Enforced authoritative SKU pricing from product-service |
 | 2 | CRITICAL | Payment | Intent trust amount/currency/order | You | DONE | 2026-05-14 | Validated against order snapshot before gateway call |
 | 3 | CRITICAL | Payment | Auto-create payment conflict create intent | You | DONE | 2026-05-14 | Attach intent to auto-created pending payment |
-| 4 | HIGH | Order/Inventory | Event contract mismatch | You | TODO | 2026-05-14 | |
-| 5 | HIGH | Shipping | Auto-create placeholder data | You | TODO | 2026-05-14 | |
-| 6 | HIGH | Shipping | Seller đọc shipment không thuộc mình | You | TODO | 2026-05-14 | |
+| 4 | HIGH | Order/Inventory | Event contract mismatch | You | DONE | 2026-05-14 | Added order items payload + resilient consumer release |
+| 5 | HIGH | Shipping | Auto-create placeholder data | You | DONE | 2026-05-14 | Skip auto-create when required real fields are missing |
+| 6 | HIGH | Shipping | Seller đọc shipment không thuộc mình | You | DONE | 2026-05-14 | Enforced seller ownership on list/read |
 | 7 | HIGH | Shipping | Webhook không verify signature | You | TODO | 2026-05-14 | |
 | 8 | HIGH | Cart | Client điều khiển unitPrice | You | TODO | 2026-05-14 | |
 | 9 | MEDIUM | Shipping | Create shipment chưa verify order | You | TODO | 2026-05-14 | |

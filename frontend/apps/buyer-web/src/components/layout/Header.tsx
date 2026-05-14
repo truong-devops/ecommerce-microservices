@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 interface HeaderProps {
@@ -12,7 +12,6 @@ interface HeaderProps {
 export function Header({ keywords }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { locale, setLocale, text } = useLanguage();
   const { ready, user } = useAuth();
   const { cartCount } = useCart();
@@ -20,12 +19,13 @@ export function Header({ keywords }: HeaderProps) {
 
   useEffect(() => {
     if (pathname === '/search') {
-      setSearchValue(searchParams.get('q')?.trim() ?? '');
+      const params = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+      setSearchValue(params.get('q')?.trim() ?? '');
       return;
     }
 
     setSearchValue('');
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   const handleLogout = () => {
     router.push('/logout');

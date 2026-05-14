@@ -80,7 +80,12 @@ export default function OrderHandoverPage() {
         }
 
         if (!cancelled && (orderResult.status === 'rejected' || shipmentResult.status === 'rejected')) {
-          const partialError = orderResult.status === 'rejected' ? orderResult.reason : shipmentResult.reason;
+          const partialError =
+            orderResult.status === 'rejected'
+              ? orderResult.reason
+              : shipmentResult.status === 'rejected'
+                ? shipmentResult.reason
+                : new Error('Unknown partial error');
           if (partialError instanceof SellerApiClientError) {
             setError(`Một phần dữ liệu chưa tải được: ${partialError.message}`);
           } else {

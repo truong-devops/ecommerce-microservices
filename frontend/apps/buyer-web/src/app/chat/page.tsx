@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { createBuyerChatConversation, listBuyerChatConversations, listBuyerChatMessages, markBuyerChatRead, sendBuyerChatMessage } from '@/lib/api/chat';
@@ -21,6 +21,14 @@ const CHAT_WS_BASE_URL = toWsBase(process.env.NEXT_PUBLIC_CHAT_WS_BASE_URL ?? 'h
 type BuyerMessageView = BuyerChatMessage & { localState?: 'pending' | 'failed' };
 
 export default function BuyerChatPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-app-bg" />}>
+      <BuyerChatPageContent />
+    </Suspense>
+  );
+}
+
+function BuyerChatPageContent() {
   const { text } = useLanguage();
   const { ready, user, accessToken } = useAuth();
   const searchParams = useSearchParams();

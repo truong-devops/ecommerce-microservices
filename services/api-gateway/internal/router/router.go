@@ -122,6 +122,8 @@ func New(
 		mountPrefix(private, "/api/v1/analytics", proxies[config.ServiceAnalytics])
 		mountPrefix(private, "/api/chat", proxies[config.ServiceChat])
 		mountPrefix(private, "/api/v1/chat", proxies[config.ServiceChat])
+		mountPrefix(private, "/api/moderation/videos", proxies[config.ServiceProduct])
+		mountPrefix(private, "/api/v1/moderation/videos", proxies[config.ServiceProduct])
 
 		mountMethodPrefix(private, http.MethodPost, "/api/products", proxies[config.ServiceProduct])
 		mountMethodPrefix(private, http.MethodPut, "/api/products", proxies[config.ServiceProduct])

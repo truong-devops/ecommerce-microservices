@@ -9,6 +9,7 @@ import {
   ConfirmVideoThumbnailDto,
   CreateProductVideoDto,
   ListProductVideosDto,
+  MAX_VIDEO_SIZE_BYTES,
   TrackVideoEventDto,
   UpdateProductVideoDto,
   VideoProductInputDto
@@ -19,6 +20,7 @@ import { ProductStatus } from '../entities/product-status.enum';
 import { ProductDocument } from '../entities/product.schema';
 import { ProductVideosRepository } from '../repositories/product-videos.repository';
 import { ProductsRepository } from '../repositories/products.repository';
+import { ProductEventsPublisherService } from './product-events-publisher.service';
 
 interface ProductVideoResponse {
   videoId: string;
@@ -68,17 +70,16 @@ interface ProductVideoResponse {
 @Injectable()
 export class ProductVideosService {
   private readonly mediaPublicBaseUrl: string;
-  private readonly reviewRequired: boolean;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly productVideosRepository: ProductVideosRepository,
-    private readonly productsRepository: ProductsRepository
+    private readonly productsRepository: ProductsRepository,
+    private readonly productEventsPublisherService: ProductEventsPublisherService
   ) {
     this.mediaPublicBaseUrl = normalizeMediaPublicBaseUrl(
       this.configService.get<string>('media.publicBaseUrl', 'http://localhost:12030/ecommerce-media')
     );
-    this.reviewRequired = this.configService.get<boolean>('video.reviewRequired', false);
   }
 
   async createVideo(user: AuthenticatedUserContext, dto: CreateProductVideoDto): Promise<ProductVideoResponse> {
@@ -125,6 +126,9 @@ export class ProductVideosService {
     const existing = await this.requireVideo(videoId);
     this.assertCanManageVideo(user, existing);
     this.assertEditable(existing);
+    if (dto.sizeBytes !== undefined && dto.sizeBytes > MAX_VIDEO_SIZE_BYTES) {
+      throw new UnprocessableEntityException({ code: ErrorCode.VALIDATION_FAILED, message: 'Video must be 50MB or smaller' });
+    }
 
     const updated = await this.productVideosRepository.updateByVideoId(existing.videoId, {
       mediaObjectKey: dto.mediaObjectKey.trim(),
@@ -162,11 +166,10 @@ export class ProductVideosService {
     this.assertCanManageVideo(user, existing);
     this.assertReadyForPublish(existing);
 
-    const status = this.reviewRequired ? ProductVideoStatus.REVIEW_PENDING : ProductVideoStatus.PUBLISHED;
     const now = new Date();
     const updated = await this.productVideosRepository.updateByVideoId(existing.videoId, {
-      status,
-      publishedAt: status === ProductVideoStatus.PUBLISHED ? existing.publishedAt ?? now : existing.publishedAt ?? null,
+      status: ProductVideoStatus.REVIEW_PENDING,
+      publishedAt: existing.publishedAt ?? null,
       moderation: {
         ...existing.moderation,
         submittedAt: now
@@ -180,8 +183,11 @@ export class ProductVideosService {
   }
 
   async publishVideo(user: AuthenticatedUserContext, videoId: string): Promise<ProductVideoResponse> {
+    if (!isStaff(user.role)) {
+      throw new ForbiddenException({ code: ErrorCode.FORBIDDEN, message: 'Only staff can publish videos after review' });
+    }
+
     const existing = await this.requireVideo(videoId);
-    this.assertCanManageVideo(user, existing);
     this.assertReadyForPublish(existing);
 
     const updated = await this.productVideosRepository.updateByVideoId(existing.videoId, {
@@ -244,6 +250,80 @@ export class ProductVideosService {
     };
   }
 
+  async listReviewQueue(user: AuthenticatedUserContext, query: ListProductVideosDto): Promise<{ items: ProductVideoResponse[]; pagination: PaginationResponse }> {
+    if (!isStaff(user.role)) {
+      throw new ForbiddenException({ code: ErrorCode.FORBIDDEN, message: 'Only staff can review videos' });
+    }
+
+    const normalized = normalizePagination({
+      ...query,
+      status: query.status ?? ProductVideoStatus.REVIEW_PENDING
+    });
+    const { items, totalItems } = await this.productVideosRepository.listManaged(normalized);
+
+    return {
+      items: items.map((item) => this.toResponse(item)),
+      pagination: buildPagination(normalized.page!, normalized.pageSize!, totalItems)
+    };
+  }
+
+  async approveVideo(user: AuthenticatedUserContext, videoId: string): Promise<ProductVideoResponse> {
+    if (!isStaff(user.role)) {
+      throw new ForbiddenException({ code: ErrorCode.FORBIDDEN, message: 'Only staff can approve videos' });
+    }
+
+    const existing = await this.requireVideo(videoId);
+    this.assertReadyForPublish(existing);
+
+    const now = new Date();
+    const updated = await this.productVideosRepository.updateByVideoId(existing.videoId, {
+      status: ProductVideoStatus.PUBLISHED,
+      publishedAt: existing.publishedAt ?? now,
+      hiddenAt: null,
+      moderation: {
+        ...existing.moderation,
+        reviewedAt: now,
+        reviewedBy: user.userId,
+        rejectionReason: null
+      }
+    });
+    if (!updated) {
+      throwVideoNotFound();
+    }
+
+    return this.toResponse(updated);
+  }
+
+  async rejectVideo(user: AuthenticatedUserContext, videoId: string, reason?: string): Promise<ProductVideoResponse> {
+    if (!isStaff(user.role)) {
+      throw new ForbiddenException({ code: ErrorCode.FORBIDDEN, message: 'Only staff can reject videos' });
+    }
+
+    const existing = await this.requireVideo(videoId);
+    if ([ProductVideoStatus.ARCHIVED, ProductVideoStatus.PUBLISHED].includes(existing.status)) {
+      throw new UnprocessableEntityException({
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Published or archived videos cannot be rejected'
+      });
+    }
+
+    const now = new Date();
+    const updated = await this.productVideosRepository.updateByVideoId(existing.videoId, {
+      status: ProductVideoStatus.REJECTED,
+      moderation: {
+        ...existing.moderation,
+        reviewedAt: now,
+        reviewedBy: user.userId,
+        rejectionReason: reason?.trim() || 'Video content did not pass review'
+      }
+    });
+    if (!updated) {
+      throwVideoNotFound();
+    }
+
+    return this.toResponse(updated);
+  }
+
   async listFeed(query: ListProductVideosDto): Promise<{ items: ProductVideoResponse[]; pagination: PaginationResponse }> {
     const normalized = normalizePagination(query);
     const { items, totalItems } = await this.productVideosRepository.listFeed(normalized);
@@ -263,7 +343,7 @@ export class ProductVideosService {
     return this.toResponse(video);
   }
 
-  async trackEvent(videoId: string, eventType: 'view-started' | 'view-qualified' | 'product-clicked' | 'add-to-cart', _dto: TrackVideoEventDto): Promise<{ accepted: true }> {
+  async trackEvent(videoId: string, eventType: 'view-started' | 'view-qualified' | 'product-clicked' | 'add-to-cart', dto: TrackVideoEventDto): Promise<{ accepted: true }> {
     const video = await this.requireVideo(videoId);
     if (video.status !== ProductVideoStatus.PUBLISHED) {
       throwVideoNotFound();
@@ -276,7 +356,11 @@ export class ProductVideosService {
       'add-to-cart': { addToCartCount: 1 }
     }[eventType];
 
-    await this.productVideosRepository.incrementMetrics(video.videoId, increments);
+    const eventKey = buildEventKey(video.videoId, eventType, dto);
+    const accepted = await this.productVideosRepository.incrementMetricsOnce(video.videoId, eventKey, increments);
+    if (accepted) {
+      await this.productEventsPublisherService.publishVideoAnalyticsEvent(toAnalyticsVideoEventType(eventType), buildAnalyticsVideoPayload(video, dto), eventKey);
+    }
     return { accepted: true };
   }
 
@@ -498,9 +582,47 @@ function isStaff(role: Role): boolean {
   return STAFF_ROLES.includes(role) || role === Role.ADMIN;
 }
 
-function normalizeOptionalString(value?: string): string | null {
+function normalizeOptionalString(value?: string | null): string | null {
   const normalized = value?.trim();
   return normalized || null;
+}
+
+function buildEventKey(videoId: string, eventType: string, dto: TrackVideoEventDto): string {
+  const stableClientKey = normalizeOptionalString(dto.clientEventId);
+  if (stableClientKey) {
+    return `${eventType}:${stableClientKey}`.slice(0, 180);
+  }
+
+  const anonymousSessionId = normalizeOptionalString(dto.anonymousSessionId) ?? 'anonymous';
+  const productId = normalizeOptionalString(dto.productId) ?? 'no-product';
+  const watchBucket = dto.watchTimeSec === undefined ? 'na' : String(Math.floor(dto.watchTimeSec / 3) * 3);
+  return `${eventType}:${videoId}:${anonymousSessionId}:${productId}:${watchBucket}`.slice(0, 180);
+}
+
+function toAnalyticsVideoEventType(eventType: string): string {
+  return `video.${eventType.replace(/-/g, '_')}`;
+}
+
+function buildAnalyticsVideoPayload(video: ProductVideoDocument, dto: TrackVideoEventDto): Record<string, unknown> {
+  const productId = normalizeOptionalString(dto.productId);
+  return {
+    videoId: video.videoId,
+    sellerId: video.sellerId,
+    productId: productId ?? video.products[0]?.productId ?? null,
+    source: normalizeOptionalString(dto.source) ?? 'buyer_video_feed',
+    anonymousSessionId: normalizeOptionalString(dto.anonymousSessionId),
+    clientEventId: normalizeOptionalString(dto.clientEventId),
+    watchTimeSec: dto.watchTimeSec ?? null,
+    video: {
+      videoId: video.videoId,
+      sellerId: video.sellerId,
+      title: video.title,
+      status: video.status
+    },
+    actor: {
+      anonymousSessionId: normalizeOptionalString(dto.anonymousSessionId)
+    }
+  };
 }
 
 function resolveMediaUrl(urlValue: string | null | undefined, objectKey: string | null | undefined, mediaPublicBaseUrl: string): string | null {

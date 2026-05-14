@@ -151,6 +151,9 @@ export class ProductVideo {
   @Prop({ type: VideoMetricsSnapshotSchema, default: () => ({}) })
   metricsSnapshot!: VideoMetricsSnapshot;
 
+  @Prop({ type: [String], default: [], select: false })
+  recentEventKeys!: string[];
+
   @Prop({ type: Date, default: null, index: true })
   publishedAt?: Date | null;
 

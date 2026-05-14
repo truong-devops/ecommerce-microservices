@@ -18,6 +18,8 @@ import {
 } from 'class-validator';
 import { ProductVideoStatus } from '../entities/product-video-status.enum';
 
+export const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+
 export class VideoProductTagPositionDto {
   @Type(() => Number)
   @IsNumber()
@@ -121,6 +123,7 @@ export class ConfirmVideoMediaDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(MAX_VIDEO_SIZE_BYTES)
   @IsOptional()
   sizeBytes?: number;
 

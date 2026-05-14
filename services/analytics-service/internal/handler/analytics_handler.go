@@ -102,6 +102,26 @@ func (h *AnalyticsHandler) GetShippingSummary(w http.ResponseWriter, r *http.Req
 	httpx.WriteSuccess(w, r, http.StatusOK, result)
 }
 
+func (h *AnalyticsHandler) GetVideoSummary(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+	fromInput, toInput, sellerIDInput, err := parseAnalyticsBaseQuery(r)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeBadRequest)
+		return
+	}
+	videoID := strings.TrimSpace(r.URL.Query().Get("videoId"))
+	result, err := h.analyticsService.GetVideoSummary(r.Context(), user, fromInput, toInput, sellerIDInput, videoID)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
 func parseAnalyticsBaseQuery(r *http.Request) (string, string, string, error) {
 	q := r.URL.Query()
 	fromInput := strings.TrimSpace(q.Get("from"))

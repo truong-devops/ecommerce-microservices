@@ -563,6 +563,7 @@ export interface PresignSellerVideoUploadInput {
   videoId: string;
   fileName: string;
   contentType: string;
+  sizeBytes: number;
 }
 
 export interface PresignSellerVideoUploadOutput {

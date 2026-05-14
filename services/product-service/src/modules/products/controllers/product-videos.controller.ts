@@ -88,7 +88,7 @@ export class ProductVideosController {
   }
 
   @Post(':videoId/publish')
-  @Roles(Role.SELLER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.MODERATOR, Role.ADMIN, Role.SUPER_ADMIN)
   async publishVideo(
     @CurrentUser() user: AuthenticatedUserContext,
     @Param('videoId') videoId: string

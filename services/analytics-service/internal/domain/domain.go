@@ -47,6 +47,17 @@ type AnalyticsEventRecord struct {
 	CreatedAt      string
 }
 
+type VideoSummaryItem struct {
+	VideoID            string
+	SellerID           string
+	ViewStartedCount   int64
+	QualifiedViewCount int64
+	ProductClickCount  int64
+	AddToCartCount     int64
+	ProductClickCTR    float64
+	VideoToCartRate    float64
+}
+
 func IsValidRole(role Role) bool {
 	switch role {
 	case RoleBuyer, RoleCustomer, RoleSeller, RoleAdmin, RoleModerator, RoleSupport, RoleWarehouse, RoleSuperAdmin, RoleService:

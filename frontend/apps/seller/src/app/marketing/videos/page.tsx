@@ -13,13 +13,13 @@ import {
   createSellerVideo,
   listSellerVideos,
   presignSellerVideoUpload,
-  publishSellerVideo,
+  submitSellerVideoReview,
   unpublishSellerVideo
 } from '@/lib/api/videos';
 import { useAuth } from '@/providers/AppProvider';
 
 const checklist = [
-  'Video MP4/WebM, khuyến nghị 10s đến 60s',
+  'Video MP4/WebM, tối đa 50MB, khuyến nghị 10s đến 60s',
   'Có gắn ít nhất 1 sản phẩm đang ACTIVE',
   'Tiêu đề rõ nội dung bán hàng',
   'Không dùng hình ảnh/âm thanh vi phạm bản quyền'
@@ -36,6 +36,9 @@ const statusLabels: Record<string, string> = {
   archived: 'Đã lưu trữ'
 };
 
+const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_SIZE_MB = 50;
+
 export default function SellerVideosPage() {
   const router = useRouter();
   const { ready, user, accessToken, logout } = useAuth();
@@ -49,6 +52,7 @@ export default function SellerVideosPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewVideo, setPreviewVideo] = useState<SellerVideo | null>(null);
 
   const loadData = useCallback(async () => {
     if (!accessToken) {
@@ -106,6 +110,10 @@ export default function SellerVideosPage() {
         setError('Chỉ hỗ trợ video/mp4 hoặc video/webm.');
         return;
       }
+      if (videoFile && videoFile.size > MAX_VIDEO_SIZE_BYTES) {
+        setError(`Video tối đa ${MAX_VIDEO_SIZE_MB}MB. Vui lòng nén video hoặc chọn file nhẹ hơn.`);
+        return;
+      }
 
       setIsSubmitting(true);
       setError(null);
@@ -123,7 +131,8 @@ export default function SellerVideosPage() {
           const presigned = await presignSellerVideoUpload(accessToken, {
             videoId: created.videoId,
             fileName: videoFile.name,
-            contentType: videoFile.type
+            contentType: videoFile.type,
+            sizeBytes: videoFile.size
           });
 
           const uploadResponse = await fetch(presigned.uploadUrl, {
@@ -143,10 +152,10 @@ export default function SellerVideosPage() {
             durationSec: 30
           });
 
-          current = await publishSellerVideo(accessToken, current.videoId);
+          current = await submitSellerVideoReview(accessToken, current.videoId);
         }
 
-        setMessage(videoFile ? 'Đã upload và publish video.' : 'Đã tạo draft video. Upload file để publish.');
+        setMessage(videoFile ? 'Đã upload video và gửi moderator duyệt.' : 'Đã tạo draft video. Upload file để gửi duyệt.');
         setTitle('');
         setDescription('');
         setVideoFile(null);
@@ -173,8 +182,8 @@ export default function SellerVideosPage() {
           await unpublishSellerVideo(accessToken, video.videoId);
           setMessage('Đã ẩn video khỏi buyer feed.');
         } else {
-          await publishSellerVideo(accessToken, video.videoId);
-          setMessage('Đã publish video.');
+          await submitSellerVideoReview(accessToken, video.videoId);
+          setMessage('Đã gửi video cho moderator duyệt.');
         }
         await loadData();
       } catch (toggleError) {
@@ -283,13 +292,24 @@ export default function SellerVideosPage() {
                           <td className="px-3 py-2 text-slate-700">{statusLabels[video.status] ?? video.status}</td>
                           <td className="px-3 py-2 text-slate-700">{video.metrics?.qualifiedViewCount ?? 0}</td>
                           <td className="px-3 py-2">
-                            <button
-                              type="button"
-                              onClick={() => void handleTogglePublish(video)}
-                              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
-                            >
-                              {video.status === 'published' ? 'Ẩn' : 'Publish'}
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewVideo(video)}
+                                disabled={!video.mediaUrl}
+                                title={video.mediaUrl ? 'Xem video' : 'Video chưa có file'}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                ▶
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleTogglePublish(video)}
+                                className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
+                              >
+                                {video.status === 'published' ? 'Ẩn' : 'Gửi duyệt'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -322,9 +342,10 @@ export default function SellerVideosPage() {
                     <label className="block text-sm font-medium text-slate-700">
                       File video MP4/WebM
                       <input type="file" accept="video/mp4,video/webm" onChange={handleFileChange} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" />
+                      <span className="mt-1 block text-xs text-slate-500">Dung lượng tối đa {MAX_VIDEO_SIZE_MB}MB.</span>
                     </label>
                     <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60">
-                      {isSubmitting ? 'Đang xử lý...' : 'Tạo + upload + publish'}
+                      {isSubmitting ? 'Đang xử lý...' : 'Tạo + upload + gửi duyệt'}
                     </button>
                   </div>
                 </form>
@@ -342,6 +363,33 @@ export default function SellerVideosPage() {
           </section>
         </main>
       </div>
+
+      {previewVideo ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <div className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">Preview video</p>
+                <h2 className="mt-1 text-base font-semibold text-slate-900">{previewVideo.title}</h2>
+              </div>
+              <button type="button" onClick={() => setPreviewVideo(null)} className="rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-600 hover:border-[#ee4d2d] hover:text-[#ee4d2d]">
+                Đóng
+              </button>
+            </div>
+            <div className="bg-slate-950">
+              {previewVideo.mediaUrl ? (
+                <video src={previewVideo.mediaUrl} controls autoPlay className="max-h-[72vh] w-full bg-slate-950 object-contain" />
+              ) : (
+                <div className="flex h-72 items-center justify-center text-sm text-white">Video chưa có file để xem trước.</div>
+              )}
+            </div>
+            <div className="space-y-2 px-4 py-3 text-sm text-slate-600">
+              <p>Trạng thái: <span className="font-semibold text-slate-900">{statusLabels[previewVideo.status] ?? previewVideo.status}</span></p>
+              <p>Sản phẩm: {previewVideo.products.map((product) => product.name).join(', ') || 'Chưa gắn sản phẩm'}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

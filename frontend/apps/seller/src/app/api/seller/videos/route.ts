@@ -1,11 +1,24 @@
 import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { fail, ok } from '@/lib/server/seller-api-response';
-import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
+import { requestUpstream, serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client';
+import type { SellerVideoListOutput } from '@/lib/api/types';
 
 const VIDEO_MANAGE_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'MODERATOR']);
 const VIDEO_CREATE_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN']);
 const VIDEO_STATUSES = new Set(['draft', 'processing', 'processing_failed', 'review_pending', 'published', 'hidden', 'rejected', 'archived']);
+
+interface UpstreamPaginatedResponse<T> {
+  success?: boolean;
+  data?: T[];
+  error?: {
+    code?: string;
+    message?: string;
+  };
+  meta?: {
+    pagination?: SellerVideoListOutput['pagination'];
+  };
+}
 
 export async function GET(request: Request) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
@@ -38,12 +51,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const videos = await requestUpstream<unknown>(`${serviceBaseUrls.product}/videos/me?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    });
+    const videos = await requestPaginatedSellerVideos(`${serviceBaseUrls.product}/videos/me?${queryParams.toString()}`, accessToken);
 
     return ok(videos);
   } catch (error) {
@@ -102,4 +110,52 @@ function normalizePositiveInt(value: string | null, fallback: number, max = Numb
     return fallback;
   }
   return Math.min(parsed, max);
+}
+
+async function requestPaginatedSellerVideos(url: string, accessToken: string): Promise<SellerVideoListOutput> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+  } catch {
+    throw new UpstreamHttpError(503, 'UPSTREAM_UNAVAILABLE', 'Cannot connect to upstream service', true);
+  }
+
+  const payload = safeParseJson(await response.text()) as UpstreamPaginatedResponse<SellerVideoListOutput['items'][number]> | null;
+  if (!response.ok) {
+    throw new UpstreamHttpError(
+      response.status,
+      payload?.error?.code ?? `HTTP_${response.status}`,
+      payload?.error?.message ?? `Upstream request failed with status ${response.status}`
+    );
+  }
+
+  if (!payload || payload.success !== true || !Array.isArray(payload.data)) {
+    throw new UpstreamHttpError(502, 'INVALID_UPSTREAM_RESPONSE', 'Invalid seller video list response');
+  }
+
+  return {
+    items: payload.data,
+    pagination: payload.meta?.pagination ?? {
+      page: 1,
+      pageSize: payload.data.length,
+      totalItems: payload.data.length,
+      totalPages: 1
+    }
+  };
+}
+
+function safeParseJson(raw: string): unknown | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
 }

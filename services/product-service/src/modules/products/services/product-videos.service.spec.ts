@@ -33,7 +33,8 @@ describe('ProductVideosService', () => {
       })),
       listManaged: jest.fn(),
       listFeed: jest.fn(),
-      incrementMetrics: jest.fn()
+      incrementMetrics: jest.fn(),
+      incrementMetricsOnce: jest.fn()
     };
 
     const configService = {
@@ -41,17 +42,18 @@ describe('ProductVideosService', () => {
         if (key === 'media.publicBaseUrl') {
           return 'http://localhost:12030/ecommerce-media';
         }
-        if (key === 'video.reviewRequired') {
-          return false;
-        }
         return fallback;
       })
     };
+    const productEventsPublisherService = {
+      publishVideoAnalyticsEvent: jest.fn()
+    };
 
     return {
-      service: new ProductVideosService(configService as never, productVideosRepository as never, productsRepository as never),
+      service: new ProductVideosService(configService as never, productVideosRepository as never, productsRepository as never, productEventsPublisherService as never),
       productVideosRepository,
-      productsRepository
+      productsRepository,
+      productEventsPublisherService
     };
   }
 
@@ -68,15 +70,27 @@ describe('ProductVideosService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('rejects publish when media has not been confirmed', async () => {
+  it('rejects seller direct publish because videos require moderation', async () => {
+    const { service } = createService({
+      existingVideo: buildVideo({
+        status: ProductVideoStatus.PROCESSING,
+        mediaObjectKey: 'products/video/video-1/demo.mp4',
+        mimeType: 'video/mp4'
+      })
+    });
+
+    await expect(service.publishVideo(sellerUser, 'video-1')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('rejects submit review when media has not been confirmed', async () => {
     const { service } = createService({
       existingVideo: buildVideo({ mediaObjectKey: null, mimeType: null })
     });
 
-    await expect(service.publishVideo(sellerUser, 'video-1')).rejects.toBeInstanceOf(UnprocessableEntityException);
+    await expect(service.submitReview(sellerUser, 'video-1')).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 
-  it('publishes a ready seller-owned video', async () => {
+  it('submits a ready seller-owned video to moderation', async () => {
     const existingVideo = buildVideo({
       status: ProductVideoStatus.PROCESSING,
       mediaObjectKey: 'products/video/video-1/demo.mp4',
@@ -84,13 +98,83 @@ describe('ProductVideosService', () => {
     });
     const { service, productVideosRepository } = createService({ existingVideo });
 
-    const result = await service.publishVideo(sellerUser, 'video-1');
+    const result = await service.submitReview(sellerUser, 'video-1');
 
     expect(productVideosRepository.updateByVideoId).toHaveBeenCalledWith(
       'video-1',
-      expect.objectContaining({ status: ProductVideoStatus.PUBLISHED, hiddenAt: null })
+      expect.objectContaining({
+        status: ProductVideoStatus.REVIEW_PENDING,
+        moderation: expect.objectContaining({ submittedAt: expect.any(Date) })
+      })
+    );
+    expect(result.status).toBe(ProductVideoStatus.REVIEW_PENDING);
+  });
+
+  it('rejects confirming video media larger than 50MB', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.confirmMedia(sellerUser, 'video-1', {
+        mediaObjectKey: 'products/video/video-1/large.mp4',
+        mimeType: 'video/mp4',
+        sizeBytes: 50 * 1024 * 1024 + 1,
+        durationSec: 30
+      })
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  });
+
+  it('rejects moderation access from seller role', async () => {
+    const { service } = createService();
+
+    await expect(service.listReviewQueue(sellerUser, { page: 1, pageSize: 20 })).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('approves a ready video from moderator role', async () => {
+    const moderatorUser = { ...sellerUser, userId: 'moderator-1', role: Role.MODERATOR };
+    const { service, productVideosRepository } = createService({
+      existingVideo: buildVideo({ status: ProductVideoStatus.REVIEW_PENDING })
+    });
+
+    const result = await service.approveVideo(moderatorUser, 'video-1');
+
+    expect(productVideosRepository.updateByVideoId).toHaveBeenCalledWith(
+      'video-1',
+      expect.objectContaining({
+        status: ProductVideoStatus.PUBLISHED,
+        hiddenAt: null,
+        moderation: expect.objectContaining({ reviewedBy: 'moderator-1' })
+      })
     );
     expect(result.status).toBe(ProductVideoStatus.PUBLISHED);
+  });
+
+  it('deduplicates tracked video events by client event id', async () => {
+    const { service, productVideosRepository, productEventsPublisherService } = createService({
+      existingVideo: buildVideo({
+        status: ProductVideoStatus.PUBLISHED,
+        publishedAt: new Date('2026-05-15T00:00:00Z')
+      })
+    });
+    productVideosRepository.incrementMetricsOnce.mockResolvedValue(true);
+
+    await service.trackEvent('video-1', 'view-qualified', {
+      clientEventId: 'event-1',
+      anonymousSessionId: 'session-1',
+      watchTimeSec: 5
+    });
+
+    expect(productVideosRepository.incrementMetricsOnce).toHaveBeenCalledWith('video-1', 'view-qualified:event-1', {
+      qualifiedViewCount: 1
+    });
+    expect(productEventsPublisherService.publishVideoAnalyticsEvent).toHaveBeenCalledWith(
+      'video.view_qualified',
+      expect.objectContaining({
+        videoId: 'video-1',
+        sellerId: 'seller-1',
+        clientEventId: 'event-1'
+      }),
+      'view-qualified:event-1'
+    );
   });
 });
 
@@ -150,6 +234,7 @@ function buildVideo(overrides: Record<string, unknown> = {}) {
       addToCartRate: 0,
       lastAggregatedAt: null
     },
+    recentEventKeys: [],
     publishedAt: null,
     hiddenAt: null,
     archivedAt: null,

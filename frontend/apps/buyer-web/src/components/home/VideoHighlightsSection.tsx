@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import type { ProductItem } from '@/lib/api/types';
+import { useEffect, useState } from 'react';
+import { listBuyerVideos } from '@/lib/api/videos';
+import type { BuyerVideo, ProductItem } from '@/lib/api/types';
 import { useLanguage } from '@/providers/AppProvider';
 
 interface VideoHighlightsSectionProps {
@@ -54,8 +56,28 @@ const fallbackVideos: VideoCardItem[] = [
 
 export function VideoHighlightsSection({ products }: VideoHighlightsSectionProps) {
   const { text } = useLanguage();
+  const [videos, setVideos] = useState<BuyerVideo[]>([]);
 
-  const videoCards = mapProductsToVideos(products);
+  useEffect(() => {
+    let cancelled = false;
+    void listBuyerVideos({ page: 1, pageSize: 4 })
+      .then((result) => {
+        if (!cancelled) {
+          setVideos(result.items ?? []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setVideos([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const videoCards = videos.length > 0 ? mapBackendVideos(videos) : mapProductsToVideos(products);
   const displayCards = videoCards.length > 0 ? videoCards : fallbackVideos;
 
   return (
@@ -101,6 +123,17 @@ export function VideoHighlightsSection({ products }: VideoHighlightsSectionProps
   );
 }
 
+function mapBackendVideos(videos: BuyerVideo[]): VideoCardItem[] {
+  return videos.slice(0, 4).map((video) => ({
+    id: video.videoId,
+    productId: video.products[0]?.productId ?? '',
+    title: video.title,
+    thumbnail: video.thumbnailUrl ?? video.products[0]?.image ?? 'https://picsum.photos/seed/video-backend-fallback/900/1200',
+    views: `${video.metrics.qualifiedViewCount}`,
+    duration: formatDuration(video.durationSec)
+  }));
+}
+
 function mapProductsToVideos(products: ProductItem[]): VideoCardItem[] {
   return products.slice(0, 4).map((product, index) => ({
     id: `video-${product.id}`,
@@ -110,4 +143,11 @@ function mapProductsToVideos(products: ProductItem[]): VideoCardItem[] {
     views: `${Math.max(5, 14 - index * 2)}.${index + 2}k`,
     duration: `00:${String(34 + index * 9).padStart(2, '0')}`
   }));
+}
+
+function formatDuration(durationSec: number | null): string {
+  const seconds = Math.max(0, Math.floor(durationSec ?? 0));
+  const minutes = Math.floor(seconds / 60);
+  const remaining = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
 }

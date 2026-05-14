@@ -85,6 +85,15 @@ export function publishSellerVideo(accessToken: string, videoId: string): Promis
   });
 }
 
+export function submitSellerVideoReview(accessToken: string, videoId: string): Promise<SellerVideo> {
+  return requestSellerApi<SellerVideo>(`/api/seller/videos/${videoId}/submit-review`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  });
+}
+
 export function unpublishSellerVideo(accessToken: string, videoId: string): Promise<SellerVideo> {
   return requestSellerApi<SellerVideo>(`/api/seller/videos/${videoId}/unpublish`, {
     method: 'POST',

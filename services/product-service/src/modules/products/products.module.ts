@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductsController } from './controllers/products.controller';
+import { ProductVideoModerationController } from './controllers/product-video-moderation.controller';
 import { ProductVideosController } from './controllers/product-videos.controller';
 import { ShopDecorController } from './controllers/shop-decor.controller';
 import { ProductVideo, ProductVideoSchema } from './entities/product-video.schema';
@@ -32,7 +33,7 @@ import { ShopDecorService } from './services/shop-decor.service';
       }
     ])
   ],
-  controllers: [ProductsController, ProductVideosController, ShopDecorController],
+  controllers: [ProductsController, ProductVideosController, ProductVideoModerationController, ShopDecorController],
   providers: [
     ProductsService,
     ProductsRepository,

@@ -66,7 +66,8 @@ export class ProductVideosRepository {
         ctr: 0,
         addToCartRate: 0,
         lastAggregatedAt: null
-      }
+      },
+      recentEventKeys: []
     });
 
     return document.save();
@@ -140,6 +141,48 @@ export class ProductVideosRepository {
         }
       )
       .exec();
+  }
+
+  async incrementMetricsOnce(
+    videoId: string,
+    eventKey: string,
+    increments: Partial<Record<'viewStartedCount' | 'qualifiedViewCount' | 'productClickCount' | 'addToCartCount', number>>
+  ): Promise<boolean> {
+    const update: Record<string, number> = {};
+    for (const [key, value] of Object.entries(increments)) {
+      if (value && value > 0) {
+        update[`metricsSnapshot.${key}`] = value;
+      }
+    }
+
+    if (Object.keys(update).length === 0) {
+      return false;
+    }
+
+    const result = await this.productVideoModel
+      .updateOne(
+        {
+          videoId: videoId.trim(),
+          status: ProductVideoStatus.PUBLISHED,
+          archivedAt: null,
+          recentEventKeys: { $ne: eventKey }
+        },
+        {
+          $inc: update,
+          $set: {
+            'metricsSnapshot.lastAggregatedAt': new Date()
+          },
+          $push: {
+            recentEventKeys: {
+              $each: [eventKey],
+              $slice: -500
+            }
+          }
+        }
+      )
+      .exec();
+
+    return result.modifiedCount > 0;
   }
 
   private buildBaseQuery(queryDto: ListProductVideosDto): FilterQuery<ProductVideo> {

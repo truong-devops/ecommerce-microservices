@@ -22,13 +22,14 @@
     publicBaseUrl: process.env.MEDIA_PUBLIC_BASE_URL ?? 'http://localhost:12030/ecommerce-media'
   },
   video: {
-    reviewRequired: process.env.VIDEO_REVIEW_REQUIRED === 'true'
+    reviewRequired: process.env.VIDEO_REVIEW_REQUIRED !== 'false'
   },
   kafka: {
     enabled: process.env.KAFKA_ENABLED === 'true',
     clientId: process.env.KAFKA_CLIENT_ID ?? 'product-service',
     brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9092').split(',').map((value) => value.trim()),
     productEventsTopic: process.env.PRODUCT_EVENTS_TOPIC ?? 'product.events',
+    analyticsEventsTopic: process.env.ANALYTICS_EVENTS_TOPIC ?? 'analytics.events',
     auditEventsTopic: process.env.AUDIT_EVENTS_TOPIC ?? 'audit.events'
   },
   search: {

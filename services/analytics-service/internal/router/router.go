@@ -37,12 +37,14 @@ func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTo
 		private.With(readRoles).Get(baseV1+"/events/timeseries", analyticsHandler.GetTimeseries)
 		private.With(readRoles).Get(baseV1+"/payments/summary", analyticsHandler.GetPaymentsSummary)
 		private.With(readRoles).Get(baseV1+"/shipping/summary", analyticsHandler.GetShippingSummary)
+		private.With(readRoles).Get(baseV1+"/videos/summary", analyticsHandler.GetVideoSummary)
 
 		baseLegacy := "/api/analytics"
 		private.With(readRoles).Get(baseLegacy+"/overview", analyticsHandler.GetOverview)
 		private.With(readRoles).Get(baseLegacy+"/events/timeseries", analyticsHandler.GetTimeseries)
 		private.With(readRoles).Get(baseLegacy+"/payments/summary", analyticsHandler.GetPaymentsSummary)
 		private.With(readRoles).Get(baseLegacy+"/shipping/summary", analyticsHandler.GetShippingSummary)
+		private.With(readRoles).Get(baseLegacy+"/videos/summary", analyticsHandler.GetVideoSummary)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {

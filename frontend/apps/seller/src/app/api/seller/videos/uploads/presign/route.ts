@@ -5,6 +5,7 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const VIDEO_CREATE_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN']);
 const ALLOWED_VIDEO_TYPES = new Set(['video/mp4', 'video/webm']);
+const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 
 export async function POST(request: Request) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
@@ -36,9 +37,13 @@ export async function POST(request: Request) {
   const videoId = typeof source.videoId === 'string' ? source.videoId.trim() : '';
   const fileName = typeof source.fileName === 'string' ? source.fileName.trim() : '';
   const contentType = typeof source.contentType === 'string' ? source.contentType.trim().toLowerCase() : '';
+  const sizeBytes = typeof source.sizeBytes === 'number' && Number.isFinite(source.sizeBytes) ? Math.trunc(source.sizeBytes) : 0;
 
   if (!videoId || !fileName || !ALLOWED_VIDEO_TYPES.has(contentType)) {
     return fail(400, 'BAD_REQUEST', 'videoId, fileName and supported contentType are required');
+  }
+  if (sizeBytes < 1 || sizeBytes > MAX_VIDEO_SIZE_BYTES) {
+    return fail(400, 'BAD_REQUEST', 'Video must be 50MB or smaller');
   }
 
   try {
@@ -53,6 +58,7 @@ export async function POST(request: Request) {
         entityId: videoId,
         fileName,
         contentType,
+        sizeBytes,
         expiresInSeconds: 900
       })
     });

@@ -191,6 +191,7 @@ services:
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
       MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://localhost:12030/ecommerce-media}
+      VIDEO_REVIEW_REQUIRED: ${VIDEO_REVIEW_REQUIRED:-true}
     ports:
       - '12012:8080'
     healthcheck:

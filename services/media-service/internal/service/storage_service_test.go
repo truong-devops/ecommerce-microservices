@@ -1,6 +1,9 @@
 package service
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestNormalizeExtensionAllowsSupportedVideoTypes(t *testing.T) {
 	tests := []struct {
@@ -55,5 +58,35 @@ func TestIsSupportedUploadContentType(t *testing.T) {
 		if isSupportedUploadContentType(contentType) {
 			t.Fatalf("expected %q to be rejected", contentType)
 		}
+	}
+}
+
+func TestPresignUploadRejectsOversizedVideo(t *testing.T) {
+	service := &StorageService{}
+	tooLarge := maxVideoUploadSizeBytes + 1
+
+	_, err := service.PresignUpload(context.Background(), PresignUploadRequest{
+		EntityType:  "video",
+		EntityID:    "video-1",
+		FileName:    "demo.mp4",
+		ContentType: "video/mp4",
+		SizeBytes:   &tooLarge,
+	})
+	if err == nil {
+		t.Fatal("expected oversized video to be rejected")
+	}
+}
+
+func TestPresignUploadRequiresVideoSize(t *testing.T) {
+	service := &StorageService{}
+
+	_, err := service.PresignUpload(context.Background(), PresignUploadRequest{
+		EntityType:  "video",
+		EntityID:    "video-1",
+		FileName:    "demo.mp4",
+		ContentType: "video/mp4",
+	})
+	if err == nil {
+		t.Fatal("expected video without sizeBytes to be rejected")
 	}
 }

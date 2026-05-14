@@ -163,6 +163,40 @@ func (s *AnalyticsService) GetShippingSummary(ctx context.Context, user domain.U
 	return map[string]any{"from": rangeInput.From, "to": rangeInput.To, "sellerId": nullableString(rangeInput.SellerID), "items": respItems}, nil
 }
 
+func (s *AnalyticsService) GetVideoSummary(ctx context.Context, user domain.UserContext, fromInput, toInput, sellerIDInput, videoID string) (map[string]any, error) {
+	rangeInput, err := resolveDateRange(user, fromInput, toInput, sellerIDInput)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := s.repo.QueryVideoSummary(ctx, rangeInput, videoID)
+	if err != nil {
+		return nil, err
+	}
+
+	respItems := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		respItems = append(respItems, map[string]any{
+			"videoId":            item.VideoID,
+			"sellerId":           item.SellerID,
+			"viewStartedCount":   item.ViewStartedCount,
+			"qualifiedViewCount": item.QualifiedViewCount,
+			"productClickCount":  item.ProductClickCount,
+			"addToCartCount":     item.AddToCartCount,
+			"productClickCtr":    roundMetric(item.ProductClickCTR),
+			"videoToCartRate":    roundMetric(item.VideoToCartRate),
+		})
+	}
+
+	return map[string]any{
+		"from":     rangeInput.From,
+		"to":       rangeInput.To,
+		"sellerId": nullableString(rangeInput.SellerID),
+		"videoId":  nullableString(strings.TrimSpace(videoID)),
+		"items":    respItems,
+	}, nil
+}
+
 type normalizeResult struct {
 	Record *domain.AnalyticsEventRecord
 	Reason string
@@ -204,8 +238,8 @@ func normalizeAnalyticsEvent(messageKey, messageValue, predefinedEventKey string
 		EventType:      *eventType,
 		SourceService:  sourceService,
 		OccurredAt:     occurredAt,
-		SellerID:       nullableString(anyToString(payload["sellerId"])),
-		UserID:         firstNotNil(nullableString(anyToString(payload["userId"])), nullableString(anyToString(payload["buyerId"]))),
+		SellerID:       extractSellerID(payload),
+		UserID:         extractUserID(payload),
 		OrderID:        nullableString(anyToString(payload["orderId"])),
 		PaymentID:      nullableString(anyToString(payload["paymentId"])),
 		ShipmentID:     nullableString(anyToString(payload["shipmentId"])),
@@ -222,6 +256,26 @@ func normalizeAnalyticsEvent(messageKey, messageValue, predefinedEventKey string
 	}
 
 	return normalizeResult{Record: &record}
+}
+
+func extractSellerID(payload map[string]any) *string {
+	if value := nullableString(anyToString(payload["sellerId"])); value != nil {
+		return value
+	}
+	if video, ok := payload["video"].(map[string]any); ok {
+		return nullableString(anyToString(video["sellerId"]))
+	}
+	return nil
+}
+
+func extractUserID(payload map[string]any) *string {
+	if value := firstNotNil(nullableString(anyToString(payload["userId"])), nullableString(anyToString(payload["buyerId"]))); value != nil {
+		return value
+	}
+	if actor, ok := payload["actor"].(map[string]any); ok {
+		return nullableString(anyToString(actor["userId"]))
+	}
+	return nil
 }
 
 func extractOccurredAt(envelope map[string]any, payload map[string]any) string {
@@ -456,4 +510,8 @@ func toJSON(value any) string {
 		return "{}"
 	}
 	return string(data)
+}
+
+func roundMetric(value float64) float64 {
+	return math.Round(value*10000) / 10000
 }

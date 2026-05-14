@@ -14,7 +14,8 @@ interface VideoCardItem {
   id: string;
   productId: string;
   title: string;
-  thumbnail: string;
+  thumbnail: string | null;
+  mediaUrl?: string | null;
   views: string;
   duration: string;
 }
@@ -98,7 +99,22 @@ export function VideoHighlightsSection({ products }: VideoHighlightsSectionProps
             href={item.productId ? `/videos?productId=${encodeURIComponent(item.productId)}` : '/videos'}
             className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-900"
           >
-            <img src={item.thumbnail} alt={item.title} className="h-56 w-full object-cover opacity-95 transition group-hover:scale-[1.02]" />
+            <div className="relative h-56 w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(248,81,47,0.45),transparent_42%),linear-gradient(160deg,#111827,#020617)]">
+              {item.mediaUrl ? (
+                <video
+                  src={item.mediaUrl}
+                  poster={item.thumbnail ?? undefined}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="h-full w-full object-cover opacity-95 transition group-hover:scale-[1.02]"
+                />
+              ) : item.thumbnail ? (
+                <img src={item.thumbnail} alt={item.title} className="h-full w-full object-cover opacity-95 transition group-hover:scale-[1.02]" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-white/80">Video preview</div>
+              )}
+            </div>
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
 
@@ -128,7 +144,8 @@ function mapBackendVideos(videos: BuyerVideo[]): VideoCardItem[] {
     id: video.videoId,
     productId: video.products[0]?.productId ?? '',
     title: video.title,
-    thumbnail: video.thumbnailUrl ?? video.products[0]?.image ?? 'https://picsum.photos/seed/video-backend-fallback/900/1200',
+    thumbnail: video.thumbnailUrl,
+    mediaUrl: video.mediaUrl,
     views: `${video.metrics.qualifiedViewCount}`,
     duration: formatDuration(video.durationSec)
   }));

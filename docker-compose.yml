@@ -107,6 +107,13 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-dev-google-client-secret}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:12010/api/v1/auth/oauth/google/callback}
+      GOOGLE_OAUTH_SCOPES: ${GOOGLE_OAUTH_SCOPES:-openid email profile}
+      BUYER_WEB_BASE_URL: ${BUYER_WEB_BASE_URL:-http://localhost:8888}
+      SELLER_WEB_BASE_URL: ${SELLER_WEB_BASE_URL:-http://localhost:6789}
+      MODERATOR_WEB_BASE_URL: ${MODERATOR_WEB_BASE_URL:-http://localhost:1111}
     ports:
       - '12010:8080'
     healthcheck:
@@ -264,7 +271,7 @@ services:
       KAFKA_CLIENT_ID: cart-service
       KAFKA_BROKERS: kafka:29092
       CART_EVENTS_TOPIC: cart.events
-      CART_VALIDATE_EXTERNAL: 'false'
+      CART_VALIDATE_EXTERNAL: 'true'
       PRODUCT_SERVICE_BASE_URL: http://product-service:8080/api/v1
       INVENTORY_SERVICE_BASE_URL: http://inventory-service:8080/api/v1
       DEPENDENCY_TIMEOUT_MS: 5000
@@ -419,6 +426,9 @@ services:
       PORT: 8080
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      ORDER_SERVICE_BASE_URL: http://order-service:8080/api/v1
+      DEPENDENCY_TIMEOUT_MS: 5000
+      SHIPPING_WEBHOOK_SIGNING_SECRET: dev-shipping-webhook-signing-secret
       DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
       DB_SSL: 'false'
       REDIS_ENABLED: 'true'

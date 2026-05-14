@@ -61,7 +61,7 @@ func Load() (Config, error) {
 		MigrationFile: getEnv("MIGRATION_FILE", "migrations/0001_init_cart_service.sql"),
 
 		CartPersistence:             parseBool(getEnv("CART_PERSISTENCE_ENABLED", "false")),
-		DependencyValidationEnabled: parseBool(getEnv("CART_VALIDATE_EXTERNAL", "false")),
+		DependencyValidationEnabled: parseBool(getEnv("CART_VALIDATE_EXTERNAL", "true")),
 		ProductServiceBaseURL:       strings.TrimSpace(os.Getenv("PRODUCT_SERVICE_BASE_URL")),
 		InventoryServiceBaseURL:     strings.TrimSpace(os.Getenv("INVENTORY_SERVICE_BASE_URL")),
 	}

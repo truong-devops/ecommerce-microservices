@@ -685,6 +685,20 @@ func (s *PaymentService) HandleProviderWebhook(
 	if parsedWebhook.Amount != nil && roundMoney(*parsedWebhook.Amount) != payment.Amount {
 		return nil, 0, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodePaymentAmountMismatch, "Webhook amount does not match payment amount", nil)
 	}
+	if parsedWebhook.Currency != nil && strings.TrimSpace(*parsedWebhook.Currency) != "" {
+		webhookCurrency := strings.ToUpper(strings.TrimSpace(*parsedWebhook.Currency))
+		if webhookCurrency != payment.Currency {
+			return nil, 0, httpx.NewAppError(
+				http.StatusUnprocessableEntity,
+				domain.ErrorCodePaymentCurrencyMismatch,
+				"Webhook currency does not match payment currency",
+				map[string]any{
+					"paymentCurrency": payment.Currency,
+					"webhookCurrency": webhookCurrency,
+				},
+			)
+		}
+	}
 
 	updatedPayment := *payment
 	systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}

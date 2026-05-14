@@ -39,7 +39,13 @@ func (h *ShippingHandler) CreateShipment(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	result, err := h.service.CreateShipment(r.Context(), user, requestID(r), req)
+	result, err := h.service.CreateShipment(
+		r.Context(),
+		user,
+		httpx.ExtractBearerToken(r.Header.Get("Authorization")),
+		requestID(r),
+		req,
+	)
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
 		return
@@ -167,7 +173,13 @@ func (h *ShippingHandler) HandleProviderWebhook(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	result, err := h.service.HandleProviderWebhook(r.Context(), requestID(r), chi.URLParam(r, "provider"), req)
+	result, err := h.service.HandleProviderWebhook(
+		r.Context(),
+		requestID(r),
+		chi.URLParam(r, "provider"),
+		strings.TrimSpace(r.Header.Get("X-Webhook-Signature")),
+		req,
+	)
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
 		return

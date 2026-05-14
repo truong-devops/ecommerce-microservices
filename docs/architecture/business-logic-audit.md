@@ -138,7 +138,7 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
 
 ## 7) HIGH - Shipping webhook public chưa verify signature
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - Endpoint webhook public.
   - Chưa có signature field/verification logic như payment webhook.
@@ -148,15 +148,16 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/shipping-service/internal/router/router.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/router/router.go:39)
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:866)
 - Fix Note:
-  - N/A
+  - Added webhook HMAC signature verification with `X-Webhook-Signature` header.
+  - Added required signing secret config `SHIPPING_WEBHOOK_SIGNING_SECRET`.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/shipping-service`.
 
 ---
 
 ## 8) HIGH - Cart cho phép client điều khiển unitPrice
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - Add/Merge item set lại `UnitPrice` từ request.
   - External validation chưa verify giá chuẩn từ product source of truth.
@@ -167,15 +168,16 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/cart-service/internal/service/cart_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/cart-service/internal/service/cart_service.go:135)
   - [services/cart-service/internal/service/cart_validation_client.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/cart-service/internal/service/cart_validation_client.go:47)
 - Fix Note:
-  - N/A
+  - Cart add/update now resolves authoritative `unitPrice` from product-service variant (`productId + sku`) instead of trusting client value.
+  - Added cart validation client resolver and enabled external validation by default config/profile.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/cart-service`.
 
 ---
 
 ## 9) MEDIUM - Create shipment thủ công chưa verify order tồn tại
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - `CreateShipment` chủ yếu check format + unique nội bộ.
   - Chưa check với order-service xem order có thật và đang ở trạng thái phù hợp.
@@ -185,15 +187,16 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:139)
   - [services/shipping-service/internal/service/shipping_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/shipping-service/internal/service/shipping_service.go:153)
 - Fix Note:
-  - N/A
+  - Added shipping `OrderClient` to verify order existence before manual shipment creation.
+  - Added checks: `buyerId` must match order owner, shipment currency must match order, and order status must be shipment-eligible.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/shipping-service`.
 
 ---
 
 ## 10) MEDIUM - Payment webhook chưa check currency mismatch
 
-- Status: `TODO`
+- Status: `DONE`
 - Vấn đề:
   - Có check amount mismatch.
   - Chưa thấy reject khi `webhook currency` khác `payment.Currency`.
@@ -203,9 +206,10 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
   - [services/payment-service/internal/service/payment_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/payment-service/internal/service/payment_service.go:599)
   - [services/payment-service/internal/service/payment_service.go](/Users/maccuatruong/workspace/ecommerce-microservices/services/payment-service/internal/service/payment_service.go:644)
 - Fix Note:
-  - N/A
+  - Added explicit currency mismatch validation in payment webhook flow (`parsed webhook currency` vs `payment currency`).
+  - Added new error code `PAYMENT_CURRENCY_MISMATCH`.
 - Verification:
-  - N/A
+  - `go test ./...` passed in `services/payment-service`.
 
 ---
 
@@ -219,7 +223,7 @@ Scope: business logic issues across core e-commerce flows (`cart -> order -> pay
 | 4 | HIGH | Order/Inventory | Event contract mismatch | You | DONE | 2026-05-14 | Added order items payload + resilient consumer release |
 | 5 | HIGH | Shipping | Auto-create placeholder data | You | DONE | 2026-05-14 | Skip auto-create when required real fields are missing |
 | 6 | HIGH | Shipping | Seller đọc shipment không thuộc mình | You | DONE | 2026-05-14 | Enforced seller ownership on list/read |
-| 7 | HIGH | Shipping | Webhook không verify signature | You | TODO | 2026-05-14 | |
-| 8 | HIGH | Cart | Client điều khiển unitPrice | You | TODO | 2026-05-14 | |
-| 9 | MEDIUM | Shipping | Create shipment chưa verify order | You | TODO | 2026-05-14 | |
-| 10 | MEDIUM | Payment | Webhook chưa check currency mismatch | You | TODO | 2026-05-14 | |
+| 7 | HIGH | Shipping | Webhook không verify signature | You | DONE | 2026-05-14 | Enforced HMAC signature via `X-Webhook-Signature` |
+| 8 | HIGH | Cart | Client điều khiển unitPrice | You | DONE | 2026-05-14 | Unit price now resolved from product-service variant |
+| 9 | MEDIUM | Shipping | Create shipment chưa verify order | You | DONE | 2026-05-14 | Verified order existence + owner/currency/status checks |
+| 10 | MEDIUM | Payment | Webhook chưa check currency mismatch | You | DONE | 2026-05-14 | Added currency mismatch guard in webhook handler |

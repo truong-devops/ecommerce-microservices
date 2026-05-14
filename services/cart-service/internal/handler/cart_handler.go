@@ -59,7 +59,7 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req payload
-	if err := httpx.DecodeJSONStrict(r, &req); err != nil || req.UnitPrice == nil || req.Quantity == nil {
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil || req.Quantity == nil {
 		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeBadRequest, "Validation failed", nil)
 		return
 	}
@@ -69,7 +69,7 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		req.SKU,
 		req.Name,
 		req.Image,
-		*req.UnitPrice,
+		req.UnitPrice,
 		*req.Quantity,
 		req.SellerID,
 		req.Currency,
@@ -85,7 +85,7 @@ func (h *CartHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		SKU:             strings.TrimSpace(req.SKU),
 		Name:            strings.TrimSpace(req.Name),
 		Image:           trimStringPtr(req.Image),
-		UnitPrice:       *req.UnitPrice,
+		UnitPrice:       derefFloat(req.UnitPrice),
 		Quantity:        *req.Quantity,
 		SellerID:        strings.TrimSpace(req.SellerID),
 		Metadata:        req.Metadata,
@@ -215,7 +215,7 @@ func isValidAddPayload(
 	sku string,
 	name string,
 	image *string,
-	unitPrice float64,
+	unitPrice *float64,
 	quantity int,
 	sellerID string,
 	currency *string,
@@ -241,7 +241,7 @@ func isValidAddPayload(
 			return false
 		}
 	}
-	if unitPrice < 0 {
+	if unitPrice != nil && *unitPrice < 0 {
 		return false
 	}
 	if quantity < 1 || quantity > 10000 {
@@ -260,4 +260,11 @@ func isValidAddPayload(
 		return false
 	}
 	return true
+}
+
+func derefFloat(value *float64) float64 {
+	if value == nil {
+		return 0
+	}
+	return *value
 }

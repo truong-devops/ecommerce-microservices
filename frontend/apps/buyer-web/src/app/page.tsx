@@ -6,6 +6,7 @@ import { FlashSaleSection } from '@/components/home/FlashSaleSection';
 import { MallSection } from '@/components/home/MallSection';
 import { RecommendationSection } from '@/components/home/RecommendationSection';
 import { TopSearchSection } from '@/components/home/TopSearchSection';
+import { VideoHighlightsSection } from '@/components/home/VideoHighlightsSection';
 import { Header } from '@/components/layout/Header';
 import { fetchHomeSections } from '@/lib/api/home';
 import { BuyerApiClientError } from '@/lib/api/client';
@@ -132,6 +133,7 @@ export default function HomePage() {
               selectedCategoryId={selectedCategoryId}
               onSelectCategory={setSelectedCategoryId}
             />
+            <VideoHighlightsSection products={sections.recommendationProducts} />
             <FlashSaleSection items={sections.flashSaleItems} />
             <MallSection deals={sections.mallDeals} />
             <TopSearchSection items={sections.topSearchItems} />

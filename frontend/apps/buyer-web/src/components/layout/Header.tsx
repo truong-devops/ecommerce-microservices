@@ -107,6 +107,9 @@ export function Header({ keywords }: HeaderProps) {
             <a className="rounded-sm hover:text-white focus-visible:outline-white" href="#">
               {text.header.support}
             </a>
+            <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/videos">
+              {text.header.video}
+            </Link>
 
             {ready && user ? (
               <>

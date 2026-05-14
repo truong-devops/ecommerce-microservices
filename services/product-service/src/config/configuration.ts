@@ -21,6 +21,9 @@
   media: {
     publicBaseUrl: process.env.MEDIA_PUBLIC_BASE_URL ?? 'http://localhost:12030/ecommerce-media'
   },
+  video: {
+    reviewRequired: process.env.VIDEO_REVIEW_REQUIRED === 'true'
+  },
   kafka: {
     enabled: process.env.KAFKA_ENABLED === 'true',
     clientId: process.env.KAFKA_CLIENT_ID ?? 'product-service',

@@ -40,6 +40,7 @@ const sections: SidebarSection[] = [
       { label: 'Đấu Giá Rẻ Vô Địch' },
       { label: 'Dịch Vụ Hiển Thị Shopee' },
       { label: 'Tăng Đơn Cùng KOL' },
+      { label: 'Video Shop', href: '/marketing/videos' },
       { label: 'Live & Video', href: '/marketing/live-video' },
       { label: 'Khuyến Mãi của Shop' },
       { label: 'Flash Sale Của Shop' },

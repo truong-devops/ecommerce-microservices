@@ -26,9 +26,9 @@ var (
 )
 
 type StorageService struct {
-	client       *minio.Client
+	client        *minio.Client
 	presignClient *minio.Client
-	cfg          config.Config
+	cfg           config.Config
 }
 
 type PresignUploadRequest struct {
@@ -141,8 +141,9 @@ func (s *StorageService) Ready(ctx context.Context) error {
 }
 
 func (s *StorageService) PresignUpload(ctx context.Context, req PresignUploadRequest) (PresignUploadResponse, error) {
-	if !strings.HasPrefix(strings.ToLower(strings.TrimSpace(req.ContentType)), "image/") {
-		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "contentType must be image/*", nil)
+	contentType := strings.ToLower(strings.TrimSpace(req.ContentType))
+	if !isSupportedUploadContentType(contentType) {
+		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "contentType must be image/*, video/mp4, or video/webm", nil)
 	}
 
 	entityType := normalizeSegment(req.EntityType)
@@ -154,7 +155,7 @@ func (s *StorageService) PresignUpload(ctx context.Context, req PresignUploadReq
 		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "entityId is invalid", nil)
 	}
 
-	ext := normalizeExtension(req.FileName, req.ContentType)
+	ext := normalizeExtension(req.FileName, contentType)
 	if ext == "" {
 		return PresignUploadResponse{}, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "unsupported file extension/contentType", nil)
 	}
@@ -256,9 +257,24 @@ func normalizeExtension(fileName, contentType string) string {
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg", ".avif":
 		return ext
+	case ".mp4":
+		if strings.EqualFold(strings.TrimSpace(contentType), "video/mp4") {
+			return ext
+		}
+	case ".webm":
+		if strings.EqualFold(strings.TrimSpace(contentType), "video/webm") {
+			return ext
+		}
 	default:
 		return ""
 	}
+
+	return ""
+}
+
+func isSupportedUploadContentType(contentType string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(contentType))
+	return strings.HasPrefix(normalized, "image/") || normalized == "video/mp4" || normalized == "video/webm"
 }
 
 func isValidObjectKey(value string) bool {

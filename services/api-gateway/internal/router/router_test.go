@@ -72,6 +72,71 @@ func TestPublicShopRoutesAreMounted(t *testing.T) {
 	}
 }
 
+func TestPublicVideoRoutesAreMounted(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-router-video-public-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	tests := []struct {
+		method string
+		path   string
+	}{
+		{method: http.MethodGet, path: "/api/v1/videos/feed"},
+		{method: http.MethodGet, path: "/api/v1/videos/video-123"},
+		{method: http.MethodPost, path: "/api/v1/videos/video-123/events/view-started"},
+		{method: http.MethodPost, path: "/api/v1/videos/video-123/events/product-clicked"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
+			req := httptest.NewRequest(tc.method, tc.path, nil)
+			rec := httptest.NewRecorder()
+
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+				t.Fatalf("expected mounted public video route for %s %s, got %d", tc.method, tc.path, rec.Code)
+			}
+		})
+	}
+}
+
+func TestPrivateVideoManagementRoutesRequireAuth(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-router-video-private-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	tests := []struct {
+		method string
+		path   string
+	}{
+		{method: http.MethodPost, path: "/api/v1/videos"},
+		{method: http.MethodPatch, path: "/api/v1/videos/video-123"},
+		{method: http.MethodDelete, path: "/api/v1/videos/video-123"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
+			req := httptest.NewRequest(tc.method, tc.path, nil)
+			rec := httptest.NewRecorder()
+
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusUnauthorized {
+				t.Fatalf("expected status %d for %s %s, got %d", http.StatusUnauthorized, tc.method, tc.path, rec.Code)
+			}
+		})
+	}
+}
+
 func TestPublicGoogleOAuthRoutesAreMounted(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-test")

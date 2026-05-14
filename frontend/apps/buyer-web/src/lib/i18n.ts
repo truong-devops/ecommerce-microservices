@@ -16,6 +16,7 @@ export interface AppMessages {
     logout: string;
     cart: string;
     orders: string;
+    video: string;
   };
   home: {
     categoryTitle: string;
@@ -35,6 +36,9 @@ export interface AppMessages {
     loadError: string;
     retry: string;
     empty: string;
+    videoHighlightsTitle: string;
+    seeVideoFeed: string;
+    watchNow: string;
   };
   search: {
     title: string;
@@ -245,7 +249,8 @@ export const messages: Record<Locale, AppMessages> = {
       register: 'Register',
       logout: 'Logout',
       cart: 'Open shopping cart',
-      orders: 'My orders'
+      orders: 'My orders',
+      video: 'Video'
     },
     home: {
       categoryTitle: 'Categories',
@@ -264,7 +269,10 @@ export const messages: Record<Locale, AppMessages> = {
       loading: 'Loading products...',
       loadError: 'Cannot load product data right now.',
       retry: 'Retry',
-      empty: 'No products available yet.'
+      empty: 'No products available yet.',
+      videoHighlightsTitle: 'Featured Videos',
+      seeVideoFeed: 'Open video feed',
+      watchNow: 'Watch now'
     },
     search: {
       title: 'Search Products',
@@ -473,7 +481,8 @@ export const messages: Record<Locale, AppMessages> = {
       register: 'Đăng ký',
       logout: 'Đăng xuất',
       cart: 'Mở giỏ hàng',
-      orders: 'Đơn mua'
+      orders: 'Đơn mua',
+      video: 'Video'
     },
     home: {
       categoryTitle: 'Danh Mục',
@@ -492,7 +501,10 @@ export const messages: Record<Locale, AppMessages> = {
       loading: 'Đang tải sản phẩm...',
       loadError: 'Chưa thể tải dữ liệu sản phẩm lúc này.',
       retry: 'Thử lại',
-      empty: 'Chưa có sản phẩm để hiển thị.'
+      empty: 'Chưa có sản phẩm để hiển thị.',
+      videoHighlightsTitle: 'Video nổi bật',
+      seeVideoFeed: 'Xem feed video',
+      watchNow: 'Xem ngay'
     },
     search: {
       title: 'Tìm Kiếm Sản Phẩm',

@@ -104,7 +104,7 @@ function renderBridgeHtml(input: { storageKey: string; session: Record<string, u
   <body>
     <script>
       try {
-        localStorage.setItem(${safeStorageKey}, ${safeSession});
+        localStorage.setItem(${safeStorageKey}, JSON.stringify(${safeSession}));
       } catch (error) {}
       window.location.replace(${safeReturnUrl});
     </script>
@@ -115,4 +115,3 @@ function renderBridgeHtml(input: { storageKey: string; session: Record<string, u
 function ensureApiV1Base(raw: string): string {
   return raw.endsWith('/api/v1') ? raw : `${raw.replace(/\/$/, '')}/api/v1`;
 }
-

@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const callbackUrl = new URL('/api/buyer/auth/google/callback', requestUrl.origin).toString();
   const returnUrl = resolveReturnUrl(requestUrl.searchParams.get('returnUrl'));
 
-  const authorizeUrl = new URL('/auth/oauth/google/authorize', ensureApiV1Base(serviceBaseUrls.auth));
+  const authorizeUrl = new URL(`${ensureApiV1Base(serviceBaseUrls.auth)}/auth/oauth/google/authorize`);
   authorizeUrl.searchParams.set('app', 'buyer-web');
   authorizeUrl.searchParams.set('callbackUrl', callbackUrl);
   authorizeUrl.searchParams.set('returnUrl', returnUrl);
@@ -30,4 +30,3 @@ function resolveReturnUrl(raw: string | null): string {
 function ensureApiV1Base(raw: string): string {
   return raw.endsWith('/api/v1') ? raw : `${raw.replace(/\/$/, '')}/api/v1`;
 }
-

@@ -15,7 +15,7 @@ coverage/
 .expo/
 
 # Env đang dev nên push luôn .env
-# .env
+.env
 # .env.local
 # .env.*.local
 

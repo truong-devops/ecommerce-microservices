@@ -44,6 +44,69 @@ func TestPrivateV1RoutesRequireAuth(t *testing.T) {
 	}
 }
 
+func TestPublicShopRoutesAreMounted(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-router-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	paths := []string{
+		"/api/shops/11111111-1111-4111-8111-111111111111/decor",
+		"/api/v1/shops/11111111-1111-4111-8111-111111111111/decor",
+	}
+
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code == http.StatusNotFound {
+				t.Fatalf("expected mounted proxy route for %s, got %d", path, rec.Code)
+			}
+		})
+	}
+}
+
+func TestPublicGoogleOAuthRoutesAreMounted(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-router-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	tests := []struct {
+		method string
+		path   string
+	}{
+		{method: http.MethodGet, path: "/api/auth/oauth/google/authorize"},
+		{method: http.MethodGet, path: "/api/v1/auth/oauth/google/authorize"},
+		{method: http.MethodGet, path: "/api/auth/oauth/google/callback?code=test&state=test"},
+		{method: http.MethodGet, path: "/api/v1/auth/oauth/google/callback?code=test&state=test"},
+		{method: http.MethodPost, path: "/api/auth/oauth/exchange-ticket"},
+		{method: http.MethodPost, path: "/api/v1/auth/oauth/exchange-ticket"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.method+" "+tc.path, func(t *testing.T) {
+			req := httptest.NewRequest(tc.method, tc.path, nil)
+			rec := httptest.NewRecorder()
+
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+				t.Fatalf("expected mounted public proxy route for %s %s, got %d", tc.method, tc.path, rec.Code)
+			}
+		})
+	}
+}
+
 func testGatewayConfig() *config.Config {
 	timeout := 100 * time.Millisecond
 	services := map[string]config.ServiceConfig{
@@ -79,4 +142,3 @@ func testGatewayConfig() *config.Config {
 		Services: services,
 	}
 }
-

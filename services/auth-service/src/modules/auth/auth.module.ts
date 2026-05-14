@@ -9,6 +9,7 @@ import { PasswordResetTokenEntity } from './entities/password-reset-token.entity
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import { SessionEntity } from './entities/session.entity';
 import { UserEntity } from './entities/user.entity';
+import { OauthAccountEntity } from './entities/oauth-account.entity';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { AuditLogRepository } from './repositories/audit-log.repository';
@@ -17,6 +18,7 @@ import { PasswordResetTokenRepository } from './repositories/password-reset-toke
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
 import { SessionRepository } from './repositories/session.repository';
 import { UserRepository } from './repositories/user.repository';
+import { OauthAccountRepository } from './repositories/oauth-account.repository';
 import { AuditService } from './services/audit.service';
 import { AuthService } from './services/auth.service';
 import { EventsPublisherService } from './services/events-publisher.service';
@@ -27,7 +29,15 @@ import { TokenService } from './services/token.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity, SessionEntity, RefreshTokenEntity, EmailVerificationTokenEntity, PasswordResetTokenEntity, AuditLogEntity]),
+    TypeOrmModule.forFeature([
+      UserEntity,
+      SessionEntity,
+      RefreshTokenEntity,
+      EmailVerificationTokenEntity,
+      PasswordResetTokenEntity,
+      AuditLogEntity,
+      OauthAccountEntity
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt-access' }),
     JwtModule.register({})
   ],
@@ -46,6 +56,7 @@ import { TokenService } from './services/token.service';
     EmailVerificationTokenRepository,
     PasswordResetTokenRepository,
     AuditLogRepository,
+    OauthAccountRepository,
     AccessTokenStrategy,
     RefreshTokenStrategy
   ],

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { Public } from '../../../common/decorators/public.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -10,6 +11,7 @@ import {
   LoginDto,
   LogoutDto,
   MfaVerifyDto,
+  OauthExchangeTicketDto,
   RefreshTokenDto,
   RegisterDto,
   ResendVerifyEmailDto,
@@ -32,6 +34,46 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
     return this.authService.login(dto, request);
+  }
+
+  @Public()
+  @Get('oauth/google/authorize')
+  async googleAuthorize(
+    @Query('app') app: string,
+    @Query('callbackUrl') callbackUrl: string,
+    @Query('returnUrl') returnUrl: string | undefined,
+    @Res() response: Response
+  ): Promise<void> {
+    const authorizeUrl = await this.authService.buildGoogleAuthorizeUrl({
+      app,
+      callbackUrl,
+      returnUrl
+    });
+
+    response.redirect(302, authorizeUrl);
+  }
+
+  @Public()
+  @Get('oauth/google/callback')
+  async googleCallback(
+    @Query('code') code: string | undefined,
+    @Query('state') state: string | undefined,
+    @Res() response: Response,
+    @Req() request: RequestWithContext
+  ): Promise<void> {
+    const redirectUrl = await this.authService.handleGoogleCallback({
+      code,
+      state,
+      request
+    });
+
+    response.redirect(302, redirectUrl);
+  }
+
+  @Public()
+  @Post('oauth/exchange-ticket')
+  exchangeOauthTicket(@Body() dto: OauthExchangeTicketDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+    return this.authService.exchangeOauthTicket(dto, request);
   }
 
   @Post('logout')

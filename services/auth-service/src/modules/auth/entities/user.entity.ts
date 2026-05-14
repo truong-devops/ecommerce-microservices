@@ -5,6 +5,7 @@ import { RefreshTokenEntity } from './refresh-token.entity';
 import { EmailVerificationTokenEntity } from './email-verification-token.entity';
 import { PasswordResetTokenEntity } from './password-reset-token.entity';
 import { AuditLogEntity } from './audit-log.entity';
+import { OauthAccountEntity } from './oauth-account.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {
@@ -56,6 +57,9 @@ export class UserEntity {
 
   @OneToMany(() => AuditLogEntity, (auditLog) => auditLog.user)
   auditLogs!: AuditLogEntity[];
+
+  @OneToMany(() => OauthAccountEntity, (oauthAccount) => oauthAccount.user)
+  oauthAccounts!: OauthAccountEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

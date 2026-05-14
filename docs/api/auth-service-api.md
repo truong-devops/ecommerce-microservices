@@ -33,6 +33,9 @@
 | DELETE | `/api/v1/auth/sessions/:sessionId` | Auth | Revoke 1 session cụ thể |
 | POST | `/api/v1/auth/mfa/setup` | Roles(`ADMIN`,`SUPER_ADMIN`) | Tạo secret/flow bật MFA |
 | POST | `/api/v1/auth/mfa/enable` | Roles(`ADMIN`,`SUPER_ADMIN`) | Bật MFA bằng mã 6 số |
+| GET | `/api/v1/auth/oauth/google/authorize` | Public | Khởi tạo Google OAuth và redirect sang Google |
+| GET | `/api/v1/auth/oauth/google/callback` | Public | Nhận callback từ Google, tạo login ticket |
+| POST | `/api/v1/auth/oauth/exchange-ticket` | Public | Đổi login ticket lấy access/refresh token |
 
 ## Request body chính
 
@@ -87,6 +90,18 @@ Ghi chú:
 ### `POST /auth/mfa/enable`
 
 - `code` (string, required, length 6)
+
+### `GET /auth/oauth/google/authorize`
+
+Query params:
+- `app` (required): `buyer-web | seller | moderator`
+- `callbackUrl` (required): URL callback BFF của app
+- `returnUrl` (optional): path nội bộ sau login
+
+### `POST /auth/oauth/exchange-ticket`
+
+- `loginTicket` (string, required)
+- `app` (required): `buyer-web | seller | moderator`
 
 ## Response behavior
 

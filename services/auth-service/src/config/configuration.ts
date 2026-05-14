@@ -26,6 +26,21 @@ export default () => ({
       expiresIn: process.env.JWT_MFA_EXPIRES_IN ?? '10m'
     }
   },
+  oauth: {
+    google: {
+      clientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+      redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI,
+      scopes: (process.env.GOOGLE_OAUTH_SCOPES ?? 'openid email profile').split(/\s+/).filter(Boolean)
+    },
+    stateTtlSeconds: Number(process.env.OAUTH_STATE_TTL_SECONDS ?? 600),
+    loginTicketTtlSeconds: Number(process.env.OAUTH_LOGIN_TICKET_TTL_SECONDS ?? 120),
+    appBaseUrls: {
+      buyerWeb: process.env.BUYER_WEB_BASE_URL ?? 'http://localhost:8888',
+      seller: process.env.SELLER_WEB_BASE_URL ?? 'http://localhost:6789',
+      moderator: process.env.MODERATOR_WEB_BASE_URL ?? 'http://localhost:1111'
+    }
+  },
   security: {
     refreshTokenPepper: process.env.REFRESH_TOKEN_PEPPER,
     bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS ?? 12),

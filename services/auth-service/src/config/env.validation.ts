@@ -18,6 +18,16 @@ export const envValidationSchema = Joi.object({
   JWT_MFA_SECRET: Joi.string().min(32).required(),
   JWT_MFA_EXPIRES_IN: Joi.string().default('10m'),
 
+  GOOGLE_OAUTH_CLIENT_ID: Joi.string().required(),
+  GOOGLE_OAUTH_CLIENT_SECRET: Joi.string().required(),
+  GOOGLE_OAUTH_REDIRECT_URI: Joi.string().uri().required(),
+  GOOGLE_OAUTH_SCOPES: Joi.string().default('openid email profile'),
+  OAUTH_STATE_TTL_SECONDS: Joi.number().integer().min(60).default(600),
+  OAUTH_LOGIN_TICKET_TTL_SECONDS: Joi.number().integer().min(30).default(120),
+  BUYER_WEB_BASE_URL: Joi.string().uri().default('http://localhost:8888'),
+  SELLER_WEB_BASE_URL: Joi.string().uri().default('http://localhost:6789'),
+  MODERATOR_WEB_BASE_URL: Joi.string().uri().default('http://localhost:1111'),
+
   EMAIL_VERIFY_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(60),
   RESET_PASSWORD_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(30),
 

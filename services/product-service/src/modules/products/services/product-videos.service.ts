@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { ForbiddenException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Optional, UnprocessableEntityException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ErrorCode } from '../../../common/constants/error-code.enum';
 import { BUYER_ROLES, Role, SELLER_ROLES, STAFF_ROLES } from '../../../common/constants/role.enum';
 import { AuthenticatedUserContext } from '../../../common/types/request-context.type';
+import { RedisService } from '../../../common/utils/redis.service';
 import {
   ConfirmVideoMediaDto,
   ConfirmVideoThumbnailDto,
@@ -70,12 +71,15 @@ interface ProductVideoResponse {
 @Injectable()
 export class ProductVideosService {
   private readonly mediaPublicBaseUrl: string;
+  private readonly feedCacheTtlSeconds = 45;
+  private readonly feedCacheKeySet = 'product-videos:feed:v1:keys';
 
   constructor(
     private readonly configService: ConfigService,
     private readonly productVideosRepository: ProductVideosRepository,
     private readonly productsRepository: ProductsRepository,
-    private readonly productEventsPublisherService: ProductEventsPublisherService
+    private readonly productEventsPublisherService: ProductEventsPublisherService,
+    @Optional() private readonly redisService?: RedisService
   ) {
     this.mediaPublicBaseUrl = normalizeMediaPublicBaseUrl(
       this.configService.get<string>('media.publicBaseUrl', 'http://localhost:12030/ecommerce-media')
@@ -119,6 +123,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -142,6 +147,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -158,6 +164,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -179,6 +186,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -199,6 +207,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -221,6 +230,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -236,6 +246,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -291,6 +302,7 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
@@ -321,17 +333,27 @@ export class ProductVideosService {
       throwVideoNotFound();
     }
 
+    await this.invalidateFeedCache();
     return this.toResponse(updated);
   }
 
   async listFeed(query: ListProductVideosDto): Promise<{ items: ProductVideoResponse[]; pagination: PaginationResponse }> {
     const normalized = normalizePagination(query);
+    const cacheKey = buildFeedCacheKey(normalized);
+    const cached = await this.readFeedCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const { items, totalItems } = await this.productVideosRepository.listFeed(normalized);
 
-    return {
+    const response = {
       items: items.map((item) => this.toResponse(item)),
       pagination: buildPagination(normalized.page!, normalized.pageSize!, totalItems)
     };
+
+    await this.writeFeedCache(cacheKey, response);
+    return response;
   }
 
   async getPublicVideo(videoId: string): Promise<ProductVideoResponse> {
@@ -362,6 +384,54 @@ export class ProductVideosService {
       await this.productEventsPublisherService.publishVideoAnalyticsEvent(toAnalyticsVideoEventType(eventType), buildAnalyticsVideoPayload(video, dto), eventKey);
     }
     return { accepted: true };
+  }
+
+  private async readFeedCache(cacheKey: string): Promise<{ items: ProductVideoResponse[]; pagination: PaginationResponse } | null> {
+    const client = this.redisService?.getClient();
+    if (!client) {
+      return null;
+    }
+
+    try {
+      const cached = await client.get(cacheKey);
+      if (!cached) {
+        return null;
+      }
+      return JSON.parse(cached) as { items: ProductVideoResponse[]; pagination: PaginationResponse };
+    } catch {
+      return null;
+    }
+  }
+
+  private async writeFeedCache(cacheKey: string, response: { items: ProductVideoResponse[]; pagination: PaginationResponse }): Promise<void> {
+    const client = this.redisService?.getClient();
+    if (!client) {
+      return;
+    }
+
+    try {
+      await client.setex(cacheKey, this.feedCacheTtlSeconds, JSON.stringify(response));
+      await client.sadd(this.feedCacheKeySet, cacheKey);
+    } catch {
+      // Cache failures must not affect the buyer feed.
+    }
+  }
+
+  private async invalidateFeedCache(): Promise<void> {
+    const client = this.redisService?.getClient();
+    if (!client) {
+      return;
+    }
+
+    try {
+      const keys = await client.smembers(this.feedCacheKeySet);
+      if (keys.length > 0) {
+        await client.del(...keys);
+      }
+      await client.del(this.feedCacheKeySet);
+    } catch {
+      // Cache invalidation is best effort; TTL keeps stale feed data bounded.
+    }
   }
 
   private async requireVideo(videoId: string): Promise<ProductVideoDocument> {
@@ -539,6 +609,21 @@ function buildPagination(page: number, pageSize: number, totalItems: number): Pa
     totalItems,
     totalPages: Math.max(1, Math.ceil(totalItems / pageSize))
   };
+}
+
+function buildFeedCacheKey(query: ListProductVideosDto): string {
+  const params = new URLSearchParams();
+  params.set('page', String(query.page ?? 1));
+  params.set('pageSize', String(query.pageSize ?? 20));
+
+  for (const key of ['productId', 'sellerId', 'search'] as const) {
+    const value = query[key]?.trim();
+    if (value) {
+      params.set(key, value);
+    }
+  }
+
+  return `product-videos:feed:v1:${params.toString()}`;
 }
 
 function normalizeProductInputs(inputs: VideoProductInputDto[]): VideoProductInputDto[] {

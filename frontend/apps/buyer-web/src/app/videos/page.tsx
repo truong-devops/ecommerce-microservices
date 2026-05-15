@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
@@ -179,7 +180,14 @@ export default function VideosPage() {
                             onClick={() => handleProductClick(currentVideo, product.productId)}
                             className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2 transition hover:border-brand-200 hover:bg-brand-50"
                           >
-                            <img src={product.image ?? '/icon.svg'} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
+                            <Image
+                              src={product.image ?? '/icon.svg'}
+                              alt={product.name}
+                              width={40}
+                              height={40}
+                              unoptimized
+                              className="h-10 w-10 rounded-md object-cover"
+                            />
                             <span className="min-w-0 flex-1">
                               <span className="line-clamp-1 text-sm font-semibold text-slate-900">{product.name}</span>
                               <span className="block text-sm font-bold text-brand-600">{formatPrice(product.price)}</span>

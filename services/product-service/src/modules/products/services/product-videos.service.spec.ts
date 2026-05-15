@@ -18,6 +18,14 @@ describe('ProductVideosService', () => {
     products?: unknown[];
     existingVideo?: Record<string, unknown>;
     updatedVideo?: Record<string, unknown>;
+    feedItems?: Record<string, unknown>[];
+    redisClient?: {
+      get?: jest.Mock;
+      setex?: jest.Mock;
+      sadd?: jest.Mock;
+      smembers?: jest.Mock;
+      del?: jest.Mock;
+    };
   }) {
     const productsRepository = {
       findByIdsOrdered: jest.fn().mockResolvedValue(overrides?.products ?? [buildProduct()])
@@ -32,7 +40,10 @@ describe('ProductVideosService', () => {
         updatedAt: new Date('2026-05-15T00:00:00Z')
       })),
       listManaged: jest.fn(),
-      listFeed: jest.fn(),
+      listFeed: jest.fn().mockResolvedValue({
+        items: overrides?.feedItems ?? [buildVideo({ status: ProductVideoStatus.PUBLISHED, publishedAt: new Date('2026-05-15T00:00:00Z') })],
+        totalItems: overrides?.feedItems?.length ?? 1
+      }),
       incrementMetrics: jest.fn(),
       incrementMetricsOnce: jest.fn()
     };
@@ -48,12 +59,24 @@ describe('ProductVideosService', () => {
     const productEventsPublisherService = {
       publishVideoAnalyticsEvent: jest.fn()
     };
+    const redisService = overrides?.redisClient
+      ? {
+          getClient: jest.fn(() => overrides.redisClient)
+        }
+      : undefined;
 
     return {
-      service: new ProductVideosService(configService as never, productVideosRepository as never, productsRepository as never, productEventsPublisherService as never),
+      service: new ProductVideosService(
+        configService as never,
+        productVideosRepository as never,
+        productsRepository as never,
+        productEventsPublisherService as never,
+        redisService as never
+      ),
       productVideosRepository,
       productsRepository,
-      productEventsPublisherService
+      productEventsPublisherService,
+      redisService
     };
   }
 
@@ -175,6 +198,77 @@ describe('ProductVideosService', () => {
       }),
       'view-qualified:event-1'
     );
+  });
+
+  it('serves public feed from Redis cache when available', async () => {
+    const cachedFeed = {
+      items: [
+        {
+          videoId: 'cached-video',
+          sellerId: 'seller-1',
+          title: 'Cached video',
+          description: null,
+          status: ProductVideoStatus.PUBLISHED,
+          mediaObjectKey: null,
+          mediaUrl: 'http://localhost:12030/ecommerce-media/video.mp4',
+          thumbnailObjectKey: null,
+          thumbnailUrl: null,
+          mimeType: 'video/mp4',
+          sizeBytes: 1024,
+          durationSec: 30,
+          products: [],
+          seller: { sellerId: 'seller-1', sellerCode: 'SEL0000001', shopName: 'Shop SEL0000001' },
+          metrics: {
+            viewStartedCount: 0,
+            qualifiedViewCount: 0,
+            productClickCount: 0,
+            addToCartCount: 0,
+            ctr: 0,
+            addToCartRate: 0,
+            lastAggregatedAt: null
+          },
+          publishedAt: '2026-05-15T00:00:00.000Z',
+          hiddenAt: null,
+          archivedAt: null,
+          createdAt: '2026-05-15T00:00:00.000Z',
+          updatedAt: '2026-05-15T00:00:00.000Z'
+        }
+      ],
+      pagination: { page: 1, pageSize: 12, totalItems: 1, totalPages: 1 }
+    };
+    const redisClient = {
+      get: jest.fn().mockResolvedValue(JSON.stringify(cachedFeed)),
+      setex: jest.fn(),
+      sadd: jest.fn(),
+      smembers: jest.fn(),
+      del: jest.fn()
+    };
+    const { service, productVideosRepository } = createService({ redisClient });
+
+    const result = await service.listFeed({ page: 1, pageSize: 12 });
+
+    expect(result).toEqual(cachedFeed);
+    expect(productVideosRepository.listFeed).not.toHaveBeenCalled();
+  });
+
+  it('invalidates public feed cache when a video is approved', async () => {
+    const moderatorUser = { ...sellerUser, userId: 'moderator-1', role: Role.MODERATOR };
+    const redisClient = {
+      get: jest.fn(),
+      setex: jest.fn(),
+      sadd: jest.fn(),
+      smembers: jest.fn().mockResolvedValue(['product-videos:feed:v1:page=1&pageSize=12']),
+      del: jest.fn()
+    };
+    const { service } = createService({
+      existingVideo: buildVideo({ status: ProductVideoStatus.REVIEW_PENDING }),
+      redisClient
+    });
+
+    await service.approveVideo(moderatorUser, 'video-1');
+
+    expect(redisClient.del).toHaveBeenCalledWith('product-videos:feed:v1:page=1&pageSize=12');
+    expect(redisClient.del).toHaveBeenCalledWith('product-videos:feed:v1:keys');
   });
 });
 

@@ -12,8 +12,8 @@ Primary goal: reduce token usage without reducing code quality.
 ## 2) Repo Routing (Read This First)
 
 - `services/*`:
-  - Go services: `api-gateway`, `user`, `cart`, `order`, `payment`, `inventory`, `shipping`, `notification`, `review`, `analytics`, `chat`, `media`.
-  - NestJS services: `auth-service`, `product-service`.
+  - Go services: `api-gateway`, `user`, `cart`, `order`, `payment`, `inventory`, `shipping`, `notification`, `review`, `analytics`, `chat`, `media`, `product-service`.
+  - NestJS services: `auth-service`, `product-service-nest`.
 - `shared/*`: cross-service contracts (`proto`, `kafka`, shared types/constants/contracts).
 - `packages/backend-shared/*`: NestJS shared runtime helpers.
 - `frontend/*`: buyer/buyer-web/seller/moderator apps and shared frontend packages.
@@ -45,7 +45,7 @@ Pick the lowest level that still protects correctness:
   - Compile/lint/test only directly touched module when available.
 - `L1 - Service scope` (default):
   - For Go service changes: run `go test ./...` inside that service.
-  - For `auth-service`/`product-service`: run workspace test/build for that service only.
+  - For `auth-service`/`product-service-nest`: run workspace test/build for that service only.
 - `L2 - Contract/integration scope`:
   - If API/event behavior changed, run corresponding `scripts/test-*-service.sh` or relevant compare script.
 - `L3 - Full monorepo` (expensive; only when necessary):
@@ -63,8 +63,8 @@ Escalation rule: if lower level fails for unclear reasons, debug locally first; 
 - NestJS service test/build:
   - `npm --workspace services/auth-service run test`
   - `npm --workspace services/auth-service run build`
-  - `npm --workspace services/product-service run test`
-  - `npm --workspace services/product-service run build`
+  - `npm --workspace services/product-service-nest run test`
+  - `npm --workspace services/product-service-nest run build`
 - Monorepo (expensive):
   - `npm run test`
   - `npm run build`
@@ -101,4 +101,3 @@ Workflow: scope -> targeted read -> minimal patch -> validation ladder (L0/L1 fi
 Run only necessary tests for affected scope; escalate only if risk/failure requires.
 Return: changed files, why changed, tests run, remaining risks.
 ```
-

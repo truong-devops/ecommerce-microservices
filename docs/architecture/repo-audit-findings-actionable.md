@@ -178,7 +178,7 @@ Ghi chú theo yêu cầu:
   - `lint` scripts hiện chỉ `echo`.
 - Tham chiếu:
   - [services/auth-service/package.json](/Users/maccuatruong/workspace/ecommerce-microservices/services/auth-service/package.json:10)
-  - [services/product-service/package.json](/Users/maccuatruong/workspace/ecommerce-microservices/services/product-service/package.json:14)
+  - [services/product-service-nest/package.json](/Users/maccuatruong/workspace/ecommerce-microservices/services/product-service-nest/package.json:14)
 - Hậu quả:
   - Không có guardrail style/static checks trong CI.
 - Fix Note:
@@ -186,7 +186,7 @@ Ghi chú theo yêu cầu:
   - Updated TS deprecation compatibility via `ignoreDeprecations: "6.0"` where needed.
 - Verification:
   - `npm --workspace services/auth-service run lint` passes.
-  - `npm --workspace services/product-service run lint` passes.
+  - `npm --workspace services/product-service-nest run lint` passes.
 
 ---
 

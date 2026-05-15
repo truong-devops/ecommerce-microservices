@@ -185,26 +185,19 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       PORT: 8080
+      API_PREFIX: api/v1
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
       DATABASE_URL: mongodb://mongo:27017/ecommerce_product
+      DATABASE_NAME: ecommerce_product
+      REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
       KAFKA_ENABLED: 'false'
+      SEARCH_ENABLED: 'false'
       MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://localhost:12030/ecommerce-media}
       VIDEO_REVIEW_REQUIRED: ${VIDEO_REVIEW_REQUIRED:-true}
     ports:
       - '12012:8080'
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "require('http').get('http://localhost:8080/api/v1/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 20
     depends_on:
       mongo:
         condition: service_healthy
@@ -620,7 +613,7 @@ services:
       user-service:
         condition: service_started
       product-service:
-        condition: service_healthy
+        condition: service_started
       media-service:
         condition: service_started
       cart-service:

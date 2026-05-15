@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 
 function parseArgs(argv) {
   const options = {
-    input: 'services/product-service/seed-data/products-100.create.json',
+    input: 'services/product-service-nest/seed-data/products-100.create.json',
     baseUrl: 'http://localhost:3003/api/v1',
     token: '',
     createStatus: '',

@@ -1,41 +1,16 @@
-﻿services:
-  mongo:
-    image: mongo:6
-    command: ['--bind_ip_all']
-    volumes:
-      - product_service_mongo_data:/data/db
-    healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand({ ping: 1 }).ok']
-      interval: 10s
-      timeout: 5s
-      retries: 20
-
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 20
-
+services:
   product-service:
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - ./.env.dev
+      - path: ./.env
+        required: false
     environment:
+      PORT: 3013
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
     ports:
-      - '3003:3003'
-    depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - '3013:3013'
     restart: unless-stopped
     extra_hosts:
       - 'host.docker.internal:host-gateway'
-
-volumes:
-  product_service_mongo_data:

@@ -1,5 +1,5 @@
 {
-  "name": "@services/product-service",
+  "name": "@services/product-service-nest",
   "version": "0.1.0",
   "private": true,
   "main": "dist/main.js",
@@ -10,7 +10,7 @@
     "build": "tsc -p tsconfig.build.json",
     "docker:up": "docker compose -f docker-compose.dev.yml up -d --build",
     "docker:down": "docker compose -f docker-compose.dev.yml down --remove-orphans",
-    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f product-service",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f product-service-nest",
     "lint": "tsc -p tsconfig.build.json --noEmit",
     "test": "jest --watchman=false --runInBand --passWithNoTests",
     "test:watch": "jest --watch --watchman=false",

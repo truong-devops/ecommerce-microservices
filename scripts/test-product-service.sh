@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMPOSE_FILE="$REPO_ROOT/services/product-service/docker-compose.dev.yml"
+COMPOSE_FILE="$REPO_ROOT/services/product-service-nest/docker-compose.dev.yml"
 BASE_URL="${BASE_URL:-http://localhost:3003/api/v1}"
 JWT_SECRET="${JWT_SECRET:-change-me-product-access-secret-min-32-chars}"
 SELLER_ID="${SELLER_ID:-11111111-1111-4111-8111-111111111111}"
@@ -426,7 +426,7 @@ if [[ "$RUN_JEST" == "1" ]]; then
     --watchman=false \
     --runInBand \
     --passWithNoTests \
-    --config "$REPO_ROOT/services/product-service/jest.config.ts"
+    --config "$REPO_ROOT/services/product-service-nest/jest.config.ts"
 fi
 
 echo

@@ -11,7 +11,7 @@ function parseArgs(argv) {
   const options = {
     productBaseUrl: 'http://localhost:12012/api/v1',
     mediaBaseUrl: 'http://localhost:12022/api/v1',
-    seedImageRoot: 'services/product-service/seed-data/image',
+    seedImageRoot: 'services/product-service-nest/seed-data/image',
     mediaPublicBaseUrl: 'http://localhost:12030/ecommerce-media',
     jwtSecret: 'dev-shared-jwt-access-secret-min-32-chars',
     token: '',

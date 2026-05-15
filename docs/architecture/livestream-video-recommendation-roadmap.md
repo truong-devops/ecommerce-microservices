@@ -197,7 +197,7 @@ L1:
 - `cd services/media-service && go test ./...`
 - `cd services/chat-service && go test ./...`
 - `cd services/analytics-service && go test ./...`
-- `npm --workspace services/product-service run test`
+- `npm --workspace services/product-service-nest run test`
 
 L2:
 - `scripts/test-product-service.sh`

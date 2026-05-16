@@ -23,6 +23,7 @@ const (
 	ServiceNotification = "notification"
 	ServiceAnalytics    = "analytics"
 	ServiceChat         = "chat"
+	ServiceLive         = "live"
 )
 
 type Config struct {
@@ -125,6 +126,7 @@ func Load() (*Config, error) {
 		{ServiceNotification, "NOTIFICATION_SERVICE_URL", "NOTIFICATION_SERVICE_TIMEOUT"},
 		{ServiceAnalytics, "ANALYTICS_SERVICE_URL", "ANALYTICS_SERVICE_TIMEOUT"},
 		{ServiceChat, "CHAT_SERVICE_URL", "CHAT_SERVICE_TIMEOUT"},
+		{ServiceLive, "LIVE_SERVICE_URL", "LIVE_SERVICE_TIMEOUT"},
 	}
 
 	for _, svc := range serviceEnvs {

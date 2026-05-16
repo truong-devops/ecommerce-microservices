@@ -95,6 +95,14 @@ func New(
 		public.Method(http.MethodGet, "/api/v1/reviews/*", proxies[config.ServiceReview])
 		public.Method(http.MethodGet, "/api/chat/ws", proxies[config.ServiceChat])
 		public.Method(http.MethodGet, "/api/v1/chat/ws", proxies[config.ServiceChat])
+		public.Method(http.MethodGet, "/api/live/sessions", proxies[config.ServiceLive])
+		public.Method(http.MethodGet, "/api/live/sessions/*", proxies[config.ServiceLive])
+		public.Method(http.MethodGet, "/api/v1/live/sessions", proxies[config.ServiceLive])
+		public.Method(http.MethodGet, "/api/v1/live/sessions/*", proxies[config.ServiceLive])
+		public.Method(http.MethodGet, "/api/live/ws", proxies[config.ServiceLive])
+		public.Method(http.MethodGet, "/api/v1/live/ws", proxies[config.ServiceLive])
+		public.Method(http.MethodPost, "/api/live/sessions/{sessionId}/events/product-clicked", proxies[config.ServiceLive])
+		public.Method(http.MethodPost, "/api/v1/live/sessions/{sessionId}/events/product-clicked", proxies[config.ServiceLive])
 	})
 
 	r.Group(func(private chi.Router) {
@@ -122,6 +130,8 @@ func New(
 		mountPrefix(private, "/api/v1/analytics", proxies[config.ServiceAnalytics])
 		mountPrefix(private, "/api/chat", proxies[config.ServiceChat])
 		mountPrefix(private, "/api/v1/chat", proxies[config.ServiceChat])
+		mountPrefix(private, "/api/live", proxies[config.ServiceLive])
+		mountPrefix(private, "/api/v1/live", proxies[config.ServiceLive])
 		mountPrefix(private, "/api/moderation/videos", proxies[config.ServiceProduct])
 		mountPrefix(private, "/api/v1/moderation/videos", proxies[config.ServiceProduct])
 

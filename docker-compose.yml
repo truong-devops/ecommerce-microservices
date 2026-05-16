@@ -513,6 +513,47 @@ services:
       kafka:
         condition: service_healthy
 
+  live-service:
+    <<: *service-defaults
+    build:
+      context: ./services/live-service
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./services/live-service/.env
+        required: false
+    environment:
+      <<: *shared-jwt-access-secret
+      APP_NAME: live-service
+      APP_ENV: development
+      PORT: 8080
+      API_PREFIX: api/v1
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DATABASE: ecommerce_live
+      REDIS_ENABLED: 'true'
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      KAFKA_ENABLED: 'true'
+      KAFKA_CLIENT_ID: live-service
+      KAFKA_BROKERS: kafka:29092
+      LIVE_EVENTS_TOPIC: live.events
+      ANALYTICS_EVENTS_TOPIC: analytics.events
+      AUDIT_EVENTS_TOPIC: audit.events
+      PRODUCT_SERVICE_BASE_URL: http://product-service:8080
+      PRODUCT_SERVICE_TIMEOUT: 5s
+      SEND_MESSAGE_RATE_RPS: 5
+      SEND_MESSAGE_RATE_BURST: 20
+    ports:
+      - '12023:8080'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+
   notification-service:
     <<: *service-defaults
     build:
@@ -603,6 +644,8 @@ services:
       ANALYTICS_SERVICE_URL: http://analytics-service:8080
       CHAT_SERVICE_URL: http://chat-service:8080
       CHAT_SERVICE_TIMEOUT: 24h
+      LIVE_SERVICE_URL: http://live-service:8080
+      LIVE_SERVICE_TIMEOUT: 24h
     ports:
       - '12000:8080'
     depends_on:
@@ -629,6 +672,8 @@ services:
       review-service:
         condition: service_started
       chat-service:
+        condition: service_started
+      live-service:
         condition: service_started
       notification-service:
         condition: service_started

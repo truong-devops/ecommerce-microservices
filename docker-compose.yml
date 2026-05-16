@@ -543,7 +543,7 @@ services:
       SEND_MESSAGE_RATE_RPS: 5
       SEND_MESSAGE_RATE_BURST: 20
     ports:
-      - '12022:8080'
+      - '12023:8080'
     depends_on:
       mongo:
         condition: service_healthy

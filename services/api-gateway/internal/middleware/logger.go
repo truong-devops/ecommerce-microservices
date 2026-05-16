@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"bufio"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -15,6 +18,24 @@ type statusRecorder struct {
 func (s *statusRecorder) WriteHeader(statusCode int) {
 	s.status = statusCode
 	s.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := s.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("wrapped response writer does not implement http.Hijacker")
+	}
+	return hijacker.Hijack()
+}
+
+func (s *statusRecorder) Flush() {
+	if flusher, ok := s.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+func (s *statusRecorder) Unwrap() http.ResponseWriter {
+	return s.ResponseWriter
 }
 
 func Logger(logger *zap.Logger) func(http.Handler) http.Handler {

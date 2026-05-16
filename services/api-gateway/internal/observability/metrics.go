@@ -1,7 +1,10 @@
 package observability
 
 import (
+	"bufio"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,6 +26,24 @@ type recorder struct {
 func (r *recorder) WriteHeader(statusCode int) {
 	r.status = statusCode
 	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (r *recorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("wrapped response writer does not implement http.Hijacker")
+	}
+	return hijacker.Hijack()
+}
+
+func (r *recorder) Flush() {
+	if flusher, ok := r.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+func (r *recorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
 }
 
 func NewMetrics(appName string) *Metrics {

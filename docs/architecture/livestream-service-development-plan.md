@@ -20,6 +20,30 @@ Quyết định kiến trúc chính:
 - MVP không làm ingest/transcoding thật, dùng `playbackUrl` HLS/MP4 để demo ổn định.
 - Thiết kế data/event/WebSocket sao cho sau này thêm AI translation không phải đập lại service.
 
+## 1.1) Trạng thái triển khai hiện tại
+
+| Phase | Tên phase | Trạng thái | Bằng chứng |
+|---|---|---|---|
+| Phase 0 | Architecture Foundation | DONE | `live-service` build/run được, gateway route + compose config pass |
+| Phase 1 | Live Session Domain | DONE | Unit test state machine pass |
+| Phase 2 | Product Pinning | DONE | Unit test happy/failure path + smoke pin product pass |
+| Phase 3 | WebSocket Realtime | DONE | WebSocket integration test + smoke WS ack pass |
+| Phase 4 | Frontend MVP | TODO | Chưa triển khai UI seller/buyer |
+| Phase 5 | Kafka Analytics | TODO | Chưa triển khai analytics summary |
+| Phase 6 | Translation Caption MVP | TODO | Chưa triển khai transcript/translation |
+| Phase 7 | ASR and Audio Dubbing | TODO | Chưa triển khai audio pipeline |
+
+Test evidence mới nhất:
+
+```txt
+cd services/live-service && go test ./...
+cd services/api-gateway && go test ./...
+docker compose config --quiet
+./scripts/test-live-service-smoke.sh
+```
+
+Kết quả: pass. Smoke script đã verify create/start/pin/get detail/WebSocket message ack/end session qua `api-gateway`.
+
 ## 2) Tại sao cần `live-service` riêng
 
 Livestream không chỉ là chat. Domain này sẽ phát triển thành một hệ thống riêng gồm:
@@ -936,6 +960,7 @@ L2:
   - send message
   - track product click
   - end session
+- Command: `./scripts/test-live-service-smoke.sh`
 
 L3:
 
@@ -1072,7 +1097,7 @@ Quy ước:
 
 - [ ] Seed seller/buyer/product data.
 - [ ] Chuẩn bị 2 `playbackUrl` dự phòng.
-- [ ] Viết smoke script end-to-end.
+- [x] Viết smoke script end-to-end.
 - [ ] Chạy compose local sạch từ đầu.
 - [ ] Quay thử demo 1 lần.
 - [ ] Ghi lại số liệu analytics sau demo.

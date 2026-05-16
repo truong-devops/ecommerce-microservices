@@ -1,259 +1,209 @@
-# Shoppable Video -> Livestream Commerce -> Recommendation FP-Growth Roadmap
+# Livestream Commerce MVP Roadmap (Practical for Personal Demo)
 
-Last updated: 2026-05-14  
-Scope: monorepo `ecommerce-microservices`
+Last updated: 2026-05-16  
+Scope: `ecommerce-microservices`
 
-## 1) Thứ tự phát triển bắt buộc
+## 1) Mục tiêu tài liệu
 
-1. Shoppable Video MVP
-2. Livestream Commerce MVP
-3. Recommendation FP-Growth
+- Ưu tiên xây **Livestream MVP chạy được trên máy cá nhân** để demo với giảng viên.
+- Tập trung vào luồng có giá trị thật: **Seller go-live -> Buyer xem/chát -> Pin sản phẩm -> Click mua**.
+- Giảm rủi ro triển khai: tận dụng service sẵn có, hạn chế scope ingest video phức tạp ở vòng đầu.
 
-## 2) Mục tiêu
+## 2) MVP scope (bắt buộc)
 
-- Làm ra 3 tính năng đặc biệt có thể demo end-to-end.
-- Giữ đúng kiến trúc microservice, event-driven, outbox, idempotency.
-- Mỗi giai đoạn đều có kết quả đo lường được để trình bày với hội đồng.
+In scope:
+- Seller tạo phiên live, start/end phiên.
+- Buyer vào phòng live, nhận realtime chat + pinned products.
+- Seller pin sản phẩm trong lúc live.
+- Buyer click từ pinned product sang product detail/add-to-cart.
+- Ghi analytics event cơ bản để có số liệu demo.
 
-## 3) Hiện trạng kỹ thuật đã xác nhận
+Out of scope (để sau MVP):
+- Realtime transcoding pipeline hoàn chỉnh (ABR multi-bitrate, recording pipeline).
+- Recommendation model FP-Growth theo thời gian thực.
+- Chống gian lận/phân tích nâng cao.
 
-- `media-service` mới hỗ trợ upload `image/*`, chưa hỗ trợ video.
-- `chat-service` đã có WebSocket realtime và outbox Kafka phù hợp để mở rộng live interaction.
-- `product-service` chưa có API video domain và chưa có API recommendation thật.
-- `analytics-service` đã ingest từ `analytics.events` nhưng compose hiện đặt `KAFKA_ENABLED=false`.
-- `seller` đã có trang `marketing/live-video` nhưng phần lớn là UI mock.
-- `buyer-web` đang có TODO cho recommendation thật trong home route.
+## 3) Kiến trúc MVP đề xuất (thực tế, dễ demo local)
 
-## 4) Timeline tổng quan (8 tuần)
+### 3.1 Thành phần sử dụng
 
-| Phase | Feature | Thời lượng | Deliverable chính |
-|---|---|---:|---|
-| 0 | Foundation | 1 tuần | Chốt contract/API/event/data + bật analytics consume |
-| 1 | Shoppable Video MVP | 2 tuần | Upload video + gắn product tag + buyer video feed |
-| 2 | Livestream Commerce MVP | 2 tuần | Tạo phiên live + chat + pin sản phẩm + click mua |
-| 3 | Recommendation FP-Growth | 2 tuần | Pipeline FP-Growth + API recommendation thật |
-| 4 | Hardening & Demo | 1 tuần | Load test, dashboard KPI, script demo hội đồng |
+- `live-service`: quản lý live session + WebSocket realtime + room presence.
+- `product-service`: xác thực sản phẩm hợp lệ để pin, lấy snapshot giá/tên.
+- `api-gateway`: route/auth cho REST + WS.
+- `analytics-service`: ingest event để thống kê cơ bản.
+- `frontend/apps/seller`: màn hình điều khiển phiên live.
+- `frontend/apps/buyer-web`: màn hình xem live.
 
-## 5) Phase 0 - Foundation (bắt buộc trước khi code lớn)
+### 3.2 Video strategy cho MVP local
 
-Mục tiêu:
-- Khóa scope, tránh lan man.
-- Chuẩn hóa contract để giảm sửa đi sửa lại.
+Chọn phương án A để demo ổn định trên máy cá nhân:
+- Phương án A (khuyến nghị): Seller nhập `playbackUrl` có sẵn (HLS/MP4), hệ thống tập trung vào commerce realtime.
+- Phương án B (hậu MVP): tích hợp OBS -> RTMP ingest -> HLS output.
 
-Checklist:
-- Bổ sung topic trong `shared/kafka/topics.ts`:
-- `video.published`, `video.viewed`, `video.product.clicked`, `video.completed`.
-- `live.session.started`, `live.session.ended`, `live.viewer.joined`, `live.product.pinned`.
-- `recommendation.updated`.
-- Bổ sung event interfaces trong `shared/kafka/events/*`.
-- Bật `KAFKA_ENABLED=true` cho `analytics-service` trong `docker-compose.yml`.
-- Chốt API list cho từng phase ngay trong file này.
+Lý do chọn A:
+- Ít phụ thuộc hạ tầng media.
+- Giảm rủi ro demo fail vì transcoding/network.
+- Vẫn thể hiện đầy đủ business flow livestream commerce.
 
-Definition of Done:
-- Có contract version 1 cho video/live/recommendation.
-- Có mapping service ownership rõ ràng.
+## 4) Luồng nghiệp vụ MVP end-to-end
 
-## 6) Phase 1 - Shoppable Video MVP (ưu tiên số 1)
+### 4.1 Seller flow
 
-## 6.1 Mục tiêu
+1. Seller tạo session: tiêu đề, mô tả ngắn, `playbackUrl`.
+2. Seller bấm Start -> session chuyển `LIVE`.
+3. Seller pin sản phẩm (`productId`) trong lúc live.
+4. Seller gửi vài tin nhắn/announcement.
+5. Seller bấm End -> session chuyển `ENDED`.
 
-- Seller upload video ngắn.
-- Seller gắn sản phẩm vào video.
-- Buyer xem feed, click tag sản phẩm để mua.
+### 4.2 Buyer flow
 
-## 6.2 Backend scope
+1. Buyer mở `/live/:sessionId`.
+2. Client join room WS, nhận trạng thái live + pinned products hiện tại.
+3. Buyer chat realtime.
+4. Buyer click pinned product -> product detail/add-to-cart.
+5. Hệ thống ghi event click/conversion để báo cáo.
 
-- `media-service`:
-- Mở rộng `PresignUpload` cho `video/mp4`, `video/webm`.
-- Hỗ trợ object key prefix `videos/` riêng.
-- `product-service`:
-- `POST /api/v1/products/:id/videos` tạo video metadata.
-- `GET /api/v1/products/:id/videos` danh sách video của product.
-- `GET /api/v1/videos/feed` feed video public.
-- Event publish:
-- `video.published`.
-- `video.viewed`.
-- `video.product.clicked`.
-- `analytics-service`:
-- Ingest video events để tính CTR/engagement.
+### 4.3 Event flow (Kafka)
 
-## 6.3 Frontend scope
+- `live.session.started`
+- `live.viewer.joined`
+- `chat.message.created`
+- `live.product.pinned`
+- `live.product.clicked`
+- `live.session.ended`
 
-- `frontend/apps/seller/src/app/marketing/live-video/page.tsx`:
-- Tab Video gọi API upload/publish thật.
-- `frontend/apps/buyer-web`:
-- Tạo trang `videos` hoặc section feed trên home.
-- Overlay tag sản phẩm trong video card.
-- Click tag -> product detail hoặc add-to-cart.
+`analytics-service` consume các event trên để build dashboard KPI MVP.
 
-## 6.4 Data model đề xuất
+## 5) API contract MVP (v1)
 
-- `product-service` collection: `product_videos`.
-- Trường chính:
-- `videoId`, `sellerId`, `productIds`, `thumbnailUrl`, `durationSec`, `status`, `createdAt`.
+Owner chính: `live-service` (qua `api-gateway`)
 
-## 6.5 Demo kết thúc phase
+- `POST /api/v1/live/sessions`
+  - Input: `title`, `playbackUrl`, `scheduledAt?`
+  - Output: `sessionId`, `status=DRAFT`
+- `PATCH /api/v1/live/sessions/:id/start`
+  - Output: `status=LIVE`, `startedAt`
+- `PATCH /api/v1/live/sessions/:id/end`
+  - Output: `status=ENDED`, `endedAt`
+- `GET /api/v1/live/sessions/:id`
+  - Output: session detail + current pinned products
+- `POST /api/v1/live/sessions/:id/pin-product`
+  - Input: `productId`
+  - Flow: gọi `product-service` check product ACTIVE + snapshot
+- `GET /api/v1/live/sessions/:id/pinned-products`
+  - Output: danh sách pinned theo thứ tự mới nhất
 
-- Seller upload video và publish.
-- Buyer mở feed video, click tag sản phẩm, vào mua hàng.
+WebSocket events:
+- `live:join`, `live:leave`
+- `live:message:create`, `live:message:new`
+- `live:product:pin`, `live:product:pinned`
+- `live:session:status`
 
-## 7) Phase 2 - Livestream Commerce MVP (ưu tiên số 2)
+## 6) Data model tối thiểu
 
-## 7.1 Mục tiêu
+`live-service`:
 
-- Seller mở phiên livestream.
-- Buyer vào xem, chat realtime, thấy sản phẩm pin và mua nhanh.
+- `live_sessions`
+  - `sessionId`, `sellerId`, `title`, `playbackUrl`, `status`, `startedAt`, `endedAt`, `createdAt`, `updatedAt`
+- `live_session_products`
+  - `sessionId`, `productId`, `nameSnapshot`, `priceSnapshot`, `imageSnapshot`, `pinnedAt`, `pinnedBy`
+- `live_messages`
+  - `sessionId`, `senderId`, `senderRole`, `message`, `createdAt`
 
-## 7.2 Backend scope
+Indexes cần có:
+- `live_sessions`: `{ sellerId: 1, status: 1, createdAt: -1 }`
+- `live_session_products`: `{ sessionId: 1, pinnedAt: -1 }`
+- `live_messages`: `{ sessionId: 1, createdAt: -1 }`
 
-- `chat-service` mở rộng live session domain:
-- `POST /api/v1/live/sessions`.
-- `PATCH /api/v1/live/sessions/:id/start`.
-- `PATCH /api/v1/live/sessions/:id/end`.
-- `GET /api/v1/live/sessions/:id`.
-- `POST /api/v1/live/sessions/:id/pin-product`.
-- `GET /api/v1/live/sessions/:id/pinned-products`.
-- WebSocket events:
-- `live.viewer.joined`.
-- `live.product.pinned`.
-- `chat.message.created`.
-- `product-service`:
-- Endpoint kiểm tra product status/price trước khi pin.
-- `api-gateway`:
-- Expose route cho live session theo policy public/private.
-- `analytics-service`:
-- Ingest live events để tính viewers, click, conversion.
+## 7) Kế hoạch triển khai MVP (4 tuần)
 
-## 7.3 Frontend scope
+## Tuần 1: Domain + API + DB
 
-- `frontend/apps/seller/src/app/marketing/live-video/page.tsx`:
-- Nút Start/End session, pin sản phẩm.
-- `frontend/apps/buyer-web`:
-- Tạo trang `/live/[sessionId]`.
-- Player area.
-- Pinned products rail.
-- Chat panel tích hợp luồng hiện có.
+- Chốt schema `live_sessions`, `live_session_products`, `live_messages`.
+- Implement REST create/start/end/get session.
+- Implement pin-product API có verify từ `product-service`.
+- Unit test cho state transition: `DRAFT -> LIVE -> ENDED`.
 
-## 7.4 Data model đề xuất
+Deliverable:
+- Seller có thể tạo/start/end/pin qua API thật (Postman/curl pass).
 
-- `chat-service` collections:
-- `live_sessions`.
-- `live_session_products`.
+## Tuần 2: Realtime WS + Buyer/Seller UI
 
-## 7.5 Demo kết thúc phase
+- Tạo WS room theo `sessionId`.
+- Broadcast chat message và product pinned event.
+- Seller page: control start/end + pin sản phẩm.
+- Buyer page: player + chat + pinned products rail.
 
-- Seller start live -> buyer join -> chat + pin product -> buyer click mua.
+Deliverable:
+- 2 browser tabs (seller/buyer) tương tác realtime được.
 
-## 8) Phase 3 - Recommendation FP-Growth (ưu tiên số 3)
+## Tuần 3: Analytics + demo metrics
 
-## 8.1 Mục tiêu
+- Publish Kafka events cho các action chính.
+- `analytics-service` consume và aggregate KPI cơ bản.
+- Tạo endpoint/report đơn giản hoặc log dashboard:
+  - viewers peak
+  - chat messages/min
+  - pinned product clicks
 
-- Recommendation chạy từ dữ liệu mua hàng thật.
-- Loại bỏ recommendation giả lập ở `buyer-web` home route.
+Deliverable:
+- Có số liệu định lượng sau buổi live demo.
 
-## 8.2 Backend scope
+## Tuần 4: Hardening nhẹ + script demo
 
-- `analytics-service`:
-- Dùng event `order.created`, `order.status-updated` trong `analytics.events`.
-- Chạy batch mỗi 5-15 phút:
-- Build baskets.
-- Chạy FP-Growth.
-- Sinh association rules.
-- Lưu vào bảng `product_recommendations`.
-- API:
-- `GET /api/v1/analytics/recommendations/products/:productId?limit=10`.
-- `product-service`:
-- API public:
-- `GET /api/v1/products/:id/recommendations`.
-- Fallback khi cold-start:
-- category/brand/top-selling.
-- `buyer-web`:
-- Sửa `frontend/apps/buyer-web/src/app/api/buyer/home/route.ts` để gọi API recommendation thật.
+- Idempotency cho start/end/pin để tránh double click.
+- Validation quyền truy cập session theo role.
+- Viết script demo 10-12 phút + fallback plan khi mạng yếu.
+- Smoke test end-to-end bằng docker compose local.
 
-## 8.3 Data model đề xuất
+Deliverable:
+- Demo ổn định, có checklist chạy trước khi trình bày.
 
-- Bảng `product_recommendations`:
-- `source_product_id`, `target_product_id`, `score`, `support`, `confidence`, `lift`, `window_start`, `window_end`, `updated_at`.
+## 8) Local demo runbook (máy cá nhân)
 
-## 8.4 Demo kết thúc phase
+Chuẩn bị:
+- Chạy `docker-compose` (Mongo, Redis, Kafka, services chính).
+- Seed ít nhất 5 sản phẩm active để pin.
+- Chuẩn bị sẵn 1 `playbackUrl` ổn định (HLS/MP4).
 
-- Buyer mở product/home thấy recommendation thay đổi theo data order mới.
+Kịch bản demo 10-12 phút:
+1. Seller tạo session và Start.
+2. Buyer mở trang live từ sessionId.
+3. Seller pin 2 sản phẩm + gửi chat message.
+4. Buyer thấy realtime pinned update, click vào product.
+5. Show analytics counters sau 2-3 phút thao tác.
+6. Seller End session, buyer nhận trạng thái kết thúc.
 
-## 9) Phase 4 - Hardening & Demo
+Fallback khi video lỗi:
+- Vẫn demo commerce flow bằng placeholder player + chat/pin/click events.
+- Nhấn mạnh phạm vi MVP là live-commerce interaction, không phải media transcoding pipeline.
 
-Checklist:
-- Idempotency cho publish video, pin product, create live session.
-- Retry + backoff + DLQ cho event processing.
-- Dashboard KPI cho video/live/recommendation.
-- Load test kịch bản concurrent viewers và chat throughput.
-- Script demo 10-12 phút chạy được lặp.
+## 9) KPI MVP để báo cáo giảng viên
 
-## 10) Test strategy (theo Validation Ladder)
+- `session_start_success_rate`
+- `concurrent_viewers_peak`
+- `chat_messages_per_min`
+- `pinned_product_click_ctr`
+- `live_to_add_to_cart_rate`
+- `session_end_clean_rate`
 
-L0:
-- Unit test cho validator/mapper/parser/job logic.
+## 10) Rủi ro chính và cách giảm
 
-L1:
-- `cd services/media-service && go test ./...`
-- `cd services/chat-service && go test ./...`
-- `cd services/analytics-service && go test ./...`
-- `npm --workspace services/product-service-nest run test`
+- Rủi ro 1: Player URL không ổn định.
+  - Giảm thiểu: chuẩn bị 2 URL dự phòng + placeholder mode.
+- Rủi ro 2: WS disconnect khi demo.
+  - Giảm thiểu: auto reconnect + toast trạng thái.
+- Rủi ro 3: Pin product sai trạng thái/hết hàng.
+  - Giảm thiểu: verify ACTIVE trước khi pin + trả lỗi rõ ràng.
 
-L2:
-- `scripts/test-product-service.sh`
-- `scripts/test-analytics-service.sh`
-- Thêm script smoke riêng cho shoppable video/live/recommendation.
+## 11) Hậu MVP (nếu còn thời gian)
 
-L3:
-- `npm run test` chỉ khi thay đổi cross-service lớn.
+- Bổ sung ingest OBS/RTMP thật.
+- Lưu recording và replay.
+- Recommendation từ hành vi live (`live.product.clicked`, `order.created`) bằng FP-Growth theo batch.
 
-## 11) KPI chấm điểm đề xuất
+## 12) Change log
 
-- Video:
-- `video_3s_view_rate`, `video_product_click_ctr`, `video_to_cart_rate`.
-- Livestream:
-- `concurrent_viewers_peak`, `chat_messages_per_min`, `live_to_product_click_ctr`, `live_to_order_conversion`.
-- Recommendation:
-- `recommendation_ctr`, `recommendation_add_to_cart_rate`, `recommendation_order_rate`.
-- Platform:
-- `p95_api_latency`, `kafka_consumer_lag`, `error_rate`.
-
-## 12) Backlog EPIC gợi ý
-
-- EPIC-1: Shoppable Video domain + APIs + feed.
-- EPIC-2: Livestream session + realtime interaction.
-- EPIC-3: FP-Growth pipeline + recommendation APIs.
-- EPIC-4: Hardening, observability, demo package.
-
-## 13) Bảng theo dõi tiến độ hằng ngày (để không quên)
-
-Quy ước `Status`: `TODO` | `IN_PROGRESS` | `BLOCKED` | `DONE`
-
-| Date | Feature | Task ID | Task mô tả | Service/Folder | Owner | Status | % | Next step | Blocker |
-|---|---|---|---|---|---|---|---:|---|---|
-| 2026-05-14 | Foundation | FND-01 | Chốt roadmap + thứ tự feature | `docs/architecture` | You | DONE | 100 | Tạo ticket Phase 0 | None |
-| 2026-05-14 | Shoppable Video | VID-01 | Chốt schema `product_videos` | `services/product-service` | You | TODO | 0 | Draft schema + DTO | None |
-| 2026-05-14 | Livestream | LIV-01 | Chốt schema `live_sessions` | `services/chat-service` | You | TODO | 0 | Draft model + migration | None |
-| 2026-05-14 | Recommendation | REC-01 | Thiết kế batch FP-Growth | `services/analytics-service` | You | TODO | 0 | Define basket query | None |
-
-## 14) Bảng log thay đổi (đã thay đổi những gì)
-
-| Date | Feature | Change type | Files changed | API changed | Event changed | DB changed | Test evidence | Commit/PR | Note |
-|---|---|---|---|---|---|---|---|---|---|
-| 2026-05-14 | Planning | Docs update | `docs/architecture/livestream-video-recommendation-roadmap.md` | No | No | No | N/A | Uncommitted | Viết lại roadmap theo thứ tự Video -> Live -> FP-Growth và thêm bảng tracking |
-
-## 15) Mẫu điền nhanh cuối ngày
-
-Copy block này mỗi ngày để cập nhật nhanh:
-
-```txt
-Date:
-Feature:
-Task ID:
-What I finished:
-Files changed:
-API/Event/DB changed:
-Tests run:
-Current blocker:
-Next first task tomorrow:
-```
+| Date | Change | Note |
+|---|---|---|
+| 2026-05-16 | Rewrite roadmap theo hướng Livestream MVP-first | Tối ưu khả năng demo local và trình bày thực tế |

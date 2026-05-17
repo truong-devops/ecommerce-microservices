@@ -42,7 +42,7 @@ func Load() (Config, error) {
 		AppName:               getEnv("APP_NAME", "live-service"),
 		AppEnv:                getEnv("APP_ENV", "development"),
 		APIPrefix:             strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
-		WSAllowedOrigins:      parseCSV(getEnv("WS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:6789,http://localhost:8081")),
+		WSAllowedOrigins:      parseCSV(getEnv("WS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:6789,http://localhost:8888,http://localhost:8081")),
 		MongoURI:              strings.TrimSpace(os.Getenv("MONGO_URI")),
 		MongoDatabase:         getEnv("MONGO_DATABASE", "ecommerce_live"),
 		RedisEnabled:          parseBool(getEnv("REDIS_ENABLED", "true")),

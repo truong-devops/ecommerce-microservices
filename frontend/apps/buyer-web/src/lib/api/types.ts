@@ -604,3 +604,67 @@ export interface TrackBuyerVideoEventInput {
   clientEventId?: string;
   watchTimeSec?: number;
 }
+
+export type LiveSessionStatus = 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
+
+export interface LiveMetricsSnapshot {
+  viewerPeak: number;
+  messageCount: number;
+  productClickCount: number;
+  addToCartCount: number;
+}
+
+export interface LiveSession {
+  id: string;
+  sessionId: string;
+  sellerId: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  playbackUrl: string;
+  sourceType: 'EXTERNAL_URL';
+  status: LiveSessionStatus;
+  defaultLanguage: string;
+  supportedLanguages: string[];
+  metricsSnapshot: LiveMetricsSnapshot;
+  scheduledAt?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LiveProduct {
+  id: string;
+  sessionId: string;
+  productId: string;
+  sellerId: string;
+  nameSnapshot: string;
+  priceSnapshot: number;
+  currencySnapshot: string;
+  imageSnapshot?: string;
+  statusSnapshot: string;
+  pinStatus: 'PINNED' | 'UNPINNED';
+  sortOrder: number;
+  pinnedAt: string;
+  unpinnedAt?: string;
+  pinnedBy: string;
+}
+
+export interface LiveSessionDetail {
+  session: LiveSession;
+  pinnedProducts: LiveProduct[];
+}
+
+export interface LiveMessage {
+  id: string;
+  messageId: string;
+  sessionId: string;
+  senderId: string;
+  senderRole: string;
+  text: string;
+  clientMessageId?: string;
+  language: string;
+  status: 'VISIBLE' | 'HIDDEN' | 'DELETED';
+  createdAt: string;
+}

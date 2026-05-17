@@ -9,6 +9,7 @@ const INVENTORY_SERVICE_BASE_URL = process.env.INVENTORY_SERVICE_BASE_URL ?? API
 const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const MEDIA_SERVICE_BASE_URL = process.env.MEDIA_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const LIVE_SERVICE_BASE_URL = process.env.LIVE_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
@@ -20,7 +21,8 @@ export const serviceBaseUrls = {
   inventory: INVENTORY_SERVICE_BASE_URL,
   user: USER_SERVICE_BASE_URL,
   chat: CHAT_SERVICE_BASE_URL,
-  media: MEDIA_SERVICE_BASE_URL
+  media: MEDIA_SERVICE_BASE_URL,
+  live: LIVE_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {
@@ -66,10 +68,10 @@ export async function requestUpstream<T>(url: string, init?: RequestInit): Promi
   const payload = safeParseJson(text) as UpstreamSuccessBody<T> | UpstreamErrorBody | null;
 
   if (!response.ok) {
-    const code = payload && 'error' in payload ? payload.error?.code ?? `HTTP_${response.status}` : `HTTP_${response.status}`;
+    const code = payload && 'error' in payload ? (payload.error?.code ?? `HTTP_${response.status}`) : `HTTP_${response.status}`;
     const message =
       payload && 'error' in payload
-        ? payload.error?.message ?? `Upstream request failed with status ${response.status}`
+        ? (payload.error?.message ?? `Upstream request failed with status ${response.status}`)
         : `Upstream request failed with status ${response.status}`;
 
     throw new UpstreamHttpError(response.status, code, message);

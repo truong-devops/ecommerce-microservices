@@ -171,6 +171,17 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			_ = writeJSON(map[string]any{"type": "ack", "action": "live:message:create", "message": result})
+		case "live:webrtc:broadcaster-ready", "live:webrtc:viewer-ready", "live:webrtc:offer", "live:webrtc:answer", "live:webrtc:ice-candidate":
+			_ = h.hub.Broadcast(ctx, sessionID, map[string]any{
+				"type":           strings.ToLower(strings.TrimSpace(incoming.Type)),
+				"fromClientId":   strings.TrimSpace(incoming.ClientID),
+				"targetClientId": strings.TrimSpace(incoming.TargetClientID),
+				"senderId":       user.UserID,
+				"senderRole":     user.Role,
+				"negotiationId":  strings.TrimSpace(incoming.NegotiationID),
+				"sdp":            incoming.SDP,
+				"candidate":      incoming.Candidate,
+			})
 		case "live:join":
 			_ = writeJSON(map[string]any{"type": "ack", "action": "live:join", "sessionId": sessionID})
 		case "live:leave":
@@ -197,7 +208,12 @@ func (h *WSHandler) isAllowedOrigin(r *http.Request) bool {
 
 type wsInboundMessage struct {
 	Type            string `json:"type"`
+	ClientID        string `json:"clientId"`
+	TargetClientID  string `json:"targetClientId"`
+	NegotiationID   string `json:"negotiationId"`
 	Text            string `json:"text"`
 	ClientMessageID string `json:"clientMessageId"`
 	Language        string `json:"language"`
+	SDP             any    `json:"sdp"`
+	Candidate       any    `json:"candidate"`
 }

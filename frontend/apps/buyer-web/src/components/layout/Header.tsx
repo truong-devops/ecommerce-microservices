@@ -76,9 +76,7 @@ export function Header({ keywords }: HeaderProps) {
 
           <div className="ml-auto flex items-center gap-2 md:gap-4">
             <div className="flex items-center gap-1 rounded-md border border-white/50 p-0.5">
-              <span className="hidden pl-2 text-[11px] font-semibold uppercase tracking-wide md:block">
-                {text.header.language}
-              </span>
+              <span className="hidden pl-2 text-[11px] font-semibold uppercase tracking-wide md:block">{text.header.language}</span>
               <button
                 type="button"
                 onClick={() => setLocale('vi')}
@@ -110,14 +108,13 @@ export function Header({ keywords }: HeaderProps) {
             <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/videos">
               {text.header.video}
             </Link>
+            <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/live">
+              Live
+            </Link>
 
             {ready && user ? (
               <>
-                <button
-                  type="button"
-                  onClick={handleOpenChatDrawer}
-                  className="rounded-sm hover:text-white focus-visible:outline-white"
-                >
+                <button type="button" onClick={handleOpenChatDrawer} className="rounded-sm hover:text-white focus-visible:outline-white">
                   Chat
                 </button>
                 <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
@@ -126,11 +123,7 @@ export function Header({ keywords }: HeaderProps) {
                 <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/account">
                   {text.header.account}
                 </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="rounded-sm hover:text-white focus-visible:outline-white"
-                >
+                <button type="button" onClick={handleLogout} className="rounded-sm hover:text-white focus-visible:outline-white">
                   {text.header.logout}
                 </button>
               </>
@@ -189,7 +182,13 @@ export function Header({ keywords }: HeaderProps) {
             aria-label={text.header.cart}
           >
             <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
-              <path d="M3 4h2l2.3 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M3 4h2l2.3 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H7"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
               <circle cx="10" cy="19" r="1.5" fill="currentColor" />
               <circle cx="17" cy="19" r="1.5" fill="currentColor" />
             </svg>

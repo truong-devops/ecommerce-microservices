@@ -38,8 +38,14 @@ export class SessionService {
   }
 
   async revokeAllSessions(userId: string, reason: string): Promise<void> {
+    const activeSessions = await this.sessionRepository.findActiveByUserId(userId);
+
     await this.sessionRepository.revokeAllByUserId(userId, reason);
     await this.refreshTokenRepository.revokeAllByUserId(userId);
+
+    await Promise.all(
+      activeSessions.map((session) => this.redisService.setWithTtl(`revoked:session:${session.id}`, '1', 60 * 60 * 24 * 30))
+    );
   }
 
   async revokeAccessToken(jti: string, ttlSeconds: number): Promise<void> {

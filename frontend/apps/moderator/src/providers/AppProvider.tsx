@@ -7,6 +7,7 @@ import { ModeratorApiClientError } from '@/lib/api/client';
 import type { LoginInput, ModeratorAuthSession, ModeratorAuthUser } from '@/lib/api/types';
 
 const AUTH_SESSION_STORAGE_KEY = 'moderator_auth_session';
+const SESSION_VALIDATION_INTERVAL_MS = 10_000;
 const ALLOWED_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
 
 interface AuthActionResult {
@@ -100,6 +101,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isCancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!ready || !session?.accessToken) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const clearSession = () => {
+      localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+      setSession(null);
+      setUser(null);
+    };
+
+    const validateSession = async () => {
+      try {
+        const result = await getModeratorMe(session.accessToken);
+        if (isCancelled) {
+          return;
+        }
+
+        if (!ALLOWED_ROLES.has(result.user.role)) {
+          clearSession();
+          return;
+        }
+
+        setUser(result.user);
+      } catch {
+        if (!isCancelled) {
+          clearSession();
+        }
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void validateSession();
+    }, SESSION_VALIDATION_INTERVAL_MS);
+    const handleFocus = () => {
+      void validateSession();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [ready, session?.accessToken]);
 
   const login = useCallback(async (payload: LoginInput): Promise<AuthActionResult> => {
     try {

@@ -238,6 +238,21 @@ func TestTrackMediaMetricDoesNotFailWhenPublishFails(t *testing.T) {
 	}
 }
 
+func TestTrackProductClickedDoesNotFailWhenPublishFails(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	svc := NewLiveService(repo, fakeProductVerifier{}, failingPublisher{}, &fakeBroadcaster{}, nil)
+	seller := testUser("seller-1", domain.RoleSeller)
+
+	session, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream", PlaybackURL: "https://example.com/live.m3u8"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	if err := svc.TrackProductClicked(ctx, nil, session.SessionID, "product-1"); err != nil {
+		t.Fatalf("TrackProductClicked should ignore publish failures, got: %v", err)
+	}
+}
+
 func testUser(userID string, role domain.Role) domain.UserContext {
 	return domain.UserContext{UserID: userID, Role: role, SessionID: "session", JTI: "jti"}
 }

@@ -13,6 +13,7 @@ const LOCALE_STORAGE_KEY = 'buyer_locale';
 const AUTH_SESSION_STORAGE_KEY = 'buyer_auth_session';
 const PROFILES_STORAGE_KEY = 'buyer_profiles';
 const CART_STORAGE_KEY = 'buyer_cart_items';
+const SESSION_VALIDATION_INTERVAL_MS = 10_000;
 const VALID_GENDERS: BuyerGender[] = ['male', 'female', 'other', 'unspecified'];
 
 interface BuyerProfile {
@@ -475,6 +476,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCartItems(storedCartItems);
     setCartReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!ready || !session?.accessToken) {
+      return;
+    }
+
+    let disposed = false;
+
+    const clearSession = () => {
+      localStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
+      setSession(null);
+      setUser(null);
+    };
+
+    const validateSession = async () => {
+      try {
+        const me = await getBuyerMe(session.accessToken);
+        if (disposed) {
+          return;
+        }
+
+        setUser((current) => {
+          if (!current || current.id !== me.user.id) {
+            return current;
+          }
+
+          return {
+            ...current,
+            email: me.user.email,
+            role: me.user.role
+          };
+        });
+      } catch {
+        if (!disposed) {
+          clearSession();
+        }
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void validateSession();
+    }, SESSION_VALIDATION_INTERVAL_MS);
+    const handleFocus = () => {
+      void validateSession();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      disposed = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [ready, session?.accessToken]);
 
   const setLocale = useCallback((nextLocale: Locale) => {
     setLocaleState(nextLocale);

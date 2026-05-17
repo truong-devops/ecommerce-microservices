@@ -568,12 +568,13 @@ func (s *LiveService) TrackProductClicked(ctx context.Context, user *domain.User
 		actorID = user.UserID
 		actorRole = string(user.Role)
 	}
-	return s.publish(ctx, domain.EventProductClicked, map[string]any{
+	_ = s.publish(ctx, domain.EventProductClicked, map[string]any{
 		"sessionId": session.SessionID,
 		"productId": strings.TrimSpace(productID),
 		"actorId":   actorID,
 		"actorRole": actorRole,
 	})
+	return nil
 }
 
 func (s *LiveService) TrackMediaMetric(ctx context.Context, user *domain.UserContext, sessionID string, req TrackMediaMetricRequest) error {

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "Node16",
     "target": "ES2021",
     "rootDir": ".",
     "outDir": "dist",
@@ -13,13 +13,9 @@
     "forceConsistentCasingInFileNames": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "Node16",
     "ignoreDeprecations": "5.0",
-    "types": ["node", "jest"],
-    "baseUrl": ".",
-    "paths": {
-      "src/*": ["src/*"]
-    }
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]

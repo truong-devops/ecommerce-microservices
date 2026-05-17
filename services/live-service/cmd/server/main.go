@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"live-service/internal/config"
+	"live-service/internal/domain"
 	"live-service/internal/events"
 	"live-service/internal/handler"
 	"live-service/internal/repository"
@@ -72,7 +73,14 @@ func main() {
 
 	productClient := service.NewHTTPProductClient(cfg.ProductServiceBaseURL, cfg.ProductServiceTimeout)
 	sendLimiter := service.NewSendRateLimiter(cfg.SendMessageRateRPS, cfg.SendMessageRateBurst)
-	liveService := service.NewLiveService(repo, productClient, publisher, hub, sendLimiter)
+	liveService := service.NewLiveService(repo, productClient, publisher, hub, sendLimiter, service.WithMediaSettings(service.MediaSettings{
+		Mode:             service.LiveMediaMode(cfg.LiveMediaMode),
+		Provider:         domainLiveMediaProvider(cfg.LiveMediaProvider),
+		IngestProtocol:   domainLiveIngestProtocol(cfg.LiveMediaIngestProtocol),
+		PlaybackProtocol: domainLivePlaybackProtocol(cfg.LiveMediaPlaybackProtocol),
+		IngestBaseURL:    cfg.LiveMediaIngestBaseURL,
+		PlaybackBaseURL:  cfg.LiveMediaPlaybackBaseURL,
+	}))
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	liveHandler := handler.NewLiveHandler(liveService)
@@ -111,6 +119,18 @@ func main() {
 	}
 
 	logger.Info("server stopped")
+}
+
+func domainLiveMediaProvider(value string) domain.LiveMediaProvider {
+	return domain.LiveMediaProvider(value)
+}
+
+func domainLiveIngestProtocol(value string) domain.LiveIngestProtocol {
+	return domain.LiveIngestProtocol(value)
+}
+
+func domainLivePlaybackProtocol(value string) domain.LivePlaybackProtocol {
+	return domain.LivePlaybackProtocol(value)
 }
 
 func newLogger(appEnv string) (*zap.Logger, error) {

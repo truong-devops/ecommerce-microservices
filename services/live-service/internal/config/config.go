@@ -33,6 +33,13 @@ type Config struct {
 	ProductServiceBaseURL string
 	ProductServiceTimeout time.Duration
 
+	LiveMediaMode             string
+	LiveMediaProvider         string
+	LiveMediaIngestProtocol   string
+	LiveMediaPlaybackProtocol string
+	LiveMediaIngestBaseURL    string
+	LiveMediaPlaybackBaseURL  string
+
 	SendMessageRateRPS   float64
 	SendMessageRateBurst int
 }
@@ -55,6 +62,15 @@ func Load() (Config, error) {
 		AnalyticsEventsTopic:  getEnv("ANALYTICS_EVENTS_TOPIC", "analytics.events"),
 		AuditEventsTopic:      getEnv("AUDIT_EVENTS_TOPIC", "audit.events"),
 		ProductServiceBaseURL: strings.TrimRight(getEnv("PRODUCT_SERVICE_BASE_URL", "http://localhost:3003"), "/"),
+		LiveMediaMode:         strings.ToLower(getEnv("LIVE_MEDIA_MODE", "p2p_legacy")),
+		LiveMediaProvider:     strings.ToUpper(getEnv("LIVE_MEDIA_PROVIDER", "P2P")),
+		LiveMediaIngestProtocol: strings.ToUpper(getEnv(
+			"LIVE_MEDIA_INGEST_PROTOCOL",
+			"WHIP",
+		)),
+		LiveMediaPlaybackProtocol: strings.ToUpper(getEnv("LIVE_MEDIA_PLAYBACK_PROTOCOL", "HLS")),
+		LiveMediaIngestBaseURL:    strings.TrimRight(getEnv("LIVE_MEDIA_INGEST_BASE_URL", "http://localhost:8889"), "/"),
+		LiveMediaPlaybackBaseURL:  strings.TrimRight(getEnv("LIVE_MEDIA_PLAYBACK_BASE_URL", "http://localhost:8888"), "/"),
 	}
 
 	if cfg.MongoURI == "" {
@@ -100,6 +116,26 @@ func Load() (Config, error) {
 	if cfg.ProductServiceBaseURL == "" {
 		return Config{}, fmt.Errorf("PRODUCT_SERVICE_BASE_URL is required")
 	}
+	if cfg.LiveMediaMode != "p2p_legacy" && cfg.LiveMediaMode != "media_engine" {
+		return Config{}, fmt.Errorf("LIVE_MEDIA_MODE must be p2p_legacy or media_engine")
+	}
+	if cfg.LiveMediaMode == "media_engine" {
+		if !isAllowedValue(cfg.LiveMediaProvider, "MEDIAMTX", "LIVEKIT") {
+			return Config{}, fmt.Errorf("LIVE_MEDIA_PROVIDER must be MEDIAMTX or LIVEKIT when LIVE_MEDIA_MODE=media_engine")
+		}
+		if !isAllowedValue(cfg.LiveMediaIngestProtocol, "RTMP", "WHIP", "WEBRTC") {
+			return Config{}, fmt.Errorf("LIVE_MEDIA_INGEST_PROTOCOL must be RTMP, WHIP, or WEBRTC")
+		}
+		if !isAllowedValue(cfg.LiveMediaPlaybackProtocol, "HLS", "LL_HLS", "WEBRTC") {
+			return Config{}, fmt.Errorf("LIVE_MEDIA_PLAYBACK_PROTOCOL must be HLS, LL_HLS, or WEBRTC")
+		}
+		if cfg.LiveMediaIngestBaseURL == "" {
+			return Config{}, fmt.Errorf("LIVE_MEDIA_INGEST_BASE_URL is required when LIVE_MEDIA_MODE=media_engine")
+		}
+		if cfg.LiveMediaPlaybackBaseURL == "" {
+			return Config{}, fmt.Errorf("LIVE_MEDIA_PLAYBACK_BASE_URL is required when LIVE_MEDIA_MODE=media_engine")
+		}
+	}
 
 	return cfg, nil
 }
@@ -130,4 +166,13 @@ func parseCSV(v string) []string {
 		}
 	}
 	return out
+}
+
+func isAllowedValue(value string, allowed ...string) bool {
+	for _, candidate := range allowed {
+		if value == candidate {
+			return true
+		}
+	}
+	return false
 }

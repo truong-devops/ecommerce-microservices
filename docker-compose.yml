@@ -86,6 +86,19 @@ services:
       - '12030:9000'
       - '12031:9001'
 
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    restart: unless-stopped
+    environment:
+      MTX_HLSVARIANT: lowLatency
+      MTX_WEBRTCADDITIONALHOSTS: localhost
+    ports:
+      - '1935:1935'
+      - '8554:8554'
+      - '8888:8888'
+      - '8889:8889'
+      - '8189:8189/udp'
+
   auth-service:
     <<: *service-defaults
     build:
@@ -540,6 +553,12 @@ services:
       AUDIT_EVENTS_TOPIC: audit.events
       PRODUCT_SERVICE_BASE_URL: http://product-service:8080
       PRODUCT_SERVICE_TIMEOUT: 5s
+      LIVE_MEDIA_MODE: media_engine
+      LIVE_MEDIA_PROVIDER: MEDIAMTX
+      LIVE_MEDIA_INGEST_PROTOCOL: WHIP
+      LIVE_MEDIA_PLAYBACK_PROTOCOL: HLS
+      LIVE_MEDIA_INGEST_BASE_URL: http://localhost:8889
+      LIVE_MEDIA_PLAYBACK_BASE_URL: http://localhost:8888
       WS_ALLOWED_ORIGINS: http://localhost:6789,http://localhost:8888,http://localhost:3000,http://localhost:3001
       SEND_MESSAGE_RATE_RPS: 5
       SEND_MESSAGE_RATE_BURST: 20
@@ -552,6 +571,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      mediamtx:
+        condition: service_started
       product-service:
         condition: service_started
 

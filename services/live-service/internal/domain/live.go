@@ -17,7 +17,62 @@ type LiveSourceType string
 
 const (
 	LiveSourceTypeExternalURL LiveSourceType = "EXTERNAL_URL"
+	LiveSourceTypeMediaEngine LiveSourceType = "MEDIA_ENGINE"
 )
+
+type LiveMediaProvider string
+
+const (
+	LiveMediaProviderP2P      LiveMediaProvider = "P2P"
+	LiveMediaProviderMediaMTX LiveMediaProvider = "MEDIAMTX"
+	LiveMediaProviderLiveKit  LiveMediaProvider = "LIVEKIT"
+)
+
+type LiveIngestProtocol string
+
+const (
+	LiveIngestProtocolRTMP   LiveIngestProtocol = "RTMP"
+	LiveIngestProtocolWHIP   LiveIngestProtocol = "WHIP"
+	LiveIngestProtocolWebRTC LiveIngestProtocol = "WEBRTC"
+)
+
+type LivePlaybackProtocol string
+
+const (
+	LivePlaybackProtocolHLS    LivePlaybackProtocol = "HLS"
+	LivePlaybackProtocolLLHLS  LivePlaybackProtocol = "LL_HLS"
+	LivePlaybackProtocolWebRTC LivePlaybackProtocol = "WEBRTC"
+)
+
+type LiveMediaStatus string
+
+const (
+	LiveMediaStatusIdle     LiveMediaStatus = "IDLE"
+	LiveMediaStatusReady    LiveMediaStatus = "READY"
+	LiveMediaStatusLive     LiveMediaStatus = "LIVE"
+	LiveMediaStatusDegraded LiveMediaStatus = "DEGRADED"
+	LiveMediaStatusEnded    LiveMediaStatus = "ENDED"
+)
+
+type LiveMediaPublish struct {
+	Protocol  LiveIngestProtocol `json:"protocol" bson:"protocol"`
+	URL       string             `json:"url" bson:"url"`
+	StreamKey string             `json:"streamKey,omitempty" bson:"streamKey,omitempty"`
+}
+
+type LiveMediaPlayback struct {
+	Protocol LivePlaybackProtocol `json:"protocol" bson:"protocol"`
+	URL      string               `json:"url" bson:"url"`
+	Token    string               `json:"token,omitempty" bson:"token,omitempty"`
+}
+
+type LiveMedia struct {
+	Provider   LiveMediaProvider `json:"provider" bson:"provider"`
+	StreamName string            `json:"streamName,omitempty" bson:"streamName,omitempty"`
+	Publish    LiveMediaPublish  `json:"publish" bson:"publish"`
+	Playback   LiveMediaPlayback `json:"playback" bson:"playback"`
+	Status     LiveMediaStatus   `json:"status" bson:"status"`
+}
 
 type LiveMetricsSnapshot struct {
 	ViewerPeak        int64 `json:"viewerPeak" bson:"viewerPeak"`
@@ -34,6 +89,7 @@ type LiveSession struct {
 	Description        string              `json:"description,omitempty"`
 	ThumbnailURL       string              `json:"thumbnailUrl,omitempty"`
 	PlaybackURL        string              `json:"playbackUrl"`
+	Media              *LiveMedia          `json:"media,omitempty"`
 	SourceType         LiveSourceType      `json:"sourceType"`
 	Status             LiveSessionStatus   `json:"status"`
 	DefaultLanguage    string              `json:"defaultLanguage"`

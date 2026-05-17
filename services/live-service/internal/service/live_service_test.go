@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -70,6 +71,48 @@ func TestLiveSessionStateTransitions(t *testing.T) {
 
 	if _, err := svc.StartSession(ctx, seller, created.SessionID); err == nil {
 		t.Fatal("expected starting ended session to fail")
+	}
+}
+
+func TestCreateSessionBuildsMediaEngineMetadata(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	svc := NewLiveService(repo, fakeProductVerifier{}, &fakePublisher{}, &fakeBroadcaster{}, nil, WithMediaSettings(MediaSettings{
+		Mode:             LiveMediaModeMediaEngine,
+		Provider:         domain.LiveMediaProviderMediaMTX,
+		IngestProtocol:   domain.LiveIngestProtocolWHIP,
+		PlaybackProtocol: domain.LivePlaybackProtocolHLS,
+		IngestBaseURL:    "http://localhost:8889",
+		PlaybackBaseURL:  "http://localhost:8888",
+	}))
+	seller := testUser("seller-1", domain.RoleSeller)
+
+	created, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	if created.SourceType != domain.LiveSourceTypeMediaEngine {
+		t.Fatalf("expected media engine source type, got %s", created.SourceType)
+	}
+	if created.Media == nil {
+		t.Fatal("expected media metadata")
+	}
+	if created.Media.Provider != domain.LiveMediaProviderMediaMTX {
+		t.Fatalf("expected MEDIAMTX provider, got %s", created.Media.Provider)
+	}
+	if !strings.HasSuffix(created.Media.Publish.URL, "/whip") {
+		t.Fatalf("expected WHIP publish URL, got %q", created.Media.Publish.URL)
+	}
+	if !strings.HasSuffix(created.PlaybackURL, "/index.m3u8") {
+		t.Fatalf("expected HLS playback URL, got %q", created.PlaybackURL)
+	}
+
+	started, err := svc.StartSession(ctx, seller, created.SessionID)
+	if err != nil {
+		t.Fatalf("StartSession returned error: %v", err)
+	}
+	if started.Media == nil || started.Media.Status != domain.LiveMediaStatusLive {
+		t.Fatalf("expected media LIVE status, got %+v", started.Media)
 	}
 }
 

@@ -710,6 +710,7 @@ function LiveOperationsPanel({
   const previewRef = useRef<HTMLVideoElement | null>(null);
   const viewerPeersRef = useRef<Map<string, SellerViewerPeer>>(new Map());
   const signalSocketRef = useRef<WebSocket | null>(null);
+  const mediaEnginePeerRef = useRef<RTCPeerConnection | null>(null);
   const clientIdRef = useRef(createClientMessageId());
   const manualRealtimeStopRef = useRef(false);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
@@ -718,6 +719,8 @@ function LiveOperationsPanel({
   const [realtimeStatus, setRealtimeStatus] = useState<'idle' | 'connecting' | 'broadcasting' | 'connected' | 'error'>('idle');
   const [realtimeError, setRealtimeError] = useState('');
   const buyerLink = selectedSession ? `${buyerWebUrl.replace(/\/$/, '')}/live/${encodeURIComponent(selectedSession.sessionId)}` : '';
+  const mediaPublish = selectedSession?.media?.publish;
+  const isMediaEngineSession = selectedSession?.media?.provider === 'MEDIAMTX' && mediaPublish?.protocol === 'WHIP' && Boolean(mediaPublish.url);
 
   useEffect(() => {
     if (previewRef.current) {
@@ -747,6 +750,8 @@ function LiveOperationsPanel({
   );
 
   const closeRealtimeBroadcast = useCallback((nextStatus: 'idle' | 'connecting' = 'idle') => {
+    mediaEnginePeerRef.current?.close();
+    mediaEnginePeerRef.current = null;
     viewerPeersRef.current.forEach((entry) => {
       if (entry.offerResetTimer) {
         clearTimeout(entry.offerResetTimer);
@@ -855,6 +860,55 @@ function LiveOperationsPanel({
     [closeViewerPeer, createSellerPeerConnection, previewStream, sendSignal]
   );
 
+  const startMediaEngineBroadcast = useCallback(async () => {
+    if (!previewStream || !mediaPublish?.url) {
+      setRealtimeError('Chưa có nguồn phát hoặc MediaMTX publish URL.');
+      return;
+    }
+
+    setRealtimeStatus('connecting');
+    setRealtimeError('');
+    mediaEnginePeerRef.current?.close();
+
+    const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    mediaEnginePeerRef.current = peer;
+    previewStream.getTracks().forEach((track) => {
+      peer.addTrack(track, previewStream);
+    });
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === 'connected') {
+        setRealtimeStatus('connected');
+        setRealtimeError('');
+      }
+      if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
+        setRealtimeStatus('error');
+        setRealtimeError('Kết nối publish đến MediaMTX bị ngắt.');
+      }
+    };
+
+    const offer = await peer.createOffer();
+    await peer.setLocalDescription(offer);
+    await waitForIceGatheringComplete(peer);
+
+    const localDescription = peer.localDescription;
+    if (!localDescription?.sdp) {
+      throw new Error('Không tạo được SDP để publish.');
+    }
+
+    setRealtimeStatus('broadcasting');
+    const response = await fetch(mediaPublish.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/sdp' },
+      body: localDescription.sdp
+    });
+    if (!response.ok) {
+      throw new Error(`MediaMTX từ chối publish (${response.status}).`);
+    }
+
+    const answer = await response.text();
+    await peer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer }));
+  }, [mediaPublish?.url, previewStream]);
+
   const startRealtimeBroadcast = useCallback(async () => {
     if (!accessToken || !selectedSession) {
       setRealtimeError('Bạn cần đăng nhập người bán và chọn phiên livestream.');
@@ -872,6 +926,18 @@ function LiveOperationsPanel({
     setRealtimeError('');
     manualRealtimeStopRef.current = false;
     closeRealtimeBroadcast('connecting');
+
+    if (isMediaEngineSession) {
+      try {
+        await startMediaEngineBroadcast();
+      } catch (error) {
+        mediaEnginePeerRef.current?.close();
+        mediaEnginePeerRef.current = null;
+        setRealtimeStatus('error');
+        setRealtimeError(error instanceof Error ? error.message : 'Không thể publish lên MediaMTX.');
+      }
+      return;
+    }
 
     const socket = new WebSocket(buildLiveWebSocketUrl(selectedSession.sessionId), ['live.v1', `access-token.${accessToken}`]);
     signalSocketRef.current = socket;
@@ -970,7 +1036,7 @@ function LiveOperationsPanel({
         setRealtimeError('Kết nối phát trực tiếp bị ngắt, hệ thống đang tự kết nối lại.');
       }
     };
-  }, [accessToken, closeRealtimeBroadcast, closeViewerPeer, previewStream, publishOffer, selectedSession, sendSignal]);
+  }, [accessToken, closeRealtimeBroadcast, closeViewerPeer, isMediaEngineSession, previewStream, publishOffer, selectedSession, sendSignal, startMediaEngineBroadcast]);
 
   useEffect(() => {
     if (selectedSession?.status === 'LIVE') {
@@ -1317,6 +1383,30 @@ function formatDateTime(value: string | undefined) {
     return value;
   }
   return date.toLocaleString('vi-VN', { hour12: false });
+}
+
+function waitForIceGatheringComplete(peer: RTCPeerConnection): Promise<void> {
+  if (peer.iceGatheringState === 'complete') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeout = window.setTimeout(() => {
+      peer.removeEventListener('icegatheringstatechange', handleStateChange);
+      resolve();
+    }, 5000);
+
+    function handleStateChange() {
+      if (peer.iceGatheringState !== 'complete') {
+        return;
+      }
+      window.clearTimeout(timeout);
+      peer.removeEventListener('icegatheringstatechange', handleStateChange);
+      resolve();
+    }
+
+    peer.addEventListener('icegatheringstatechange', handleStateChange);
+  });
 }
 
 function formatMoney(value: number, currency: string) {

@@ -159,6 +159,7 @@ func (r *LiveRepository) UpdateSession(ctx context.Context, session domain.LiveS
 		"description":        doc.Description,
 		"thumbnailUrl":       doc.ThumbnailURL,
 		"playbackUrl":        doc.PlaybackURL,
+		"media":              doc.Media,
 		"sourceType":         doc.SourceType,
 		"status":             doc.Status,
 		"defaultLanguage":    doc.DefaultLanguage,
@@ -280,6 +281,7 @@ type liveSessionDoc struct {
 	Description        string                     `bson:"description,omitempty"`
 	ThumbnailURL       string                     `bson:"thumbnailUrl,omitempty"`
 	PlaybackURL        string                     `bson:"playbackUrl"`
+	Media              *domain.LiveMedia          `bson:"media,omitempty"`
 	SourceType         domain.LiveSourceType      `bson:"sourceType"`
 	Status             domain.LiveSessionStatus   `bson:"status"`
 	DefaultLanguage    string                     `bson:"defaultLanguage"`
@@ -330,6 +332,7 @@ func sessionToDoc(s domain.LiveSession) liveSessionDoc {
 		Description:        s.Description,
 		ThumbnailURL:       s.ThumbnailURL,
 		PlaybackURL:        s.PlaybackURL,
+		Media:              s.Media,
 		SourceType:         s.SourceType,
 		Status:             s.Status,
 		DefaultLanguage:    s.DefaultLanguage,
@@ -352,6 +355,7 @@ func mapSession(d liveSessionDoc) domain.LiveSession {
 		Description:        d.Description,
 		ThumbnailURL:       d.ThumbnailURL,
 		PlaybackURL:        d.PlaybackURL,
+		Media:              d.Media,
 		SourceType:         d.SourceType,
 		Status:             d.Status,
 		DefaultLanguage:    d.DefaultLanguage,

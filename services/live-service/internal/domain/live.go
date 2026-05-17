@@ -8,6 +8,7 @@ const (
 	LiveSessionStatusDraft     LiveSessionStatus = "DRAFT"
 	LiveSessionStatusScheduled LiveSessionStatus = "SCHEDULED"
 	LiveSessionStatusLive      LiveSessionStatus = "LIVE"
+	LiveSessionStatusPaused    LiveSessionStatus = "PAUSED"
 	LiveSessionStatusEnded     LiveSessionStatus = "ENDED"
 	LiveSessionStatusCancelled LiveSessionStatus = "CANCELLED"
 )

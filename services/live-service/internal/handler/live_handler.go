@@ -101,6 +101,10 @@ func (h *LiveHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	h.runTransition(w, r, h.liveService.StartSession)
 }
 
+func (h *LiveHandler) PauseSession(w http.ResponseWriter, r *http.Request) {
+	h.runTransition(w, r, h.liveService.PauseSession)
+}
+
 func (h *LiveHandler) EndSession(w http.ResponseWriter, r *http.Request) {
 	h.runTransition(w, r, h.liveService.EndSession)
 }

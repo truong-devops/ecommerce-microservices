@@ -44,6 +44,22 @@ func TestLiveSessionStateTransitions(t *testing.T) {
 		t.Fatalf("expected idempotent LIVE, got %s", startedAgain.Status)
 	}
 
+	paused, err := svc.PauseSession(ctx, seller, created.SessionID)
+	if err != nil {
+		t.Fatalf("PauseSession returned error: %v", err)
+	}
+	if paused.Status != domain.LiveSessionStatusPaused {
+		t.Fatalf("expected PAUSED, got %s", paused.Status)
+	}
+
+	resumed, err := svc.StartSession(ctx, seller, created.SessionID)
+	if err != nil {
+		t.Fatalf("resume StartSession returned error: %v", err)
+	}
+	if resumed.Status != domain.LiveSessionStatusLive || resumed.StartedAt == nil {
+		t.Fatalf("expected resumed LIVE with startedAt, got status=%s startedAt=%v", resumed.Status, resumed.StartedAt)
+	}
+
 	ended, err := svc.EndSession(ctx, seller, created.SessionID)
 	if err != nil {
 		t.Fatalf("EndSession returned error: %v", err)

@@ -488,15 +488,7 @@ export interface SendSellerChatMessageInput {
   clientMessageId?: string;
 }
 
-export type SellerVideoStatus =
-  | 'draft'
-  | 'processing'
-  | 'processing_failed'
-  | 'review_pending'
-  | 'published'
-  | 'hidden'
-  | 'rejected'
-  | 'archived';
+export type SellerVideoStatus = 'draft' | 'processing' | 'processing_failed' | 'review_pending' | 'published' | 'hidden' | 'rejected' | 'archived';
 
 export interface SellerVideoProductInput {
   productId: string;
@@ -580,4 +572,77 @@ export interface ConfirmSellerVideoMediaInput {
   mimeType: string;
   sizeBytes?: number;
   durationSec?: number;
+}
+
+export type LiveSessionStatus = 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'ENDED' | 'CANCELLED';
+
+export interface LiveMetricsSnapshot {
+  viewerPeak: number;
+  messageCount: number;
+  productClickCount: number;
+  addToCartCount: number;
+}
+
+export interface LiveSession {
+  id: string;
+  sessionId: string;
+  sellerId: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  playbackUrl: string;
+  sourceType: 'EXTERNAL_URL';
+  status: LiveSessionStatus;
+  defaultLanguage: string;
+  supportedLanguages: string[];
+  metricsSnapshot: LiveMetricsSnapshot;
+  scheduledAt?: string;
+  startedAt?: string;
+  endedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LiveProduct {
+  id: string;
+  sessionId: string;
+  productId: string;
+  sellerId: string;
+  nameSnapshot: string;
+  priceSnapshot: number;
+  currencySnapshot: string;
+  imageSnapshot?: string;
+  statusSnapshot: string;
+  pinStatus: 'PINNED' | 'UNPINNED';
+  sortOrder: number;
+  pinnedAt: string;
+  unpinnedAt?: string;
+  pinnedBy: string;
+}
+
+export interface LiveSessionDetail {
+  session: LiveSession;
+  pinnedProducts: LiveProduct[];
+}
+
+export interface CreateLiveSessionInput {
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  playbackUrl: string;
+  defaultLanguage?: string;
+  supportedLanguages?: string[];
+  scheduledAt?: string;
+}
+
+export interface UpdateLiveSessionInput {
+  title?: string;
+  description?: string;
+  thumbnailUrl?: string;
+  playbackUrl?: string;
+  scheduledAt?: string;
+}
+
+export interface PinLiveProductInput {
+  productId: string;
 }

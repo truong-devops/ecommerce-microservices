@@ -41,6 +41,7 @@ func New(
 	r.With(optionalJWT).Get(liveBase+"/sessions/{sessionId}", liveHandler.GetSession)
 	r.Get(liveBase+"/sessions/{sessionId}/products", liveHandler.ListPinnedProducts)
 	r.With(optionalJWT).Post(liveBase+"/sessions/{sessionId}/events/product-clicked", liveHandler.TrackProductClicked)
+	r.With(optionalJWT).Get(liveBase+"/ws", wsHandler.WebSocket)
 
 	r.Group(func(private chi.Router) {
 		private.Use(requireJWT)
@@ -48,11 +49,11 @@ func New(
 		private.With(sellerRoles).Get(liveBase+"/sessions/my", liveHandler.ListMySessions)
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}", liveHandler.UpdateSession)
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/start", liveHandler.StartSession)
+		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/pause", liveHandler.PauseSession)
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/end", liveHandler.EndSession)
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/cancel", liveHandler.CancelSession)
 		private.With(sellerRoles).Post(liveBase+"/sessions/{sessionId}/products", liveHandler.PinProduct)
 		private.With(sellerRoles).Delete(liveBase+"/sessions/{sessionId}/products/{productId}", liveHandler.UnpinProduct)
-		private.With(auth.RequireRoles(domain.RoleBuyer, domain.RoleCustomer, domain.RoleSeller, domain.RoleAdmin, domain.RoleSuperAdmin)).Get(liveBase+"/ws", wsHandler.WebSocket)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {

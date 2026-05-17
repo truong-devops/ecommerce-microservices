@@ -540,6 +540,7 @@ services:
       AUDIT_EVENTS_TOPIC: audit.events
       PRODUCT_SERVICE_BASE_URL: http://product-service:8080
       PRODUCT_SERVICE_TIMEOUT: 5s
+      WS_ALLOWED_ORIGINS: http://localhost:6789,http://localhost:8888,http://localhost:3000,http://localhost:3001
       SEND_MESSAGE_RATE_RPS: 5
       SEND_MESSAGE_RATE_BURST: 20
     ports:

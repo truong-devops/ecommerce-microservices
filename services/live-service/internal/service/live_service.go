@@ -206,18 +206,46 @@ func (s *LiveService) StartSession(ctx context.Context, user domain.UserContext,
 	switch session.Status {
 	case domain.LiveSessionStatusLive:
 		return *session, nil
-	case domain.LiveSessionStatusDraft, domain.LiveSessionStatusScheduled:
+	case domain.LiveSessionStatusDraft, domain.LiveSessionStatusScheduled, domain.LiveSessionStatusPaused:
 	default:
 		return domain.LiveSession{}, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Session cannot be started", nil)
 	}
 	now := time.Now().UTC()
 	session.Status = domain.LiveSessionStatusLive
-	session.StartedAt = &now
+	if session.StartedAt == nil {
+		session.StartedAt = &now
+	}
 	session.UpdatedAt = now
 	if err := s.repo.UpdateSession(ctx, *session); err != nil {
 		return domain.LiveSession{}, err
 	}
 	_ = s.publish(ctx, domain.EventSessionStarted, sessionEventPayload(*session, user))
+	_ = s.broadcast(ctx, session.SessionID, map[string]any{"type": "live:session:status", "status": session.Status})
+	return *session, nil
+}
+
+func (s *LiveService) PauseSession(ctx context.Context, user domain.UserContext, sessionID string) (domain.LiveSession, error) {
+	session, err := s.requireSession(ctx, sessionID)
+	if err != nil {
+		return domain.LiveSession{}, err
+	}
+	if !canMutateSession(user, *session) {
+		return domain.LiveSession{}, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Insufficient role", nil)
+	}
+	switch session.Status {
+	case domain.LiveSessionStatusPaused:
+		return *session, nil
+	case domain.LiveSessionStatusLive:
+	default:
+		return domain.LiveSession{}, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Session cannot be paused", nil)
+	}
+	now := time.Now().UTC()
+	session.Status = domain.LiveSessionStatusPaused
+	session.UpdatedAt = now
+	if err := s.repo.UpdateSession(ctx, *session); err != nil {
+		return domain.LiveSession{}, err
+	}
+	_ = s.publish(ctx, domain.EventSessionPaused, sessionEventPayload(*session, user))
 	_ = s.broadcast(ctx, session.SessionID, map[string]any{"type": "live:session:status", "status": session.Status})
 	return *session, nil
 }
@@ -233,7 +261,7 @@ func (s *LiveService) EndSession(ctx context.Context, user domain.UserContext, s
 	switch session.Status {
 	case domain.LiveSessionStatusEnded:
 		return *session, nil
-	case domain.LiveSessionStatusLive:
+	case domain.LiveSessionStatusLive, domain.LiveSessionStatusPaused:
 	default:
 		return domain.LiveSession{}, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Session cannot be ended", nil)
 	}
@@ -279,8 +307,8 @@ func (s *LiveService) PinProduct(ctx context.Context, user domain.UserContext, s
 	if !canMutateSession(user, *session) {
 		return domain.LiveProduct{}, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Insufficient role", nil)
 	}
-	if session.Status != domain.LiveSessionStatusLive && session.Status != domain.LiveSessionStatusScheduled {
-		return domain.LiveProduct{}, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Session must be live or scheduled", nil)
+	if session.Status != domain.LiveSessionStatusLive && session.Status != domain.LiveSessionStatusScheduled && session.Status != domain.LiveSessionStatusPaused {
+		return domain.LiveProduct{}, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Session must be live, paused, or scheduled", nil)
 	}
 	productID := strings.TrimSpace(req.ProductID)
 	if productID == "" {
@@ -499,7 +527,7 @@ func canMutateSession(user domain.UserContext, session domain.LiveSession) bool 
 }
 
 func canViewSession(user *domain.UserContext, session domain.LiveSession) bool {
-	if session.Status == domain.LiveSessionStatusLive || session.Status == domain.LiveSessionStatusEnded {
+	if session.Status == domain.LiveSessionStatusLive || session.Status == domain.LiveSessionStatusPaused || session.Status == domain.LiveSessionStatusEnded {
 		return true
 	}
 	if user == nil {

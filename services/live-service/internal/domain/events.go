@@ -3,6 +3,7 @@ package domain
 const (
 	EventSessionCreated     = "live.session.created"
 	EventSessionStarted     = "live.session.started"
+	EventSessionPaused      = "live.session.paused"
 	EventSessionEnded       = "live.session.ended"
 	EventViewerJoined       = "live.viewer.joined"
 	EventViewerLeft         = "live.viewer.left"

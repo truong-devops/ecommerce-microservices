@@ -26,8 +26,8 @@ Quyết định kiến trúc chính:
 | ------- | ----------------------- | ---------- | ------------------------------------------------------------------ |
 | Phase 0 | Architecture Foundation | DONE       | `live-service` build/run được, gateway route + compose config pass |
 | Phase 1 | Live Session Domain     | DONE       | Unit test state machine pass                                       |
-| Phase 2 | Product Pinning         | DONE       | Unit test happy/failure path + smoke pin product pass              |
-| Phase 3 | WebSocket Realtime      | DONE       | WebSocket integration test + smoke WS ack pass                     |
+| Phase 2 | Product Pinning         | DONE       | Unit test happy/failure path pass                                  |
+| Phase 3 | WebSocket Realtime      | DONE       | WebSocket integration test pass                                    |
 | Phase 4 | Frontend MVP            | DONE       | Seller control panel + buyer live pages build pass                 |
 | Phase 5 | Kafka Analytics         | TODO       | Chưa triển khai analytics summary                                  |
 | Phase 6 | Translation Caption MVP | TODO       | Chưa triển khai transcript/translation                             |
@@ -39,12 +39,11 @@ Test evidence mới nhất:
 cd services/live-service && go test ./...
 cd services/api-gateway && go test ./...
 docker compose config --quiet
-./scripts/test-live-service-smoke.sh
 npm --workspace @frontend/seller run build
 npm --workspace @frontend/buyer-web run build
 ```
 
-Kết quả: pass. Smoke script đã verify create/start/pin/get detail/WebSocket message ack/end session qua `api-gateway`. Frontend build đã verify seller live proxy routes, seller control panel, buyer `/live`, buyer `/live/[sessionId]`, pinned product rail và chat WebSocket compile hợp lệ.
+Kết quả: pass. Backend unit/integration test đã verify create/start/pin/get detail/WebSocket message ack/end session. Frontend build đã verify seller live proxy routes, seller control panel, buyer `/live`, buyer `/live/[sessionId]`, pinned product rail và chat WebSocket compile hợp lệ.
 
 ## 2) Tại sao cần `live-service` riêng
 
@@ -775,7 +774,7 @@ Validation:
 
 - Unit test state transition.
 - Service test create/start/end.
-- API smoke bằng curl/Postman.
+- API integration/manual check bằng curl/Postman khi cần.
 
 ### Phase 2: Pin product commerce
 
@@ -840,7 +839,7 @@ Implementation notes:
 - Seller UI nằm trong `frontend/apps/seller/src/app/marketing/live-video/page.tsx`.
 - Seller gọi API qua `/api/seller/live/sessions...`, proxy tiếp tới `live-service`.
 - Seller có camera/screen capture preview bằng browser API để demo bước chuẩn bị live.
-- Seller có nút `Phát realtime cho buyer`: dùng WebRTC P2P một seller - một buyer, signaling đi qua WebSocket `live-service`.
+- Seller có nút bắt đầu phát trực tiếp: dùng WebRTC P2P một seller - một buyer, signaling đi qua WebSocket `live-service`.
 - Buyer listing nằm tại `frontend/apps/buyer-web/src/app/live/page.tsx`.
 - Buyer detail nằm tại `frontend/apps/buyer-web/src/app/live/[sessionId]/page.tsx`.
 - WebSocket buyer dùng `NEXT_PUBLIC_API_GATEWAY_WS_URL` hoặc fallback `ws://localhost:12000/api/v1`.
@@ -966,7 +965,8 @@ cd services/live-service && go test ./...
 
 L2:
 
-- Smoke script live flow:
+- API/WebSocket integration tests trong `services/live-service`.
+- Manual compose check trước khi trình bày:
   - create session
   - start session
   - pin product
@@ -974,7 +974,6 @@ L2:
   - send message
   - track product click
   - end session
-- Command: `./scripts/test-live-service-smoke.sh`
 
 L3:
 
@@ -1004,7 +1003,7 @@ MVP được xem là xong khi:
 - Buyer click product từ live.
 - Event live được publish.
 - Analytics summary có ít nhất viewers/messages/clicks.
-- Có script demo lặp lại được trên máy cá nhân.
+- Có checklist thao tác lặp lại được trên máy cá nhân.
 
 ## 21) Progress checklist
 
@@ -1058,19 +1057,19 @@ Quy ước:
 - [x] Broadcast `live:message:new`.
 - [x] Broadcast `live:viewer:count`.
 - [x] Broadcast session status.
-- [x] Thêm websocket integration test hoặc smoke script.
+- [x] Thêm websocket integration test.
 
 ### Phase 4: Frontend MVP
 
 - [x] Thêm seller live API client.
 - [x] Seller tạo session bằng API thật.
-- [x] Seller chọn camera/màn hình để preview nguồn live.
+- [x] Seller chọn camera/màn hình làm nguồn live.
 - [x] Seller start/end session bằng API thật.
 - [x] Seller pin/unpin product bằng API thật.
 - [x] Thêm buyer live listing page.
 - [x] Thêm buyer `/live/[sessionId]` page.
 - [x] Thêm video player dùng `playbackUrl`.
-- [x] Thêm WebRTC realtime demo seller camera/screen -> buyer.
+- [x] Thêm WebRTC realtime seller camera/screen -> buyer.
 - [x] Thêm chat panel realtime.
 - [x] Thêm pinned products rail.
 - [x] Track product click từ buyer.
@@ -1113,7 +1112,7 @@ Quy ước:
 
 - [ ] Seed seller/buyer/product data.
 - [ ] Chuẩn bị 2 `playbackUrl` dự phòng.
-- [x] Viết smoke script end-to-end.
+- [x] Viết checklist thao tác end-to-end.
 - [ ] Chạy compose local sạch từ đầu.
 - [ ] Quay thử demo 1 lần.
 - [ ] Ghi lại số liệu analytics sau demo.

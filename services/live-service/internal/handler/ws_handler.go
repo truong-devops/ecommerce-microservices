@@ -14,6 +14,7 @@ import (
 	"live-service/internal/service"
 	livews "live-service/internal/websocket"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,10 +38,12 @@ func NewWSHandler(liveService *service.LiveService, redis *service.RedisService,
 }
 
 func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
-	user, ok := auth.UserFromContext(r.Context())
-	if !ok {
-		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
-		return
+	user, authenticated := auth.UserFromContext(r.Context())
+	if !authenticated {
+		user = domain.UserContext{
+			UserID: "guest-" + uuid.NewString(),
+			Role:   domain.RoleBuyer,
+		}
 	}
 
 	sessionID := strings.TrimSpace(r.URL.Query().Get("sessionId"))
@@ -161,6 +164,10 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 
 		switch strings.ToLower(strings.TrimSpace(incoming.Type)) {
 		case "live:message:create":
+			if !authenticated {
+				_ = writeJSON(map[string]any{"type": "error", "code": domain.ErrorCodeUnauthorized, "message": "Login is required to chat"})
+				continue
+			}
 			result, err := h.liveService.SendMessage(ctx, user, sessionID, service.SendMessageRequest{
 				Text:            incoming.Text,
 				ClientMessageID: strings.TrimSpace(incoming.ClientMessageID),

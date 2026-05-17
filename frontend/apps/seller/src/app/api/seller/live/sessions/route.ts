@@ -3,7 +3,7 @@ import { fail, ok } from '@/lib/server/seller-api-response';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 import { authorizeLiveSeller, normalizePositiveInt, parseObjectBody } from '../_utils';
 
-const SESSION_STATUSES = new Set(['DRAFT', 'SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED']);
+const SESSION_STATUSES = new Set(['DRAFT', 'SCHEDULED', 'LIVE', 'PAUSED', 'ENDED', 'CANCELLED']);
 
 export async function GET(request: Request) {
   const authorized = authorizeLiveSeller(request);

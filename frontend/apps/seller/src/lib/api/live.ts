@@ -66,6 +66,13 @@ export function startLiveSession(accessToken: string, sessionId: string): Promis
   );
 }
 
+export function pauseLiveSession(accessToken: string, sessionId: string): Promise<LiveSession> {
+  return requestSellerApi<LiveSession>(
+    `/api/seller/live/sessions/${encodeURIComponent(sessionId)}/pause`,
+    withAuth(accessToken, { method: 'PATCH' })
+  );
+}
+
 export function endLiveSession(accessToken: string, sessionId: string): Promise<LiveSession> {
   return requestSellerApi<LiveSession>(`/api/seller/live/sessions/${encodeURIComponent(sessionId)}/end`, withAuth(accessToken, { method: 'PATCH' }));
 }

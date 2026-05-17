@@ -14,6 +14,7 @@ import {
   endLiveSession,
   listPinnedLiveProducts,
   listSellerLiveSessions,
+  pauseLiveSession,
   pinLiveProduct,
   startLiveSession,
   unpinLiveProduct
@@ -159,8 +160,8 @@ export default function LiveVideoPage() {
   const [liveError, setLiveError] = useState('');
   const [pinProductId, setPinProductId] = useState('');
   const [liveForm, setLiveForm] = useState({
-    title: 'Demo livestream ban hang',
-    description: 'Buoi live demo tren may local',
+    title: '',
+    description: '',
     playbackUrl: DEFAULT_PLAYBACK_URL,
     thumbnailUrl: ''
   });
@@ -194,7 +195,7 @@ export default function LiveVideoPage() {
         return sessions[0]?.sessionId ?? '';
       });
     } catch (error) {
-      setLiveError(error instanceof SellerApiClientError ? error.message : 'Khong the tai danh sach livestream.');
+      setLiveError(error instanceof SellerApiClientError ? error.message : 'Không thể tải danh sách livestream.');
     } finally {
       setLiveLoading(false);
     }
@@ -239,19 +240,25 @@ export default function LiveVideoPage() {
     setLiveError('');
     setLiveNotice('');
     try {
+      if (!liveForm.title.trim()) {
+        throw new Error('Vui lòng nhập tiêu đề livestream.');
+      }
+      if (!liveForm.playbackUrl.trim()) {
+        throw new Error('Vui lòng nhập URL phát MP4/HLS để người xem có nguồn dự phòng.');
+      }
       const created = await createLiveSession(accessToken, {
-        title: liveForm.title,
-        description: liveForm.description,
-        playbackUrl: liveForm.playbackUrl,
-        thumbnailUrl: liveForm.thumbnailUrl || undefined,
+        title: liveForm.title.trim(),
+        description: liveForm.description.trim(),
+        playbackUrl: liveForm.playbackUrl.trim(),
+        thumbnailUrl: liveForm.thumbnailUrl.trim() || undefined,
         defaultLanguage: 'en',
         supportedLanguages: ['en', 'vi']
       });
       setLiveSessions((current) => [created, ...current.filter((session) => session.sessionId !== created.sessionId)]);
       setSelectedLiveSessionId(created.sessionId);
-      setLiveNotice('Da tao livestream. Buoc tiep theo: bam Start de buyer co the vao xem.');
+      setLiveNotice('Đã tạo phiên livestream. Khi sẵn sàng, hãy bắt đầu LIVE để người xem có thể tham gia.');
     } catch (error) {
-      setLiveError(error instanceof SellerApiClientError ? error.message : 'Tao livestream that bai.');
+      setLiveError(error instanceof SellerApiClientError || error instanceof Error ? error.message : 'Tạo livestream thất bại.');
     } finally {
       setLiveActionLoading(false);
     }
@@ -268,9 +275,32 @@ export default function LiveVideoPage() {
     try {
       const updated = await startLiveSession(accessToken, selectedLiveSession.sessionId);
       setLiveSessions((current) => current.map((session) => (session.sessionId === updated.sessionId ? updated : session)));
-      setLiveNotice('Livestream dang LIVE. Mo link buyer de test xem live va chat.');
+      setLiveNotice(
+        selectedLiveSession.status === 'PAUSED'
+          ? 'Đã tiếp tục livestream. Người mua có thể vào lại đúng phiên này.'
+          : 'Livestream đang LIVE. Mở trang người mua để theo dõi phòng live và trò chuyện.'
+      );
     } catch (error) {
-      setLiveError(error instanceof SellerApiClientError ? error.message : 'Start livestream that bai.');
+      setLiveError(error instanceof SellerApiClientError ? error.message : 'Bắt đầu livestream thất bại.');
+    } finally {
+      setLiveActionLoading(false);
+    }
+  }, [accessToken, selectedLiveSession]);
+
+  const handlePauseLiveSession = useCallback(async () => {
+    if (!accessToken || !selectedLiveSession) {
+      return;
+    }
+
+    setLiveActionLoading(true);
+    setLiveError('');
+    setLiveNotice('');
+    try {
+      const updated = await pauseLiveSession(accessToken, selectedLiveSession.sessionId);
+      setLiveSessions((current) => current.map((session) => (session.sessionId === updated.sessionId ? updated : session)));
+      setLiveNotice('Đã tạm ngừng livestream. Phiên này sẽ không còn hiện trong danh sách live của người mua.');
+    } catch (error) {
+      setLiveError(error instanceof SellerApiClientError ? error.message : 'Tạm ngừng livestream thất bại.');
     } finally {
       setLiveActionLoading(false);
     }
@@ -287,9 +317,9 @@ export default function LiveVideoPage() {
     try {
       const updated = await endLiveSession(accessToken, selectedLiveSession.sessionId);
       setLiveSessions((current) => current.map((session) => (session.sessionId === updated.sessionId ? updated : session)));
-      setLiveNotice('Da ket thuc livestream.');
+      setLiveNotice('Đã kết thúc livestream.');
     } catch (error) {
-      setLiveError(error instanceof SellerApiClientError ? error.message : 'End livestream that bai.');
+      setLiveError(error instanceof SellerApiClientError ? error.message : 'Kết thúc livestream thất bại.');
     } finally {
       setLiveActionLoading(false);
     }
@@ -307,9 +337,9 @@ export default function LiveVideoPage() {
       const product = await pinLiveProduct(accessToken, selectedLiveSession.sessionId, { productId: pinProductId.trim() });
       setPinnedProducts((current) => [product, ...current.filter((item) => item.productId !== product.productId)]);
       setPinProductId('');
-      setLiveNotice('Da pin san pham vao livestream.');
+      setLiveNotice('Đã ghim sản phẩm vào livestream.');
     } catch (error) {
-      setLiveError(error instanceof SellerApiClientError ? error.message : 'Pin san pham that bai.');
+      setLiveError(error instanceof SellerApiClientError ? error.message : 'Ghim sản phẩm thất bại.');
     } finally {
       setLiveActionLoading(false);
     }
@@ -327,9 +357,9 @@ export default function LiveVideoPage() {
       try {
         await unpinLiveProduct(accessToken, selectedLiveSession.sessionId, productId);
         setPinnedProducts((current) => current.filter((product) => product.productId !== productId));
-        setLiveNotice('Da bo ghim san pham.');
+        setLiveNotice('Đã bỏ ghim sản phẩm.');
       } catch (error) {
-        setLiveError(error instanceof SellerApiClientError ? error.message : 'Bo ghim san pham that bai.');
+        setLiveError(error instanceof SellerApiClientError ? error.message : 'Bỏ ghim sản phẩm thất bại.');
       } finally {
         setLiveActionLoading(false);
       }
@@ -444,7 +474,7 @@ export default function LiveVideoPage() {
             </div>
 
             {isLiveTab ? (
-              <LiveMvpControlPanel
+              <LiveOperationsPanel
                 accessToken={accessToken}
                 buyerWebUrl={BUYER_WEB_URL}
                 form={liveForm}
@@ -462,6 +492,7 @@ export default function LiveVideoPage() {
                 onCreate={handleCreateLiveSession}
                 onRefresh={loadLiveSessions}
                 onStart={handleStartLiveSession}
+                onPause={handlePauseLiveSession}
                 onEnd={handleEndLiveSession}
                 onPinProductIdChange={setPinProductId}
                 onPinProduct={handlePinProduct}
@@ -614,17 +645,17 @@ function showOrderTypeFilter(mediaTab: 'Live' | 'Video', overviewTab: string) {
   return true;
 }
 
-interface LiveMvpFormState {
+interface LiveSessionFormState {
   title: string;
   description: string;
   playbackUrl: string;
   thumbnailUrl: string;
 }
 
-interface LiveMvpControlPanelProps {
+interface LiveOperationsPanelProps {
   accessToken: string | null;
   buyerWebUrl: string;
-  form: LiveMvpFormState;
+  form: LiveSessionFormState;
   sessions: LiveSession[];
   selectedSession: LiveSession | null;
   selectedSessionId: string;
@@ -634,18 +665,25 @@ interface LiveMvpControlPanelProps {
   actionLoading: boolean;
   notice: string;
   error: string;
-  onFormChange: Dispatch<SetStateAction<LiveMvpFormState>>;
+  onFormChange: Dispatch<SetStateAction<LiveSessionFormState>>;
   onSessionChange: (sessionId: string) => void;
   onCreate: () => void;
   onRefresh: () => void;
   onStart: () => void;
+  onPause: () => void;
   onEnd: () => void;
   onPinProductIdChange: (productId: string) => void;
   onPinProduct: () => void;
   onUnpinProduct: (productId: string) => void;
 }
 
-function LiveMvpControlPanel({
+interface SellerViewerPeer {
+  peer: RTCPeerConnection;
+  negotiationId: string;
+  offerResetTimer: ReturnType<typeof setTimeout> | null;
+}
+
+function LiveOperationsPanel({
   accessToken,
   buyerWebUrl,
   form,
@@ -663,19 +701,17 @@ function LiveMvpControlPanel({
   onCreate,
   onRefresh,
   onStart,
+  onPause,
   onEnd,
   onPinProductIdChange,
   onPinProduct,
   onUnpinProduct
-}: LiveMvpControlPanelProps) {
+}: LiveOperationsPanelProps) {
   const previewRef = useRef<HTMLVideoElement | null>(null);
-  const peerRef = useRef<RTCPeerConnection | null>(null);
+  const viewerPeersRef = useRef<Map<string, SellerViewerPeer>>(new Map());
   const signalSocketRef = useRef<WebSocket | null>(null);
   const clientIdRef = useRef(createClientMessageId());
-  const negotiationIdRef = useRef('');
-  const activeViewerClientIdRef = useRef('');
-  const offerInFlightRef = useRef(false);
-  const offerResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manualRealtimeStopRef = useRef(false);
   const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
   const [captureMode, setCaptureMode] = useState<'camera' | 'screen' | null>(null);
   const [captureError, setCaptureError] = useState('');
@@ -689,18 +725,37 @@ function LiveMvpControlPanel({
     }
   }, [previewStream]);
 
+  const syncRealtimeStatus = useCallback(() => {
+    const peers = Array.from(viewerPeersRef.current.values());
+    setRealtimeStatus(peers.some((entry) => entry.peer.connectionState === 'connected') ? 'connected' : 'broadcasting');
+  }, []);
+
+  const closeViewerPeer = useCallback(
+    (viewerClientId: string) => {
+      const entry = viewerPeersRef.current.get(viewerClientId);
+      if (!entry) {
+        return;
+      }
+      if (entry.offerResetTimer) {
+        clearTimeout(entry.offerResetTimer);
+      }
+      entry.peer.close();
+      viewerPeersRef.current.delete(viewerClientId);
+      syncRealtimeStatus();
+    },
+    [syncRealtimeStatus]
+  );
+
   const closeRealtimeBroadcast = useCallback((nextStatus: 'idle' | 'connecting' = 'idle') => {
-    peerRef.current?.close();
-    peerRef.current = null;
+    viewerPeersRef.current.forEach((entry) => {
+      if (entry.offerResetTimer) {
+        clearTimeout(entry.offerResetTimer);
+      }
+      entry.peer.close();
+    });
+    viewerPeersRef.current.clear();
     signalSocketRef.current?.close();
     signalSocketRef.current = null;
-    negotiationIdRef.current = '';
-    activeViewerClientIdRef.current = '';
-    offerInFlightRef.current = false;
-    if (offerResetTimerRef.current) {
-      clearTimeout(offerResetTimerRef.current);
-      offerResetTimerRef.current = null;
-    }
     setRealtimeStatus(nextStatus);
   }, []);
 
@@ -729,40 +784,41 @@ function LiveMvpControlPanel({
     };
   }, [closeRealtimeBroadcast, previewStream]);
 
-  const createSellerPeerConnection = useCallback(() => {
-    peerRef.current?.close();
-    offerInFlightRef.current = false;
-    const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  const createSellerPeerConnection = useCallback(
+    (viewerClientId: string, negotiationId: string) => {
+      closeViewerPeer(viewerClientId);
+      const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
 
-    peer.onicecandidate = (event) => {
-      if (event.candidate) {
-        sendSignal({
-          type: 'live:webrtc:ice-candidate',
-          targetClientId: activeViewerClientIdRef.current,
-          negotiationId: negotiationIdRef.current,
-          candidate: event.candidate.toJSON()
-        });
-      }
-    };
+      peer.onicecandidate = (event) => {
+        if (event.candidate) {
+          sendSignal({
+            type: 'live:webrtc:ice-candidate',
+            targetClientId: viewerClientId,
+            negotiationId,
+            candidate: event.candidate.toJSON()
+          });
+        }
+      };
 
-    peer.onconnectionstatechange = () => {
-      if (peer.connectionState === 'connected') {
-        setRealtimeStatus('connected');
-        setRealtimeError('');
-      }
-      if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
-        setRealtimeStatus('error');
-        setRealtimeError('WebRTC bị ngắt. Hãy bấm phát lại realtime.');
-      }
-    };
+      peer.onconnectionstatechange = () => {
+        if (peer.connectionState === 'connected') {
+          setRealtimeStatus('connected');
+          setRealtimeError('');
+        }
+        if (peer.connectionState === 'disconnected' || peer.connectionState === 'failed') {
+          closeViewerPeer(viewerClientId);
+          setRealtimeError('');
+        }
+      };
 
-    previewStream?.getTracks().forEach((track) => {
-      peer.addTrack(track, previewStream);
-    });
+      previewStream?.getTracks().forEach((track) => {
+        peer.addTrack(track, previewStream);
+      });
 
-    peerRef.current = peer;
-    return peer;
-  }, [previewStream, sendSignal]);
+      return peer;
+    },
+    [closeViewerPeer, previewStream, sendSignal]
+  );
 
   const publishOffer = useCallback(
     async (targetClientId: string) => {
@@ -775,44 +831,37 @@ function LiveMvpControlPanel({
         return;
       }
 
-      activeViewerClientIdRef.current = targetClientId;
-      const peer = createSellerPeerConnection();
-      offerInFlightRef.current = true;
+      const negotiationId = createClientMessageId();
+      const peer = createSellerPeerConnection(targetClientId, negotiationId);
+      viewerPeersRef.current.set(targetClientId, { peer, negotiationId, offerResetTimer: null });
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
-      const negotiationId = createClientMessageId();
-      negotiationIdRef.current = negotiationId;
       sendSignal({
         type: 'live:webrtc:offer',
         targetClientId,
         negotiationId,
         sdp: { type: offer.type, sdp: offer.sdp }
       });
-      if (offerResetTimerRef.current) {
-        clearTimeout(offerResetTimerRef.current);
-      }
-      offerResetTimerRef.current = setTimeout(() => {
-        offerInFlightRef.current = false;
-        offerResetTimerRef.current = null;
-        if (peerRef.current?.signalingState === 'have-local-offer') {
-          peerRef.current.close();
-          peerRef.current = null;
+      const offerResetTimer = setTimeout(() => {
+        const current = viewerPeersRef.current.get(targetClientId);
+        if (current?.negotiationId === negotiationId && current.peer.signalingState === 'have-local-offer') {
+          closeViewerPeer(targetClientId);
         }
-        setRealtimeStatus('broadcasting');
-        setRealtimeError('Chưa nhận được answer từ buyer. Hãy bấm “Kết nối lại WebRTC” ở buyer hoặc phát lại realtime.');
-      }, 5000);
+        setRealtimeError('');
+      }, 12000);
+      viewerPeersRef.current.set(targetClientId, { peer, negotiationId, offerResetTimer });
       setRealtimeStatus('broadcasting');
     },
-    [createSellerPeerConnection, previewStream, sendSignal]
+    [closeViewerPeer, createSellerPeerConnection, previewStream, sendSignal]
   );
 
   const startRealtimeBroadcast = useCallback(async () => {
     if (!accessToken || !selectedSession) {
-      setRealtimeError('Bạn cần đăng nhập seller và chọn live session.');
+      setRealtimeError('Bạn cần đăng nhập người bán và chọn phiên livestream.');
       return;
     }
     if (selectedSession.status !== 'LIVE') {
-      setRealtimeError('Hãy bấm Start session trước khi phát realtime.');
+      setRealtimeError('Hãy bắt đầu LIVE trước khi phát trực tiếp.');
       return;
     }
     if (!previewStream) {
@@ -821,6 +870,7 @@ function LiveMvpControlPanel({
     }
 
     setRealtimeError('');
+    manualRealtimeStopRef.current = false;
     closeRealtimeBroadcast('connecting');
 
     const socket = new WebSocket(buildLiveWebSocketUrl(selectedSession.sessionId), ['live.v1', `access-token.${accessToken}`]);
@@ -839,64 +889,62 @@ function LiveMvpControlPanel({
       }
 
       if (payload.type === 'live:webrtc:viewer-ready') {
-        if (typeof payload.targetClientId === 'string' && payload.targetClientId !== clientIdRef.current) {
+        const targetClientId = typeof payload.targetClientId === 'string' ? payload.targetClientId.trim() : '';
+        if (targetClientId && targetClientId !== clientIdRef.current) {
           return;
         }
         const viewerClientId = typeof payload.fromClientId === 'string' ? payload.fromClientId : '';
         void publishOffer(viewerClientId).catch(() => {
           setRealtimeStatus('error');
-          setRealtimeError('Không thể phát offer cho buyer.');
+          setRealtimeError('Không thể gửi tín hiệu phát đến người xem.');
         });
         return;
       }
 
       if (payload.type === 'live:webrtc:answer' && payload.sdp) {
-        if (typeof payload.targetClientId === 'string' && payload.targetClientId !== clientIdRef.current) {
+        const targetClientId = typeof payload.targetClientId === 'string' ? payload.targetClientId.trim() : '';
+        if (targetClientId && targetClientId !== clientIdRef.current) {
           return;
         }
-        if (typeof payload.fromClientId === 'string' && payload.fromClientId !== activeViewerClientIdRef.current) {
+        const viewerClientId = typeof payload.fromClientId === 'string' ? payload.fromClientId : '';
+        const entry = viewerPeersRef.current.get(viewerClientId);
+        if (!entry) {
           return;
         }
-        if (typeof payload.negotiationId !== 'string' || payload.negotiationId !== negotiationIdRef.current) {
+        if (typeof payload.negotiationId !== 'string' || payload.negotiationId !== entry.negotiationId) {
           return;
         }
-        const peer = peerRef.current;
+        const peer = entry.peer;
         if (!peer || peer.signalingState !== 'have-local-offer') {
           return;
         }
         void peer
           .setRemoteDescription(new RTCSessionDescription(payload.sdp as RTCSessionDescriptionInit))
           .then(() => {
-            offerInFlightRef.current = false;
-            if (offerResetTimerRef.current) {
-              clearTimeout(offerResetTimerRef.current);
-              offerResetTimerRef.current = null;
+            if (entry.offerResetTimer) {
+              clearTimeout(entry.offerResetTimer);
+              entry.offerResetTimer = null;
             }
             setRealtimeError('');
           })
           .catch(() => {
-            offerInFlightRef.current = false;
-            if (offerResetTimerRef.current) {
-              clearTimeout(offerResetTimerRef.current);
-              offerResetTimerRef.current = null;
-            }
-            setRealtimeStatus('error');
-            setRealtimeError('Không thể nhận WebRTC answer từ buyer.');
+            closeViewerPeer(viewerClientId);
+            setRealtimeError('Không thể hoàn tất kết nối với người xem.');
           });
         return;
       }
 
       if (payload.type === 'live:webrtc:ice-candidate' && payload.candidate) {
-        if (typeof payload.targetClientId === 'string' && payload.targetClientId !== clientIdRef.current) {
+        const targetClientId = typeof payload.targetClientId === 'string' ? payload.targetClientId.trim() : '';
+        if (targetClientId && targetClientId !== clientIdRef.current) {
           return;
         }
-        if (typeof payload.fromClientId === 'string' && payload.fromClientId !== activeViewerClientIdRef.current) {
+        const viewerClientId = typeof payload.fromClientId === 'string' ? payload.fromClientId : '';
+        const entry = viewerPeersRef.current.get(viewerClientId);
+        if (!entry || (typeof payload.negotiationId === 'string' && payload.negotiationId !== entry.negotiationId)) {
           return;
         }
-        if (typeof payload.negotiationId === 'string' && payload.negotiationId !== negotiationIdRef.current) {
-          return;
-        }
-        void peerRef.current?.addIceCandidate(new RTCIceCandidate(payload.candidate as RTCIceCandidateInit)).catch(() => undefined);
+        void entry.peer.addIceCandidate(new RTCIceCandidate(payload.candidate as RTCIceCandidateInit)).catch(() => undefined);
       }
     };
 
@@ -904,7 +952,48 @@ function LiveMvpControlPanel({
       setRealtimeStatus('error');
       setRealtimeError('Không thể kết nối WebSocket signaling.');
     };
-  }, [accessToken, closeRealtimeBroadcast, previewStream, publishOffer, selectedSession, sendSignal]);
+
+    socket.onclose = () => {
+      if (signalSocketRef.current !== socket) {
+        return;
+      }
+      signalSocketRef.current = null;
+      viewerPeersRef.current.forEach((entry) => {
+        if (entry.offerResetTimer) {
+          clearTimeout(entry.offerResetTimer);
+        }
+        entry.peer.close();
+      });
+      viewerPeersRef.current.clear();
+      setRealtimeStatus('idle');
+      if (!manualRealtimeStopRef.current && selectedSession.status === 'LIVE') {
+        setRealtimeError('Kết nối phát trực tiếp bị ngắt, hệ thống đang tự kết nối lại.');
+      }
+    };
+  }, [accessToken, closeRealtimeBroadcast, closeViewerPeer, previewStream, publishOffer, selectedSession, sendSignal]);
+
+  useEffect(() => {
+    if (selectedSession?.status === 'LIVE') {
+      manualRealtimeStopRef.current = false;
+    }
+  }, [selectedSession?.sessionId, selectedSession?.status]);
+
+  useEffect(() => {
+    if (!selectedSession || selectedSession.status === 'LIVE' || realtimeStatus === 'idle') {
+      return;
+    }
+
+    manualRealtimeStopRef.current = selectedSession.status === 'PAUSED' || selectedSession.status === 'ENDED';
+    closeRealtimeBroadcast('idle');
+  }, [closeRealtimeBroadcast, realtimeStatus, selectedSession]);
+
+  useEffect(() => {
+    if (manualRealtimeStopRef.current || !selectedSession || selectedSession.status !== 'LIVE' || !previewStream || realtimeStatus !== 'idle') {
+      return;
+    }
+
+    void startRealtimeBroadcast();
+  }, [previewStream, realtimeStatus, selectedSession, startRealtimeBroadcast]);
 
   const startCapturePreview = useCallback(
     async (mode: 'camera' | 'screen') => {
@@ -936,14 +1025,16 @@ function LiveMvpControlPanel({
     [stopCapturePreview]
   );
 
+  const streamStatusLabel = formatSellerStreamStatus(realtimeStatus);
+
   return (
-    <section className="rounded-md border border-[#ffd4c6] bg-gradient-to-br from-white via-white to-[#fff3ef] p-3 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="overflow-hidden rounded-2xl border border-[#ffd4c6] bg-gradient-to-br from-white via-white to-[#fff7f3] shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-orange-100 px-4 py-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">MVP control</p>
-          <h2 className="mt-1 text-base font-semibold text-slate-900">Điều khiển livestream thật qua live-service</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">Livestream Center</p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-950">Quản lý phiên phát trực tiếp</h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Luồng demo: tạo session, start live, mở link buyer, chat realtime, pin sản phẩm bằng Product ID, sau đó end live.
+            Thiết lập nguồn phát, bắt đầu LIVE, ghim sản phẩm và theo dõi trạng thái kết nối của phòng livestream.
           </p>
         </div>
 
@@ -951,38 +1042,39 @@ function LiveMvpControlPanel({
           type="button"
           onClick={onRefresh}
           disabled={loading || actionLoading}
-          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? 'Đang tải...' : 'Refresh sessions'}
+          {loading ? 'Đang tải...' : 'Làm mới'}
         </button>
       </div>
 
-      {notice ? <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p> : null}
-      {error ? <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      <div className="px-4 pt-4">
+        {notice ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p> : null}
+        {error ? <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      </div>
 
-      <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-        <div className="rounded-md border border-slate-200 bg-white p-3">
-          <div className="mb-3 rounded-md border border-orange-100 bg-orange-50/70 p-3">
+      <div className="grid gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 rounded-2xl border border-orange-100 bg-slate-950 p-4 text-white shadow-inner">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Nguồn phát của seller</p>
-                <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600">
-                  Mở camera hoặc chọn màn hình để demo nguồn phát. MVP dùng WebRTC P2P một buyer để xem realtime, còn `playbackUrl` là fallback khi
-                  chưa kết nối WebRTC.
+                <p className="text-sm font-semibold text-white">Nguồn phát</p>
+                <p className="mt-1 max-w-2xl text-xs leading-5 text-white/60">
+                  Chọn camera hoặc màn hình trước khi lên sóng. Người xem sẽ ưu tiên nguồn trực tiếp, URL MP4/HLS dùng làm nguồn dự phòng.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => void startCapturePreview('camera')}
-                  className="rounded-md border border-[#ee4d2d] bg-white px-3 py-2 text-xs font-semibold text-[#ee4d2d] hover:bg-white"
+                  className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-orange-50"
                 >
                   Bật camera
                 </button>
                 <button
                   type="button"
                   onClick={() => void startCapturePreview('screen')}
-                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
                 >
                   Chọn màn hình
                 </button>
@@ -990,49 +1082,61 @@ function LiveMvpControlPanel({
                   type="button"
                   onClick={stopCapturePreview}
                   disabled={!previewStream}
-                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Tắt preview
+                  Tắt nguồn
                 </button>
                 <button
                   type="button"
                   onClick={() => void startRealtimeBroadcast()}
                   disabled={!previewStream || !selectedSession || selectedSession.status !== 'LIVE'}
-                  className="rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full bg-[#ee4d2d] px-4 py-2 text-xs font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Phát realtime cho buyer
+                  Bắt đầu phát
                 </button>
                 <button
                   type="button"
-                  onClick={() => closeRealtimeBroadcast('idle')}
+                  onClick={() => {
+                    manualRealtimeStopRef.current = true;
+                    closeRealtimeBroadcast('idle');
+                    onPause();
+                  }}
                   disabled={realtimeStatus === 'idle'}
-                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Dừng realtime
+                  Tạm ngừng phát
                 </button>
               </div>
             </div>
 
-            {captureError ? <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{captureError}</p> : null}
-            {realtimeError ? <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{realtimeError}</p> : null}
+            {captureError ? (
+              <p className="mt-3 rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{captureError}</p>
+            ) : null}
+            {realtimeError ? (
+              <p className="mt-3 rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">{realtimeError}</p>
+            ) : null}
 
-            <div className="mt-3 overflow-hidden rounded-md border border-slate-200 bg-slate-950">
+            <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black">
               {previewStream ? (
                 <video ref={previewRef} autoPlay muted playsInline className="aspect-video w-full bg-black object-contain" />
               ) : (
-                <div className="flex aspect-video items-center justify-center px-4 text-center text-xs text-white/60">
-                  Chưa chọn nguồn phát. Bấm “Bật camera” hoặc “Chọn màn hình” để preview trước khi tạo live.
+                <div className="flex aspect-video items-center justify-center px-4 text-center text-sm text-white/60">
+                  Chọn camera hoặc chia sẻ màn hình để chuẩn bị nguồn phát.
                 </div>
               )}
             </div>
 
-            {captureMode ? (
-              <p className="mt-2 text-xs text-slate-600">
-                Đang preview: <span className="font-semibold text-[#ee4d2d]">{captureMode === 'camera' ? 'Camera + microphone' : 'Màn hình'}</span>
-                <span className="ml-3">Realtime: </span>
-                <span className="font-semibold text-slate-900">{realtimeStatus}</span>
-              </p>
-            ) : null}
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/70">
+              <span className="rounded-full bg-white/10 px-3 py-1">
+                Nguồn:{' '}
+                <span className="font-semibold text-white">
+                  {captureMode ? (captureMode === 'camera' ? 'Camera + micro' : 'Màn hình') : 'Chưa chọn'}
+                </span>
+              </span>
+              <span className="rounded-full bg-white/10 px-3 py-1">
+                Trạng thái phát: <span className="font-semibold text-white">{streamStatusLabel}</span>
+              </span>
+            </div>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -1042,16 +1146,16 @@ function LiveMvpControlPanel({
                 value={form.title}
                 onChange={(event) => onFormChange((current) => ({ ...current, title: event.target.value }))}
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#ee4d2d]"
-                placeholder="Demo livestream bán hàng"
+                placeholder="Ví dụ: Sale cuối tuần cùng shop"
               />
             </label>
             <label className="text-sm font-medium text-slate-700">
-              Playback URL MP4/HLS
+              URL phát dự phòng MP4/HLS
               <input
                 value={form.playbackUrl}
                 onChange={(event) => onFormChange((current) => ({ ...current, playbackUrl: event.target.value }))}
                 className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#ee4d2d]"
-                placeholder="https://.../stream.mp4"
+                placeholder={DEFAULT_PLAYBACK_URL}
               />
             </label>
             <label className="text-sm font-medium text-slate-700 md:col-span-2">
@@ -1072,36 +1176,44 @@ function LiveMvpControlPanel({
               disabled={actionLoading}
               className="rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Tạo live session
+              Tạo phiên live
             </button>
             <button
               type="button"
               onClick={onStart}
-              disabled={!selectedSession || selectedSession.status === 'LIVE' || actionLoading}
+              disabled={!selectedSession || selectedSession.status === 'LIVE' || selectedSession.status === 'ENDED' || selectedSession.status === 'CANCELLED' || actionLoading}
               className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Start
+              {selectedSession?.status === 'PAUSED' ? 'Tiếp tục LIVE' : 'Bắt đầu LIVE'}
+            </button>
+            <button
+              type="button"
+              onClick={onPause}
+              disabled={!selectedSession || selectedSession.status !== 'LIVE' || actionLoading}
+              className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Tạm ngừng
             </button>
             <button
               type="button"
               onClick={onEnd}
-              disabled={!selectedSession || selectedSession.status !== 'LIVE' || actionLoading}
+              disabled={!selectedSession || (selectedSession.status !== 'LIVE' && selectedSession.status !== 'PAUSED') || actionLoading}
               className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              End
+              Kết thúc
             </button>
           </div>
         </div>
 
-        <div className="rounded-md border border-slate-200 bg-white p-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="text-sm font-medium text-slate-700">
-            Session đang chọn
+            Phiên đang quản lý
             <select
               value={selectedSessionId}
               onChange={(event) => onSessionChange(event.target.value)}
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#ee4d2d]"
             >
-              {sessions.length === 0 ? <option value="">Chưa có session</option> : null}
+              {sessions.length === 0 ? <option value="">Chưa có phiên live</option> : null}
               {sessions.map((session) => (
                 <option key={session.sessionId} value={session.sessionId}>
                   {session.title} - {session.status}
@@ -1111,9 +1223,9 @@ function LiveMvpControlPanel({
           </label>
 
           {selectedSession ? (
-            <div className="mt-3 space-y-2 rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="mt-3 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
               <p>
-                <span className="font-semibold">Session ID:</span> {selectedSession.sessionId}
+                <span className="font-semibold">Mã phiên:</span> {selectedSession.sessionId}
               </p>
               <p>
                 <span className="font-semibold">Trạng thái:</span>{' '}
@@ -1126,26 +1238,26 @@ function LiveMvpControlPanel({
                 href={buyerLink}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex rounded-md bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                className="inline-flex w-full justify-center rounded-full bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
               >
-                Mở buyer live page
+                Mở trang người mua
               </a>
             </div>
           ) : (
-            <p className="mt-3 rounded-md bg-slate-50 p-3 text-sm text-slate-500">Tạo session đầu tiên để có link buyer test.</p>
+            <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm text-slate-500">Tạo phiên live đầu tiên để nhận link chia sẻ cho người mua.</p>
           )}
         </div>
       </div>
 
-      <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+      <div className="mx-4 mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-2">
           <label className="min-w-[260px] flex-1 text-sm font-medium text-slate-700">
-            Product ID để pin vào live
+            Sản phẩm ghim trong live
             <input
               value={pinProductId}
               onChange={(event) => onPinProductIdChange(event.target.value)}
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#ee4d2d]"
-              placeholder="Nhập productId ACTIVE thuộc shop"
+              placeholder="Nhập mã sản phẩm đang bán của shop"
             />
           </label>
           <button
@@ -1212,6 +1324,22 @@ function formatMoney(value: number, currency: string) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: currency || 'VND' }).format(value);
   } catch {
     return `${value.toLocaleString('vi-VN')} ${currency}`;
+  }
+}
+
+function formatSellerStreamStatus(status: 'idle' | 'connecting' | 'broadcasting' | 'connected' | 'error') {
+  switch (status) {
+    case 'connecting':
+      return 'Đang chuẩn bị nguồn phát';
+    case 'broadcasting':
+      return 'Đang phát - 0 người xem';
+    case 'connected':
+      return 'Đang phát - có người xem';
+    case 'error':
+      return 'Nguồn phát cần khởi động lại';
+    case 'idle':
+    default:
+      return 'Chưa phát';
   }
 }
 

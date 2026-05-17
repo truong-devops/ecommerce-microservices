@@ -91,12 +91,13 @@ services:
     restart: unless-stopped
     environment:
       MTX_HLSVARIANT: lowLatency
-      MTX_WEBRTCADDITIONALHOSTS: localhost
+      MTX_WEBRTCIPSFROMINTERFACES: 'no'
+      MTX_WEBRTCADDITIONALHOSTS: 127.0.0.1
     ports:
       - '1935:1935'
       - '8554:8554'
-      - '8888:8888'
-      - '8889:8889'
+      - '12088:8888'
+      - '12089:8889'
       - '8189:8189/udp'
 
   auth-service:
@@ -556,9 +557,9 @@ services:
       LIVE_MEDIA_MODE: media_engine
       LIVE_MEDIA_PROVIDER: MEDIAMTX
       LIVE_MEDIA_INGEST_PROTOCOL: WHIP
-      LIVE_MEDIA_PLAYBACK_PROTOCOL: HLS
-      LIVE_MEDIA_INGEST_BASE_URL: http://localhost:8889
-      LIVE_MEDIA_PLAYBACK_BASE_URL: http://localhost:8888
+      LIVE_MEDIA_PLAYBACK_PROTOCOL: WEBRTC
+      LIVE_MEDIA_INGEST_BASE_URL: http://localhost:12089
+      LIVE_MEDIA_PLAYBACK_BASE_URL: http://localhost:12089
       WS_ALLOWED_ORIGINS: http://localhost:6789,http://localhost:8888,http://localhost:3000,http://localhost:3001
       SEND_MESSAGE_RATE_RPS: 5
       SEND_MESSAGE_RATE_BURST: 20

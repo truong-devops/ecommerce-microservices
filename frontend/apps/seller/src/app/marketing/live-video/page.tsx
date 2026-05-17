@@ -870,9 +870,14 @@ function LiveOperationsPanel({
     setRealtimeError('');
     mediaEnginePeerRef.current?.close();
 
+    const liveTracks = getLiveMediaTracks(previewStream);
+    if (!liveTracks.some((track) => track.kind === 'video')) {
+      throw new Error('Nguồn phát không còn video live. Hãy bật lại camera hoặc chọn lại màn hình.');
+    }
+
     const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     mediaEnginePeerRef.current = peer;
-    previewStream.getTracks().forEach((track) => {
+    liveTracks.forEach((track) => {
       peer.addTrack(track, previewStream);
     });
     peer.onconnectionstatechange = () => {
@@ -881,6 +886,10 @@ function LiveOperationsPanel({
         setRealtimeError('');
       }
       if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
+        if (mediaEnginePeerRef.current === peer) {
+          mediaEnginePeerRef.current = null;
+        }
+        peer.close();
         setRealtimeStatus('error');
         setRealtimeError('Kết nối publish đến MediaMTX bị ngắt.');
       }
@@ -1061,6 +1070,28 @@ function LiveOperationsPanel({
     void startRealtimeBroadcast();
   }, [previewStream, realtimeStatus, selectedSession, startRealtimeBroadcast]);
 
+  useEffect(() => {
+    if (
+      manualRealtimeStopRef.current ||
+      !isMediaEngineSession ||
+      !selectedSession ||
+      selectedSession.status !== 'LIVE' ||
+      !previewStream ||
+      realtimeStatus !== 'error' ||
+      !hasLiveVideoTrack(previewStream)
+    ) {
+      return;
+    }
+
+    const retryTimer = setTimeout(() => {
+      void startRealtimeBroadcast();
+    }, 3000);
+
+    return () => {
+      clearTimeout(retryTimer);
+    };
+  }, [isMediaEngineSession, previewStream, realtimeStatus, selectedSession, startRealtimeBroadcast]);
+
   const startCapturePreview = useCallback(
     async (mode: 'camera' | 'screen') => {
       if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
@@ -1077,9 +1108,12 @@ function LiveOperationsPanel({
             ? await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
             : await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
 
-        stream.getVideoTracks()[0]?.addEventListener('ended', () => {
-          setPreviewStream(null);
-          setCaptureMode(null);
+        stream.getVideoTracks().forEach((track) => {
+          track.addEventListener('ended', () => {
+            closeRealtimeBroadcast('idle');
+            setPreviewStream((current) => (current === stream ? null : current));
+            setCaptureMode((current) => (current === mode ? null : current));
+          });
         });
 
         setPreviewStream(stream);
@@ -1088,7 +1122,7 @@ function LiveOperationsPanel({
         setCaptureError(mode === 'camera' ? 'Không thể mở camera/micro. Hãy kiểm tra quyền trình duyệt.' : 'Không thể chọn màn hình để chia sẻ.');
       }
     },
-    [stopCapturePreview]
+    [closeRealtimeBroadcast, stopCapturePreview]
   );
 
   const streamStatusLabel = formatSellerStreamStatus(realtimeStatus);
@@ -1165,12 +1199,11 @@ function LiveOperationsPanel({
                   onClick={() => {
                     manualRealtimeStopRef.current = true;
                     closeRealtimeBroadcast('idle');
-                    onPause();
                   }}
                   disabled={realtimeStatus === 'idle'}
                   className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Tạm ngừng phát
+                  Dừng nguồn phát
                 </button>
               </div>
             </div>
@@ -1383,6 +1416,14 @@ function formatDateTime(value: string | undefined) {
     return value;
   }
   return date.toLocaleString('vi-VN', { hour12: false });
+}
+
+function getLiveMediaTracks(stream: MediaStream): MediaStreamTrack[] {
+  return stream.getTracks().filter((track) => track.readyState === 'live' && track.enabled);
+}
+
+function hasLiveVideoTrack(stream: MediaStream): boolean {
+  return getLiveMediaTracks(stream).some((track) => track.kind === 'video');
 }
 
 function waitForIceGatheringComplete(peer: RTCPeerConnection): Promise<void> {

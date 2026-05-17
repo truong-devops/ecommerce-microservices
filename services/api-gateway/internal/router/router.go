@@ -103,6 +103,8 @@ func New(
 		public.Method(http.MethodGet, "/api/v1/live/ws", proxies[config.ServiceLive])
 		public.Method(http.MethodPost, "/api/live/sessions/{sessionId}/events/product-clicked", proxies[config.ServiceLive])
 		public.Method(http.MethodPost, "/api/v1/live/sessions/{sessionId}/events/product-clicked", proxies[config.ServiceLive])
+		public.Method(http.MethodPost, "/api/live/sessions/{sessionId}/events/media-metric", proxies[config.ServiceLive])
+		public.Method(http.MethodPost, "/api/v1/live/sessions/{sessionId}/events/media-metric", proxies[config.ServiceLive])
 	})
 
 	r.Group(func(private chi.Router) {

@@ -380,6 +380,25 @@ Tiêu chí done:
 
 - Có thể rollback trong vài phút khi media engine lỗi.
 
+Rollback local:
+
+```bash
+LIVE_MEDIA_MODE=p2p_legacy docker compose up -d live-service api-gateway
+```
+
+Production-like mode local:
+
+```bash
+LIVE_MEDIA_MODE=media_engine LIVE_MEDIA_PROVIDER=MEDIAMTX LIVE_MEDIA_INGEST_PROTOCOL=WHIP LIVE_MEDIA_PLAYBACK_PROTOCOL=WEBRTC docker compose up -d mediamtx live-service api-gateway
+```
+
+MediaMTX host ports trong compose local:
+
+- WHIP/WHEP API: `http://localhost:12089`
+- WebRTC ICE UDP: `localhost:8189/udp`
+- HLS fallback: `http://localhost:12088`
+- Local Docker WebRTC advertise host: `127.0.0.1` qua `MTX_WEBRTCADDITIONALHOSTS`.
+
 ## 7) Validation plan theo AGENTS.md
 
 L0 (smoke, ngay mỗi phase):
@@ -436,9 +455,9 @@ Hướng dẫn:
 - [x] M1 - MediaMTX local infrastructure
 - [x] M2 - `live-service` media metadata orchestration
 - [x] M3 - Seller publish flow migration
-- [ ] M4 - Buyer playback flow migration
-- [ ] M5 - QoE analytics và monitoring
-- [ ] M6 - Hardening và rollback drill
+- [x] M4 - Buyer playback flow migration
+- [x] M5 - QoE analytics và monitoring
+- [x] M6 - Hardening và rollback drill
 - [ ] M7 - Production-simulation sign-off
 
 ## 11) Detailed task checklist theo file
@@ -449,14 +468,18 @@ Hướng dẫn:
 - [x] `services/live-service/internal/repository/live_repository.go`
 - [x] `services/live-service/internal/service/live_service.go`
 - [x] `services/live-service/internal/service/live_service_test.go`
-- [ ] `services/live-service/internal/handler/live_handler.go`
+- [x] `services/live-service/internal/handler/live_handler.go`
 - [ ] `services/live-service/internal/handler/ws_handler.go`
 - [ ] `services/live-service/internal/handler/ws_handler_test.go`
 - [x] `docker-compose.yml` (add `mediamtx`)
 - [x] `frontend/apps/seller/src/app/marketing/live-video/page.tsx`
 - [x] `frontend/apps/seller/src/lib/api/types.ts`
-- [ ] `frontend/apps/buyer-web/src/app/live/[sessionId]/page.tsx`
+- [x] `frontend/apps/buyer-web/src/app/live/[sessionId]/page.tsx`
+- [x] `frontend/apps/buyer-web/src/app/api/buyer/live/sessions/[sessionId]/events/media-metric/route.ts`
+- [x] `frontend/apps/buyer-web/src/lib/api/live.ts`
 - [x] `frontend/apps/buyer-web/src/lib/api/types.ts`
+- [x] `services/api-gateway/internal/router/router.go`
+- [x] `services/api-gateway/internal/router/router_test.go`
 - [x] `docs/architecture/livestream-service-development-plan.md` (cập nhật trạng thái mỗi phase)
 
 ## 12) Definition of Done

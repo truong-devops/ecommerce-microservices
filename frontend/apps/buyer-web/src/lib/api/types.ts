@@ -605,6 +605,16 @@ export interface TrackBuyerVideoEventInput {
   watchTimeSec?: number;
 }
 
+export interface TrackLiveMediaMetricInput {
+  metricType: string;
+  playbackProtocol?: string;
+  valueMs?: number;
+  count?: number;
+  errorCode?: string;
+  clientEventId?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type LiveSessionStatus = 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'ENDED' | 'CANCELLED';
 
 export interface LiveMetricsSnapshot {

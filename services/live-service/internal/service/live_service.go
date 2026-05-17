@@ -82,6 +82,16 @@ type SendMessageRequest struct {
 	Language        string `json:"language,omitempty"`
 }
 
+type TrackMediaMetricRequest struct {
+	MetricType       string         `json:"metricType"`
+	PlaybackProtocol string         `json:"playbackProtocol,omitempty"`
+	ValueMs          *int64         `json:"valueMs,omitempty"`
+	Count            *int64         `json:"count,omitempty"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ClientEventID    string         `json:"clientEventId,omitempty"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
+}
+
 func NewLiveService(repo repository.Repository, productVerifier ProductVerifier, publisher EventPublisher, broadcaster Broadcaster, sendLimiter *SendRateLimiter, opts ...LiveServiceOption) *LiveService {
 	s := &LiveService{
 		repo:            repo,
@@ -166,6 +176,8 @@ func mediaPlaybackURL(baseURL, streamName string, protocol domain.LivePlaybackPr
 	switch protocol {
 	case domain.LivePlaybackProtocolHLS, domain.LivePlaybackProtocolLLHLS:
 		return baseURL + "/" + streamName + "/index.m3u8"
+	case domain.LivePlaybackProtocolWebRTC:
+		return baseURL + "/" + streamName + "/whep"
 	default:
 		return baseURL + "/" + streamName
 	}
@@ -562,6 +574,48 @@ func (s *LiveService) TrackProductClicked(ctx context.Context, user *domain.User
 		"actorId":   actorID,
 		"actorRole": actorRole,
 	})
+}
+
+func (s *LiveService) TrackMediaMetric(ctx context.Context, user *domain.UserContext, sessionID string, req TrackMediaMetricRequest) error {
+	session, err := s.requireSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	metricType := strings.TrimSpace(req.MetricType)
+	if metricType == "" || len(metricType) > 80 {
+		return validationError("metricType", "is required and must be at most 80 characters")
+	}
+	clientEventID := strings.TrimSpace(req.ClientEventID)
+	if len(clientEventID) > 128 {
+		return validationError("clientEventId", "max length is 128")
+	}
+
+	actorID := ""
+	actorRole := ""
+	if user != nil {
+		actorID = user.UserID
+		actorRole = string(user.Role)
+	}
+	payload := map[string]any{
+		"sessionId":        session.SessionID,
+		"metricType":       metricType,
+		"playbackProtocol": strings.TrimSpace(req.PlaybackProtocol),
+		"errorCode":        strings.TrimSpace(req.ErrorCode),
+		"clientEventId":    clientEventID,
+		"actorId":          actorID,
+		"actorRole":        actorRole,
+	}
+	if req.ValueMs != nil {
+		payload["valueMs"] = *req.ValueMs
+	}
+	if req.Count != nil {
+		payload["count"] = *req.Count
+	}
+	if len(req.Metadata) > 0 {
+		payload["metadata"] = req.Metadata
+	}
+	_ = s.publish(ctx, domain.EventMediaMetric, payload)
+	return nil
 }
 
 func (s *LiveService) TrackViewerJoined(ctx context.Context, user domain.UserContext, sessionID string, viewerCount int64) {

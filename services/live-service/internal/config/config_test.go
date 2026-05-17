@@ -36,9 +36,9 @@ func TestLoadConfigForMediaEngine(t *testing.T) {
 	t.Setenv("LIVE_MEDIA_MODE", "media_engine")
 	t.Setenv("LIVE_MEDIA_PROVIDER", "MEDIAMTX")
 	t.Setenv("LIVE_MEDIA_INGEST_PROTOCOL", "WHIP")
-	t.Setenv("LIVE_MEDIA_PLAYBACK_PROTOCOL", "HLS")
+	t.Setenv("LIVE_MEDIA_PLAYBACK_PROTOCOL", "WEBRTC")
 	t.Setenv("LIVE_MEDIA_INGEST_BASE_URL", "http://localhost:8889")
-	t.Setenv("LIVE_MEDIA_PLAYBACK_BASE_URL", "http://localhost:8888")
+	t.Setenv("LIVE_MEDIA_PLAYBACK_BASE_URL", "http://localhost:8889")
 
 	cfg, err := Load()
 	if err != nil {
@@ -47,7 +47,7 @@ func TestLoadConfigForMediaEngine(t *testing.T) {
 	if cfg.LiveMediaMode != "media_engine" {
 		t.Fatalf("expected media_engine mode, got %q", cfg.LiveMediaMode)
 	}
-	if cfg.LiveMediaProvider != "MEDIAMTX" || cfg.LiveMediaIngestProtocol != "WHIP" || cfg.LiveMediaPlaybackProtocol != "HLS" {
+	if cfg.LiveMediaProvider != "MEDIAMTX" || cfg.LiveMediaIngestProtocol != "WHIP" || cfg.LiveMediaPlaybackProtocol != "WEBRTC" {
 		t.Fatalf("unexpected media settings: provider=%q ingest=%q playback=%q", cfg.LiveMediaProvider, cfg.LiveMediaIngestProtocol, cfg.LiveMediaPlaybackProtocol)
 	}
 }

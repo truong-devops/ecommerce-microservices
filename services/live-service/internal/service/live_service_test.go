@@ -81,9 +81,9 @@ func TestCreateSessionBuildsMediaEngineMetadata(t *testing.T) {
 		Mode:             LiveMediaModeMediaEngine,
 		Provider:         domain.LiveMediaProviderMediaMTX,
 		IngestProtocol:   domain.LiveIngestProtocolWHIP,
-		PlaybackProtocol: domain.LivePlaybackProtocolHLS,
+		PlaybackProtocol: domain.LivePlaybackProtocolWebRTC,
 		IngestBaseURL:    "http://localhost:8889",
-		PlaybackBaseURL:  "http://localhost:8888",
+		PlaybackBaseURL:  "http://localhost:8889",
 	}))
 	seller := testUser("seller-1", domain.RoleSeller)
 
@@ -103,8 +103,8 @@ func TestCreateSessionBuildsMediaEngineMetadata(t *testing.T) {
 	if !strings.HasSuffix(created.Media.Publish.URL, "/whip") {
 		t.Fatalf("expected WHIP publish URL, got %q", created.Media.Publish.URL)
 	}
-	if !strings.HasSuffix(created.PlaybackURL, "/index.m3u8") {
-		t.Fatalf("expected HLS playback URL, got %q", created.PlaybackURL)
+	if !strings.HasSuffix(created.PlaybackURL, "/whep") {
+		t.Fatalf("expected WHEP playback URL, got %q", created.PlaybackURL)
 	}
 
 	started, err := svc.StartSession(ctx, seller, created.SessionID)
@@ -194,6 +194,47 @@ func TestSendMessageIsIdempotentAndBroadcasts(t *testing.T) {
 	}
 	if !broadcaster.hasType("live:message:new") {
 		t.Fatal("expected live:message:new broadcast")
+	}
+}
+
+func TestTrackMediaMetricPublishesAnalyticsEvent(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	publisher := &fakePublisher{}
+	svc := NewLiveService(repo, fakeProductVerifier{}, publisher, &fakeBroadcaster{}, nil)
+	seller := testUser("seller-1", domain.RoleSeller)
+	buyer := testUser("buyer-1", domain.RoleBuyer)
+
+	session, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream", PlaybackURL: "https://example.com/live.m3u8"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	valueMs := int64(1250)
+	if err := svc.TrackMediaMetric(ctx, &buyer, session.SessionID, TrackMediaMetricRequest{
+		MetricType:       "first_frame",
+		PlaybackProtocol: "WEBRTC",
+		ValueMs:          &valueMs,
+		ClientEventID:    "event-1",
+	}); err != nil {
+		t.Fatalf("TrackMediaMetric returned error: %v", err)
+	}
+	if !publisher.has(domain.EventMediaMetric) {
+		t.Fatal("expected live.media.metric event")
+	}
+}
+
+func TestTrackMediaMetricDoesNotFailWhenPublishFails(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	svc := NewLiveService(repo, fakeProductVerifier{}, failingPublisher{}, &fakeBroadcaster{}, nil)
+	seller := testUser("seller-1", domain.RoleSeller)
+
+	session, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream", PlaybackURL: "https://example.com/live.m3u8"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	if err := svc.TrackMediaMetric(ctx, nil, session.SessionID, TrackMediaMetricRequest{MetricType: "playback_error"}); err != nil {
+		t.Fatalf("TrackMediaMetric should ignore publish failures, got: %v", err)
 	}
 }
 
@@ -347,6 +388,12 @@ func (f *fakePublisher) has(eventType string) bool {
 		}
 	}
 	return false
+}
+
+type failingPublisher struct{}
+
+func (failingPublisher) Publish(context.Context, string, map[string]any) error {
+	return errors.New("publish failed")
 }
 
 type fakeBroadcaster struct {

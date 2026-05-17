@@ -12,6 +12,7 @@ const (
 	EventProductUnpinned    = "live.product.unpinned"
 	EventProductClicked     = "live.product.clicked"
 	EventAddToCartClicked   = "live.add_to_cart.clicked"
+	EventMediaMetric        = "live.media.metric"
 	EventTranscriptCreated  = "live.transcript.created"
 	EventTranslationCreated = "live.translation.created"
 )

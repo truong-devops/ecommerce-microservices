@@ -583,6 +583,27 @@ export interface LiveMetricsSnapshot {
   addToCartCount: number;
 }
 
+export type LiveMediaProvider = 'P2P' | 'MEDIAMTX' | 'LIVEKIT';
+export type LiveIngestProtocol = 'RTMP' | 'WHIP' | 'WEBRTC';
+export type LivePlaybackProtocol = 'HLS' | 'LL_HLS' | 'WEBRTC';
+export type LiveMediaStatus = 'IDLE' | 'READY' | 'LIVE' | 'DEGRADED' | 'ENDED';
+
+export interface LiveMedia {
+  provider: LiveMediaProvider;
+  streamName?: string;
+  publish: {
+    protocol: LiveIngestProtocol;
+    url: string;
+    streamKey?: string;
+  };
+  playback: {
+    protocol: LivePlaybackProtocol;
+    url: string;
+    token?: string;
+  };
+  status: LiveMediaStatus;
+}
+
 export interface LiveSession {
   id: string;
   sessionId: string;
@@ -591,7 +612,8 @@ export interface LiveSession {
   description?: string;
   thumbnailUrl?: string;
   playbackUrl: string;
-  sourceType: 'EXTERNAL_URL';
+  media?: LiveMedia;
+  sourceType: 'EXTERNAL_URL' | 'MEDIA_ENGINE';
   status: LiveSessionStatus;
   defaultLanguage: string;
   supportedLanguages: string[];

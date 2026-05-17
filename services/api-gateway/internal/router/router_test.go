@@ -106,6 +106,25 @@ func TestPublicVideoRoutesAreMounted(t *testing.T) {
 	}
 }
 
+func TestPublicLiveMediaMetricRouteIsMounted(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-router-live-public-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/live/sessions/live-123/events/media-metric", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+		t.Fatalf("expected mounted public live media metric route, got %d", rec.Code)
+	}
+}
+
 func TestPrivateVideoManagementRoutesRequireAuth(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-video-private-test")
@@ -189,6 +208,7 @@ func testGatewayConfig() *config.Config {
 		config.ServiceNotification: {Name: config.ServiceNotification, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServiceAnalytics:    {Name: config.ServiceAnalytics, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServiceChat:         {Name: config.ServiceChat, URL: "http://127.0.0.1:1", Timeout: timeout},
+		config.ServiceLive:         {Name: config.ServiceLive, URL: "http://127.0.0.1:1", Timeout: timeout},
 	}
 
 	return &config.Config{

@@ -1,5 +1,5 @@
 import { requestBuyerApi } from './client';
-import type { LiveProduct, LiveSession, LiveSessionDetail } from './types';
+import type { LiveProduct, LiveSession, LiveSessionDetail, TrackLiveMediaMetricInput } from './types';
 
 interface ListLiveSessionsInput {
   page?: number;
@@ -41,6 +41,14 @@ export function trackLiveProductClick(sessionId: string, productId: string, acce
     method: 'POST',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
     body: JSON.stringify({ productId })
+  });
+}
+
+export function trackLiveMediaMetric(sessionId: string, payload: TrackLiveMediaMetricInput, accessToken?: string | null): Promise<{ tracked: boolean }> {
+  return requestBuyerApi<{ tracked: boolean }>(`/api/buyer/live/sessions/${encodeURIComponent(sessionId)}/events/media-metric`, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    body: JSON.stringify(payload)
   });
 }
 

@@ -41,6 +41,7 @@ func New(
 	r.With(optionalJWT).Get(liveBase+"/sessions/{sessionId}", liveHandler.GetSession)
 	r.Get(liveBase+"/sessions/{sessionId}/products", liveHandler.ListPinnedProducts)
 	r.With(optionalJWT).Post(liveBase+"/sessions/{sessionId}/events/product-clicked", liveHandler.TrackProductClicked)
+	r.With(optionalJWT).Post(liveBase+"/sessions/{sessionId}/events/media-metric", liveHandler.TrackMediaMetric)
 	r.With(optionalJWT).Get(liveBase+"/ws", wsHandler.WebSocket)
 
 	r.Group(func(private chi.Router) {

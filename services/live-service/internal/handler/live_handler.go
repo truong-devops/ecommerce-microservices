@@ -175,6 +175,24 @@ func (h *LiveHandler) TrackProductClicked(w http.ResponseWriter, r *http.Request
 	httpx.WriteSuccess(w, r, http.StatusOK, map[string]any{"tracked": true})
 }
 
+func (h *LiveHandler) TrackMediaMetric(w http.ResponseWriter, r *http.Request) {
+	var userPtr *domain.UserContext
+	if user, ok := auth.UserFromContext(r.Context()); ok {
+		userCopy := user
+		userPtr = &userCopy
+	}
+	var req service.TrackMediaMetricRequest
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{"body": err.Error()})
+		return
+	}
+	if err := h.liveService.TrackMediaMetric(r.Context(), userPtr, chi.URLParam(r, "sessionId"), req); err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, map[string]any{"tracked": true})
+}
+
 func (h *LiveHandler) runTransition(w http.ResponseWriter, r *http.Request, fn func(ctx context.Context, user domain.UserContext, sessionID string) (domain.LiveSession, error)) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {

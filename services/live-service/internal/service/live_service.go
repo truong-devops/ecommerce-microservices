@@ -27,7 +27,26 @@ type LiveService struct {
 	publisher       EventPublisher
 	broadcaster     Broadcaster
 	sendLimiter     *SendRateLimiter
+	mediaSettings   MediaSettings
 }
+
+type LiveMediaMode string
+
+const (
+	LiveMediaModeP2PLegacy   LiveMediaMode = "p2p_legacy"
+	LiveMediaModeMediaEngine LiveMediaMode = "media_engine"
+)
+
+type MediaSettings struct {
+	Mode             LiveMediaMode
+	Provider         domain.LiveMediaProvider
+	IngestProtocol   domain.LiveIngestProtocol
+	PlaybackProtocol domain.LivePlaybackProtocol
+	IngestBaseURL    string
+	PlaybackBaseURL  string
+}
+
+type LiveServiceOption func(*LiveService)
 
 type CreateSessionRequest struct {
 	Title              string     `json:"title"`
@@ -63,13 +82,104 @@ type SendMessageRequest struct {
 	Language        string `json:"language,omitempty"`
 }
 
-func NewLiveService(repo repository.Repository, productVerifier ProductVerifier, publisher EventPublisher, broadcaster Broadcaster, sendLimiter *SendRateLimiter) *LiveService {
-	return &LiveService{
+type TrackMediaMetricRequest struct {
+	MetricType       string         `json:"metricType"`
+	PlaybackProtocol string         `json:"playbackProtocol,omitempty"`
+	ValueMs          *int64         `json:"valueMs,omitempty"`
+	Count            *int64         `json:"count,omitempty"`
+	ErrorCode        string         `json:"errorCode,omitempty"`
+	ClientEventID    string         `json:"clientEventId,omitempty"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
+}
+
+func NewLiveService(repo repository.Repository, productVerifier ProductVerifier, publisher EventPublisher, broadcaster Broadcaster, sendLimiter *SendRateLimiter, opts ...LiveServiceOption) *LiveService {
+	s := &LiveService{
 		repo:            repo,
 		productVerifier: productVerifier,
 		publisher:       publisher,
 		broadcaster:     broadcaster,
 		sendLimiter:     sendLimiter,
+		mediaSettings:   DefaultMediaSettings(),
+	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
+}
+
+func DefaultMediaSettings() MediaSettings {
+	return MediaSettings{
+		Mode:             LiveMediaModeP2PLegacy,
+		Provider:         domain.LiveMediaProviderP2P,
+		IngestProtocol:   domain.LiveIngestProtocolWHIP,
+		PlaybackProtocol: domain.LivePlaybackProtocolHLS,
+	}
+}
+
+func WithMediaSettings(settings MediaSettings) LiveServiceOption {
+	return func(s *LiveService) {
+		s.mediaSettings = settings
+	}
+}
+
+func (s *LiveService) buildMediaMetadata(sessionID, fallbackPlaybackURL string) (*domain.LiveMedia, string, error) {
+	if s.mediaSettings.Mode != LiveMediaModeMediaEngine {
+		return &domain.LiveMedia{
+			Provider: domain.LiveMediaProviderP2P,
+			Playback: domain.LiveMediaPlayback{
+				Protocol: domain.LivePlaybackProtocolWebRTC,
+				URL:      fallbackPlaybackURL,
+			},
+			Status: domain.LiveMediaStatusReady,
+		}, fallbackPlaybackURL, nil
+	}
+
+	streamName := "live-" + sessionID
+	ingestBaseURL := strings.TrimRight(strings.TrimSpace(s.mediaSettings.IngestBaseURL), "/")
+	playbackBaseURL := strings.TrimRight(strings.TrimSpace(s.mediaSettings.PlaybackBaseURL), "/")
+	if ingestBaseURL == "" || playbackBaseURL == "" {
+		return nil, "", httpx.NewAppError(http.StatusInternalServerError, domain.ErrorCodeInternalServerError, "Live media engine is not configured", nil)
+	}
+
+	publishURL := mediaPublishURL(ingestBaseURL, streamName, s.mediaSettings.IngestProtocol)
+	playbackURL := mediaPlaybackURL(playbackBaseURL, streamName, s.mediaSettings.PlaybackProtocol)
+	if len(playbackURL) < 8 || len(playbackURL) > 2000 {
+		return nil, "", validationError("playbackUrl", "length must be between 8 and 2000")
+	}
+
+	return &domain.LiveMedia{
+		Provider:   s.mediaSettings.Provider,
+		StreamName: streamName,
+		Publish: domain.LiveMediaPublish{
+			Protocol:  s.mediaSettings.IngestProtocol,
+			URL:       publishURL,
+			StreamKey: streamName,
+		},
+		Playback: domain.LiveMediaPlayback{
+			Protocol: s.mediaSettings.PlaybackProtocol,
+			URL:      playbackURL,
+		},
+		Status: domain.LiveMediaStatusReady,
+	}, playbackURL, nil
+}
+
+func mediaPublishURL(baseURL, streamName string, protocol domain.LiveIngestProtocol) string {
+	switch protocol {
+	case domain.LiveIngestProtocolWHIP:
+		return baseURL + "/" + streamName + "/whip"
+	default:
+		return baseURL + "/" + streamName
+	}
+}
+
+func mediaPlaybackURL(baseURL, streamName string, protocol domain.LivePlaybackProtocol) string {
+	switch protocol {
+	case domain.LivePlaybackProtocolHLS, domain.LivePlaybackProtocolLLHLS:
+		return baseURL + "/" + streamName + "/index.m3u8"
+	case domain.LivePlaybackProtocolWebRTC:
+		return baseURL + "/" + streamName + "/whep"
+	default:
+		return baseURL + "/" + streamName
 	}
 }
 
@@ -82,7 +192,7 @@ func (s *LiveService) CreateSession(ctx context.Context, user domain.UserContext
 		return domain.LiveSession{}, validationError("title", "length must be between 3 and 160")
 	}
 	playbackURL := strings.TrimSpace(req.PlaybackURL)
-	if len(playbackURL) < 8 || len(playbackURL) > 2000 {
+	if s.mediaSettings.Mode != LiveMediaModeMediaEngine && (len(playbackURL) < 8 || len(playbackURL) > 2000) {
 		return domain.LiveSession{}, validationError("playbackUrl", "length must be between 8 and 2000")
 	}
 
@@ -97,14 +207,25 @@ func (s *LiveService) CreateSession(ctx context.Context, user domain.UserContext
 	}
 	supportedLanguages := normalizeLanguages(req.SupportedLanguages, defaultLanguage)
 
+	sessionID := uuid.NewString()
+	media, resolvedPlaybackURL, err := s.buildMediaMetadata(sessionID, playbackURL)
+	if err != nil {
+		return domain.LiveSession{}, err
+	}
+	sourceType := domain.LiveSourceTypeExternalURL
+	if s.mediaSettings.Mode == LiveMediaModeMediaEngine {
+		sourceType = domain.LiveSourceTypeMediaEngine
+	}
+
 	session := domain.LiveSession{
-		SessionID:          uuid.NewString(),
+		SessionID:          sessionID,
 		SellerID:           user.UserID,
 		Title:              title,
 		Description:        strings.TrimSpace(req.Description),
 		ThumbnailURL:       strings.TrimSpace(req.ThumbnailURL),
-		PlaybackURL:        playbackURL,
-		SourceType:         domain.LiveSourceTypeExternalURL,
+		PlaybackURL:        resolvedPlaybackURL,
+		Media:              media,
+		SourceType:         sourceType,
 		Status:             status,
 		DefaultLanguage:    defaultLanguage,
 		SupportedLanguages: supportedLanguages,
@@ -212,6 +333,9 @@ func (s *LiveService) StartSession(ctx context.Context, user domain.UserContext,
 	}
 	now := time.Now().UTC()
 	session.Status = domain.LiveSessionStatusLive
+	if session.Media != nil {
+		session.Media.Status = domain.LiveMediaStatusLive
+	}
 	if session.StartedAt == nil {
 		session.StartedAt = &now
 	}
@@ -241,6 +365,9 @@ func (s *LiveService) PauseSession(ctx context.Context, user domain.UserContext,
 	}
 	now := time.Now().UTC()
 	session.Status = domain.LiveSessionStatusPaused
+	if session.Media != nil {
+		session.Media.Status = domain.LiveMediaStatusReady
+	}
 	session.UpdatedAt = now
 	if err := s.repo.UpdateSession(ctx, *session); err != nil {
 		return domain.LiveSession{}, err
@@ -267,6 +394,9 @@ func (s *LiveService) EndSession(ctx context.Context, user domain.UserContext, s
 	}
 	now := time.Now().UTC()
 	session.Status = domain.LiveSessionStatusEnded
+	if session.Media != nil {
+		session.Media.Status = domain.LiveMediaStatusEnded
+	}
 	session.EndedAt = &now
 	session.UpdatedAt = now
 	if err := s.repo.UpdateSession(ctx, *session); err != nil {
@@ -444,6 +574,48 @@ func (s *LiveService) TrackProductClicked(ctx context.Context, user *domain.User
 		"actorId":   actorID,
 		"actorRole": actorRole,
 	})
+}
+
+func (s *LiveService) TrackMediaMetric(ctx context.Context, user *domain.UserContext, sessionID string, req TrackMediaMetricRequest) error {
+	session, err := s.requireSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	metricType := strings.TrimSpace(req.MetricType)
+	if metricType == "" || len(metricType) > 80 {
+		return validationError("metricType", "is required and must be at most 80 characters")
+	}
+	clientEventID := strings.TrimSpace(req.ClientEventID)
+	if len(clientEventID) > 128 {
+		return validationError("clientEventId", "max length is 128")
+	}
+
+	actorID := ""
+	actorRole := ""
+	if user != nil {
+		actorID = user.UserID
+		actorRole = string(user.Role)
+	}
+	payload := map[string]any{
+		"sessionId":        session.SessionID,
+		"metricType":       metricType,
+		"playbackProtocol": strings.TrimSpace(req.PlaybackProtocol),
+		"errorCode":        strings.TrimSpace(req.ErrorCode),
+		"clientEventId":    clientEventID,
+		"actorId":          actorID,
+		"actorRole":        actorRole,
+	}
+	if req.ValueMs != nil {
+		payload["valueMs"] = *req.ValueMs
+	}
+	if req.Count != nil {
+		payload["count"] = *req.Count
+	}
+	if len(req.Metadata) > 0 {
+		payload["metadata"] = req.Metadata
+	}
+	_ = s.publish(ctx, domain.EventMediaMetric, payload)
+	return nil
 }
 
 func (s *LiveService) TrackViewerJoined(ctx context.Context, user domain.UserContext, sessionID string, viewerCount int64) {

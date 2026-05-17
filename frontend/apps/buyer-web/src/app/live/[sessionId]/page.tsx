@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import { buildLiveWebSocketUrl, getLiveSession, listLiveProducts, trackLiveProductClick } from '@/lib/api/live';
+import { buildLiveWebSocketUrl, getLiveSession, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
 import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
@@ -27,13 +27,18 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const sessionId = useMemo(() => safeDecode(params.sessionId), [params.sessionId]);
   const socketRef = useRef<WebSocket | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
+  const mediaPlaybackPeerRef = useRef<RTCPeerConnection | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
+  const playbackStartedAtRef = useRef(0);
+  const firstFrameTrackedRef = useRef(false);
+  const bufferingCountRef = useRef(0);
   const clientIdRef = useRef(createClientMessageId());
   const broadcasterClientIdRef = useRef('');
   const negotiationIdRef = useRef('');
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const realtimeRetryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaPlaybackRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [status, setStatus] = useState<LiveDetailStatus>('loading');
   const [socketStatus, setSocketStatus] = useState<SocketStatus>('idle');
   const [realtimeStatus, setRealtimeStatus] = useState<'waiting' | 'connecting' | 'connected' | 'fallback' | 'error'>('fallback');
@@ -44,6 +49,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const [viewerCount, setViewerCount] = useState(0);
   const [chatInput, setChatInput] = useState('');
   const [error, setError] = useState('');
+  const [playbackReloadKey, setPlaybackReloadKey] = useState(0);
 
   const loadDetail = useCallback(async () => {
     if (!sessionId) {
@@ -58,6 +64,8 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
       const data = await getLiveSession(sessionId, accessToken);
       setDetail(data);
       setProducts((data.pinnedProducts ?? []).filter((product) => product.pinStatus === 'PINNED'));
+      playbackStartedAtRef.current = performance.now();
+      firstFrameTrackedRef.current = false;
       setStatus('success');
     } catch (loadError) {
       setError(loadError instanceof BuyerApiClientError ? loadError.message : text.home.loadError);
@@ -87,6 +95,23 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     });
   }, []);
 
+  const emitMediaMetric = useCallback(
+    (payload: { metricType: string; valueMs?: number; count?: number; errorCode?: string; playbackProtocol?: string; metadata?: Record<string, unknown> }) => {
+      if (!sessionId) {
+        return;
+      }
+      void trackLiveMediaMetric(
+        sessionId,
+        {
+          ...payload,
+          clientEventId: createClientMessageId()
+        },
+        accessToken
+      ).catch(() => undefined);
+    },
+    [accessToken, sessionId]
+  );
+
   const sendSignal = useCallback((payload: Record<string, unknown>) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -100,6 +125,13 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     if (realtimeRetryTimerRef.current) {
       clearInterval(realtimeRetryTimerRef.current);
       realtimeRetryTimerRef.current = null;
+    }
+  }, []);
+
+  const clearMediaPlaybackRetryTimer = useCallback(() => {
+    if (mediaPlaybackRetryTimerRef.current) {
+      clearTimeout(mediaPlaybackRetryTimerRef.current);
+      mediaPlaybackRetryTimerRef.current = null;
     }
   }, []);
 
@@ -154,6 +186,10 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     return peer;
   }, [sendSignal]);
 
+  const session = detail?.session ?? null;
+  const mediaPlayback = session?.media?.playback;
+  const usesMediaEnginePlayback = mediaPlayback?.protocol === 'WEBRTC' && Boolean(mediaPlayback.url);
+
   useEffect(() => {
     if (!sessionId || (detail?.session.status !== 'LIVE' && detail?.session.status !== 'PAUSED')) {
       setSocketStatus('idle');
@@ -168,7 +204,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     socket.onopen = () => {
       setSocketStatus('connected');
       sendSignal({ type: 'live:join' });
-      if (detail?.session.status === 'LIVE') {
+      if (detail?.session.status === 'LIVE' && !usesMediaEnginePlayback) {
         requestRealtimeStream();
       }
     };
@@ -296,11 +332,110 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     detail?.session.status,
     requestRealtimeStream,
     sendSignal,
-    sessionId
+    sessionId,
+    usesMediaEnginePlayback
   ]);
 
   useEffect(() => {
-    if (detail?.session.status !== 'LIVE' || socketStatus !== 'connected' || realtimeStatus === 'connected') {
+    if (!usesMediaEnginePlayback || detail?.session.status !== 'LIVE' || !mediaPlayback?.url) {
+      clearMediaPlaybackRetryTimer();
+      return;
+    }
+
+    let cancelled = false;
+    const scheduleMediaPlaybackReconnect = () => {
+      if (cancelled || mediaPlaybackRetryTimerRef.current) {
+        return;
+      }
+      mediaPlaybackRetryTimerRef.current = setTimeout(() => {
+        mediaPlaybackRetryTimerRef.current = null;
+        if (!cancelled) {
+          setPlaybackReloadKey((current) => current + 1);
+        }
+      }, 3000);
+    };
+    const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    clearMediaPlaybackRetryTimer();
+    mediaPlaybackPeerRef.current?.close();
+    mediaPlaybackPeerRef.current = peer;
+    remoteStreamRef.current = null;
+    setRemoteStream(null);
+    setRealtimeStatus('connecting');
+    firstFrameTrackedRef.current = false;
+    bufferingCountRef.current = 0;
+    playbackStartedAtRef.current = performance.now();
+
+    peer.addTransceiver('video', { direction: 'recvonly' });
+    peer.addTransceiver('audio', { direction: 'recvonly' });
+    peer.ontrack = (event) => {
+      const currentStream = remoteStreamRef.current ?? new MediaStream();
+      if (!currentStream.getTracks().some((track) => track.id === event.track.id)) {
+        currentStream.addTrack(event.track);
+      }
+      remoteStreamRef.current = currentStream;
+      setRemoteStream(new MediaStream(currentStream.getTracks()));
+      setRealtimeStatus('connected');
+      clearMediaPlaybackRetryTimer();
+      if (!firstFrameTrackedRef.current) {
+        firstFrameTrackedRef.current = true;
+        emitMediaMetric({
+          metricType: 'first_frame',
+          playbackProtocol: mediaPlayback.protocol,
+          valueMs: Math.round(performance.now() - playbackStartedAtRef.current)
+        });
+      }
+    };
+    peer.onconnectionstatechange = () => {
+      if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
+        setRealtimeStatus('error');
+        scheduleMediaPlaybackReconnect();
+        emitMediaMetric({
+          metricType: 'playback_error',
+          playbackProtocol: mediaPlayback.protocol,
+          errorCode: peer.connectionState
+        });
+      }
+    };
+
+    void publishWHEPOffer(peer, mediaPlayback.url)
+      .then(() => {
+        if (!cancelled) {
+          setRealtimeStatus('connecting');
+        }
+      })
+      .catch((playbackError) => {
+        if (cancelled) {
+          return;
+        }
+        setRealtimeStatus('error');
+        scheduleMediaPlaybackReconnect();
+        emitMediaMetric({
+          metricType: 'playback_error',
+          playbackProtocol: mediaPlayback.protocol,
+          errorCode: playbackError instanceof Error ? playbackError.message.slice(0, 120) : 'whep_failed'
+        });
+      });
+
+    return () => {
+      cancelled = true;
+      clearMediaPlaybackRetryTimer();
+      if (mediaPlaybackPeerRef.current === peer) {
+        mediaPlaybackPeerRef.current = null;
+      }
+      peer.close();
+    };
+  }, [
+    clearMediaPlaybackRetryTimer,
+    detail?.session.status,
+    emitMediaMetric,
+    mediaPlayback?.protocol,
+    mediaPlayback?.url,
+    playbackReloadKey,
+    usesMediaEnginePlayback
+  ]);
+
+  useEffect(() => {
+    if (usesMediaEnginePlayback || detail?.session.status !== 'LIVE' || socketStatus !== 'connected' || realtimeStatus === 'connected') {
       clearRealtimeRetryTimer();
       return;
     }
@@ -318,7 +453,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     return () => {
       clearRealtimeRetryTimer();
     };
-  }, [clearRealtimeRetryTimer, detail?.session.status, realtimeStatus, requestRealtimeStream, socketStatus]);
+  }, [clearRealtimeRetryTimer, detail?.session.status, realtimeStatus, requestRealtimeStream, socketStatus, usesMediaEnginePlayback]);
 
   const handleSendMessage = useCallback(() => {
     const textValue = chatInput.trim();
@@ -347,10 +482,10 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     [accessToken, router, sessionId]
   );
 
-  const session = detail?.session ?? null;
   const keywords = useMemo(() => products.map((product) => product.nameSnapshot).slice(0, 6), [products]);
   const streamStatusLabel = formatViewerStreamStatus(realtimeStatus, socketStatus);
   const isSessionLive = session?.status === 'LIVE';
+  const fallbackPlaybackUrl = mediaPlayback?.protocol === 'WEBRTC' ? session?.playbackUrl : mediaPlayback?.url || session?.playbackUrl;
 
   return (
     <div className="min-h-screen bg-[#05070d] text-white">
@@ -412,19 +547,45 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                     }}
                     className="aspect-video max-h-[72vh] w-full bg-black object-contain"
                   />
-                ) : session.playbackUrl ? (
+                ) : fallbackPlaybackUrl ? (
                   <div className="relative">
                     <video
-                      src={session.playbackUrl}
+                      src={fallbackPlaybackUrl}
                       poster={session.thumbnailUrl || undefined}
                       controls
                       playsInline
                       autoPlay
+                      onLoadedData={() => {
+                        if (firstFrameTrackedRef.current) {
+                          return;
+                        }
+                        firstFrameTrackedRef.current = true;
+                        emitMediaMetric({
+                          metricType: 'first_frame',
+                          playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
+                          valueMs: Math.round(performance.now() - playbackStartedAtRef.current)
+                        });
+                      }}
+                      onWaiting={() => {
+                        bufferingCountRef.current += 1;
+                        emitMediaMetric({
+                          metricType: 'buffering',
+                          playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
+                          count: bufferingCountRef.current
+                        });
+                      }}
+                      onError={(event) => {
+                        emitMediaMetric({
+                          metricType: 'playback_error',
+                          playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
+                          errorCode: `media_${event.currentTarget.error?.code ?? 'unknown'}`
+                        });
+                      }}
                       className="aspect-video max-h-[72vh] w-full bg-black object-contain"
                     />
                     {realtimeStatus !== 'connected' ? (
                       <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur">
-                        Đang phát từ nguồn dự phòng
+                        {mediaPlayback ? 'Đang phát từ media engine' : 'Đang phát từ nguồn dự phòng'}
                       </div>
                     ) : null}
                   </div>
@@ -439,8 +600,14 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                 <span>{streamStatusLabel}</span>
                 <button
                   type="button"
-                  onClick={() => requestRealtimeStream()}
-                  disabled={!isSessionLive || socketStatus !== 'connected'}
+                  onClick={() => {
+                    if (usesMediaEnginePlayback) {
+                      setPlaybackReloadKey((current) => current + 1);
+                      return;
+                    }
+                    requestRealtimeStream();
+                  }}
+                  disabled={!isSessionLive || (!usesMediaEnginePlayback && socketStatus !== 'connected')}
                   className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Làm mới kết nối
@@ -602,6 +769,53 @@ function createClientMessageId(): string {
     return crypto.randomUUID();
   }
   return `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+async function publishWHEPOffer(peer: RTCPeerConnection, playbackUrl: string): Promise<void> {
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
+  await waitForIceGatheringComplete(peer);
+
+  const localDescription = peer.localDescription;
+  if (!localDescription?.sdp) {
+    throw new Error('whep_missing_sdp');
+  }
+
+  const response = await fetch(playbackUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/sdp' },
+    body: localDescription.sdp
+  });
+  if (!response.ok) {
+    throw new Error(`whep_${response.status}`);
+  }
+
+  const answer = await response.text();
+  await peer.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer }));
+}
+
+function waitForIceGatheringComplete(peer: RTCPeerConnection): Promise<void> {
+  if (peer.iceGatheringState === 'complete') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeout = window.setTimeout(() => {
+      peer.removeEventListener('icegatheringstatechange', handleStateChange);
+      resolve();
+    }, 5000);
+
+    function handleStateChange() {
+      if (peer.iceGatheringState !== 'complete') {
+        return;
+      }
+      window.clearTimeout(timeout);
+      peer.removeEventListener('icegatheringstatechange', handleStateChange);
+      resolve();
+    }
+
+    peer.addEventListener('icegatheringstatechange', handleStateChange);
+  });
 }
 
 function safeParseSocketPayload(raw: unknown): Record<string, unknown> | null {

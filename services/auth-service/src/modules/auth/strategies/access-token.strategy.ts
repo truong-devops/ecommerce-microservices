@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserRepository } from '../repositories/user.repository';
+import { SessionRepository } from '../repositories/session.repository';
 import { RedisService } from '../../../common/utils/redis.service';
 import { AccessTokenPayload } from '../../../common/types/jwt-payload.type';
 import { RequestWithContext } from '../../../common/types/request-context.type';
@@ -13,6 +14,7 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt-access'
   constructor(
     configService: ConfigService,
     private readonly userRepository: UserRepository,
+    private readonly sessionRepository: SessionRepository,
     private readonly redisService: RedisService
   ) {
     super({
@@ -51,6 +53,31 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt-access'
       throw new UnauthorizedException({
         code: ErrorCode.UNAUTHORIZED,
         message: 'Access token revoked'
+      });
+    }
+
+    let sessionRevoked: string | null;
+    try {
+      sessionRevoked = await this.redisService.get(`revoked:session:${payload.sessionId}`);
+    } catch {
+      throw new UnauthorizedException({
+        code: ErrorCode.UNAUTHORIZED,
+        message: 'Unable to verify session revocation'
+      });
+    }
+
+    if (sessionRevoked) {
+      throw new UnauthorizedException({
+        code: ErrorCode.SESSION_REVOKED,
+        message: 'Session revoked'
+      });
+    }
+
+    const session = await this.sessionRepository.findById(payload.sessionId);
+    if (!session || session.revokedAt) {
+      throw new UnauthorizedException({
+        code: ErrorCode.SESSION_REVOKED,
+        message: 'Session revoked'
       });
     }
 

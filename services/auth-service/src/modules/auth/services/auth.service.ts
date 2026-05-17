@@ -204,6 +204,8 @@ export class AuthService {
       }
     }
 
+    await this.sessionService.revokeAllSessions(user.id, 'replaced_by_new_login');
+
     const session = await this.sessionService.createSession({
       userId: user.id,
       ipAddress: request.ip,
@@ -387,6 +389,8 @@ export class AuthService {
         message: 'Account role is not allowed for this app'
       });
     }
+
+    await this.sessionService.revokeAllSessions(user.id, 'replaced_by_new_login');
 
     const session = await this.sessionService.createSession({
       userId: user.id,

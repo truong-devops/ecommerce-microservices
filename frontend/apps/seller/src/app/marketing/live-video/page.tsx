@@ -19,7 +19,8 @@ import {
   startLiveSession,
   unpinLiveProduct
 } from '@/lib/api/live';
-import type { LiveProduct, LiveSession } from '@/lib/api/types';
+import { listSellerProducts } from '@/lib/api/products';
+import type { LiveProduct, LiveSession, SellerProduct } from '@/lib/api/types';
 import { useAuth } from '@/providers/AppProvider';
 
 const liveOverviewTabs = ['Tổng Quan', 'Xu hướng', 'Tổng Quan Người Dùng', 'Danh Sách Livestreams', 'Phân tích', 'Danh Sách Sản Phẩm'];
@@ -159,6 +160,9 @@ export default function LiveVideoPage() {
   const [liveNotice, setLiveNotice] = useState('');
   const [liveError, setLiveError] = useState('');
   const [pinProductId, setPinProductId] = useState('');
+  const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
+  const [sellerProductsLoading, setSellerProductsLoading] = useState(false);
+  const [sellerProductsError, setSellerProductsError] = useState('');
   const [liveForm, setLiveForm] = useState({
     title: '',
     description: '',
@@ -201,11 +205,31 @@ export default function LiveVideoPage() {
     }
   }, [accessToken]);
 
+  const loadSellerProducts = useCallback(async () => {
+    if (!accessToken) {
+      return;
+    }
+
+    setSellerProductsLoading(true);
+    setSellerProductsError('');
+    try {
+      const result = await listSellerProducts({ accessToken, page: 1, pageSize: 60, status: 'ACTIVE' });
+      setSellerProducts(result.items);
+      setPinProductId((current) => (current && result.items.some((product) => product.id === current) ? current : ''));
+    } catch (error) {
+      setSellerProducts([]);
+      setSellerProductsError(error instanceof SellerApiClientError ? error.message : 'Không thể tải sản phẩm của shop.');
+    } finally {
+      setSellerProductsLoading(false);
+    }
+  }, [accessToken]);
+
   useEffect(() => {
     if (ready && user && accessToken) {
       void loadLiveSessions();
+      void loadSellerProducts();
     }
-  }, [accessToken, loadLiveSessions, ready, user]);
+  }, [accessToken, loadLiveSessions, loadSellerProducts, ready, user]);
 
   useEffect(() => {
     if (!accessToken || !selectedLiveSession?.sessionId) {
@@ -483,6 +507,9 @@ export default function LiveVideoPage() {
                 selectedSessionId={selectedLiveSessionId}
                 pinnedProducts={pinnedProducts}
                 pinProductId={pinProductId}
+                sellerProducts={sellerProducts}
+                sellerProductsLoading={sellerProductsLoading}
+                sellerProductsError={sellerProductsError}
                 loading={liveLoading}
                 actionLoading={liveActionLoading}
                 notice={liveNotice}
@@ -496,6 +523,7 @@ export default function LiveVideoPage() {
                 onEnd={handleEndLiveSession}
                 onPinProductIdChange={setPinProductId}
                 onPinProduct={handlePinProduct}
+                onRefreshProducts={() => void loadSellerProducts()}
                 onUnpinProduct={handleUnpinProduct}
               />
             ) : null}
@@ -661,6 +689,9 @@ interface LiveOperationsPanelProps {
   selectedSessionId: string;
   pinnedProducts: LiveProduct[];
   pinProductId: string;
+  sellerProducts: SellerProduct[];
+  sellerProductsLoading: boolean;
+  sellerProductsError: string;
   loading: boolean;
   actionLoading: boolean;
   notice: string;
@@ -674,6 +705,7 @@ interface LiveOperationsPanelProps {
   onEnd: () => void;
   onPinProductIdChange: (productId: string) => void;
   onPinProduct: () => void;
+  onRefreshProducts: () => void;
   onUnpinProduct: (productId: string) => void;
 }
 
@@ -692,6 +724,9 @@ function LiveOperationsPanel({
   selectedSessionId,
   pinnedProducts,
   pinProductId,
+  sellerProducts,
+  sellerProductsLoading,
+  sellerProductsError,
   loading,
   actionLoading,
   notice,
@@ -705,6 +740,7 @@ function LiveOperationsPanel({
   onEnd,
   onPinProductIdChange,
   onPinProduct,
+  onRefreshProducts,
   onUnpinProduct
 }: LiveOperationsPanelProps) {
   const previewRef = useRef<HTMLVideoElement | null>(null);
@@ -721,6 +757,15 @@ function LiveOperationsPanel({
   const buyerLink = selectedSession ? `${buyerWebUrl.replace(/\/$/, '')}/live/${encodeURIComponent(selectedSession.sessionId)}` : '';
   const mediaPublish = selectedSession?.media?.publish;
   const isMediaEngineSession = selectedSession?.media?.provider === 'MEDIAMTX' && mediaPublish?.protocol === 'WHIP' && Boolean(mediaPublish.url);
+  const pinnedProductIds = useMemo(() => new Set(pinnedProducts.map((product) => product.productId)), [pinnedProducts]);
+  const pinnableProducts = useMemo(
+    () => sellerProducts.filter((product) => !pinnedProductIds.has(product.id)),
+    [pinnedProductIds, sellerProducts]
+  );
+  const selectedProduct = useMemo(
+    () => sellerProducts.find((product) => product.id === pinProductId) ?? null,
+    [pinProductId, sellerProducts]
+  );
 
   useEffect(() => {
     if (previewRef.current) {
@@ -1349,24 +1394,121 @@ function LiveOperationsPanel({
       </div>
 
       <div className="mx-4 mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="min-w-[260px] flex-1 text-sm font-medium text-slate-700">
-            Sản phẩm ghim trong live
-            <input
-              value={pinProductId}
-              onChange={(event) => onPinProductIdChange(event.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#ee4d2d]"
-              placeholder="Nhập mã sản phẩm đang bán của shop"
-            />
-          </label>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Sản phẩm ghim trong live</h3>
+            <p className="mt-1 text-xs text-slate-500">Chọn sản phẩm đang bán của shop để ghim cho buyer xem và mua nhanh.</p>
+          </div>
           <button
             type="button"
-            onClick={onPinProduct}
-            disabled={!selectedSession || !pinProductId.trim() || actionLoading}
-            className="rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={onRefreshProducts}
+            disabled={sellerProductsLoading}
+            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Pin sản phẩm
+            {sellerProductsLoading ? 'Đang tải...' : 'Làm mới sản phẩm'}
           </button>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-orange-100 bg-orange-50/50 p-3">
+          {sellerProductsError ? <p className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{sellerProductsError}</p> : null}
+
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="min-w-[260px] flex-1 text-sm font-medium text-slate-700">
+              Chọn sản phẩm
+              <select
+                value={pinProductId}
+                onChange={(event) => onPinProductIdChange(event.target.value)}
+                disabled={sellerProductsLoading || pinnableProducts.length === 0}
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#ee4d2d] disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {sellerProductsLoading
+                    ? 'Đang tải sản phẩm...'
+                    : pinnableProducts.length === 0
+                      ? 'Không còn sản phẩm ACTIVE để ghim'
+                      : 'Chọn sản phẩm của shop'}
+                </option>
+                {pinnableProducts.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name} - {formatMoney(product.minPrice, product.variants[0]?.currency ?? 'VND')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={onPinProduct}
+              disabled={!selectedSession || !pinProductId.trim() || actionLoading}
+              className="rounded-xl bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Pin sản phẩm
+            </button>
+          </div>
+
+          {selectedProduct ? (
+            <div className="mt-3 flex items-center gap-3 rounded-2xl border border-orange-100 bg-white p-3">
+              <Image
+                src={selectedProduct.images[0] || '/icon.svg'}
+                alt={selectedProduct.name}
+                width={56}
+                height={56}
+                unoptimized
+                className="h-14 w-14 rounded-xl object-cover"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-1 text-sm font-semibold text-slate-900">{selectedProduct.name}</p>
+                <p className="text-xs text-slate-500">{selectedProduct.categoryId}</p>
+                <p className="text-sm font-semibold text-[#ee4d2d]">
+                  {formatMoney(selectedProduct.minPrice, selectedProduct.variants[0]?.currency ?? 'VND')}
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">{selectedProduct.status}</span>
+            </div>
+          ) : null}
+
+          {pinnableProducts.length > 0 ? (
+            <div className="mt-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Sản phẩm có thể ghim</p>
+              <div className="grid max-h-[260px] gap-2 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
+                {pinnableProducts.map((product) => {
+                  const isSelected = product.id === pinProductId;
+
+                  return (
+                    <button
+                      key={product.id}
+                      type="button"
+                      onClick={() => onPinProductIdChange(product.id)}
+                      className={`flex items-center gap-3 rounded-2xl border bg-white p-2 text-left transition hover:border-orange-200 hover:bg-white ${
+                        isSelected ? 'border-[#ee4d2d] ring-2 ring-orange-100' : 'border-slate-200'
+                      }`}
+                    >
+                      <Image
+                        src={product.images[0] || '/icon.svg'}
+                        alt={product.name}
+                        width={48}
+                        height={48}
+                        unoptimized
+                        className="h-12 w-12 rounded-xl object-cover"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="line-clamp-1 text-sm font-semibold text-slate-900">{product.name}</span>
+                        <span className="mt-0.5 block text-xs text-slate-500">{product.status}</span>
+                        <span className="block text-sm font-semibold text-[#ee4d2d]">
+                          {formatMoney(product.minPrice, product.variants[0]?.currency ?? 'VND')}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {!sellerProductsLoading && sellerProducts.length === 0 ? (
+            <p className="mt-3 rounded-xl border border-dashed border-orange-200 bg-white px-3 py-3 text-sm text-slate-500">
+              Shop chưa có sản phẩm ACTIVE. Hãy tạo hoặc bật bán sản phẩm trước khi ghim vào live.
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">

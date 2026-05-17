@@ -475,7 +475,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const handleOpenProduct = useCallback(
     (productId: string) => {
       if (sessionId) {
-        void trackLiveProductClick(sessionId, productId, accessToken);
+        void trackLiveProductClick(sessionId, productId, accessToken).catch(() => undefined);
       }
       router.push(`/products/${encodeURIComponent(productId)}`);
     },
@@ -488,48 +488,48 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const fallbackPlaybackUrl = mediaPlayback?.protocol === 'WEBRTC' ? session?.playbackUrl : mediaPlayback?.url || session?.playbackUrl;
 
   return (
-    <div className="min-h-screen bg-[#05070d] text-white">
+    <div className="min-h-screen bg-[#f5f2ec] text-[#171717]">
       <Header keywords={keywords.length > 0 ? keywords : ['livestream', 'live sale', 'deal hot']} />
 
-      <main className="mx-auto w-full max-w-[1440px] px-3 py-4 md:px-5 md:py-6">
-        {status === 'loading' ? <p className="py-16 text-center text-sm text-white/70">{text.home.loading}</p> : null}
+      <main className="mx-auto w-full max-w-[1360px] px-4 py-6 md:px-6 md:py-8">
+        {status === 'loading' ? <p className="py-16 text-center text-sm font-medium text-slate-500">{text.home.loading}</p> : null}
 
         {status === 'error' ? (
-          <section className="mx-auto mt-8 max-w-xl rounded-2xl border border-red-400/30 bg-white p-6 text-center text-slate-900">
+          <section className="mx-auto mt-8 max-w-xl rounded-2xl border border-red-100 bg-white p-6 text-center text-slate-900 shadow-sm">
             <p className="text-sm text-red-600">{error || text.home.loadError}</p>
-            <Link href="/live" className="mt-4 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+            <Link href="/live" className="mt-4 inline-flex rounded-lg bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729]">
               Về danh sách live
             </Link>
           </section>
         ) : null}
 
         {status === 'success' && session ? (
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <article className="overflow-hidden rounded-[28px] border border-white/10 bg-[#0b1020] shadow-2xl">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3 md:px-5 md:py-4">
+          <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <article className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.10)]">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#ebe3d8] bg-[#fffdfa] px-4 py-4 md:px-6">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg ${isSessionLive ? 'bg-red-600 shadow-red-950/40' : 'bg-slate-600 shadow-slate-950/30'}`}>
+                    <span className={`rounded-md px-2.5 py-1 text-xs font-black tracking-wide text-white ${isSessionLive ? 'bg-[#e8323b]' : 'bg-slate-500'}`}>
                       {formatSessionStatus(session.status)}
                     </span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">
+                    <span className="rounded-md border border-[#ead8ca] bg-[#fff4ea] px-2.5 py-1 text-xs font-bold text-[#9a3412]">
                       {viewerCount.toLocaleString('vi-VN')} đang xem
                     </span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">{streamStatusLabel}</span>
+                    <span className="rounded-md border border-[#bfd8cc] bg-[#edf7f1] px-2.5 py-1 text-xs font-bold text-[#166f4a]">{streamStatusLabel}</span>
                   </div>
-                  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">{session.title}</h1>
-                  <p className="mt-1 text-sm leading-6 text-white/60">{session.description || 'Shop đang phát trực tiếp.'}</p>
+                  <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111827] md:text-[34px]">{session.title}</h1>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">{session.description || 'Shop đang phát trực tiếp.'}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => void refreshProducts(session.sessionId)}
-                  className="rounded-full border border-white/20 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+                  className="rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3]"
                 >
                   Làm mới sản phẩm
                 </button>
               </div>
 
-              <div className="relative bg-black">
+              <div className="relative bg-[#090b10]">
                 {!isSessionLive ? (
                   <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/70">
                     {session.status === 'PAUSED'
@@ -545,7 +545,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                     onLoadedMetadata={(event) => {
                       void event.currentTarget.play().catch(() => undefined);
                     }}
-                    className="aspect-video max-h-[72vh] w-full bg-black object-contain"
+                    className="aspect-video max-h-[72vh] w-full bg-[#090b10] object-contain"
                   />
                 ) : fallbackPlaybackUrl ? (
                   <div className="relative">
@@ -581,10 +581,10 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                           errorCode: `media_${event.currentTarget.error?.code ?? 'unknown'}`
                         });
                       }}
-                      className="aspect-video max-h-[72vh] w-full bg-black object-contain"
+                      className="aspect-video max-h-[72vh] w-full bg-[#090b10] object-contain"
                     />
                     {realtimeStatus !== 'connected' ? (
-                      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur">
+                      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/20 bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
                         {mediaPlayback ? 'Đang phát từ media engine' : 'Đang phát từ nguồn dự phòng'}
                       </div>
                     ) : null}
@@ -596,8 +596,8 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-3 text-sm text-white/70">
-                <span>{streamStatusLabel}</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ebe3d8] bg-[#fffdfa] px-4 py-3 text-sm text-[#667085]">
+                <span className="font-semibold">{streamStatusLabel}</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -608,28 +608,29 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                     requestRealtimeStream();
                   }}
                   disabled={!isSessionLive || (!usesMediaEnginePlayback && socketStatus !== 'connected')}
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-[#e2d8cd] bg-white px-3 py-1.5 text-xs font-bold text-[#344054] transition hover:border-[#ee4d2d] hover:text-[#c2410c] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Làm mới kết nối
                 </button>
               </div>
 
-              <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-3">
+              <div className="grid gap-3 border-t border-[#ebe3d8] bg-[#fbf7f1] p-4 md:grid-cols-3">
                 <MetricPill label="Lượt xem cao nhất" value={session.metricsSnapshot.viewerPeak} />
                 <MetricPill label="Tin nhắn" value={session.metricsSnapshot.messageCount + messages.length} />
                 <MetricPill label="Lượt xem sản phẩm" value={session.metricsSnapshot.productClickCount} />
               </div>
             </article>
 
-            <aside className="grid gap-4 xl:sticky xl:top-24 xl:self-start">
-              <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white text-slate-900 shadow-xl">
-                <div className="border-b border-slate-200 p-4">
-                  <h2 className="text-base font-semibold">Sản phẩm đang lên sóng</h2>
-                  <p className="mt-1 text-sm text-slate-500">Chọn sản phẩm để xem chi tiết hoặc mua ngay.</p>
+            <aside className="grid gap-5 xl:sticky xl:top-24 xl:self-start">
+              <section className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+                <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#b54708]">Live cart</p>
+                  <h2 className="mt-1 text-lg font-black tracking-[-0.02em]">Sản phẩm đang lên sóng</h2>
+                  <p className="mt-1 text-sm text-[#667085]">Chọn sản phẩm để xem chi tiết hoặc mua ngay.</p>
                 </div>
                 <div className="max-h-[300px] space-y-2 overflow-y-auto p-3">
                   {products.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                    <p className="rounded-2xl border border-dashed border-[#e2d8cd] bg-[#fbf7f1] p-4 text-sm font-medium text-[#667085]">
                       Seller chưa pin sản phẩm nào.
                     </p>
                   ) : (
@@ -638,7 +639,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                         key={product.productId}
                         type="button"
                         onClick={() => handleOpenProduct(product.productId)}
-                        className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2 text-left transition hover:border-brand-200 hover:bg-brand-50"
+                        className="flex w-full items-center gap-3 rounded-2xl border border-[#e2d8cd] bg-white p-2 text-left transition hover:border-[#ee4d2d] hover:bg-[#fff8f3]"
                       >
                         <Image
                           src={product.imageSnapshot || '/icon.svg'}
@@ -650,35 +651,36 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                         />
                         <span className="min-w-0 flex-1">
                           <span className="line-clamp-2 text-sm font-semibold text-slate-900">{product.nameSnapshot}</span>
-                          <span className="mt-1 block text-sm font-bold text-brand-600">
+                          <span className="mt-1 block text-sm font-black text-[#d92d20]">
                             {formatPrice(product.priceSnapshot, product.currencySnapshot)}
                           </span>
                         </span>
-                        <span className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-semibold text-white">Mua</span>
+                        <span className="rounded-lg bg-[#ee4d2d] px-3 py-1 text-xs font-bold text-white">Mua</span>
                       </button>
                     ))
                   )}
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white text-slate-900 shadow-xl">
-                <div className="border-b border-slate-200 p-4">
-                  <h2 className="text-base font-semibold">Trò chuyện</h2>
-                  <p className="mt-1 text-sm text-slate-500">
+              <section className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+                <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#98a2b3]">Realtime chat</p>
+                  <h2 className="mt-1 text-lg font-black tracking-[-0.02em]">Trò chuyện</h2>
+                  <p className="mt-1 text-sm text-[#667085]">
                     {user ? 'Trao đổi trực tiếp với shop và người xem khác.' : 'Đăng nhập để tham gia trò chuyện.'}
                   </p>
                 </div>
-                <div className="flex h-[320px] flex-col">
+                <div className="flex h-[360px] flex-col">
                   <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-                    {messages.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Chưa có tin nhắn.</p> : null}
+                    {messages.length === 0 ? <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p> : null}
                     {messages.map((message) => (
-                      <div key={message.messageId} className="rounded-xl bg-slate-50 p-3">
+                      <div key={message.messageId} className="rounded-2xl bg-[#f8f6f1] p-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{message.senderRole}</p>
                         <p className="mt-1 text-sm text-slate-900">{message.text}</p>
                       </div>
                     ))}
                   </div>
-                  <div className="border-t border-slate-200 p-3">
+                  <div className="border-t border-[#ebe3d8] p-3">
                     <div className="flex gap-2">
                       <input
                         value={chatInput}
@@ -690,13 +692,13 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                         }}
                         disabled={!isSessionLive || !accessToken || socketStatus !== 'connected'}
                         placeholder={accessToken ? 'Nhập chat...' : 'Bạn cần đăng nhập để chat'}
-                        className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 disabled:bg-slate-100"
+                        className="min-w-0 flex-1 rounded-xl border border-[#d7d0c5] bg-[#fbfaf7] px-3 py-2 text-sm outline-none transition focus:border-[#ee4d2d] focus:bg-white disabled:bg-slate-100"
                       />
                       <button
                         type="button"
                         onClick={handleSendMessage}
                         disabled={!isSessionLive || !chatInput.trim() || !accessToken || socketStatus !== 'connected'}
-                        className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-xl bg-[#ee4d2d] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Gửi
                       </button>
@@ -723,9 +725,9 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
 
 function MetricPill({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-white/50">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-white">{value.toLocaleString('vi-VN')}</p>
+    <div className="rounded-2xl border border-[#e2d8cd] bg-white p-4">
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#98a2b3]">{label}</p>
+      <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-[#111827]">{value.toLocaleString('vi-VN')}</p>
     </div>
   );
 }

@@ -605,7 +605,7 @@ export interface TrackBuyerVideoEventInput {
   watchTimeSec?: number;
 }
 
-export type LiveSessionStatus = 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
+export type LiveSessionStatus = 'DRAFT' | 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'ENDED' | 'CANCELLED';
 
 export interface LiveMetricsSnapshot {
   viewerPeak: number;

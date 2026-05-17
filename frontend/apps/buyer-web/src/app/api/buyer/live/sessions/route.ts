@@ -3,7 +3,7 @@ import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 import { normalizePositiveInt } from '../_utils';
 
-const SESSION_STATUSES = new Set(['DRAFT', 'SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED']);
+const SESSION_STATUSES = new Set(['DRAFT', 'SCHEDULED', 'LIVE', 'PAUSED', 'ENDED', 'CANCELLED']);
 
 export async function GET(request: Request) {
   const input = new URL(request.url).searchParams;

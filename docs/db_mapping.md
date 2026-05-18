@@ -1,27 +1,46 @@
 # E-commerce Microservices - Database Mapping
 
-_Danh sách service sử dụng DB và giải thích Elasticsearch/OpenSearch_
+Last updated: 2026-05-18. Runtime defaults: root `docker-compose.yml`.
 
-## 1. Service -> Database
+## 1. Service → Database
 
-| Service | Database sử dụng |
+| Service | Database / store | Notes |
+|---|---|---|
+| API Gateway | Redis | Token revocation, rate-limit state when enabled |
+| Auth Service | PostgreSQL, Redis | `auth_db`; sessions / revocation |
+| User Service | PostgreSQL, Redis | `ecommerce_user` |
+| Product Service | MongoDB, Redis | `ecommerce_product`; OpenSearch optional (`SEARCH_ENABLED`) |
+| Media Service | MinIO | S3-compatible object storage |
+| Cart Service | Redis, PostgreSQL (optional) | Redis-primary; Postgres when persistence enabled |
+| Order Service | PostgreSQL, Redis | Shared `ecommerce` DB + migrations |
+| Payment Service | PostgreSQL, Redis | Shared `ecommerce` DB |
+| Inventory Service | PostgreSQL | Reservations, stock, outbox |
+| Shipping Service | PostgreSQL, Redis | Shipments, tracking, outbox |
+| Review Service | MongoDB, Redis | `ecommerce_review` |
+| Chat Service | MongoDB, Redis | `ecommerce_chat` |
+| Live Service | MongoDB, Redis | `ecommerce_live`; MediaMTX for media path |
+| Notification Service | PostgreSQL, Redis | Templates, dispatch queue |
+| Analytics Service | PostgreSQL, Redis (optional) | `analytics_events_raw`, `seller_daily_metrics` |
+
+**Not in default compose:** `services/product-service-nest/` (legacy NestJS catalog for shadow tests).
+
+## 2. Infrastructure (compose)
+
+| Component | Image / role |
 |---|---|
-| API Gateway | Redis |
-| User Service | PostgreSQL |
-| Auth Service | PostgreSQL, Redis |
-| Product Service | MongoDB, Elasticsearch/OpenSearch, Redis (optional) |
-| Review Service | MongoDB, Elasticsearch/OpenSearch (optional), Redis (optional) |
-| Cart Service | Redis, PostgreSQL (optional - lưu cart lâu dài) |
-| Order Service | PostgreSQL |
-| Payment Service | PostgreSQL, Redis |
-| Inventory Service | PostgreSQL |
-| Shipping Service | PostgreSQL |
-| Notification Service | PostgreSQL, Redis (optional) |
-| Analytics Service | ClickHouse, Redis (optional) |
+| PostgreSQL 16 | OLTP for auth, user, cart, order, payment, inventory, shipping, notification, analytics |
+| MongoDB 7 | product, review, chat, live |
+| Redis 7 | Cache, sessions, idempotency |
+| MinIO | Media objects |
+| Kafka 7.6 | Domain and aggregate event topics |
+| MediaMTX | Live stream ingest/playback |
 
-## 2. Elasticsearch/OpenSearch là gì?
+## 3. Elasticsearch / OpenSearch
 
-- Elasticsearch và OpenSearch là hệ thống search engine (công cụ tìm kiếm) dùng để tạo index và truy vấn tìm kiếm cực nhanh.
-- Chúng phù hợp cho: tìm kiếm full-text, lọc (filter), faceted search (lọc theo danh mục/giá/brand/rating), sắp xếp theo độ liên quan, autocomplete/suggest.
-- Dữ liệu “chuẩn” (source of truth) vẫn nằm trong MongoDB/PostgreSQL; Elasticsearch/OpenSearch chỉ giữ index để phục vụ truy vấn tìm kiếm.
-- OpenSearch là một dự án tách nhánh (fork) từ Elasticsearch, API và cách dùng khá tương đồng trong đa số use-case.
+- Optional search index for **product-service** when `SEARCH_ENABLED=true`.
+- Source of truth remains **MongoDB**; search engine holds denormalized indexes for full-text and faceted queries.
+- OpenSearch is API-compatible with Elasticsearch for most catalog search use cases.
+
+## 4. Legacy note on ClickHouse
+
+Some older docs refer to ClickHouse for analytics. The **current Go `analytics-service`** uses **PostgreSQL** (see `services/analytics-service/migrations/0001_init_analytics_service.sql`). Treat ClickHouse as a possible future migration path, not the default stack.

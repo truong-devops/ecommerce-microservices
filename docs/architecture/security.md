@@ -13,7 +13,7 @@ This document describes the security controls and mechanisms implemented across 
 - **Role-Based Access Control**: Users possess roles (`CUSTOMER`, `SELLER`, `ADMIN`, `SUPPORT`, `SUPER_ADMIN`).
 - **Middleware Enforcement**: 
   - In Go services, `internal/middleware` intercepts requests and enforces role requirements.
-  - In NestJS services, `RolesGuard` and `@Roles()` decorators enforce access.
+  - In `auth-service` (NestJS), `RolesGuard` and `@Roles()` decorators enforce access.
 - **Resource Ownership**: Services validate that a user owns a resource before modifying it (e.g., `cart-service` ensures user A cannot modify user B's cart).
 
 ## 3. Network Security

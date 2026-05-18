@@ -13,7 +13,7 @@ flowchart LR
     BuyerAPI["Buyer Next API Routes"]
 
     LiveService["Live Service<br/>Go + Chi + WebSocket"]
-    AuthService["Auth Service<br/>NestJS + JWT Session"]
+    AuthService["Auth Service<br/>NestJS + JWT"]
     ProductService["Product Service"]
     MediaService["Media Service<br/>File/Thumbnail/Replay"]
 

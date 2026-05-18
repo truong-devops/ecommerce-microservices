@@ -27,5 +27,5 @@ The checkout process is the most complex data flow, spanning multiple services:
 
 Because each microservice has its own database, we rely on **Eventual Consistency**.
 
-- **Transactional Outbox**: Used by services (Go: `pgx` transaction + background dispatcher, NestJS: TypeORM transaction) to ensure that a domain state change and its resulting Kafka event are atomically committed to the database before the event is sent to Kafka.
+- **Transactional Outbox**: Used by Go services (`pgx` transaction + `internal/events` dispatcher) and `auth-service` (TypeORM) so domain writes and outbox rows commit atomically before Kafka publish.
 - **Idempotency**: Consumers maintain an `idempotency_records` table to ensure that processing the same Kafka event twice (at-least-once delivery) does not result in duplicate business actions.

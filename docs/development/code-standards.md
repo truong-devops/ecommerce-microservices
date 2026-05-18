@@ -33,7 +33,7 @@ This document defines one coding style and one project organization style so the
 
 ## 5. Backend Folder Structure
 
-### 5a. Go Services (user, cart, order, payment, inventory, notification, review, analytics)
+### 5a. Go Services (api-gateway, user, product, cart, order, payment, inventory, shipping, notification, review, analytics, chat, media, live)
 
 Each Go service MUST follow this layout:
 
@@ -64,7 +64,7 @@ services/<service-name>/
 - MUST keep DB access in repository layer.
 - MUST use `internal/` to prevent external imports.
 
-### 5b. NestJS Services (auth, product, shipping)
+### 5b. NestJS Services (auth only)
 
 Each NestJS service SHOULD follow this layout:
 
@@ -199,7 +199,7 @@ Pagination SHOULD use:
 
 ## 10. Validation Rules
 
-Backend (NestJS — auth, product, shipping):
+Backend (NestJS — auth-service):
 
 - MUST validate all input DTOs using `class-validator`.
 - MUST use global `ValidationPipe` with:
@@ -246,7 +246,7 @@ Use this block when prompting AI tools:
 ```txt
 Generate code for this monorepo following docs/development/code-standards.md strictly.
 For Go services: use Go 1.22, chi router, pgx for PostgreSQL, and follow cmd/internal layout.
-For NestJS services (auth, product, shipping): use TypeScript and existing NestJS architecture.
+For `auth-service`: use TypeScript and existing NestJS architecture. Catalog and shipping run on Go (`product-service`, `shipping-service`).
 Keep backend runtime code inside services/*, shared contracts in shared/*.
 Use REST for client-facing APIs, gRPC for internal sync calls, Kafka for async events.
 Follow naming: camelCase, PascalCase, UPPER_SNAKE_CASE, kebab-case file/folder.

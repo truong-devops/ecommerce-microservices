@@ -33,9 +33,12 @@ All contracts are strictly defined in `shared/kafka/`.
 
 ### 5. Notification & Analytics
 - `notification.events`: Topic for queuing raw dispatch requests.
-- `analytics.events`: Firehose topic. All services can publish here for the `analytics-service` to ingest into ClickHouse.
+- `analytics.events`: Firehose topic. Services publish here for `analytics-service` to ingest (PostgreSQL `analytics_events_raw` in the default stack).
 
-### 6. Chat Events
+### 6. Live Events
+- `live.events`: Live session lifecycle and commerce interaction events (producer: `live-service`).
+
+### 7. Chat Events
 - `chat.conversation.created`: Conversation lifecycle event.
 - `chat.message.created`: Fired whenever a new buyer/seller message is stored.
 - `chat.message.read`: Fired when participant marks conversation as read.

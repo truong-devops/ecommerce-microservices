@@ -1,5 +1,7 @@
 # Product Service Go Shadow Test Plan
 
+> **Status (2026-05):** Go `product-service` is the **default** in `docker-compose.yml`. Use this doc to re-run shadow/compare validation against `product-service-nest`, not as the primary deployment guide.
+
 Goal: prove `services/product-service` can replace the current NestJS `services/product-service-nest` without API, data, event, or behavior regressions.
 
 Scope: compare product, product video, moderation video, shop decor, health, auth, response envelope, Mongo persistence, Redis cache behavior, Kafka events, and OpenSearch indexing.

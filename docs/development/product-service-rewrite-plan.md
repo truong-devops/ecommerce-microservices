@@ -1,5 +1,7 @@
 # Product Service Go Rewrite Plan
 
+> **Status (2026-05):** Migration **complete** for the default stack. Root `docker-compose.yml` builds **`services/product-service`** (Go). This document is kept as historical design/parity notes; use [`docs/architecture/system-design.md`](../architecture/system-design.md) for current architecture.
+
 Goal: build `services/product-service` in parallel with the current NestJS `services/product-service-nest`, then cut API Gateway traffic over only after the Go implementation is contract-compatible and validated against the existing service.
 
 This plan follows `docs/development/code-standards.md`: runtime code stays in `services/*`, Go services use `cmd/internal`, handlers stay thin, repositories own database access, and REST responses keep the standard envelope.

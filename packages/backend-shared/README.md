@@ -1,11 +1,9 @@
-# packages/backend-shared
+# Backend Shared (NestJS)
 
-Runtime utilities for backend services.
+NestJS runtime helpers: guards, interceptors, pipes, decorators, DTO utilities.
 
-This package is for NestJS-oriented backend runtime components. It is used ONLY by the remaining NestJS services (`auth-service`, `product-service`, `shipping-service`). Go services do not use this package.
+**Used only by `auth-service`** in the default production/compose stack.
 
-- guards, pipes, interceptors, filters
-- base entities and shared database abstractions
-- config loaders, decorators, common error handling
+Go microservices implement equivalent logic under each service's `internal/` package and do **not** import this package.
 
-Do not place cross-platform transport contracts here; keep those in `/shared`.
+Legacy `product-service-nest` may still reference shared types during shadow tests; it is not deployed by root `docker compose up`.

@@ -1,15 +1,24 @@
 # shipping-service
 
-Go implementation of shipping-service.
+Go implementation of the shipping microservice (PostgreSQL, Redis, Kafka outbox).
 
-## Run locally (container-first)
+## Run locally (compose)
 
-1. `cd services/shipping-service`
-2. `docker compose -f docker-compose.dev.yml up -d --build`
-3. Health check: `curl -sS http://localhost:3008/api/v1/health`
+```bash
+docker compose up -d shipping-service postgres redis kafka
+curl -sS http://localhost:12018/api/v1/health
+```
+
+Or service-only dev compose:
+
+```bash
+cd services/shipping-service
+docker compose -f docker-compose.dev.yml up -d --build
+```
 
 ## Notes
 
-- Previous NestJS implementation is now in `services/shipping-service-nest`.
-- Exposes both `/api/v1/*` and compatibility `/api/*` routes.
-- Kafka order consumer auto-creates shipment from `order.created`.
+- Default stack port (root compose): **12018**
+- Exposes `/api/v1/*` routes
+- Consumes `order.events` when Kafka is enabled; publishes `shipping.events` via outbox dispatcher
+- Legacy NestJS reference may exist in git history; **current runtime is Go**

@@ -12,8 +12,8 @@ Primary goal: reduce token usage without reducing code quality.
 ## 2) Repo Routing (Read This First)
 
 - `services/*`:
-  - Go services: `api-gateway`, `user`, `cart`, `order`, `payment`, `inventory`, `shipping`, `notification`, `review`, `analytics`, `chat`, `media`, `product-service`.
-  - NestJS services: `auth-service`, `product-service-nest`.
+  - Go services: `api-gateway`, `user`, `product-service`, `cart`, `order`, `payment`, `inventory`, `shipping`, `notification`, `review`, `analytics`, `chat`, `media`, `live-service`.
+  - NestJS services: `auth-service` only (`product-service-nest` is legacy shadow/compare, not default compose).
 - `shared/*`: cross-service contracts (`proto`, `kafka`, shared types/constants/contracts).
 - `packages/backend-shared/*`: NestJS shared runtime helpers.
 - `frontend/*`: buyer/buyer-web/seller/moderator apps and shared frontend packages.
@@ -45,7 +45,8 @@ Pick the lowest level that still protects correctness:
   - Compile/lint/test only directly touched module when available.
 - `L1 - Service scope` (default):
   - For Go service changes: run `go test ./...` inside that service.
-  - For `auth-service`/`product-service-nest`: run workspace test/build for that service only.
+  - For `auth-service`: run workspace test/build for that service only.
+  - For `product-service-nest` (legacy): only when touching shadow/compare scripts.
 - `L2 - Contract/integration scope`:
   - If API/event behavior changed, run corresponding `scripts/test-*-service.sh` or relevant compare script.
 - `L3 - Full monorepo` (expensive; only when necessary):

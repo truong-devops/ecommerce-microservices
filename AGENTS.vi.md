@@ -25,9 +25,9 @@ Rule: task thuộc service nào thì ưu tiên đọc/sửa trong service đó t
 - `L0` (nhỏ, ít rủi ro): kiểm tra module/file bị chạm.
 - `L1` (mặc định):
   - Go service: `cd services/<name> && go test ./...`
-  - NestJS:
+  - NestJS (`auth-service`):
     - `npm --workspace services/auth-service run test`
-    - `npm --workspace services/product-service-nest run test`
+  - Legacy shadow (`product-service-nest`): chỉ khi sửa script so sánh Nest vs Go
 - `L2` (đổi API/event): chạy script tích hợp tương ứng trong `scripts/`.
 - `L3` (đắt, chỉ khi cần): `npm run test` hoặc full turbo.
 
@@ -40,7 +40,7 @@ Không nhảy lên `L3` nếu chưa thử `L0/L1`.
 - Go test theo service: `cd services/<go-service> && go test ./...`
 - Nest build:
   - `npm --workspace services/auth-service run build`
-  - `npm --workspace services/product-service-nest run build`
+  - `cd services/product-service && go test ./...` (catalog Go)
 
 ## 5) Prompt mẫu cực ngắn
 

@@ -29,8 +29,8 @@ Before contributing, familiarise yourself with the project structure:
 
 | Path | Role |
 |---|---|
-| `services/` | 12 independently deployable microservices |
-| `packages/backend-shared/` | NestJS runtime shared library (guards, pipes, interceptors, DTOs) — used by remaining NestJS services only |
+| `services/` | 14 domain microservices + `api-gateway` (13 Go + 1 NestJS auth) |
+| `packages/backend-shared/` | NestJS shared library — **auth-service** only |
 | `shared/` | Language-neutral contracts — proto, Kafka events, TypeScript types |
 | `frontend/` | Buyer, seller, and moderator applications + shared frontend packages |
 | `infrastructure/` | Docker, K3s manifests, Kafka, monitoring, logging, Terraform |
@@ -61,7 +61,7 @@ Before contributing, familiarise yourself with the project structure:
 
 **`scope`** — the affected service or area:
 
-- **Backend**: `api-gateway`, `auth`, `user`, `product`, `inventory`, `cart`, `order`, `payment`, `shipping`, `notification`, `review`, `analytics`
+- **Backend**: `api-gateway`, `auth`, `user`, `product`, `media`, `inventory`, `cart`, `order`, `payment`, `shipping`, `notification`, `review`, `analytics`, `chat`, `live`
 - **Cross-cutting**: `shared`, `infra`, `cicd`, `docs`, `frontend-buyer`, `frontend-seller`
 
 **`short-desc`** — lowercase, kebab-case, imperative form.
@@ -317,7 +317,7 @@ Shared contracts are the most high-impact changes in this monorepo. Handle them 
 
 ### Changing `packages/backend-shared/`
 
-This library is imported by the remaining NestJS services (`auth-service`, `product-service`, `shipping-service`). Any interface or export change is a breaking change for those services. The 8 Go services maintain their own `internal/` packages and are not affected. Discuss with the team before modifying public APIs.
+This library is imported by **`auth-service`** only in the default stack. Any export change is a breaking change for auth. Go services use `internal/` packages and are not affected. Discuss with the team before modifying public APIs.
 
 ---
 

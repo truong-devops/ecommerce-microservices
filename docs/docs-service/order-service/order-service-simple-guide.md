@@ -12,11 +12,11 @@ Mọi đường dẫn bên dưới đều tính từ thư mục này.
 
 ## 2) Đọc từ đâu để hiểu nhanh?
 
-1. `src/main.ts`
-2. `src/app.module.ts`
-3. `src/modules/orders/controllers/orders.controller.ts`
-4. `src/modules/orders/services/orders.service.ts`
-5. `src/modules/orders/services/outbox-dispatcher.service.ts`
+1. `cmd/server/main.go`
+2. `internal/router/router.go`
+3. `internal/handler/order_handler.go`
+4. `internal/service/order_service.go`
+5. `internal/events/dispatcher.go`
 
 Chỉ cần nắm 5 file này là hiểu phần lớn luồng hoạt động.
 

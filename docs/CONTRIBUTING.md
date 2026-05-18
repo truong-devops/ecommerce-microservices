@@ -78,7 +78,8 @@ git checkout -b feature/order-checkout-saga
 
 3) Chạy nhanh sanity:
 - Backend (Go services): `cd services/<service-name> && go build ./cmd/server`
-- Backend (NestJS services: auth, product, shipping): `pnpm -w lint` hoặc `pnpm -w build` (tuỳ mức độ)
+- Backend (NestJS — `auth-service` only): `npm --workspace services/auth-service run build`
+- Backend (Go): `cd services/<service-name> && go test ./...`
 - Frontend: `pnpm -w --filter @frontend/buyer dev` (nếu cần)
 
 ### 2.2 Trong ngày (khuyến nghị mạnh)

@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white"/>
   <img src="https://img.shields.io/badge/Apache_Kafka-7.6-231F20?style=for-the-badge&logo=apachekafka&logoColor=white"/>
   <img src="https://img.shields.io/badge/Kubernetes-K3s-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Services_in_Go-12/14-00ADD8?style=for-the-badge&logo=go&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Services_in_Go-13/14-00ADD8?style=for-the-badge&logo=go&logoColor=white"/>
 </p>
 
 <h1 align="center">Ecommerce Microservices Platform</h1>
@@ -18,7 +18,7 @@
 
 ## Architecture Overview
 
-The system is composed of **14 independent microservices**, each owning its own data store, deployment lifecycle, and domain boundary. The vast majority of backend services (12 out of 14) are written in **Go**, with two services — `auth-service` and `product-service` — remaining on **NestJS/TypeScript**. All external traffic enters through a high-performance **API Gateway written in Go**, which handles authentication, rate limiting, and intelligent reverse proxying to all downstream services.
+The platform has **14 domain microservices** (each with its own data store and deployment lifecycle) plus an **API Gateway**. **13 of 14** domain services run on **Go**; only **`auth-service`** remains on **NestJS/TypeScript**. Catalog (`product-service`), fulfillment (`shipping-service`), engagement (`chat-service`, `live-service`), and the rest of the stack are Go in the default `docker-compose.yml` stack. All client traffic enters through the **Go API Gateway** (JWT, rate limiting, reverse proxy).
 
 Communication between services is **dual-mode**:
 - **Synchronous**: HTTP/REST with per-service timeout contracts enforced at the gateway layer
@@ -41,11 +41,11 @@ gRPC **Protocol Buffer definitions** in `shared/proto/` serve as the source of t
               │                                                                           │
    ┌──────────▼───────────────────────────────────────────────────────────────────────┐   │
    │                       Go Microservices (chi · pgx · zap)                         │   │
-   │   user · cart · order · payment · inventory · shipping                           │   │
-   │   notification · review · analytics · chat · media                               │   │
+   │   user · product · cart · order · payment · inventory · shipping                 │   │
+   │   notification · review · analytics · chat · media · live                        │   │
    ├──────────────────────────────────────────────────────────────────────────────────┤   │
-   │                      NestJS Microservices (TypeScript)                           │   │
-   │   auth · product                                                                 │   │
+   │                      NestJS (TypeScript) — auth only                             │   │
+   │   auth-service                                                                   │   │
    └──────────────────────────────────┬───────────────────────────────────────────────┘   │
                                       │ Kafka Events                                      │
                              ┌────────▼────────┐                                          │
@@ -75,13 +75,13 @@ The single ingress point for all client traffic, built in **Go 1.22** for maximu
 | CORS | `go-chi/cors` |
 | Token Revocation | `redis/go-redis v9` |
 
-The gateway routes to **13 downstream services** (`auth`, `user`, `product`, `media`, `cart`, `order`, `payment`, `inventory`, `shipping`, `review`, `notification`, `analytics`, `chat`), each with its own configurable timeout. Public endpoints (login, register, product catalog browse, review listing, WebSocket chat) are accessible without authentication; all other routes pass through JWT validation middleware.
+The gateway routes to **14 downstream services** (`auth`, `user`, `product`, `media`, `cart`, `order`, `payment`, `inventory`, `shipping`, `review`, `notification`, `analytics`, `chat`, `live`), each with its own configurable timeout. Public endpoints (login, register, catalog browse, review listing, WebSocket chat/live) are accessible without authentication; all other routes pass through JWT validation middleware.
 
 Internal package layout: `internal/auth`, `internal/config`, `internal/handlers`, `internal/middleware`, `internal/observability`, `internal/proxy`, `internal/router`.
 
-### Domain Services — Go (12 services)
+### Domain Services — Go (13 services)
 
-12 out of 14 services are written in Go. Each follows a clean architecture with idiomatic package layout:
+13 of 14 domain microservices are written in Go (plus the Go API Gateway). Each follows a clean architecture with idiomatic package layout:
 
 | Concern | Library / Pattern |
 |---|---|
@@ -97,15 +97,16 @@ Internal package layout: `internal/auth`, `internal/config`, `internal/handlers`
 
 Internal package layout per Go service: `cmd/server` (entrypoint), `internal/auth`, `internal/config`, `internal/domain`, `internal/handler`, `internal/httpx`, `internal/middleware`, `internal/repository`, `internal/router`, `internal/service`, `internal/events`.
 
-**Go services:** `api-gateway` · `user` · `cart` · `order` · `payment` · `inventory` · `shipping` · `notification` · `review` · `analytics` · `chat` · `media`
+**Go services:** `api-gateway` · `user` · `product` · `cart` · `order` · `payment` · `inventory` · `shipping` · `notification` · `review` · `analytics` · `chat` · `media` · `live`
 
-### Domain Services — NestJS / TypeScript (2 services)
+Legacy NestJS catalog code remains in `services/product-service-nest/` for shadow/compare scripts only; it is **not** started by root `docker compose up`.
 
-The following 2 services remain on **NestJS 10** with **TypeScript 5.6**:
-- **`auth-service`** — JWT (RS256), TOTP/2FA (speakeasy), session management, token revocation, password hashing (bcryptjs), Passport strategies
-- **`product-service`** — Catalog, search, dynamic product attributes (MongoDB/Mongoose), Redis caching
+### Domain Services — NestJS / TypeScript (1 service)
 
-Each NestJS service applies:
+**`auth-service`** on **NestJS 10** / **TypeScript 5.6**:
+- JWT (RS256), TOTP/2FA (speakeasy), session management, token revocation, password hashing (bcryptjs), Passport strategies, Google OAuth
+
+The auth service applies:
 - Module-scoped dependency injection with `@nestjs/common`
 - Schema-validated configuration via `@nestjs/config` + `Joi`
 - Global JWT + RBAC guards registered at the application level
@@ -117,7 +118,7 @@ Each NestJS service applies:
 | Store | Services | Rationale |
 |---|---|---|
 | **PostgreSQL 16** | auth, user, order, payment, cart, inventory, shipping, notification, analytics | ACID transactions, relational integrity |
-| **MongoDB 7** | product, review, chat | Flexible document schema for catalog, UGC, and conversations |
+| **MongoDB 7** | product, review, chat, live | Flexible document schema for catalog, UGC, conversations, live sessions |
 | **Redis 7** | auth, product, cart, order, payment, review, chat, api-gateway | Token blacklisting, session cache, rate-limit state, idempotency locks |
 | **MinIO** | media | S3-compatible object storage for product images and media assets |
 
@@ -137,6 +138,7 @@ Each NestJS service applies:
 | `payment.authorized` / `payment.captured` | payment-service | order-service |
 | `payment.failed` | payment-service | order-service, inventory-service |
 | `chat.message.created` / `chat.message.read` | chat-service | notification-service, analytics-service |
+| `live.events` | live-service | analytics-service, audit flows |
 | `user.registered` | user-service | notification-service, analytics-service |
 
 All services implement the **Outbox Pattern** — events are written to an `outbox_events` table within the same database transaction, then published to Kafka by a background dispatcher. This guarantees zero message loss even during broker downtime.
@@ -157,26 +159,28 @@ All services implement the **Outbox Pattern** — events are written to an `outb
 ```
 ecommerce-microservices/
 │
-├── services/                         # 14 independently deployable microservices
+├── services/                         # 14 domain microservices + legacy product-service-nest
 │   ├── api-gateway/                  # Go — reverse proxy, auth, rate limiting, CORS
 │   ├── auth-service/                 # NestJS — JWT, TOTP, OAuth, session management
 │   ├── user-service/                 # Go — profile, address management
-│   ├── product-service/              # NestJS — catalog, search, dynamic attributes
+│   ├── product-service/              # Go — catalog, shops, shoppable video (MongoDB)
+
 │   ├── media-service/                # Go — S3/MinIO upload, pre-signed URLs
 │   ├── inventory-service/            # Go — stock reservation, low-stock alerts
-│   ├── cart-service/                  # Go — shopping cart, price snapshot, TTL
+│   ├── cart-service/                 # Go — shopping cart, price snapshot, TTL
 │   ├── order-service/                # Go — checkout, order lifecycle, idempotency
 │   ├── payment-service/              # Go — payment gateway integration, webhooks
 │   ├── shipping-service/             # Go — carrier integration, tracking, webhooks
 │   ├── review-service/               # Go — ratings, UGC moderation (MongoDB)
 │   ├── notification-service/         # Go — email, push, in-app notifications
 │   ├── chat-service/                 # Go — real-time buyer↔seller chat (WebSocket)
-│   └── analytics-service/            # Go — event ingestion, aggregation
+│   ├── live-service/                 # Go — live commerce, WebSocket, MediaMTX
+│   └── analytics-service/            # Go — event ingestion, aggregations (PostgreSQL)
 │
 ├── packages/
 │   └── backend-shared/               # NestJS runtime library (shared guards,
 │                                     #   interceptors, pipes, decorators, DTOs)
-│                                     #   Used by remaining NestJS services only
+│                                     #   Used by auth-service only
 │
 ├── shared/                           # Language-neutral cross-service contracts
 │   ├── proto/                        # gRPC Protocol Buffer definitions
@@ -243,7 +247,7 @@ ecommerce-microservices/
 │   └── PULL_REQUEST_TEMPLATE/
 │
 ├── turbo.json                        # Turborepo task pipeline
-├── docker-compose.yml                # Full development stack (all 14 services)
+├── docker-compose.yml                # Full stack (14 domain services + gateway + infra)
 └── docker-compose.local.yml          # Lightweight local development
 ```
 
@@ -258,7 +262,7 @@ ecommerce-microservices/
 | 1 | `api-gateway` | Go 1.22 | Redis | — | Reverse proxy, JWT validation, rate limiting, CORS, Prometheus metrics |
 | 2 | `auth-service` | NestJS 10 | PostgreSQL + Redis | ✓ | JWT issuance, TOTP/2FA, OAuth, token revocation, password hashing |
 | 3 | `user-service` | Go | PostgreSQL + Redis | ✓ | User profiles, address management, account settings |
-| 4 | `product-service` | NestJS 10 | MongoDB + Redis | ✓ | Product catalog, search, dynamic attributes, media URLs |
+| 4 | `product-service` | Go 1.24 | MongoDB + Redis | optional | Catalog, shops, shoppable video; OpenSearch optional |
 | 5 | `media-service` | Go | MinIO | — | Presigned upload/download, bucket management |
 | 6 | `inventory-service` | Go | PostgreSQL | ✓ | Stock levels, reservation with TTL, low-stock alerts, outbox dispatcher |
 | 7 | `cart-service` | Go | PostgreSQL + Redis | ✓ | Cart CRUD, price snapshots, TTL expiry, external validation |
@@ -268,13 +272,14 @@ ecommerce-microservices/
 | 11 | `review-service` | Go | MongoDB + Redis | — | Ratings, text reviews, UGC moderation |
 | 12 | `notification-service` | Go | PostgreSQL + Redis | ✓ | Email, push, in-app, dispatch with retry |
 | 13 | `chat-service` | Go | MongoDB + Redis | ✓ | Real-time WebSocket chat, rate limiting, conversation management |
-| 14 | `analytics-service` | Go | PostgreSQL + Redis | ✓ | Event ingestion, aggregations, reporting |
+| 14 | `live-service` | Go 1.24 | MongoDB + Redis | ✓ | Live sessions, WebSocket, WHIP/WebRTC via MediaMTX |
+| 15 | `analytics-service` | Go | PostgreSQL + Redis | optional | Event ingest, reporting (PostgreSQL OLTP store) |
 
 ### Layered Shared Code Boundary
 
 The project enforces a strict **two-tier sharing model**:
 
-- **`packages/backend-shared`** — NestJS-specific runtime library. Contains production-ready guards, interceptors, pipes, decorators, DTOs, and database helpers. Imported only by the 2 remaining NestJS services (`auth-service`, `product-service`).
+- **`packages/backend-shared`** — NestJS-specific runtime library. Imported only by **`auth-service`**.
 - **`shared/`** — Neutral, framework-agnostic contracts. Consumed by all backend services (Go and NestJS), frontend apps, and tooling alike. This layer has zero framework dependencies.
 
 Go services implement their own middleware, auth, and response envelope logic in `internal/` packages, following Go idiomatic patterns rather than importing from `packages/backend-shared`.
@@ -325,7 +330,7 @@ Task orchestration is handled by **Turborepo** (`turbo.json`), providing:
 ### Start All Services
 
 ```bash
-# Start the full stack (all 14 services + infrastructure)
+# Start the full stack (14 domain services + api-gateway + infrastructure)
 docker compose up -d
 
 # View logs
@@ -352,7 +357,10 @@ docker compose logs -f api-gateway order-service
 | chat-service | `12020` |
 | analytics-service | `12021` |
 | media-service | `12022` |
+| live-service | `12023` |
+| MinIO API | `12030` |
 | MinIO Console | `12031` |
+| MediaMTX (live ingest/playback) | `12089` |
 
 ---
 
@@ -360,7 +368,7 @@ docker compose logs -f api-gateway order-service
 
 | Category | Count |
 |---|---|
-| Backend Microservices | 14 (12 Go + 2 NestJS) |
+| Domain microservices | 14 (13 Go + 1 NestJS) + API Gateway (Go) |
 | Frontend Applications | 4 |
 | Shared Frontend Packages | 7 |
 | gRPC Proto Definitions | 4 |
@@ -375,7 +383,7 @@ docker compose logs -f api-gateway order-service
 Detailed documentation lives in the [`docs/`](./docs/) directory:
 
 - [`docs/architecture/`](./docs/architecture/) — System design, data flow diagrams, security model, scalability, Kafka event catalog
-- [`docs/docs-service/`](./docs/docs-service/) — Per-service detailed guides (11 services documented)
+- [`docs/docs-service/`](./docs/docs-service/) — Per-service onboarding guides
 - [`docs/actor_classification.md`](./docs/actor_classification.md) — Actor roles and permission matrix
 - [`docs/db_mapping.md`](./docs/db_mapping.md) — Service-to-database ownership map
 - [`docs/development/`](./docs/development/) — Code standards and conventions

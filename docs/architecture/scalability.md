@@ -1,25 +1,32 @@
 # Scalability & Performance
 
-This document outlines the strategies used to ensure the platform can scale to handle high traffic loads.
+Last updated: 2026-05-18. See also [`system-design.md`](system-design.md).
 
 ## 1. Application Layer Scaling
 
-- **Stateless Services**: All microservices are completely stateless. Session data is stored in Redis, and business data in databases. This allows any service to be horizontally scaled simply by adding more pods in Kubernetes.
-- **API Gateway**: Written in Go for extremely high throughput and low overhead. It can handle tens of thousands of concurrent connections and route them efficiently.
-- **Go Migration**: 9 out of 12 backend services were migrated to Go. Go's goroutines and efficient garbage collection significantly reduce CPU and memory usage compared to Node.js/NestJS, allowing higher density of containers per node.
+- **Stateless services**: Session and ephemeral state live in Redis; business data in PostgreSQL, MongoDB, or MinIO. Any service pod can be scaled horizontally behind Kubernetes Deployments and Services.
+- **API Gateway (Go)**: Single ingress with token-bucket rate limiting, connection-friendly proxying, and Prometheus metrics. Suitable for high connection counts when sized appropriately (see load-test notes in development docs).
+- **Go-first backend**: **13 of 14** domain microservices run on Go (goroutines, low memory per request). Only `auth-service` remains NestJS.
 
 ## 2. Database Scaling
 
-- **Connection Pooling**: `pgx` (Go) and TypeORM (NestJS) maintain connection pools to prevent overwhelming PostgreSQL.
-- **Read Replicas**: For read-heavy services (e.g., `product-service`), read operations can be directed to MongoDB replica sets or PostgreSQL read replicas.
-- **OLAP Separation**: Analytical queries are offloaded to ClickHouse (`analytics-service`), preventing expensive aggregations from locking or slowing down operational databases (OLTP).
+- **Connection pooling**: `pgx` (Go) and TypeORM (auth-service) cap open connections per instance.
+- **Read scaling**: MongoDB replica sets for catalog/chat/live; PostgreSQL read replicas where configured in production overlays.
+- **Analytics**: `analytics-service` stores events in **PostgreSQL** (`analytics_events_raw`, rollups). Heavy OLAP with ClickHouse is optional/future — not required in default `docker-compose.yml`.
 
 ## 3. Caching Strategy
 
-- **Redis Cache**: Used extensively for hot paths. For example, `cart-service` uses Redis as its primary store (`cart_cache_repository`), writing to Postgres only as a fallback/persistence layer.
-- **Gateway Caching**: Static assets and public catalog endpoints can be aggressively cached at the CDN or Gateway level.
+- **Redis**: Token revocation (gateway, auth), cart hot path, product/video feed caches, idempotency keys, rate limits.
+- **Cart**: Redis-primary with optional Postgres persistence (`CART_PERSISTENCE_ENABLED`).
+- **Gateway / CDN**: Public catalog and static media URLs can be cached at the edge in production.
 
 ## 4. Asynchronous Processing
 
-- **Kafka Buffering**: Spiky traffic (e.g., flash sales) translates into messages in Kafka rather than immediate database locks. The `order`, `inventory`, and `payment` workers process these queues at a safe, controlled rate.
-- **Background Jobs**: Tasks like expiring old inventory reservations or sending bulk emails run as background goroutines/workers, keeping the main HTTP threads free.
+- **Kafka buffering**: Order, payment, shipping, chat, live, and notification flows use topics (`order.events`, `payment.events`, `chat.events`, `live.events`, etc.) to absorb traffic spikes.
+- **Outbox dispatchers**: Background workers in Go services publish from `outbox_events` after the DB transaction commits.
+- **Background jobs**: Reservation expiry (inventory), notification retries, and similar work run outside the HTTP request path.
+
+## 5. Real-time & Live
+
+- **Chat / live WebSocket**: Proxied through the gateway with extended timeouts; scale chat/live pods independently of REST handlers.
+- **MediaMTX**: Dedicated media engine for live ingest (WHIP) and playback (WebRTC) — scale separately from application pods.

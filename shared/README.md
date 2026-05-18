@@ -1,11 +1,18 @@
-# shared
+# Shared Contracts
 
-Cross-platform contracts and schemas.
+Language-neutral cross-service contracts for the monorepo.
 
-This package should contain only transport-neutral definitions:
+| Path | Purpose |
+|---|---|
+| `proto/` | gRPC / Protocol Buffer definitions |
+| `kafka/` | Topic names and event shape constants |
+| `contracts/` | TypeScript API contracts |
+| `types/` | Shared TypeScript types |
+| `constants/` | Cross-service constants (e.g. error codes) |
+| `utils/` | Shared utilities |
 
-- gRPC proto contracts
-- Kafka event schemas and topic contracts
-- DTO/type contracts shared by backend and frontend
+**Rules**
 
-Avoid service runtime code here. Runtime helpers belong in `packages/backend-shared` (for remaining NestJS services) or within `internal/` packages (for Go services).
+- No service runtime code here.
+- NestJS-only helpers belong in `packages/backend-shared/` (`auth-service`).
+- Go services consume Kafka/proto constants as needed; HTTP remains primary for gateway traffic.

@@ -1,5 +1,7 @@
 # Product Service Go Contract Capture
 
+> **Historical:** Phase 0 baseline for the Go rewrite. Production compose now uses **`services/product-service`** (Go).
+
 This file is the Phase 0 baseline for implementing `services/product-service` beside the current NestJS `services/product-service-nest`.
 
 ## Compatibility Target

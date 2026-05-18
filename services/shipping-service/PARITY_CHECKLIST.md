@@ -44,8 +44,8 @@
 - [x] Root `docker-compose.yml` routes `shipping-service` to Go implementation
 - [x] `go test ./...` compile pass
 
-## Remaining Before Cutover
-- [ ] Run side-by-side behavioral comparison script (NestJS vs Go)
-- [ ] Add automated parity test cases for webhook and role edge cases
-- [ ] Soak test outbox + consumer under duplicate event conditions
-- [ ] Flip API gateway `SHIPPING_SERVICE_URL` to Go after parity sign-off
+## Cutover status
+
+- [x] Root `docker-compose.yml` and API gateway use **Go** `shipping-service`
+- [ ] Optional: re-run Nest vs Go compare scripts if legacy Nest image is still available
+- [ ] Optional: extended soak tests for outbox + duplicate Kafka delivery

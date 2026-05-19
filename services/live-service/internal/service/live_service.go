@@ -72,6 +72,11 @@ type ListSessionsRequest struct {
 	Status   domain.LiveSessionStatus
 }
 
+type ListMessagesRequest struct {
+	Page     int
+	PageSize int
+}
+
 type PinProductRequest struct {
 	ProductID string `json:"productId"`
 }
@@ -507,6 +512,42 @@ func (s *LiveService) ListPinnedProducts(ctx context.Context, sessionID string) 
 	return s.repo.ListPinnedProducts(ctx, session.SessionID)
 }
 
+func (s *LiveService) ListMessages(ctx context.Context, user *domain.UserContext, sessionID string, req ListMessagesRequest) (map[string]any, error) {
+	session, err := s.requireSession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if !canViewSession(user, *session) {
+		return nil, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Insufficient permission", nil)
+	}
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.PageSize < 1 {
+		req.PageSize = 50
+	}
+	if req.PageSize > 100 {
+		req.PageSize = 100
+	}
+	items, totalItems, err := s.repo.ListMessages(ctx, repository.ListMessagesFilter{
+		SessionID: session.SessionID,
+		Page:      req.Page,
+		PageSize:  req.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"items": items,
+		"pagination": map[string]any{
+			"page":       req.Page,
+			"pageSize":   req.PageSize,
+			"totalItems": totalItems,
+			"totalPages": totalPages(totalItems, req.PageSize),
+		},
+	}, nil
+}
+
 func (s *LiveService) SendMessage(ctx context.Context, user domain.UserContext, sessionID string, req SendMessageRequest) (domain.LiveMessage, error) {
 	session, err := s.requireSession(ctx, sessionID)
 	if err != nil {
@@ -550,6 +591,9 @@ func (s *LiveService) SendMessage(ctx context.Context, user domain.UserContext, 
 	}
 	created, err := s.repo.CreateMessage(ctx, message)
 	if err != nil {
+		return domain.LiveMessage{}, err
+	}
+	if err := s.repo.IncrementMessageCount(ctx, session.SessionID); err != nil {
 		return domain.LiveMessage{}, err
 	}
 	_ = s.publish(ctx, domain.EventMessageCreated, messageEventPayload(created, user))

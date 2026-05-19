@@ -28,6 +28,8 @@ func TestRouterUsesConfiguredAPIPrefixOnly(t *testing.T) {
 
 	expected := []string{
 		"GET /custom/v2/health",
+		"GET /custom/v2/videos/{videoId}/comments",
+		"POST /custom/v2/videos/{videoId}/comments",
 		"POST /custom/v2/videos/{videoId}/events/view-started",
 		"POST /custom/v2/videos/{videoId}/events/view-qualified",
 		"POST /custom/v2/videos/{videoId}/events/product-clicked",
@@ -55,6 +57,7 @@ func TestRouterUsesConfiguredAPIPrefixOnly(t *testing.T) {
 	assertNotFound(t, handler, http.MethodGet, "/api/v1/products")
 	assertNotFound(t, handler, http.MethodPost, "/custom/v2/videos/video-1/events/not-real")
 	assertRouteExists(t, handler, http.MethodGet, "/custom/v2/products")
+	assertRouteExists(t, handler, http.MethodGet, "/custom/v2/videos/video-1/comments")
 	assertRouteExists(t, handler, http.MethodPost, "/custom/v2/videos")
 }
 

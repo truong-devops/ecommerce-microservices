@@ -20,6 +20,12 @@ type ListSessionsFilter struct {
 	PageSize int
 }
 
+type ListMessagesFilter struct {
+	SessionID string
+	Page      int
+	PageSize  int
+}
+
 type Repository interface {
 	Ping(ctx context.Context) error
 	EnsureIndexes(ctx context.Context) error
@@ -32,6 +38,8 @@ type Repository interface {
 	ListPinnedProducts(ctx context.Context, sessionID string) ([]domain.LiveProduct, error)
 	FindMessageByClientID(ctx context.Context, sessionID, clientMessageID string) (*domain.LiveMessage, error)
 	CreateMessage(ctx context.Context, message domain.LiveMessage) (domain.LiveMessage, error)
+	ListMessages(ctx context.Context, filter ListMessagesFilter) ([]domain.LiveMessage, int64, error)
+	IncrementMessageCount(ctx context.Context, sessionID string) error
 }
 
 type LiveRepository struct {
@@ -74,6 +82,7 @@ func (r *LiveRepository) EnsureIndexes(ctx context.Context) error {
 
 	messageIndexes := []mongo.IndexModel{
 		{Keys: bson.D{{Key: "sessionId", Value: 1}, {Key: "createdAt", Value: -1}}},
+		{Keys: bson.D{{Key: "sessionId", Value: 1}, {Key: "status", Value: 1}, {Key: "createdAt", Value: -1}}},
 		{
 			Keys:    bson.D{{Key: "sessionId", Value: 1}, {Key: "clientMessageId", Value: 1}},
 			Options: options.Index().SetUnique(true).SetSparse(true),
@@ -271,6 +280,59 @@ func (r *LiveRepository) CreateMessage(ctx context.Context, message domain.LiveM
 		return domain.LiveMessage{}, err
 	}
 	return mapMessage(doc), nil
+}
+
+func (r *LiveRepository) ListMessages(ctx context.Context, filter ListMessagesFilter) ([]domain.LiveMessage, int64, error) {
+	query := bson.M{"sessionId": filter.SessionID, "status": domain.LiveMessageStatusVisible}
+	total, err := r.messages.CountDocuments(ctx, query)
+	if err != nil {
+		return nil, 0, err
+	}
+	page := filter.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := filter.PageSize
+	if pageSize < 1 {
+		pageSize = 50
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	cur, err := r.messages.Find(
+		ctx,
+		query,
+		options.Find().
+			SetSort(bson.D{{Key: "createdAt", Value: -1}}).
+			SetSkip(int64((page-1)*pageSize)).
+			SetLimit(int64(pageSize)),
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cur.Close(ctx)
+
+	items := make([]domain.LiveMessage, 0)
+	for cur.Next(ctx) {
+		var doc liveMessageDoc
+		if err := cur.Decode(&doc); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, mapMessage(doc))
+	}
+	return items, total, cur.Err()
+}
+
+func (r *LiveRepository) IncrementMessageCount(ctx context.Context, sessionID string) error {
+	_, err := r.sessions.UpdateOne(
+		ctx,
+		bson.M{"sessionId": sessionID},
+		bson.M{
+			"$inc": bson.M{"metricsSnapshot.messageCount": 1},
+			"$set": bson.M{"updatedAt": time.Now().UTC()},
+		},
+	)
+	return err
 }
 
 type liveSessionDoc struct {

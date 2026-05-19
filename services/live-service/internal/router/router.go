@@ -40,6 +40,7 @@ func New(
 	r.Get(liveBase+"/sessions", liveHandler.ListPublicSessions)
 	r.With(optionalJWT).Get(liveBase+"/sessions/{sessionId}", liveHandler.GetSession)
 	r.Get(liveBase+"/sessions/{sessionId}/products", liveHandler.ListPinnedProducts)
+	r.With(optionalJWT).Get(liveBase+"/sessions/{sessionId}/messages", liveHandler.ListMessages)
 	r.With(optionalJWT).Post(liveBase+"/sessions/{sessionId}/events/product-clicked", liveHandler.TrackProductClicked)
 	r.With(optionalJWT).Post(liveBase+"/sessions/{sessionId}/events/media-metric", liveHandler.TrackMediaMetric)
 	r.With(optionalJWT).Get(liveBase+"/ws", wsHandler.WebSocket)

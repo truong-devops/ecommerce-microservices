@@ -329,6 +329,25 @@ func (r *handlerMemoryRepo) CreateMessage(_ context.Context, message domain.Live
 	r.messages[message.MessageID] = message
 	return message, nil
 }
+func (r *handlerMemoryRepo) ListMessages(_ context.Context, filter repository.ListMessagesFilter) ([]domain.LiveMessage, int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	items := make([]domain.LiveMessage, 0)
+	for _, message := range r.messages {
+		if message.SessionID == filter.SessionID && message.Status == domain.LiveMessageStatusVisible {
+			items = append(items, message)
+		}
+	}
+	return items, int64(len(items)), nil
+}
+func (r *handlerMemoryRepo) IncrementMessageCount(_ context.Context, sessionID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	session := r.sessions[sessionID]
+	session.MetricsSnapshot.MessageCount++
+	r.sessions[sessionID] = session
+	return nil
+}
 
 type handlerFakeProductVerifier struct{}
 

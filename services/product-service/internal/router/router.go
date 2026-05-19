@@ -87,6 +87,8 @@ func mountVideoRoutes(r chi.Router, base string, h *handler.VideoHandler, requir
 		rr.With(requireJWT, auth.RequireRoles(domain.RoleModerator, domain.RoleAdmin, domain.RoleSuperAdmin)).Post("/{videoId}/publish", h.PublishVideo)
 		rr.With(requireJWT, auth.RequireRoles(domain.RoleSeller, domain.RoleAdmin, domain.RoleSuperAdmin)).Post("/{videoId}/unpublish", h.UnpublishVideo)
 		rr.With(requireJWT, auth.RequireRoles(domain.RoleSeller, domain.RoleAdmin, domain.RoleSuperAdmin)).Delete("/{videoId}", h.ArchiveVideo)
+		rr.Get("/{videoId}/comments", h.ListComments)
+		rr.With(requireJWT, auth.RequireRoles(domain.RoleBuyer, domain.RoleCustomer, domain.RoleSeller, domain.RoleAdmin, domain.RoleModerator, domain.RoleSuperAdmin)).Post("/{videoId}/comments", h.CreateComment)
 		rr.Post("/{videoId}/events/view-started", h.TrackViewStarted)
 		rr.Post("/{videoId}/events/view-qualified", h.TrackViewQualified)
 		rr.Post("/{videoId}/events/product-clicked", h.TrackProductClicked)

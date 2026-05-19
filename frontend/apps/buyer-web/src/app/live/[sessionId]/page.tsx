@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import { buildLiveWebSocketUrl, getLiveSession, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
+import { buildLiveWebSocketUrl, getLiveSession, listLiveMessages, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
 import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
@@ -77,6 +77,22 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     void loadDetail();
   }, [loadDetail]);
 
+  const loadMessageHistory = useCallback(async () => {
+    if (!sessionId) {
+      return;
+    }
+    try {
+      const history = await listLiveMessages(sessionId, { page: 1, pageSize: 50 }, accessToken);
+      setMessages(history.items ?? []);
+    } catch {
+      setMessages([]);
+    }
+  }, [accessToken, sessionId]);
+
+  useEffect(() => {
+    void loadMessageHistory();
+  }, [loadMessageHistory]);
+
   useEffect(() => {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
@@ -91,7 +107,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
       if (current.some((item) => item.messageId === message.messageId)) {
         return current;
       }
-      return [...current, message].slice(-100);
+      return [message, ...current].slice(0, 100);
     });
   }, []);
 
@@ -486,6 +502,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const streamStatusLabel = formatViewerStreamStatus(realtimeStatus, socketStatus);
   const isSessionLive = session?.status === 'LIVE';
   const fallbackPlaybackUrl = mediaPlayback?.protocol === 'WEBRTC' ? session?.playbackUrl : mediaPlayback?.url || session?.playbackUrl;
+  const chatEmojis = ['🔥', '❤️', '👍', '😍'];
 
   return (
     <div className="min-h-screen bg-[#f5f2ec] text-[#171717]">
@@ -504,131 +521,146 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
         ) : null}
 
         {status === 'success' && session ? (
-          <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <article className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.10)]">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#ebe3d8] bg-[#fffdfa] px-4 py-4 md:px-6">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-md px-2.5 py-1 text-xs font-black tracking-wide text-white ${isSessionLive ? 'bg-[#e8323b]' : 'bg-slate-500'}`}>
-                      {formatSessionStatus(session.status)}
-                    </span>
-                    <span className="rounded-md border border-[#ead8ca] bg-[#fff4ea] px-2.5 py-1 text-xs font-bold text-[#9a3412]">
-                      {viewerCount.toLocaleString('vi-VN')} đang xem
-                    </span>
-                    <span className="rounded-md border border-[#bfd8cc] bg-[#edf7f1] px-2.5 py-1 text-xs font-bold text-[#166f4a]">{streamStatusLabel}</span>
+          <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,900px)_380px] xl:justify-center">
+            <article className="space-y-4">
+              <div className="rounded-3xl border border-[#ead8ca] bg-white p-5 shadow-[0_16px_45px_rgba(38,31,26,0.08)]">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${isSessionLive ? 'bg-[#E84C3D]' : 'bg-slate-500'}`}>
+                        {formatSessionStatus(session.status)}
+                      </span>
+                      <span className="rounded-full border border-[#f2c7b8] bg-[#fff4ea] px-3 py-1 text-xs font-bold text-[#9a3412]">
+                        {viewerCount.toLocaleString('vi-VN')} đang xem
+                      </span>
+                      <span className="rounded-full border border-[#f4c7b8] bg-[#fff7ed] px-3 py-1 text-xs font-bold text-[#9a3412]">{streamStatusLabel}</span>
+                    </div>
+                    <h1 className="mt-3 text-2xl font-bold leading-tight text-[#111827] md:text-3xl">{session.title}</h1>
+                    <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">{session.description || 'Shop đang phát trực tiếp.'}</p>
                   </div>
-                  <h1 className="mt-3 text-3xl font-black tracking-[-0.04em] text-[#111827] md:text-[34px]">{session.title}</h1>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">{session.description || 'Shop đang phát trực tiếp.'}</p>
+                  <button
+                    type="button"
+                    onClick={() => void refreshProducts(session.sessionId)}
+                    className="rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3]"
+                  >
+                    Làm mới sản phẩm
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void refreshProducts(session.sessionId)}
-                  className="rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3]"
-                >
-                  Làm mới sản phẩm
-                </button>
               </div>
 
-              <div className="relative bg-[#090b10]">
-                {!isSessionLive ? (
-                  <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/70">
-                    {session.status === 'PAUSED'
-                      ? 'Phiên livestream đang tạm ngừng. Khi shop tiếp tục LIVE, trang sẽ tự kết nối lại.'
-                      : 'Phiên livestream đã kết thúc.'}
-                  </div>
-                ) : remoteStream ? (
-                  <video
-                    ref={remoteVideoRef}
-                    controls
-                    playsInline
-                    autoPlay
-                    onLoadedMetadata={(event) => {
-                      void event.currentTarget.play().catch(() => undefined);
-                    }}
-                    className="aspect-video max-h-[72vh] w-full bg-[#090b10] object-contain"
-                  />
-                ) : fallbackPlaybackUrl ? (
-                  <div className="relative">
+              <div className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.10)]">
+                <div className="relative bg-[#090b10]">
+                  {!isSessionLive ? (
+                    <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/70">
+                      {session.status === 'PAUSED'
+                        ? 'Phiên livestream đang tạm ngừng. Khi shop tiếp tục LIVE, trang sẽ tự kết nối lại.'
+                        : 'Phiên livestream đã kết thúc.'}
+                    </div>
+                  ) : remoteStream ? (
                     <video
-                      src={fallbackPlaybackUrl}
-                      poster={session.thumbnailUrl || undefined}
+                      ref={remoteVideoRef}
                       controls
+                      controlsList="nofullscreen nodownload noremoteplayback"
+                      disablePictureInPicture
                       playsInline
                       autoPlay
-                      onLoadedData={() => {
-                        if (firstFrameTrackedRef.current) {
-                          return;
-                        }
-                        firstFrameTrackedRef.current = true;
-                        emitMediaMetric({
-                          metricType: 'first_frame',
-                          playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
-                          valueMs: Math.round(performance.now() - playbackStartedAtRef.current)
-                        });
-                      }}
-                      onWaiting={() => {
-                        bufferingCountRef.current += 1;
-                        emitMediaMetric({
-                          metricType: 'buffering',
-                          playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
-                          count: bufferingCountRef.current
-                        });
-                      }}
-                      onError={(event) => {
-                        emitMediaMetric({
-                          metricType: 'playback_error',
-                          playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
-                          errorCode: `media_${event.currentTarget.error?.code ?? 'unknown'}`
-                        });
+                      onLoadedMetadata={(event) => {
+                        void event.currentTarget.play().catch(() => undefined);
                       }}
                       className="aspect-video max-h-[72vh] w-full bg-[#090b10] object-contain"
                     />
-                    {realtimeStatus !== 'connected' ? (
-                      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/20 bg-slate-950/75 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
-                        {mediaPlayback ? 'Đang phát từ media engine' : 'Đang phát từ nguồn dự phòng'}
-                      </div>
-                    ) : null}
+                  ) : fallbackPlaybackUrl ? (
+                    <div className="relative">
+                      <video
+                        src={fallbackPlaybackUrl}
+                        poster={session.thumbnailUrl || undefined}
+                        controls
+                        controlsList="nofullscreen nodownload noremoteplayback"
+                        disablePictureInPicture
+                        playsInline
+                        autoPlay
+                        onLoadedData={() => {
+                          if (firstFrameTrackedRef.current) {
+                            return;
+                          }
+                          firstFrameTrackedRef.current = true;
+                          emitMediaMetric({
+                            metricType: 'first_frame',
+                            playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
+                            valueMs: Math.round(performance.now() - playbackStartedAtRef.current)
+                          });
+                        }}
+                        onWaiting={() => {
+                          bufferingCountRef.current += 1;
+                          emitMediaMetric({
+                            metricType: 'buffering',
+                            playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
+                            count: bufferingCountRef.current
+                          });
+                        }}
+                        onError={(event) => {
+                          emitMediaMetric({
+                            metricType: 'playback_error',
+                            playbackProtocol: mediaPlayback?.protocol ?? 'HTML_VIDEO',
+                            errorCode: `media_${event.currentTarget.error?.code ?? 'unknown'}`
+                          });
+                        }}
+                        className="aspect-video max-h-[72vh] w-full bg-[#090b10] object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/60">
+                      Phòng live đang chuẩn bị nguồn phát. Vui lòng chờ trong giây lát.
+                    </div>
+                  )}
+                  <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E84C3D] px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-black/20">
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                        LIVE
+                      </span>
+                      <span className="rounded-full border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                        ● {viewerCount.toLocaleString('vi-VN')} đang xem
+                      </span>
+                    </div>
                   </div>
-                ) : (
-                  <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/60">
-                    Phòng live đang chuẩn bị nguồn phát. Vui lòng chờ trong giây lát.
-                  </div>
-                )}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ebe3d8] bg-[#fffdfa] px-4 py-3 text-sm text-[#667085]">
+                  <span className="font-semibold text-[#9a3412]">{streamStatusLabel}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (usesMediaEnginePlayback) {
+                        setPlaybackReloadKey((current) => current + 1);
+                        return;
+                      }
+                      requestRealtimeStream();
+                    }}
+                    disabled={!isSessionLive || (!usesMediaEnginePlayback && socketStatus !== 'connected')}
+                    className="rounded-lg border border-[#e2d8cd] bg-white px-3 py-1.5 text-xs font-bold text-[#344054] transition hover:border-[#ee4d2d] hover:text-[#c2410c] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Làm mới kết nối
+                  </button>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ebe3d8] bg-[#fffdfa] px-4 py-3 text-sm text-[#667085]">
-                <span className="font-semibold">{streamStatusLabel}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (usesMediaEnginePlayback) {
-                      setPlaybackReloadKey((current) => current + 1);
-                      return;
-                    }
-                    requestRealtimeStream();
-                  }}
-                  disabled={!isSessionLive || (!usesMediaEnginePlayback && socketStatus !== 'connected')}
-                  className="rounded-lg border border-[#e2d8cd] bg-white px-3 py-1.5 text-xs font-bold text-[#344054] transition hover:border-[#ee4d2d] hover:text-[#c2410c] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Làm mới kết nối
-                </button>
-              </div>
-
-              <div className="grid gap-3 border-t border-[#ebe3d8] bg-[#fbf7f1] p-4 md:grid-cols-3">
-                <MetricPill label="Lượt xem cao nhất" value={session.metricsSnapshot.viewerPeak} />
-                <MetricPill label="Tin nhắn" value={session.metricsSnapshot.messageCount + messages.length} />
-                <MetricPill label="Lượt xem sản phẩm" value={session.metricsSnapshot.productClickCount} />
+              <div className="grid gap-3 md:grid-cols-3">
+                <MetricPill icon="👥" label="Lượt xem cao nhất" value={session.metricsSnapshot.viewerPeak} />
+                <MetricPill icon="💬" label="Tin nhắn" value={session.metricsSnapshot.messageCount + messages.length} />
+                <MetricPill icon="🛒" label="Lượt xem sản phẩm" value={session.metricsSnapshot.productClickCount} />
               </div>
             </article>
 
             <aside className="grid gap-5 xl:sticky xl:top-24 xl:self-start">
-              <section className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+              <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
                 <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#b54708]">Live cart</p>
-                  <h2 className="mt-1 text-lg font-black tracking-[-0.02em]">Sản phẩm đang lên sóng</h2>
+                  <p className="text-[11px] font-bold uppercase text-[#b54708]">Live cart</p>
+                  <h2 className="mt-1 text-xl font-bold">Sản phẩm đang lên sóng</h2>
                   <p className="mt-1 text-sm text-[#667085]">Chọn sản phẩm để xem chi tiết hoặc mua ngay.</p>
                 </div>
-                <div className="max-h-[300px] space-y-2 overflow-y-auto p-3">
+                <div className="max-h-[330px] space-y-3 overflow-y-auto p-3">
                   {products.length === 0 ? (
                     <p className="rounded-2xl border border-dashed border-[#e2d8cd] bg-[#fbf7f1] p-4 text-sm font-medium text-[#667085]">
                       Seller chưa pin sản phẩm nào.
@@ -639,33 +671,36 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                         key={product.productId}
                         type="button"
                         onClick={() => handleOpenProduct(product.productId)}
-                        className="flex w-full items-center gap-3 rounded-2xl border border-[#e2d8cd] bg-white p-2 text-left transition hover:border-[#ee4d2d] hover:bg-[#fff8f3]"
+                        className="group relative flex w-full items-center gap-3 rounded-2xl border border-[#e2d8cd] bg-white p-2.5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#E84C3D] hover:bg-[#fff8f3] hover:shadow-md"
                       >
+                        <span className="absolute -right-1 -top-2 rounded-full bg-[#E84C3D] px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                          {formatLiveDiscount(product)}
+                        </span>
                         <Image
                           src={product.imageSnapshot || '/icon.svg'}
                           alt={product.nameSnapshot}
                           width={56}
                           height={56}
                           unoptimized
-                          className="h-14 w-14 rounded-lg object-cover"
+                          className="h-16 w-16 rounded-xl object-cover ring-1 ring-[#f1e4d8]"
                         />
                         <span className="min-w-0 flex-1">
                           <span className="line-clamp-2 text-sm font-semibold text-slate-900">{product.nameSnapshot}</span>
-                          <span className="mt-1 block text-sm font-black text-[#d92d20]">
+                          <span className="mt-1 block text-base font-bold text-[#E84C3D]">
                             {formatPrice(product.priceSnapshot, product.currencySnapshot)}
                           </span>
+                          <span className="mt-0.5 block text-xs font-medium text-slate-500">Đã bán {formatSoldCount(product)}</span>
                         </span>
-                        <span className="rounded-lg bg-[#ee4d2d] px-3 py-1 text-xs font-bold text-white">Mua</span>
+                        <span className="rounded-xl bg-[#E84C3D] px-3 py-2 text-xs font-bold text-white transition group-hover:bg-[#c73428]">Mua</span>
                       </button>
                     ))
                   )}
                 </div>
               </section>
 
-              <section className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+              <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
                 <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#98a2b3]">Realtime chat</p>
-                  <h2 className="mt-1 text-lg font-black tracking-[-0.02em]">Trò chuyện</h2>
+                  <h2 className="mt-1 text-xl font-bold">Trò chuyện</h2>
                   <p className="mt-1 text-sm text-[#667085]">
                     {user ? 'Trao đổi trực tiếp với shop và người xem khác.' : 'Đăng nhập để tham gia trò chuyện.'}
                   </p>
@@ -674,13 +709,31 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                   <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
                     {messages.length === 0 ? <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p> : null}
                     {messages.map((message) => (
-                      <div key={message.messageId} className="rounded-2xl bg-[#f8f6f1] p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{message.senderRole}</p>
-                        <p className="mt-1 text-sm text-slate-900">{message.text}</p>
+                      <div key={message.messageId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getChatAvatarColor(message.senderRole)}`}>
+                          {getChatInitial(message.senderRole)}
+                        </span>
+                        <span className="min-w-0">
+                          <p className={`text-xs font-bold uppercase ${getChatNameColor(message.senderRole)}`}>{formatChatSender(message.senderRole)}</p>
+                          <p className="mt-1 break-words text-sm leading-5 text-slate-900">{message.text}</p>
+                        </span>
                       </div>
                     ))}
                   </div>
                   <div className="border-t border-[#ebe3d8] p-3">
+                    <div className="mb-2 flex gap-1.5">
+                      {chatEmojis.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setChatInput((current) => `${current}${emoji}`)}
+                          disabled={!isSessionLive || !accessToken || socketStatus !== 'connected'}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-[#ead8ca] bg-[#fff8f3] text-sm transition hover:border-[#E84C3D] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex gap-2">
                       <input
                         value={chatInput}
@@ -723,13 +776,67 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   }
 }
 
-function MetricPill({ label, value }: { label: string; value: number }) {
+function MetricPill({ icon, label, value }: { icon: string; label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-[#e2d8cd] bg-white p-4">
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#98a2b3]">{label}</p>
-      <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-[#111827]">{value.toLocaleString('vi-VN')}</p>
+    <div className="rounded-2xl border border-[#e2d8cd] bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[#E84C3D] hover:shadow-md">
+      <div className="flex items-center gap-2">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff4ea] text-lg">{icon}</span>
+        <p className="text-[11px] font-bold uppercase text-[#98a2b3]">{label}</p>
+      </div>
+      <p className="mt-3 text-3xl font-bold tabular-nums text-[#111827] transition-all duration-300">{value.toLocaleString('vi-VN')}</p>
     </div>
   );
+}
+
+function formatLiveDiscount(product: LiveProduct): string {
+  const discount = 8 + (stableNumber(product.productId) % 18);
+  return `-${discount}%`;
+}
+
+function formatSoldCount(product: LiveProduct): string {
+  const sold = 24 + (stableNumber(product.productId) % 476);
+  return sold.toLocaleString('vi-VN');
+}
+
+function stableNumber(value: string): number {
+  return Array.from(value).reduce((total, char) => total + char.charCodeAt(0), 0);
+}
+
+function getChatInitial(senderRole: string): string {
+  return (senderRole.trim().charAt(0) || 'U').toUpperCase();
+}
+
+function formatChatSender(senderRole: string): string {
+  const normalizedRole = senderRole.toLowerCase();
+  if (normalizedRole.includes('seller')) {
+    return 'Shop';
+  }
+  if (normalizedRole.includes('admin')) {
+    return 'Admin';
+  }
+  return 'Khách hàng';
+}
+
+function getChatAvatarColor(senderRole: string): string {
+  const normalizedRole = senderRole.toLowerCase();
+  if (normalizedRole.includes('seller')) {
+    return 'bg-[#E84C3D]';
+  }
+  if (normalizedRole.includes('admin')) {
+    return 'bg-slate-700';
+  }
+  return 'bg-[#f59e0b]';
+}
+
+function getChatNameColor(senderRole: string): string {
+  const normalizedRole = senderRole.toLowerCase();
+  if (normalizedRole.includes('seller')) {
+    return 'text-[#E84C3D]';
+  }
+  if (normalizedRole.includes('admin')) {
+    return 'text-slate-700';
+  }
+  return 'text-[#b45309]';
 }
 
 function formatViewerStreamStatus(realtimeStatus: 'waiting' | 'connecting' | 'connected' | 'fallback' | 'error', socketStatus: SocketStatus) {

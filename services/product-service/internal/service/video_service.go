@@ -70,6 +70,11 @@ type TrackVideoEventInput struct {
 	WatchTimeSec       *float64 `json:"watchTimeSec,omitempty"`
 }
 
+type CreateVideoCommentInput struct {
+	Text            string `json:"text"`
+	ClientCommentID string `json:"clientCommentId,omitempty"`
+}
+
 func NewVideoService(repo repository.VideoRepository, productRepo repository.ProductRepository, redisService *RedisService, eventPublisher events.ProductEventPublisher, mediaPublicBaseURL string) *VideoService {
 	return &VideoService{
 		repo:               repo,
@@ -489,6 +494,64 @@ func (s *VideoService) TrackEvent(ctx context.Context, videoID string, eventType
 	return map[string]bool{"accepted": true}, nil
 }
 
+func (s *VideoService) ListComments(ctx context.Context, videoID string, query domain.ListVideoCommentsQuery) (domain.PaginatedVideoComments, error) {
+	normalized := normalizeVideoCommentQuery(query)
+	video, err := s.repo.FindPublishedByVideoID(ctx, strings.TrimSpace(videoID))
+	if err != nil {
+		return domain.PaginatedVideoComments{}, err
+	}
+	if video == nil {
+		return domain.PaginatedVideoComments{}, videoNotFound()
+	}
+	items, total, err := s.repo.ListComments(ctx, video.VideoID, normalized)
+	if err != nil {
+		return domain.PaginatedVideoComments{}, err
+	}
+	responses := make([]domain.VideoCommentResponse, 0, len(items))
+	for _, item := range items {
+		responses = append(responses, s.ToVideoCommentResponse(item))
+	}
+	return domain.PaginatedVideoComments{Items: responses, Pagination: buildPagination(normalized.Page, normalized.PageSize, total)}, nil
+}
+
+func (s *VideoService) CreateComment(ctx context.Context, user domain.UserContext, videoID string, input CreateVideoCommentInput) (domain.VideoCommentResponse, error) {
+	if !domain.IsKnownRole(user.Role) {
+		return domain.VideoCommentResponse{}, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Insufficient permission", nil)
+	}
+	video, err := s.repo.FindPublishedByVideoID(ctx, strings.TrimSpace(videoID))
+	if err != nil {
+		return domain.VideoCommentResponse{}, err
+	}
+	if video == nil {
+		return domain.VideoCommentResponse{}, videoNotFound()
+	}
+	text := strings.TrimSpace(input.Text)
+	if len(text) < 1 || len(text) > 1000 {
+		return domain.VideoCommentResponse{}, validationError("text must be between 1 and 1000 characters")
+	}
+	clientCommentID := strings.TrimSpace(input.ClientCommentID)
+	if len(clientCommentID) > 128 {
+		return domain.VideoCommentResponse{}, validationError("clientCommentId must be at most 128 characters")
+	}
+	comment, created, err := s.repo.CreateComment(ctx, repository.CreateVideoCommentPayload{
+		CommentID:       uuid.NewString(),
+		VideoID:         video.VideoID,
+		UserID:          user.UserID,
+		UserRole:        user.Role,
+		Text:            text,
+		ClientCommentID: clientCommentID,
+	})
+	if err != nil {
+		return domain.VideoCommentResponse{}, err
+	}
+	if created {
+		if err := s.repo.IncrementCommentCount(ctx, video.VideoID); err != nil {
+			return domain.VideoCommentResponse{}, err
+		}
+	}
+	return s.ToVideoCommentResponse(comment), nil
+}
+
 func (s *VideoService) paginatedVideos(items []domain.ProductVideo, query domain.ListProductVideosQuery, total int64) domain.PaginatedVideos {
 	responses := make([]domain.ProductVideoResponse, 0, len(items))
 	for _, item := range items {
@@ -639,6 +702,7 @@ func (s *VideoService) ToVideoResponse(video domain.ProductVideo) domain.Product
 			QualifiedViewCount: qualifiedViews,
 			ProductClickCount:  productClicks,
 			AddToCartCount:     addToCart,
+			CommentCount:       metrics.CommentCount,
 			CTR:                ctr,
 			AddToCartRate:      addToCartRate,
 			LastAggregatedAt:   formatTimePtr(metrics.LastAggregatedAt),
@@ -648,6 +712,20 @@ func (s *VideoService) ToVideoResponse(video domain.ProductVideo) domain.Product
 		ArchivedAt:  formatTimePtr(video.ArchivedAt),
 		CreatedAt:   timefmt.ISO(video.CreatedAt),
 		UpdatedAt:   timefmt.ISO(video.UpdatedAt),
+	}
+}
+
+func (s *VideoService) ToVideoCommentResponse(comment domain.VideoComment) domain.VideoCommentResponse {
+	return domain.VideoCommentResponse{
+		CommentID:       comment.CommentID,
+		VideoID:         comment.VideoID,
+		UserID:          comment.UserID,
+		UserRole:        comment.UserRole,
+		Text:            comment.Text,
+		Status:          comment.Status,
+		ClientCommentID: comment.ClientCommentID,
+		CreatedAt:       timefmt.ISO(comment.CreatedAt),
+		UpdatedAt:       timefmt.ISO(comment.UpdatedAt),
 	}
 }
 
@@ -714,6 +792,19 @@ func normalizeVideoQuery(query domain.ListProductVideosQuery) domain.ListProduct
 	query.ProductID = strings.TrimSpace(query.ProductID)
 	query.SellerID = strings.TrimSpace(query.SellerID)
 	query.Search = strings.TrimSpace(query.Search)
+	return query
+}
+
+func normalizeVideoCommentQuery(query domain.ListVideoCommentsQuery) domain.ListVideoCommentsQuery {
+	if query.Page < 1 {
+		query.Page = 1
+	}
+	if query.PageSize < 1 {
+		query.PageSize = 20
+	}
+	if query.PageSize > 100 {
+		query.PageSize = 100
+	}
 	return query
 }
 

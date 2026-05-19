@@ -155,6 +155,20 @@ func (h *LiveHandler) ListPinnedProducts(w http.ResponseWriter, r *http.Request)
 	httpx.WriteSuccess(w, r, http.StatusOK, result)
 }
 
+func (h *LiveHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
+	var userPtr *domain.UserContext
+	if user, ok := auth.UserFromContext(r.Context()); ok {
+		userCopy := user
+		userPtr = &userCopy
+	}
+	result, err := h.liveService.ListMessages(r.Context(), userPtr, chi.URLParam(r, "sessionId"), parseListMessagesQuery(r))
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
 func (h *LiveHandler) TrackProductClicked(w http.ResponseWriter, r *http.Request) {
 	var userPtr *domain.UserContext
 	if user, ok := auth.UserFromContext(r.Context()); ok {
@@ -213,6 +227,16 @@ func parseListSessionsQuery(r *http.Request) service.ListSessionsRequest {
 	pageSize := parsePositiveInt(q.Get("pageSize"), 20)
 	status := domain.LiveSessionStatus(strings.ToUpper(strings.TrimSpace(q.Get("status"))))
 	return service.ListSessionsRequest{Page: page, PageSize: pageSize, Status: status}
+}
+
+func parseListMessagesQuery(r *http.Request) service.ListMessagesRequest {
+	q := r.URL.Query()
+	page := parsePositiveInt(q.Get("page"), 1)
+	pageSize := parsePositiveInt(q.Get("pageSize"), 50)
+	if pageSize > 100 {
+		pageSize = 100
+	}
+	return service.ListMessagesRequest{Page: page, PageSize: pageSize}
 }
 
 func parsePositiveInt(raw string, fallback int) int {

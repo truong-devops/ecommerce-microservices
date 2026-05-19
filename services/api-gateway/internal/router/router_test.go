@@ -88,6 +88,7 @@ func TestPublicVideoRoutesAreMounted(t *testing.T) {
 	}{
 		{method: http.MethodGet, path: "/api/v1/videos/feed"},
 		{method: http.MethodGet, path: "/api/v1/videos/video-123"},
+		{method: http.MethodGet, path: "/api/v1/videos/video-123/comments"},
 		{method: http.MethodPost, path: "/api/v1/videos/video-123/events/view-started"},
 		{method: http.MethodPost, path: "/api/v1/videos/video-123/events/product-clicked"},
 	}
@@ -125,6 +126,25 @@ func TestPublicLiveMediaMetricRouteIsMounted(t *testing.T) {
 	}
 }
 
+func TestPublicLiveMessageHistoryRouteIsMounted(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-router-live-messages-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/live/sessions/live-123/messages", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+		t.Fatalf("expected mounted public live message history route, got %d", rec.Code)
+	}
+}
+
 func TestPrivateVideoManagementRoutesRequireAuth(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-video-private-test")
@@ -139,6 +159,7 @@ func TestPrivateVideoManagementRoutesRequireAuth(t *testing.T) {
 		path   string
 	}{
 		{method: http.MethodPost, path: "/api/v1/videos"},
+		{method: http.MethodPost, path: "/api/v1/videos/video-123/comments"},
 		{method: http.MethodPatch, path: "/api/v1/videos/video-123"},
 		{method: http.MethodDelete, path: "/api/v1/videos/video-123"},
 	}

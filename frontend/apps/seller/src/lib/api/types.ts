@@ -532,6 +532,7 @@ export interface SellerVideo {
     qualifiedViewCount: number;
     productClickCount: number;
     addToCartCount: number;
+    commentCount?: number;
     ctr: number;
     addToCartRate: number;
     lastAggregatedAt: string | null;

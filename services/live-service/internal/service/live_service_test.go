@@ -195,6 +195,73 @@ func TestSendMessageIsIdempotentAndBroadcasts(t *testing.T) {
 	if !broadcaster.hasType("live:message:new") {
 		t.Fatal("expected live:message:new broadcast")
 	}
+	updated, err := repo.FindSessionByID(ctx, session.SessionID)
+	if err != nil {
+		t.Fatalf("FindSessionByID returned error: %v", err)
+	}
+	if updated == nil || updated.MetricsSnapshot.MessageCount != 1 {
+		t.Fatalf("expected one counted message, got %+v", updated)
+	}
+}
+
+func TestListMessagesReturnsVisibleHistoryForViewableSession(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	svc := NewLiveService(repo, fakeProductVerifier{}, &fakePublisher{}, &fakeBroadcaster{}, nil)
+	seller := testUser("seller-1", domain.RoleSeller)
+	buyer := testUser("buyer-1", domain.RoleBuyer)
+
+	session, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream", PlaybackURL: "https://example.com/live.m3u8"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	if _, err := svc.StartSession(ctx, seller, session.SessionID); err != nil {
+		t.Fatalf("StartSession returned error: %v", err)
+	}
+	visible, err := svc.SendMessage(ctx, buyer, session.SessionID, SendMessageRequest{Text: "Xin chao", ClientMessageID: "client-visible"})
+	if err != nil {
+		t.Fatalf("SendMessage returned error: %v", err)
+	}
+	hidden := visible
+	hidden.MessageID = "hidden-message"
+	hidden.ClientMessageID = "client-hidden"
+	hidden.Text = "hidden"
+	hidden.Status = domain.LiveMessageStatusHidden
+	repo.messages[hidden.MessageID] = hidden
+
+	result, err := svc.ListMessages(ctx, nil, session.SessionID, ListMessagesRequest{Page: 1, PageSize: 50})
+	if err != nil {
+		t.Fatalf("ListMessages returned error: %v", err)
+	}
+	items, ok := result["items"].([]domain.LiveMessage)
+	if !ok {
+		t.Fatalf("unexpected items payload: %#v", result["items"])
+	}
+	if len(items) != 1 || items[0].MessageID != visible.MessageID {
+		t.Fatalf("expected only visible message, got %+v", items)
+	}
+}
+
+func TestListMessagesRequiresPermissionForDraftSession(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	svc := NewLiveService(repo, fakeProductVerifier{}, &fakePublisher{}, &fakeBroadcaster{}, nil)
+	seller := testUser("seller-1", domain.RoleSeller)
+	otherSeller := testUser("seller-2", domain.RoleSeller)
+
+	session, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream", PlaybackURL: "https://example.com/live.m3u8"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	if _, err := svc.ListMessages(ctx, nil, session.SessionID, ListMessagesRequest{}); err == nil {
+		t.Fatal("expected anonymous draft history read to fail")
+	}
+	if _, err := svc.ListMessages(ctx, &otherSeller, session.SessionID, ListMessagesRequest{}); err == nil {
+		t.Fatal("expected another seller draft history read to fail")
+	}
+	if _, err := svc.ListMessages(ctx, &seller, session.SessionID, ListMessagesRequest{}); err != nil {
+		t.Fatalf("expected owner seller to read draft history, got %v", err)
+	}
 }
 
 func TestTrackMediaMetricPublishesAnalyticsEvent(t *testing.T) {
@@ -370,6 +437,30 @@ func (r *memoryRepo) CreateMessage(_ context.Context, message domain.LiveMessage
 	message.ID = "id-" + message.MessageID
 	r.messages[message.MessageID] = message
 	return message, nil
+}
+
+func (r *memoryRepo) ListMessages(_ context.Context, filter repository.ListMessagesFilter) ([]domain.LiveMessage, int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	items := make([]domain.LiveMessage, 0)
+	for _, message := range r.messages {
+		if message.SessionID == filter.SessionID && message.Status == domain.LiveMessageStatusVisible {
+			items = append(items, message)
+		}
+	}
+	return items, int64(len(items)), nil
+}
+
+func (r *memoryRepo) IncrementMessageCount(_ context.Context, sessionID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	session, ok := r.sessions[sessionID]
+	if !ok {
+		return errors.New("not found")
+	}
+	session.MetricsSnapshot.MessageCount++
+	r.sessions[sessionID] = session
+	return nil
 }
 
 type fakeProductVerifier struct {

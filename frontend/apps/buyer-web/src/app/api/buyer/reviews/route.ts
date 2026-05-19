@@ -1,4 +1,4 @@
-import type { ReviewListOutput } from '@/lib/api/types';
+import type { Order, ReviewListOutput } from '@/lib/api/types';
 import { readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/buyer-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
@@ -79,6 +79,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const eligibility = await assertReviewEligibility(accessToken, payload as Record<string, unknown>);
+    if (!eligibility.ok) {
+      return fail(eligibility.status, eligibility.code, eligibility.message);
+    }
+
     const created = await requestUpstream<Record<string, unknown>>(`${serviceBaseUrls.review}/reviews`, {
       method: 'POST',
       headers: {
@@ -92,6 +97,62 @@ export async function POST(request: Request) {
   } catch (error) {
     return toErrorResponse(error);
   }
+}
+
+type ReviewEligibilityResult =
+  | {
+      ok: true;
+    }
+  | {
+      ok: false;
+      status: number;
+      code: string;
+      message: string;
+    };
+
+async function assertReviewEligibility(
+  accessToken: string,
+  payload: Record<string, unknown>
+): Promise<ReviewEligibilityResult> {
+  const orderId = asString(payload.orderId);
+  const productId = asString(payload.productId);
+
+  if (!orderId || !productId) {
+    return {
+      ok: false,
+      status: 400,
+      code: 'INVALID_REVIEW_ORDER',
+      message: 'Order and product are required to submit a review'
+    };
+  }
+
+  const order = await requestUpstream<Order>(`${serviceBaseUrls.order}/orders/${encodeURIComponent(orderId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    cache: 'no-store'
+  });
+
+  if (order.status !== 'DELIVERED') {
+    return {
+      ok: false,
+      status: 403,
+      code: 'ORDER_NOT_DELIVERED',
+      message: 'You can only review products after confirming the order was received'
+    };
+  }
+
+  if (!Array.isArray(order.items) || !order.items.some((item) => item.productId === productId)) {
+    return {
+      ok: false,
+      status: 403,
+      code: 'PRODUCT_NOT_IN_ORDER',
+      message: 'You can only review products included in this order'
+    };
+  }
+
+  return { ok: true };
 }
 
 function parsePositiveInt(raw: string | null): number | null {
@@ -118,4 +179,8 @@ function parseRating(raw: string | null): number | null {
   }
 
   return Math.floor(value);
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }

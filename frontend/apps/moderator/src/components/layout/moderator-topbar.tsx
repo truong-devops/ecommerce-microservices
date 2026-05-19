@@ -6,6 +6,7 @@ interface ModeratorTopbarProps {
 
 export function ModeratorTopbar({ email, role, onLogout }: ModeratorTopbarProps) {
   const displayName = email.split('@')[0] || email;
+  const initial = (displayName.trim().charAt(0) || 'M').toUpperCase();
 
   return (
     <header className="sticky top-0 z-40 h-14 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -19,11 +20,18 @@ export function ModeratorTopbar({ email, role, onLogout }: ModeratorTopbarProps)
         </div>
 
         <div className="flex items-center gap-2 text-slate-600">
-          <div className="hidden rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700 lg:block">{role}</div>
+          <div className="hidden rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-indigo-700 lg:block">
+            Trust Team
+          </div>
 
-          <div className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-slate-50">
-            <div className="h-7 w-7 rounded-full bg-slate-400" />
-            <span className="hidden max-w-[160px] truncate text-sm text-slate-700 md:block">{displayName}</span>
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 shadow-sm">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-slate-800 text-xs font-bold text-white shadow-sm">
+              {initial}
+            </span>
+            <span className="hidden min-w-0 md:block">
+              <span className="block max-w-[150px] truncate text-sm font-semibold leading-4 text-slate-800">{displayName}</span>
+              <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-500">{role}</span>
+            </span>
           </div>
 
           <button
@@ -31,7 +39,7 @@ export function ModeratorTopbar({ email, role, onLogout }: ModeratorTopbarProps)
             onClick={() => {
               void onLogout();
             }}
-            className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+            className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
           >
             Đăng xuất
           </button>

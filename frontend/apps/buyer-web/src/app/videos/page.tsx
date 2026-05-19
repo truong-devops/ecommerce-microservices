@@ -12,10 +12,11 @@ import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
 type VideosStatus = 'loading' | 'error' | 'success';
+const BUYER_PROFILES_STORAGE_KEY = 'buyer_profiles';
 
 export default function VideosPage() {
   const { text } = useLanguage();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [status, setStatus] = useState<VideosStatus>('loading');
   const [error, setError] = useState('');
   const [videos, setVideos] = useState<BuyerVideo[]>([]);
@@ -31,6 +32,7 @@ export default function VideosPage() {
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [commentNameMap, setCommentNameMap] = useState<Record<string, string>>({});
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trackedQualifiedViews = useRef<Set<string>>(new Set());
 
@@ -59,6 +61,16 @@ export default function VideosPage() {
   useEffect(() => {
     setLikedVideoIds(readLikedVideoIds());
   }, []);
+
+  useEffect(() => {
+    setCommentNameMap(() => {
+      const names = readBuyerProfileNames();
+      if (user?.id && user.name.trim()) {
+        names[user.id] = user.name.trim();
+      }
+      return names;
+    });
+  }, [user?.id, user?.name]);
 
   const currentVideo = videos[currentIndex] ?? null;
   const keywords = useMemo(() => videos.flatMap((video) => video.products.map((product) => product.name)).slice(0, 8), [videos]);
@@ -481,10 +493,10 @@ export default function VideosPage() {
                             {comments.map((comment) => (
                               <div key={comment.commentId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
                                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getCommentAvatarColor(comment.userRole)}`}>
-                                  {getCommentInitial(comment)}
+                                  {getCommentInitial(comment, user, commentNameMap)}
                                 </span>
                                 <span className="min-w-0">
-                                  <p className={`text-xs font-bold uppercase ${getCommentNameColor(comment.userRole)}`}>{formatCommentAuthor(comment)}</p>
+                                  <p className={`text-xs font-bold ${getCommentNameColor(comment.userRole)}`}>{formatCommentAuthor(comment, user, commentNameMap)}</p>
                                   <p className="mt-1 break-words text-sm leading-5 text-slate-900">{comment.text}</p>
                                 </span>
                               </div>
@@ -560,13 +572,38 @@ function NavigationButton({ direction, disabled, onClick, label }: { direction: 
   );
 }
 
-function formatCommentAuthor(comment: BuyerVideoComment): string {
-  const role = comment.userRole === 'BUYER' || comment.userRole === 'CUSTOMER' ? 'Khách hàng' : comment.userRole;
-  return `${role} ${comment.userId.slice(0, 8)}`;
+function formatCommentAuthor(
+  comment: BuyerVideoComment,
+  currentUser: { id: string; name: string } | null,
+  knownNames: Record<string, string>
+): string {
+  if (currentUser?.id === comment.userId && currentUser.name.trim()) {
+    return currentUser.name.trim();
+  }
+
+  const knownName = knownNames[comment.userId]?.trim();
+  if (knownName) {
+    return knownName;
+  }
+
+  const role = comment.userRole.trim().toUpperCase();
+  if (role === 'BUYER' || role === 'CUSTOMER') {
+    return 'Khách hàng';
+  }
+  if (role === 'SELLER') {
+    return 'Shop';
+  }
+
+  return 'Quản trị viên';
 }
 
-function getCommentInitial(comment: BuyerVideoComment): string {
-  return (comment.userRole.trim().charAt(0) || 'U').toUpperCase();
+function getCommentInitial(
+  comment: BuyerVideoComment,
+  currentUser: { id: string; name: string } | null,
+  knownNames: Record<string, string>
+): string {
+  const author = formatCommentAuthor(comment, currentUser, knownNames);
+  return (author.trim().charAt(0) || 'U').toUpperCase();
 }
 
 function getCommentAvatarColor(userRole: string): string {
@@ -631,6 +668,35 @@ function writeLikedVideoIds(videoIds: Set<string>) {
     window.localStorage.setItem('buyer_video_liked_ids', JSON.stringify(Array.from(videoIds)));
   } catch {
     // Ignore storage failures; the visual state still updates for this session.
+  }
+}
+
+function readBuyerProfileNames(): Record<string, string> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BUYER_PROFILES_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.entries(parsed).reduce<Record<string, string>>((accumulator, [userId, profile]) => {
+      if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+        return accumulator;
+      }
+
+      const name = (profile as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        accumulator[userId] = name.trim();
+      }
+
+      return accumulator;
+    }, {});
+  } catch {
+    return {};
   }
 }
 

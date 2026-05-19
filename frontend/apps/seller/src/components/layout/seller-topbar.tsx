@@ -6,6 +6,7 @@ interface SellerTopbarProps {
 
 export function SellerTopbar({ email, role, onLogout }: SellerTopbarProps) {
   const displayName = email.split('@')[0] || email;
+  const initial = (displayName.trim().charAt(0) || 'S').toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 h-14 border-b border-slate-200 bg-white">
@@ -25,11 +26,18 @@ export function SellerTopbar({ email, role, onLogout }: SellerTopbarProps) {
 
           {/* <div className="mx-1 h-5 w-px bg-slate-200" /> */}
 
-          <div className="hidden rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-[#ee4d2d] lg:block">{role}</div>
+          <div className="hidden rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[#ee4d2d] lg:block">
+            Seller Center
+          </div>
 
-          <div className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-slate-50">
-            <div className="h-7 w-7 rounded-full bg-gradient-to-br from-[#ffb39c] to-[#ee4d2d]" />
-            <span className="hidden max-w-[160px] truncate text-sm text-slate-700 md:block">{displayName}</span>
+          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 shadow-sm">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-[#ff8a65] to-[#ee4d2d] text-xs font-bold text-white shadow-sm">
+              {initial}
+            </span>
+            <span className="hidden min-w-0 md:block">
+              <span className="block max-w-[150px] truncate text-sm font-semibold leading-4 text-slate-800">{displayName}</span>
+              <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-500">{role}</span>
+            </span>
           </div>
 
           <button
@@ -37,7 +45,7 @@ export function SellerTopbar({ email, role, onLogout }: SellerTopbarProps) {
             onClick={() => {
               void onLogout();
             }}
-            className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
+            className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-[#ee4d2d] hover:bg-[#fff7f3] hover:text-[#ee4d2d]"
           >
             Đăng xuất
           </button>

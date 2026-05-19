@@ -7,13 +7,14 @@ import { RecommendationSection } from '@/components/home/RecommendationSection';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { createBuyerChatConversation } from '@/lib/api/chat';
+import { fetchBuyerOrders } from '@/lib/api/orders';
 import { fetchBuyerProducts, fetchBuyerShopDetail, fetchProductDetail } from '@/lib/api/products';
 import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import { createBuyerReview, fetchReviewsByProduct, fetchReviewSummaryByProduct } from '@/lib/api/reviews';
 import { formatSellerCode } from '@/lib/order-codes';
 import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
-import type { BuyerShopDetail, ProductDetail, ProductItem, ReviewItem, ReviewSummary } from '@/lib/api/types';
+import type { BuyerShopDetail, Order, ProductDetail, ProductItem, ReviewItem, ReviewSummary } from '@/lib/api/types';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 type ProductPageStatus = 'loading' | 'error' | 'invalid-id' | 'not-found' | 'success';
@@ -23,6 +24,29 @@ interface ProductDetailPageProps {
     productId: string;
   };
 }
+
+const CUSTOMER_HIDDEN_ATTRIBUTE_KEYS = new Set([
+  'availableQuantity',
+  'availableStock',
+  'brand',
+  'category',
+  'categoryId',
+  'createdAt',
+  'defaultSku',
+  'folder',
+  'inventory',
+  'quantity',
+  'rating',
+  'seller',
+  'sellerCode',
+  'sellerId',
+  'sku',
+  'slug',
+  'source',
+  'status',
+  'stock',
+  'updatedAt'
+].map((item) => item.toLowerCase()));
 
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
@@ -60,8 +84,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [reviewError, setReviewError] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitMessage, setReviewSubmitMessage] = useState('');
+  const [reviewEligibleOrders, setReviewEligibleOrders] = useState<Order[]>([]);
+  const [reviewEligibilityLoading, setReviewEligibilityLoading] = useState(false);
+  const [reviewEligibilityError, setReviewEligibilityError] = useState('');
+  const [selectedReviewOrderId, setSelectedReviewOrderId] = useState('');
   const [reviewForm, setReviewForm] = useState({
-    orderId: '',
     rating: 5,
     title: '',
     content: '',
@@ -103,9 +130,16 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         noDescription: 'Thông tin mô tả đang được cập nhật.',
         brand: 'Thương hiệu',
         status: 'Trạng thái',
-        seller: 'Nhà bán',
-        updatedAt: 'Cập nhật lúc',
-        createdAt: 'Đăng bán từ',
+        seller: 'Gian hàng',
+        sellerUpdating: 'Đang cập nhật gian hàng',
+        inventory: 'Kho hàng',
+        updatedAt: 'Cập nhật',
+        createdAt: 'Đăng bán',
+        statusActive: 'Đang bán',
+        statusDraft: 'Sắp mở bán',
+        statusHidden: 'Tạm ngừng bán',
+        statusArchived: 'Ngừng kinh doanh',
+        stockUnknown: 'Đang cập nhật',
         freeReturn: 'Đổi trả miễn phí trong 7 ngày',
         genuine: 'Cam kết chính hãng',
         inStock: 'Còn hàng',
@@ -123,8 +157,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         sellerReply: 'Phản hồi từ nhà bán',
         reviewLoginRequired: 'Bạn cần đăng nhập để gửi đánh giá.',
         reviewCustomerOnly: 'Chỉ tài khoản người mua (CUSTOMER) mới được gửi đánh giá.',
+        reviewEligibleOrder: 'Đơn hàng đã nhận',
+        reviewEligibilityHint: 'Bạn chỉ có thể đánh giá sản phẩm đã mua và đã xác nhận nhận hàng.',
+        reviewNoEligibleOrder: 'Bạn chưa có đơn đã nhận hàng chứa sản phẩm này nên chưa thể đánh giá.',
+        reviewEligibilityLoadError: 'Không thể kiểm tra đơn hàng đủ điều kiện đánh giá lúc này.',
         loginNow: 'Đăng nhập ngay',
-        reviewOrderId: 'Mã đơn hàng',
         reviewRating: 'Số sao',
         reviewTitleField: 'Tiêu đề',
         reviewContentField: 'Nội dung',
@@ -133,7 +170,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         submittingReview: 'Đang gửi...',
         reviewSubmitSuccess: 'Gửi đánh giá thành công.',
         reviewSubmitFailed: 'Gửi đánh giá thất bại.',
-        reviewOrderIdRequired: 'Vui lòng nhập mã đơn hàng hợp lệ.',
+        reviewOrderIdRequired: 'Vui lòng chọn đơn hàng đã nhận có sản phẩm này.',
         reviewContentRequired: 'Vui lòng nhập nội dung đánh giá.',
         shopBlockTitle: 'THÔNG TIN SHOP',
         shopOnlineLabel: 'Hoạt động',
@@ -162,8 +199,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         brand: 'Brand',
         status: 'Status',
         seller: 'Seller',
+        sellerUpdating: 'Shop is being updated',
+        inventory: 'Stock',
         updatedAt: 'Updated at',
         createdAt: 'Listed since',
+        statusActive: 'Available',
+        statusDraft: 'Coming soon',
+        statusHidden: 'Temporarily unavailable',
+        statusArchived: 'Discontinued',
+        stockUnknown: 'Updating',
         freeReturn: 'Free return within 7 days',
         genuine: 'Genuine product guarantee',
         inStock: 'In stock',
@@ -181,8 +225,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         sellerReply: 'Seller reply',
         reviewLoginRequired: 'You must login to submit a review.',
         reviewCustomerOnly: 'Only CUSTOMER accounts can submit reviews.',
+        reviewEligibleOrder: 'Delivered order',
+        reviewEligibilityHint: 'You can only review products you bought and confirmed as received.',
+        reviewNoEligibleOrder: 'You do not have a delivered order containing this product yet.',
+        reviewEligibilityLoadError: 'Cannot check eligible review orders right now.',
         loginNow: 'Login now',
-        reviewOrderId: 'Order ID',
         reviewRating: 'Rating',
         reviewTitleField: 'Title',
         reviewContentField: 'Content',
@@ -191,7 +238,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         submittingReview: 'Submitting...',
         reviewSubmitSuccess: 'Review submitted successfully.',
         reviewSubmitFailed: 'Failed to submit review.',
-        reviewOrderIdRequired: 'Please enter a valid order ID.',
+        reviewOrderIdRequired: 'Please select a delivered order containing this product.',
         reviewContentRequired: 'Please enter review content.',
         shopBlockTitle: 'SHOP INFORMATION',
         shopOnlineLabel: 'Status',
@@ -302,6 +349,54 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     void loadReviews(product.id, selectedRatingFilter);
   }, [loadReviews, product, selectedRatingFilter, status]);
 
+  const loadReviewEligibleOrders = useCallback(async (targetProductId: string) => {
+    if (!accessToken || !user || String(user.role).toUpperCase() !== 'CUSTOMER') {
+      setReviewEligibleOrders([]);
+      setSelectedReviewOrderId('');
+      return;
+    }
+
+    setReviewEligibilityLoading(true);
+    setReviewEligibilityError('');
+
+    try {
+      const orderList = await fetchBuyerOrders({
+        accessToken,
+        params: {
+          page: 1,
+          pageSize: 100,
+          status: 'DELIVERED',
+          sortBy: 'createdAt',
+          sortOrder: 'DESC'
+        }
+      });
+      const eligibleOrders = orderList.items.filter((order) =>
+        order.items.some((item) => item.productId === targetProductId)
+      );
+
+      setReviewEligibleOrders(eligibleOrders);
+      setSelectedReviewOrderId((current) =>
+        current && eligibleOrders.some((order) => order.id === current) ? current : eligibleOrders[0]?.id ?? ''
+      );
+    } catch {
+      setReviewEligibleOrders([]);
+      setSelectedReviewOrderId('');
+      setReviewEligibilityError(detailText.reviewEligibilityLoadError);
+    } finally {
+      setReviewEligibilityLoading(false);
+    }
+  }, [accessToken, detailText.reviewEligibilityLoadError, user]);
+
+  useEffect(() => {
+    if (status !== 'success' || !product?.id) {
+      setReviewEligibleOrders([]);
+      setSelectedReviewOrderId('');
+      return;
+    }
+
+    void loadReviewEligibleOrders(product.id);
+  }, [loadReviewEligibleOrders, product?.id, status]);
+
   const loadShop = useCallback(async (sellerId: string) => {
     const normalizedSellerId = sellerId.trim();
     if (!normalizedSellerId) {
@@ -376,11 +471,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       return;
     }
 
-    const normalizedOrderId = reviewForm.orderId.trim();
+    const normalizedOrderId = selectedReviewOrderId.trim();
     const normalizedContent = reviewForm.content.trim();
     const normalizedTitle = reviewForm.title.trim();
 
-    if (!isUuid(normalizedOrderId)) {
+    if (!isUuid(normalizedOrderId) || !reviewEligibleOrders.some((order) => order.id === normalizedOrderId)) {
       setReviewSubmitMessage(detailText.reviewOrderIdRequired);
       return;
     }
@@ -414,11 +509,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
       setReviewSubmitMessage(detailText.reviewSubmitSuccess);
       setReviewForm({
-        orderId: '',
         rating: 5,
         title: '',
         content: '',
         imagesInput: ''
+      });
+      setReviewEligibleOrders((current) => {
+        const nextOrders = current.filter((order) => order.id !== normalizedOrderId);
+        setSelectedReviewOrderId(nextOrders[0]?.id ?? '');
+        return nextOrders;
       });
       await loadReviews(product.id, selectedRatingFilter);
     } catch (error) {
@@ -426,7 +525,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     } finally {
       setSubmittingReview(false);
     }
-  }, [accessToken, detailText.reviewContentRequired, detailText.reviewCustomerOnly, detailText.reviewLoginRequired, detailText.reviewOrderIdRequired, detailText.reviewSubmitFailed, detailText.reviewSubmitSuccess, loadReviews, product, reviewForm.content, reviewForm.imagesInput, reviewForm.orderId, reviewForm.rating, reviewForm.title, selectedRatingFilter, user]);
+  }, [accessToken, detailText.reviewContentRequired, detailText.reviewCustomerOnly, detailText.reviewLoginRequired, detailText.reviewOrderIdRequired, detailText.reviewSubmitFailed, detailText.reviewSubmitSuccess, loadReviews, product, reviewEligibleOrders, reviewForm.content, reviewForm.imagesInput, reviewForm.rating, reviewForm.title, selectedRatingFilter, selectedReviewOrderId, user]);
 
   const handleQuantityChange = (next: number) => {
     if (!Number.isFinite(next) || next <= 0) {
@@ -558,7 +657,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     }
 
     return Object.entries(product.attributes)
-      .filter(([, value]) => value !== null && value !== '')
+      .filter(([key, value]) => !CUSTOMER_HIDDEN_ATTRIBUTE_KEYS.has(key.toLowerCase()) && value !== null && value !== '')
       .map(([key, value]) => ({
         key,
         label: prettifyAttributeLabel(key, locale),
@@ -575,6 +674,16 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     () => reviews.filter((item) => item.images.length > 0).length,
     [reviews]
   );
+  const productStatusLabel = formatProductStatusLabel(product?.status ?? 'ACTIVE', locale, isOutOfStock, detailText);
+  const productSellerName = shop?.shopName?.trim() || detailText.sellerUpdating;
+  const productInventoryLabel =
+    availableStock === null
+      ? detailText.stockUnknown
+      : availableStock > 0
+        ? locale === 'vi'
+          ? `Còn ${availableStock} sản phẩm`
+          : `${availableStock} in stock`
+        : detailText.soldOut;
 
   return (
     <div className="min-h-screen bg-app-bg text-slate-900">
@@ -661,7 +770,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded bg-brand-50 px-2 py-1 font-semibold text-brand-700">eMall</span>
-                    <span className="rounded bg-slate-100 px-2 py-1 font-medium text-slate-600">{product.status}</span>
+                    <span className="rounded bg-slate-100 px-2 py-1 font-medium text-slate-600">{productStatusLabel}</span>
                   </div>
 
                   <h1 className="text-2xl font-semibold leading-tight text-slate-900">{product.title}</h1>
@@ -892,19 +1001,19 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 </div>
                 <div className="contents">
                   <p className="text-slate-500">{detailText.status}</p>
-                  <p className="font-medium text-slate-800">{product.status}</p>
+                  <p className="font-medium text-slate-800">{productStatusLabel}</p>
                 </div>
                 <div className="contents">
                   <p className="text-slate-500">{detailText.seller}</p>
-                  <p className="font-medium text-slate-800">{product.sellerCode || formatSellerCode(product.sellerId)}</p>
+                  <p className="font-medium text-slate-800">{productSellerName}</p>
+                </div>
+                <div className="contents">
+                  <p className="text-slate-500">{detailText.inventory}</p>
+                  <p className="font-medium text-slate-800">{productInventoryLabel}</p>
                 </div>
                 <div className="contents">
                   <p className="text-slate-500">{detailText.createdAt}</p>
-                  <p className="font-medium text-slate-800">{formatDateLabel(product.createdAt, locale)}</p>
-                </div>
-                <div className="contents">
-                  <p className="text-slate-500">{detailText.updatedAt}</p>
-                  <p className="font-medium text-slate-800">{formatDateLabel(product.updatedAt, locale)}</p>
+                  <p className="font-medium text-slate-800">{formatDateOnlyLabel(product.createdAt, locale)}</p>
                 </div>
 
                 {attributeEntries.length > 0 ? (
@@ -951,19 +1060,39 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                   <p>{detailText.reviewCustomerOnly}</p>
                 </div>
+              ) : reviewEligibilityLoading ? (
+                <div className="mb-4 rounded-md border border-slate-200 px-4 py-3 text-sm text-slate-600">
+                  <p>{text.product.loading}</p>
+                </div>
+              ) : reviewEligibilityError ? (
+                <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  <p>{reviewEligibilityError}</p>
+                </div>
+              ) : reviewEligibleOrders.length === 0 ? (
+                <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  {/* <p className="font-semibold text-slate-800">{detailText.reviewEligibilityHint}</p>
+                  <p className="mt-1">{detailText.reviewNoEligibleOrder}</p> */}
+                </div>
               ) : (
                 <div className="mb-4 rounded-md border border-slate-200 p-4">
                   <p className="mb-3 text-sm font-semibold text-slate-800">{detailText.submitReview}</p>
                   <div className="grid gap-3 md:grid-cols-2">
                     <label className="text-sm text-slate-700">
-                      <span className="mb-1 block">{detailText.reviewOrderId}</span>
-                      <input
-                        type="text"
-                        value={reviewForm.orderId}
-                        onChange={(event) => setReviewForm((prev) => ({ ...prev, orderId: event.target.value }))}
+                      <span className="mb-1 block">{detailText.reviewEligibleOrder}</span>
+                      <select
+                        value={selectedReviewOrderId}
+                        onChange={(event) => {
+                          setSelectedReviewOrderId(event.target.value);
+                          setReviewSubmitMessage('');
+                        }}
                         className="h-10 w-full rounded border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
-                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                      />
+                      >
+                        {reviewEligibleOrders.map((order) => (
+                          <option key={order.id} value={order.id}>
+                            {order.orderNumber} - {formatDateOnlyLabel(order.updatedAt, locale)}
+                          </option>
+                        ))}
+                      </select>
                     </label>
 
                     <label className="text-sm text-slate-700">
@@ -1176,6 +1305,53 @@ function formatDateLabel(value: string | null, locale: 'en' | 'vi'): string {
   return date.toLocaleString(locale === 'vi' ? 'vi-VN' : 'en-US');
 }
 
+function formatDateOnlyLabel(value: string | null, locale: 'en' | 'vi'): string {
+  if (!value) {
+    return 'N/A';
+  }
+
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return 'N/A';
+  }
+
+  return new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date);
+}
+
+function formatProductStatusLabel(
+  status: ProductDetail['status'],
+  locale: 'en' | 'vi',
+  isOutOfStock: boolean,
+  labels: {
+    statusActive: string;
+    statusDraft: string;
+    statusHidden: string;
+    statusArchived: string;
+    soldOut: string;
+  }
+): string {
+  if (isOutOfStock) {
+    return labels.soldOut;
+  }
+
+  switch (status) {
+    case 'ACTIVE':
+      return labels.statusActive;
+    case 'DRAFT':
+      return labels.statusDraft;
+    case 'HIDDEN':
+      return labels.statusHidden;
+    case 'ARCHIVED':
+      return labels.statusArchived;
+    default:
+      return locale === 'vi' ? 'Đang cập nhật' : 'Updating';
+  }
+}
+
 function extractStockFromRecord(
   source?: Record<string, string | number | boolean | null>
 ): number | null {
@@ -1238,7 +1414,7 @@ function normalizeColor(value: string): string {
 
 function renderStars(value: number): string {
   const rating = Math.max(0, Math.min(5, Math.round(value)));
-  return `${'â˜…'.repeat(rating)}${'â˜†'.repeat(Math.max(0, 5 - rating))}`;
+  return `${'\u2605'.repeat(rating)}${'\u2606'.repeat(Math.max(0, 5 - rating))}`;
 }
 
 function buildStarFilterLabel(star: number, count: number, locale: 'en' | 'vi'): string {

@@ -63,7 +63,7 @@ export function Header({ keywords }: HeaderProps) {
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-3 py-3 md:px-4 md:py-4">
         <div className="flex items-center justify-between text-xs text-white/90">
           <nav aria-label="Utility links" className="hidden gap-3 md:flex">
-            <a className="rounded-sm hover:text-white focus-visible:outline-white" href="#">
+            <a className="rounded-sm hover:text-white focus-visible:outline-white" href="http://localhost:6789/login">
               {text.header.sellerCenter}
             </a>
             <a className="rounded-sm hover:text-white focus-visible:outline-white" href="#">

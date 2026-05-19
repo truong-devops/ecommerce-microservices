@@ -63,6 +63,13 @@ type ListOrdersRequest struct {
 	Search    *string
 }
 
+type ListCompletedOrdersRequest struct {
+	From     time.Time
+	To       time.Time
+	Page     int
+	PageSize int
+}
+
 type OrderService struct {
 	repo              *repository.OrderRepository
 	idempotency       *IdempotencyService
@@ -221,6 +228,65 @@ func (s *OrderService) ListOrders(ctx context.Context, user domain.UserContext, 
 			"pageSize":   req.PageSize,
 			"totalItems": totalItems,
 			"totalPages": totalPages(totalItems, req.PageSize),
+		},
+	}, nil
+}
+
+func (s *OrderService) ListCompletedOrdersForRecommendation(ctx context.Context, req ListCompletedOrdersRequest) (map[string]any, error) {
+	if req.Page < 1 {
+		req.Page = 1
+	}
+	if req.PageSize < 1 {
+		req.PageSize = 500
+	}
+	if req.PageSize > 1000 {
+		req.PageSize = 1000
+	}
+	if !req.From.Before(req.To) {
+		return nil, validationError("from", "must be before to")
+	}
+
+	orders, totalItems, err := s.repo.ListCompletedOrders(ctx, repository.ListCompletedOrdersQuery{
+		From:     req.From,
+		To:       req.To,
+		Page:     req.Page,
+		PageSize: req.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	respItems := make([]map[string]any, 0, len(orders))
+	for _, order := range orders {
+		items := make([]map[string]any, 0, len(order.Items))
+		for _, item := range order.Items {
+			items = append(items, map[string]any{
+				"productId": item.ProductID,
+				"quantity":  item.Quantity,
+				"unitPrice": item.UnitPrice,
+			})
+		}
+		resp := map[string]any{
+			"orderId":     order.ID,
+			"userId":      order.UserID,
+			"sellerId":    nil,
+			"completedAt": order.CompletedAt.UTC().Format(time.RFC3339Nano),
+			"items":       items,
+		}
+		if order.SellerID != nil {
+			resp["sellerId"] = *order.SellerID
+		}
+		respItems = append(respItems, resp)
+	}
+
+	return map[string]any{
+		"items": respItems,
+		"pagination": map[string]any{
+			"page":       req.Page,
+			"pageSize":   req.PageSize,
+			"totalItems": totalItems,
+			"totalPages": totalPages(totalItems, req.PageSize),
+			"hasNext":    req.Page < totalPages(totalItems, req.PageSize),
 		},
 	}, nil
 }

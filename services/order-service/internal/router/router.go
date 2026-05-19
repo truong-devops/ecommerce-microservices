@@ -32,6 +32,24 @@ func New(
 	r.Get(base+"/live", healthHandler.Live)
 
 	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, revocationChecker, logger)
+	requireInternalToken := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if cfg.InternalServiceToken == "" {
+				httpx.WriteError(w, req, http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Internal service token is not configured", nil)
+				return
+			}
+			if req.Header.Get("X-Internal-Service-Token") != cfg.InternalServiceToken {
+				httpx.WriteError(w, req, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+				return
+			}
+			next.ServeHTTP(w, req)
+		})
+	}
+
+	r.Group(func(internal chi.Router) {
+		internal.Use(requireInternalToken)
+		internal.Get(base+"/orders/internal/completed", orderHandler.ListCompletedOrdersForRecommendation)
+	})
 
 	r.Group(func(private chi.Router) {
 		private.Use(requireJWT)

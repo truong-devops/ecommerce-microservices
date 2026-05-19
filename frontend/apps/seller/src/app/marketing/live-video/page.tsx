@@ -67,6 +67,8 @@ const videoConversionMetrics = [
 const videoEngagementMetrics = ['Lượt Xem', 'Lượt Thích', 'Lượt Chia sẻ', 'Tổng số Bình luận', 'Người theo dõi mới từ Video'];
 const DEFAULT_PLAYBACK_URL = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 const BUYER_WEB_URL = process.env.NEXT_PUBLIC_BUYER_WEB_URL ?? 'http://localhost:8888';
+const BUYER_PROFILES_STORAGE_KEY = 'buyer_profiles';
+const SELECTED_LIVE_SESSION_STORAGE_KEY = 'seller_selected_live_session_id';
 const trendGroups = [
   {
     title: 'Số liệu chính:',
@@ -198,7 +200,11 @@ export default function LiveVideoPage() {
         if (current && sessions.some((session) => session.sessionId === current)) {
           return current;
         }
-        return sessions[0]?.sessionId ?? '';
+        const storedSessionId = readStoredSelectedLiveSessionId();
+        if (storedSessionId && sessions.some((session) => session.sessionId === storedSessionId)) {
+          return storedSessionId;
+        }
+        return sessions.find((session) => session.status === 'LIVE')?.sessionId ?? sessions[0]?.sessionId ?? '';
       });
     } catch (error) {
       setLiveError(error instanceof SellerApiClientError ? error.message : 'Không thể tải danh sách livestream.');
@@ -246,6 +252,10 @@ export default function LiveVideoPage() {
       void loadSellerVideos();
     }
   }, [accessToken, loadLiveSessions, loadSellerProducts, loadSellerVideos, ready, user]);
+
+  useEffect(() => {
+    writeStoredSelectedLiveSessionId(selectedLiveSessionId);
+  }, [selectedLiveSessionId]);
 
   useEffect(() => {
     if (!accessToken || !selectedLiveSession?.sessionId) {
@@ -517,6 +527,8 @@ export default function LiveVideoPage() {
               <LiveOperationsPanel
                 accessToken={accessToken}
                 buyerWebUrl={BUYER_WEB_URL}
+                sellerId={user.id}
+                sellerName={formatSellerAccountName(user.email)}
                 form={liveForm}
                 sessions={liveSessions}
                 selectedSession={selectedLiveSession}
@@ -699,6 +711,8 @@ interface LiveSessionFormState {
 interface LiveOperationsPanelProps {
   accessToken: string | null;
   buyerWebUrl: string;
+  sellerId: string;
+  sellerName: string;
   form: LiveSessionFormState;
   sessions: LiveSession[];
   selectedSession: LiveSession | null;
@@ -742,6 +756,8 @@ interface SellerLiveMessageView {
 function LiveOperationsPanel({
   accessToken,
   buyerWebUrl,
+  sellerId,
+  sellerName,
   form,
   sessions,
   selectedSession,
@@ -785,6 +801,7 @@ function LiveOperationsPanel({
   const [activeViewerCount, setActiveViewerCount] = useState(0);
   const [replyInput, setReplyInput] = useState('');
   const [replyError, setReplyError] = useState('');
+  const [liveMessageNameMap, setLiveMessageNameMap] = useState<Record<string, string>>({});
   const buyerLink = selectedSession ? `${buyerWebUrl.replace(/\/$/, '')}/live/${encodeURIComponent(selectedSession.sessionId)}` : '';
   const mediaPublish = selectedSession?.media?.publish;
   const isMediaEngineSession = selectedSession?.media?.provider === 'MEDIAMTX' && mediaPublish?.protocol === 'WHIP' && Boolean(mediaPublish.url);
@@ -813,6 +830,16 @@ function LiveOperationsPanel({
     setReplyInput('');
     setReplyError('');
   }, [selectedSession?.sessionId]);
+
+  useEffect(() => {
+    setLiveMessageNameMap(() => {
+      const names = readBuyerProfileNames();
+      if (sellerId && sellerName.trim()) {
+        names[sellerId] = sellerName.trim();
+      }
+      return names;
+    });
+  }, [sellerId, sellerName]);
 
   useEffect(() => {
     if (previewRef.current) {
@@ -1358,9 +1385,6 @@ function LiveOperationsPanel({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-slate-950">Nguồn phát</p>
-                <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600">
-                  Chọn camera hoặc màn hình trước khi lên sóng. Người xem sẽ ưu tiên nguồn trực tiếp, URL MP4/HLS dùng làm nguồn dự phòng.
-                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -1413,7 +1437,6 @@ function LiveOperationsPanel({
             {realtimeError ? (
               <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{realtimeError}</p>
             ) : null}
-
             <div className="relative mt-4 overflow-hidden rounded-2xl border border-[#f3d7ca] bg-[#f5eee8] shadow-inner">
               <div className="pointer-events-none absolute left-3 top-3 z-10 flex flex-wrap items-center gap-2">
                 {isLiveNow ? (
@@ -1536,11 +1559,11 @@ function LiveOperationsPanel({
                 {liveMessages.map((message) => (
                   <div key={message.messageId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getSellerLiveMessageAvatarColor(message.senderRole)}`}>
-                      {getSellerLiveMessageInitial(message.senderRole)}
+                      {getSellerLiveMessageInitial(message, liveMessageNameMap)}
                     </span>
                     <span className="min-w-0">
-                      <p className={`text-xs font-bold uppercase ${getSellerLiveMessageNameColor(message.senderRole)}`}>
-                        {formatSellerLiveMessageSender(message.senderRole)}
+                      <p className={`text-xs font-bold ${getSellerLiveMessageNameColor(message.senderRole)}`}>
+                        {formatSellerLiveMessageSender(message, liveMessageNameMap)}
                       </p>
                       <p className="mt-1 break-words text-sm leading-5 text-slate-900">{message.text}</p>
                     </span>
@@ -1797,6 +1820,67 @@ function formatDateTime(value: string | undefined) {
   return date.toLocaleString('vi-VN', { hour12: false });
 }
 
+function formatSellerAccountName(email: string): string {
+  return email.split('@')[0]?.trim() || email;
+}
+
+function readStoredSelectedLiveSessionId(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    return window.localStorage.getItem(SELECTED_LIVE_SESSION_STORAGE_KEY)?.trim() ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function writeStoredSelectedLiveSessionId(sessionId: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    if (sessionId.trim()) {
+      window.localStorage.setItem(SELECTED_LIVE_SESSION_STORAGE_KEY, sessionId.trim());
+      return;
+    }
+    window.localStorage.removeItem(SELECTED_LIVE_SESSION_STORAGE_KEY);
+  } catch {
+    // Storage can fail in private mode; the current page state still works.
+  }
+}
+
+function readBuyerProfileNames(): Record<string, string> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BUYER_PROFILES_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.entries(parsed).reduce<Record<string, string>>((accumulator, [userId, profile]) => {
+      if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+        return accumulator;
+      }
+
+      const name = (profile as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        accumulator[userId] = name.trim();
+      }
+
+      return accumulator;
+    }, {});
+  } catch {
+    return {};
+  }
+}
+
 function isSellerLiveMessage(input: unknown): input is SellerLiveMessageView {
   if (!input || typeof input !== 'object') {
     return false;
@@ -1812,18 +1896,25 @@ function isSellerLiveMessage(input: unknown): input is SellerLiveMessageView {
   );
 }
 
-function getSellerLiveMessageInitial(senderRole: string): string {
-  return (senderRole.trim().charAt(0) || 'U').toUpperCase();
+function getSellerLiveMessageInitial(message: SellerLiveMessageView, knownNames: Record<string, string>): string {
+  const sender = formatSellerLiveMessageSender(message, knownNames);
+  return (sender.trim().charAt(0) || 'U').toUpperCase();
 }
 
-function formatSellerLiveMessageSender(senderRole: string): string {
-  const normalized = senderRole.toLowerCase();
+function formatSellerLiveMessageSender(message: SellerLiveMessageView, knownNames: Record<string, string>): string {
+  const normalized = message.senderRole.toLowerCase();
   if (normalized.includes('seller')) {
     return 'Shop';
   }
   if (normalized.includes('admin')) {
     return 'Admin';
   }
+
+  const knownName = knownNames[message.senderId]?.trim();
+  if (knownName) {
+    return knownName;
+  }
+
   return 'Khách hàng';
 }
 

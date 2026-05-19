@@ -147,6 +147,23 @@ function profileFromEmail(email: string): BuyerProfile {
   };
 }
 
+function collapseRepeatedName(value: string): string {
+  const parts = value
+    .trim()
+    .split(/\s+/)
+    .filter((item) => item.length > 0);
+
+  if (parts.length < 2 || parts.length % 2 !== 0) {
+    return parts.join(' ');
+  }
+
+  const middle = parts.length / 2;
+  const left = parts.slice(0, middle).join(' ');
+  const right = parts.slice(middle).join(' ');
+
+  return left.toLowerCase() === right.toLowerCase() ? left : parts.join(' ');
+}
+
 function toBuyerUser(authUser: BuyerAuthUser, profile: BuyerProfile): BuyerUser {
   return {
     id: authUser.id,
@@ -173,12 +190,16 @@ function normalizeGender(value: string | null | undefined, fallback: BuyerGender
 
 function profileFromApi(apiProfile: BuyerProfileOutput, fallbackEmail: string, fallbackProfile: BuyerProfile): BuyerProfile {
   const fallbackName = profileFromEmail(fallbackEmail).name.toLowerCase();
-  const nextName = apiProfile.name.trim();
+  const fallbackProfileName = collapseRepeatedName(fallbackProfile.name);
+  const nextName = collapseRepeatedName(apiProfile.name);
   const shouldKeepLocalName =
-    fallbackProfile.name.trim().length > 0 && nextName.length > 0 && nextName.toLowerCase() === fallbackName;
+    fallbackProfileName.length > 0 &&
+    nextName.length > 0 &&
+    nextName.toLowerCase() === fallbackName &&
+    fallbackProfileName.toLowerCase() !== fallbackName;
 
   return {
-    name: shouldKeepLocalName ? fallbackProfile.name : nextName || fallbackProfile.name || profileFromEmail(fallbackEmail).name,
+    name: shouldKeepLocalName ? fallbackProfileName : nextName || fallbackProfileName || profileFromEmail(fallbackEmail).name,
     phone: apiProfile.phone,
     address: apiProfile.address,
     gender: normalizeGender(apiProfile.gender, fallbackProfile.gender),
@@ -205,7 +226,8 @@ function readProfiles(): Record<string, BuyerProfile> {
         return accumulator;
       }
 
-      const normalizedName = typeof profile.name === 'string' && profile.name.trim().length > 0 ? profile.name : 'Buyer';
+      const normalizedName =
+        typeof profile.name === 'string' && profile.name.trim().length > 0 ? collapseRepeatedName(profile.name) : 'Buyer';
       const normalizedPhone = typeof profile.phone === 'string' ? profile.phone : '';
       const normalizedAddress = typeof profile.address === 'string' ? profile.address : '';
       const normalizedGender = normalizeGender(profile.gender, 'unspecified');

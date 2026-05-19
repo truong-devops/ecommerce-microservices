@@ -5,16 +5,18 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
+import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import { createBuyerVideoComment, listBuyerVideoComments, listBuyerVideos, trackBuyerVideoEvent } from '@/lib/api/videos';
-import type { BuyerVideo, BuyerVideoComment } from '@/lib/api/types';
+import type { BuyerVideo, BuyerVideoComment, ProductItem } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
 type VideosStatus = 'loading' | 'error' | 'success';
+const BUYER_PROFILES_STORAGE_KEY = 'buyer_profiles';
 
 export default function VideosPage() {
   const { text } = useLanguage();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [status, setStatus] = useState<VideosStatus>('loading');
   const [error, setError] = useState('');
   const [videos, setVideos] = useState<BuyerVideo[]>([]);
@@ -28,6 +30,9 @@ export default function VideosPage() {
   const [likedVideoIds, setLikedVideoIds] = useState<Set<string>>(() => new Set());
   const [likeStatus, setLikeStatus] = useState<'idle' | 'login-required'>('idle');
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [commentNameMap, setCommentNameMap] = useState<Record<string, string>>({});
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trackedQualifiedViews = useRef<Set<string>>(new Set());
 
@@ -56,6 +61,16 @@ export default function VideosPage() {
   useEffect(() => {
     setLikedVideoIds(readLikedVideoIds());
   }, []);
+
+  useEffect(() => {
+    setCommentNameMap(() => {
+      const names = readBuyerProfileNames();
+      if (user?.id && user.name.trim()) {
+        names[user.id] = user.name.trim();
+      }
+      return names;
+    });
+  }, [user?.id, user?.name]);
 
   const currentVideo = videos[currentIndex] ?? null;
   const keywords = useMemo(() => videos.flatMap((video) => video.products.map((product) => product.name)).slice(0, 8), [videos]);
@@ -220,6 +235,38 @@ export default function VideosPage() {
   }, [currentVideoId]);
 
   useEffect(() => {
+    const productIds = currentVideo?.products.map((product) => product.productId) ?? [];
+    if (productIds.length === 0) {
+      setRecommendedProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadRecommendations() {
+      setRecommendationLoading(true);
+      try {
+        const items = await loadRecommendedProductItems(productIds, 4);
+        if (!cancelled) {
+          setRecommendedProducts(items);
+        }
+      } catch {
+        if (!cancelled) {
+          setRecommendedProducts([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRecommendationLoading(false);
+        }
+      }
+    }
+
+    void loadRecommendations();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentVideo]);
+
+  useEffect(() => {
     if (shareStatus !== 'copied') {
       return;
     }
@@ -318,6 +365,39 @@ export default function VideosPage() {
                     </div>
                   </div>
                 ) : null}
+
+                {recommendationLoading || recommendedProducts.length > 0 ? (
+                  <div className="mt-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mua kèm phổ biến</p>
+                    <div className="mt-2 space-y-2">
+                      {recommendedProducts.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/products/${encodeURIComponent(product.id)}`}
+                          className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 transition hover:border-brand-200 hover:bg-brand-50"
+                        >
+                          <Image
+                            src={product.image || '/icon.svg'}
+                            alt={product.title}
+                            width={44}
+                            height={44}
+                            unoptimized
+                            className="h-11 w-11 rounded-md object-cover"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="line-clamp-1 text-sm font-semibold text-slate-900">{product.title}</span>
+                            <span className="block text-sm font-bold text-brand-600">{formatPrice(product.price)}</span>
+                          </span>
+                        </Link>
+                      ))}
+                      {recommendationLoading && recommendedProducts.length === 0 ? (
+                        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-2 text-xs text-slate-500">
+                          Đang tải gợi ý...
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
               </aside>
 
               <div className="relative min-w-0">
@@ -413,10 +493,10 @@ export default function VideosPage() {
                             {comments.map((comment) => (
                               <div key={comment.commentId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
                                 <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getCommentAvatarColor(comment.userRole)}`}>
-                                  {getCommentInitial(comment)}
+                                  {getCommentInitial(comment, user, commentNameMap)}
                                 </span>
                                 <span className="min-w-0">
-                                  <p className={`text-xs font-bold uppercase ${getCommentNameColor(comment.userRole)}`}>{formatCommentAuthor(comment)}</p>
+                                  <p className={`text-xs font-bold ${getCommentNameColor(comment.userRole)}`}>{formatCommentAuthor(comment, user, commentNameMap)}</p>
                                   <p className="mt-1 break-words text-sm leading-5 text-slate-900">{comment.text}</p>
                                 </span>
                               </div>
@@ -492,13 +572,38 @@ function NavigationButton({ direction, disabled, onClick, label }: { direction: 
   );
 }
 
-function formatCommentAuthor(comment: BuyerVideoComment): string {
-  const role = comment.userRole === 'BUYER' || comment.userRole === 'CUSTOMER' ? 'Khách hàng' : comment.userRole;
-  return `${role} ${comment.userId.slice(0, 8)}`;
+function formatCommentAuthor(
+  comment: BuyerVideoComment,
+  currentUser: { id: string; name: string } | null,
+  knownNames: Record<string, string>
+): string {
+  if (currentUser?.id === comment.userId && currentUser.name.trim()) {
+    return currentUser.name.trim();
+  }
+
+  const knownName = knownNames[comment.userId]?.trim();
+  if (knownName) {
+    return knownName;
+  }
+
+  const role = comment.userRole.trim().toUpperCase();
+  if (role === 'BUYER' || role === 'CUSTOMER') {
+    return 'Khách hàng';
+  }
+  if (role === 'SELLER') {
+    return 'Shop';
+  }
+
+  return 'Quản trị viên';
 }
 
-function getCommentInitial(comment: BuyerVideoComment): string {
-  return (comment.userRole.trim().charAt(0) || 'U').toUpperCase();
+function getCommentInitial(
+  comment: BuyerVideoComment,
+  currentUser: { id: string; name: string } | null,
+  knownNames: Record<string, string>
+): string {
+  const author = formatCommentAuthor(comment, currentUser, knownNames);
+  return (author.trim().charAt(0) || 'U').toUpperCase();
 }
 
 function getCommentAvatarColor(userRole: string): string {
@@ -563,6 +668,35 @@ function writeLikedVideoIds(videoIds: Set<string>) {
     window.localStorage.setItem('buyer_video_liked_ids', JSON.stringify(Array.from(videoIds)));
   } catch {
     // Ignore storage failures; the visual state still updates for this session.
+  }
+}
+
+function readBuyerProfileNames(): Record<string, string> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BUYER_PROFILES_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.entries(parsed).reduce<Record<string, string>>((accumulator, [userId, profile]) => {
+      if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+        return accumulator;
+      }
+
+      const name = (profile as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        accumulator[userId] = name.trim();
+      }
+
+      return accumulator;
+    }, {});
+  } catch {
+    return {};
   }
 }
 

@@ -68,9 +68,18 @@ func main() {
 	}
 
 	analyticsService := service.NewAnalyticsService(repo, redisService, cfg.IngestDedupeTTLSeconds)
+	orderClient := service.NewOrderClient(cfg.OrderServiceBaseURL, cfg.OrderServiceInternalToken, cfg.DependencyTimeout, cfg.RecommendationOrderFetchPageSize)
+	recommendationService := service.NewRecommendationService(repo, orderClient, service.RecommendationConfig{
+		Enabled:           cfg.RecommendationEnabled,
+		WindowDays:        cfg.RecommendationWindowDays,
+		MinSupportCount:   cfg.RecommendationMinSupportCount,
+		MinConfidence:     cfg.RecommendationMinConfidence,
+		MaxAntecedentSize: cfg.RecommendationMaxAntecedentSize,
+		MaxRules:          cfg.RecommendationMaxRules,
+	})
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
-	analyticsHandler := handler.NewAnalyticsHandler(analyticsService)
+	analyticsHandler := handler.NewAnalyticsHandler(analyticsService, recommendationService)
 	healthHandler := handler.NewHealthHandler(healthService)
 
 	httpHandler := router.New(cfg, logger, redisService, analyticsHandler, healthHandler)
@@ -80,6 +89,9 @@ func main() {
 	runCtx, runCancel := context.WithCancel(context.Background())
 	defer runCancel()
 	go consumer.Run(runCtx)
+	if cfg.RecommendationTrainingEnabled {
+		go runRecommendationScheduler(runCtx, recommendationService, logger, cfg.RecommendationTrainingHour)
+	}
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
@@ -110,6 +122,38 @@ func main() {
 	}
 
 	logger.Info("server stopped")
+}
+
+func runRecommendationScheduler(ctx context.Context, svc *service.RecommendationService, logger *zap.Logger, hour int) {
+	for {
+		next := nextDailyRun(time.Now(), hour)
+		timer := time.NewTimer(time.Until(next))
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+			trainCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+			result, err := svc.Train(trainCtx)
+			cancel()
+			if err != nil {
+				logger.Error("recommendation training failed", zap.Error(err))
+				continue
+			}
+			logger.Info("recommendation training completed", zap.Any("result", result))
+		}
+	}
+}
+
+func nextDailyRun(now time.Time, hour int) time.Time {
+	if hour < 0 || hour > 23 {
+		hour = 2
+	}
+	next := time.Date(now.Year(), now.Month(), now.Day(), hour, 0, 0, 0, now.Location())
+	if !next.After(now) {
+		next = next.Add(24 * time.Hour)
+	}
+	return next
 }
 
 func newLogger(appEnv string) (*zap.Logger, error) {

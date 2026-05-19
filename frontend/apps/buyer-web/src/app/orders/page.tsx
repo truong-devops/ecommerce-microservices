@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { cancelBuyerOrder, confirmBuyerOrderReceived, fetchBuyerOrders } from '@/lib/api/orders';
 import { fetchBuyerPaymentByOrderId } from '@/lib/api/payments';
+import { fetchProductDetail } from '@/lib/api/products';
 import { formatPrice } from '@/lib/price';
 import { fetchBuyerShipmentByOrderId } from '@/lib/api/shipping';
 import { formatOrderCode } from '@/lib/order-codes';
@@ -26,6 +27,8 @@ type OrdersTabKey = 'all' | 'pending' | 'shipping' | 'waiting-delivery' | 'compl
 type FetchStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const FALLBACK_SHOP_NAME = 'Market Mall';
+const ORDER_IMAGE_PLACEHOLDER =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" fill="%23f1f5f9"/><path d="M35 78h50L71 58l-10 12-8-9-18 17Z" fill="%23cbd5e1"/><circle cx="48" cy="44" r="8" fill="%23cbd5e1"/></svg>';
 const validOrderStatusSet: Set<OrderStatus> = new Set([
   'PENDING',
   'CONFIRMED',
@@ -49,10 +52,6 @@ const validShipmentStatusSet: Set<ShipmentStatus> = new Set([
 
 function buildLoginRedirectUrl(path: string): string {
   return `/login?returnUrl=${encodeURIComponent(path)}`;
-}
-
-function buildItemImage(productId: string): string {
-  return `https://picsum.photos/seed/order-${encodeURIComponent(productId)}/120/120`;
 }
 
 function normalizeCurrency(raw: unknown): string {
@@ -322,6 +321,7 @@ export default function OrdersPage() {
   const [searchValue, setSearchValue] = useState('');
   const [activeTab, setActiveTab] = useState<OrdersTabKey>('all');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [productImagesById, setProductImagesById] = useState<Record<string, string>>({});
   const [paymentsByOrderId, setPaymentsByOrderId] = useState<Record<string, Payment | null>>({});
   const [shipmentsByOrderId, setShipmentsByOrderId] = useState<Record<string, Shipment | null>>({});
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
@@ -360,6 +360,7 @@ export default function OrdersPage() {
 
       const sanitizedOrders = sanitizeOrdersResponse(payload);
       setOrders(sanitizedOrders);
+      setProductImagesById({});
       setFetchStatus('success');
       setPaymentsByOrderId({});
       setShipmentsByOrderId({});
@@ -446,6 +447,40 @@ export default function OrdersPage() {
       setIsShipmentLoading(false);
     }
   }, [accessToken, activeTab, router, text.product.loadError]);
+
+  useEffect(() => {
+    const productIds = Array.from(new Set(orders.flatMap((order) => order.items.map((item) => item.productId.trim())).filter(Boolean)));
+    if (productIds.length === 0) {
+      setProductImagesById({});
+      return;
+    }
+
+    let cancelled = false;
+
+    async function hydrateProductImages() {
+      const entries = await Promise.all(
+        productIds.map(async (productId) => {
+          try {
+            const detail = await fetchProductDetail(productId);
+            const image = detail.image || detail.images[0] || '';
+            return image ? ([productId, image] as const) : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setProductImagesById(Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null)));
+      }
+    }
+
+    void hydrateProductImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [orders]);
 
   useEffect(() => {
     if (!ready) {
@@ -559,7 +594,7 @@ export default function OrdersPage() {
         {
           productId: item.productId,
           title: item.productName,
-          image: buildItemImage(item.productId),
+          image: productImagesById[item.productId] ?? ORDER_IMAGE_PLACEHOLDER,
           unitPrice: item.unitPrice,
           stock: null,
           sku: item.sku,
@@ -589,12 +624,12 @@ export default function OrdersPage() {
       <Header keywords={[]} />
 
       <main className="mx-auto w-full max-w-[1200px] px-3 pb-8 pt-5 md:px-4 md:pb-10 md:pt-6">
-        <section className="space-y-3 rounded-sm bg-white p-3 shadow-card md:p-4">
-          <h1 className="text-xl font-semibold text-slate-900 md:text-2xl">{text.orders.title}</h1>
-          <p className="text-sm text-slate-600">{text.orders.subtitle}</p>
+        <section className="rounded-sm bg-white p-4 shadow-card md:p-6">
+          <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{text.orders.title}</h1>
+          <p className="mt-3 text-base text-slate-600">{text.orders.subtitle}</p>
 
-          <div className="overflow-x-auto border-b border-slate-200">
-            <div className="flex min-w-max items-center gap-5">
+          <div className="mt-5 overflow-x-auto border-b border-slate-200">
+            <div className="flex min-w-max items-center gap-8">
               {tabs.map((tab) => {
                 const active = activeTab === tab.key;
                 return (
@@ -602,7 +637,7 @@ export default function OrdersPage() {
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`border-b-2 px-1 pb-2 pt-1 text-[15px] transition ${
+                    className={`border-b-2 px-1 pb-3 pt-1 text-base transition md:text-lg ${
                       active ? 'border-brand-500 font-semibold text-brand-600' : 'border-transparent text-slate-700 hover:text-brand-600'
                     }`}
                   >
@@ -613,17 +648,17 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          <div className="rounded-sm bg-slate-100 p-2">
+          <div className="mt-4 rounded-sm bg-slate-100 p-2">
             <input
               type="search"
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder={text.orders.searchPlaceholder}
-              className="h-10 w-full rounded-sm border border-transparent bg-white px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none"
+              className="h-12 w-full rounded-sm border border-transparent bg-white px-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none md:text-base"
             />
           </div>
 
-          {notice ? <p className="rounded-sm bg-slate-100 px-3 py-2 text-sm text-slate-700">{notice}</p> : null}
+          {notice ? <p className="mt-4 rounded-sm bg-slate-100 px-3 py-2 text-sm text-slate-700">{notice}</p> : null}
 
           {fetchStatus === 'loading' ? <p className="py-8 text-center text-sm text-slate-600">{text.orders.loading}</p> : null}
 
@@ -647,7 +682,7 @@ export default function OrdersPage() {
           ) : null}
 
           {fetchStatus === 'success' && visibleOrders.length > 0 ? (
-            <div className="space-y-4">
+            <div className="mt-4 space-y-4">
               {visibleOrders.map((order) => {
                 const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
                 const canConfirmReceived = order.status === 'SHIPPED';
@@ -669,13 +704,13 @@ export default function OrdersPage() {
                 const shipmentCode = shipment?.trackingNumber?.trim() || shipment?.awb?.trim() || '';
 
                 return (
-                  <article key={order.id} className="overflow-hidden rounded-sm border border-slate-200">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-sm md:px-4">
+                  <article key={order.id} className="overflow-hidden rounded-sm border border-slate-200 bg-white">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 text-sm md:px-5">
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex rounded bg-brand-500 px-1.5 py-0.5 text-xs font-semibold text-white">Mall</span>
-                        <span className="font-semibold text-slate-800">{FALLBACK_SHOP_NAME}</span>
+                        <span className="inline-flex rounded bg-brand-500 px-2 py-1 text-xs font-semibold text-white">Mall</span>
+                        <span className="text-base font-semibold text-slate-800">{FALLBACK_SHOP_NAME}</span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-right">
                         <span className="text-slate-500">
                           {text.orders.orderCode}: <span className="font-medium text-slate-700">{formatOrderCode(order.orderNumber, order.id)}</span>
                         </span>
@@ -689,35 +724,35 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-3 px-3 py-3 md:px-4">
+                    <div className="px-4 py-2 md:px-5">
                       {order.items.length === 0 ? <p className="text-sm text-slate-500">{text.orders.noItem}</p> : null}
 
                       {order.items.map((item) => (
-                        <div key={item.id} className="grid gap-3 border-b border-dashed border-slate-200 pb-3 last:border-b-0 last:pb-0 md:grid-cols-[72px_minmax(0,1fr)_auto] md:items-center">
-                          <img src={buildItemImage(item.productId)} alt={item.productName} className="h-16 w-16 rounded border border-slate-200 object-cover" />
+                        <div key={item.id} className="grid gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0 md:grid-cols-[80px_minmax(0,1fr)_160px] md:items-center">
+                          <OrderItemImage src={productImagesById[item.productId]} alt={item.productName} />
 
                           <div>
-                            <p className="line-clamp-2 text-sm text-slate-800">{item.productName}</p>
-                            <p className="mt-1 text-xs text-slate-500">SKU: {item.sku}</p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="line-clamp-2 text-base font-medium text-slate-800">{item.productName}</p>
+                            <p className="mt-2 text-sm text-slate-500">SKU: {item.sku}</p>
+                            <p className="mt-1 text-sm text-slate-500">
                               {text.orders.quantity}: x{item.quantity}
                             </p>
                           </div>
 
-                          <div className="text-right text-sm">
+                          <div className="text-right text-sm md:text-base">
                             <p className="text-slate-500 line-through">{formatPrice(item.unitPrice * 1.1, order.currency)}</p>
-                            <p className="font-semibold text-brand-600">{formatPrice(item.totalPrice, order.currency)}</p>
+                            <p className="mt-1 font-semibold text-brand-600">{formatPrice(item.totalPrice, order.currency)}</p>
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    <div className="space-y-3 bg-slate-50 px-3 py-3 md:px-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+                    <div className="space-y-4 bg-slate-50 px-4 py-4 md:px-5">
+                      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
                         <p>
                           {text.orders.orderedAt}: {formatOrderDate(order.createdAt, locale)}
                         </p>
-                        <p className="text-base font-semibold text-slate-800">
+                        <p className="text-lg font-semibold text-slate-800">
                           {text.orders.total}: <span className="text-brand-600">{formatPrice(order.totalAmount, order.currency)}</span>
                         </p>
                       </div>
@@ -729,7 +764,7 @@ export default function OrdersPage() {
                         </p>
                       ) : null}
 
-                      <div className="flex flex-wrap justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-3">
                         <Link
                           href={`/orders/${encodeURIComponent(order.id)}`}
                           className="inline-flex h-10 items-center rounded-sm border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:border-brand-500 hover:text-brand-600"
@@ -795,5 +830,20 @@ export default function OrdersPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+function OrderItemImage({ src, alt }: { src?: string; alt: string }) {
+  const imageSrc = src?.trim() || ORDER_IMAGE_PLACEHOLDER;
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      className="h-20 w-20 rounded-sm border border-slate-200 bg-slate-100 object-cover"
+      onError={(event) => {
+        event.currentTarget.src = ORDER_IMAGE_PLACEHOLDER;
+      }}
+    />
   );
 }

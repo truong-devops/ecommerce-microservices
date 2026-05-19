@@ -29,22 +29,33 @@ func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTo
 
 	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, revocationChecker, logger)
 	readRoles := auth.RequireRoles(domain.RoleSeller, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)
+	buyerRoles := auth.RequireRoles(domain.RoleBuyer, domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)
+	adminRoles := auth.RequireRoles(domain.RoleAdmin, domain.RoleSuperAdmin)
+
+	baseV1 := "/" + cfg.APIPrefix + "/analytics"
+	baseLegacy := "/api/analytics"
+	r.Get(baseV1+"/recommendations/products/{productId}", analyticsHandler.GetProductRecommendations)
+	r.Get(baseLegacy+"/recommendations/products/{productId}", analyticsHandler.GetProductRecommendations)
 
 	r.Group(func(private chi.Router) {
 		private.Use(requireJWT)
-		baseV1 := "/" + cfg.APIPrefix + "/analytics"
 		private.With(readRoles).Get(baseV1+"/overview", analyticsHandler.GetOverview)
 		private.With(readRoles).Get(baseV1+"/events/timeseries", analyticsHandler.GetTimeseries)
 		private.With(readRoles).Get(baseV1+"/payments/summary", analyticsHandler.GetPaymentsSummary)
 		private.With(readRoles).Get(baseV1+"/shipping/summary", analyticsHandler.GetShippingSummary)
 		private.With(readRoles).Get(baseV1+"/videos/summary", analyticsHandler.GetVideoSummary)
+		private.With(buyerRoles).Post(baseV1+"/recommendations/cart", analyticsHandler.GetCartRecommendations)
+		private.With(readRoles).Get(baseV1+"/recommendations/insights", analyticsHandler.GetRecommendationInsights)
+		private.With(adminRoles).Post(baseV1+"/recommendations/train", analyticsHandler.TrainRecommendations)
 
-		baseLegacy := "/api/analytics"
 		private.With(readRoles).Get(baseLegacy+"/overview", analyticsHandler.GetOverview)
 		private.With(readRoles).Get(baseLegacy+"/events/timeseries", analyticsHandler.GetTimeseries)
 		private.With(readRoles).Get(baseLegacy+"/payments/summary", analyticsHandler.GetPaymentsSummary)
 		private.With(readRoles).Get(baseLegacy+"/shipping/summary", analyticsHandler.GetShippingSummary)
 		private.With(readRoles).Get(baseLegacy+"/videos/summary", analyticsHandler.GetVideoSummary)
+		private.With(buyerRoles).Post(baseLegacy+"/recommendations/cart", analyticsHandler.GetCartRecommendations)
+		private.With(readRoles).Get(baseLegacy+"/recommendations/insights", analyticsHandler.GetRecommendationInsights)
+		private.With(adminRoles).Post(baseLegacy+"/recommendations/train", analyticsHandler.TrainRecommendations)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {

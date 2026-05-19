@@ -7,12 +7,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { buildLiveWebSocketUrl, getLiveSession, listLiveMessages, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
-import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail } from '@/lib/api/types';
+import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
+import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail, ProductItem } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
 type LiveDetailStatus = 'loading' | 'error' | 'success';
 type SocketStatus = 'idle' | 'connecting' | 'connected' | 'closed' | 'error';
+const BUYER_PROFILES_STORAGE_KEY = 'buyer_profiles';
 
 interface LiveDetailPageProps {
   params: {
@@ -50,6 +52,9 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const [chatInput, setChatInput] = useState('');
   const [error, setError] = useState('');
   const [playbackReloadKey, setPlaybackReloadKey] = useState(0);
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [chatNameMap, setChatNameMap] = useState<Record<string, string>>({});
 
   const loadDetail = useCallback(async () => {
     if (!sessionId) {
@@ -92,6 +97,48 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   useEffect(() => {
     void loadMessageHistory();
   }, [loadMessageHistory]);
+
+  useEffect(() => {
+    setChatNameMap(() => {
+      const names = readBuyerProfileNames();
+      if (user?.id && user.name.trim()) {
+        names[user.id] = user.name.trim();
+      }
+      return names;
+    });
+  }, [user?.id, user?.name]);
+
+  useEffect(() => {
+    const productIds = products.map((product) => product.productId);
+    if (productIds.length === 0) {
+      setRecommendedProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadRecommendations() {
+      setRecommendationLoading(true);
+      try {
+        const items = await loadRecommendedProductItems(productIds, 4);
+        if (!cancelled) {
+          setRecommendedProducts(items);
+        }
+      } catch {
+        if (!cancelled) {
+          setRecommendedProducts([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRecommendationLoading(false);
+        }
+      }
+    }
+
+    void loadRecommendations();
+    return () => {
+      cancelled = true;
+    };
+  }, [products]);
 
   useEffect(() => {
     if (remoteVideoRef.current) {
@@ -698,6 +745,43 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                 </div>
               </section>
 
+              {recommendationLoading || recommendedProducts.length > 0 ? (
+                <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+                  <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
+                    <p className="text-[11px] font-bold uppercase text-[#b54708]">Gợi ý mua kèm</p>
+                    <h2 className="mt-1 text-xl font-bold">Mua kèm phổ biến</h2>
+                  </div>
+                  <div className="space-y-3 p-3">
+                    {recommendedProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => handleOpenProduct(product.id)}
+                        className="group flex w-full items-center gap-3 rounded-2xl border border-[#e2d8cd] bg-white p-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#E84C3D] hover:bg-[#fff8f3]"
+                      >
+                        <Image
+                          src={product.image || '/icon.svg'}
+                          alt={product.title}
+                          width={56}
+                          height={56}
+                          unoptimized
+                          className="h-16 w-16 rounded-xl object-cover ring-1 ring-[#f1e4d8]"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="line-clamp-2 text-sm font-semibold text-slate-900">{product.title}</span>
+                          <span className="mt-1 block text-base font-bold text-[#E84C3D]">{formatPrice(product.price)}</span>
+                        </span>
+                      </button>
+                    ))}
+                    {recommendationLoading && recommendedProducts.length === 0 ? (
+                      <p className="rounded-2xl border border-dashed border-[#e2d8cd] bg-[#fbf7f1] p-4 text-sm font-medium text-[#667085]">
+                        Đang tải gợi ý...
+                      </p>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
               <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
                 <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
                   <h2 className="mt-1 text-xl font-bold">Trò chuyện</h2>
@@ -711,10 +795,10 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                     {messages.map((message) => (
                       <div key={message.messageId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
                         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getChatAvatarColor(message.senderRole)}`}>
-                          {getChatInitial(message.senderRole)}
+                          {getChatInitial(message, user, chatNameMap)}
                         </span>
                         <span className="min-w-0">
-                          <p className={`text-xs font-bold uppercase ${getChatNameColor(message.senderRole)}`}>{formatChatSender(message.senderRole)}</p>
+                          <p className={`text-xs font-bold ${getChatNameColor(message.senderRole)}`}>{formatChatSender(message, user, chatNameMap)}</p>
                           <p className="mt-1 break-words text-sm leading-5 text-slate-900">{message.text}</p>
                         </span>
                       </div>
@@ -802,12 +886,22 @@ function stableNumber(value: string): number {
   return Array.from(value).reduce((total, char) => total + char.charCodeAt(0), 0);
 }
 
-function getChatInitial(senderRole: string): string {
-  return (senderRole.trim().charAt(0) || 'U').toUpperCase();
+function getChatInitial(message: LiveMessage, currentUser: { id: string; name: string } | null, knownNames: Record<string, string>): string {
+  const sender = formatChatSender(message, currentUser, knownNames);
+  return (sender.trim().charAt(0) || 'U').toUpperCase();
 }
 
-function formatChatSender(senderRole: string): string {
-  const normalizedRole = senderRole.toLowerCase();
+function formatChatSender(message: LiveMessage, currentUser: { id: string; name: string } | null, knownNames: Record<string, string>): string {
+  if (currentUser?.id === message.senderId && currentUser.name.trim()) {
+    return currentUser.name.trim();
+  }
+
+  const knownName = knownNames[message.senderId]?.trim();
+  if (knownName) {
+    return knownName;
+  }
+
+  const normalizedRole = message.senderRole.toLowerCase();
   if (normalizedRole.includes('seller')) {
     return 'Shop';
   }
@@ -815,6 +909,35 @@ function formatChatSender(senderRole: string): string {
     return 'Admin';
   }
   return 'Khách hàng';
+}
+
+function readBuyerProfileNames(): Record<string, string> {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    const raw = window.localStorage.getItem(BUYER_PROFILES_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+
+    return Object.entries(parsed).reduce<Record<string, string>>((accumulator, [userId, profile]) => {
+      if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+        return accumulator;
+      }
+
+      const name = (profile as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        accumulator[userId] = name.trim();
+      }
+
+      return accumulator;
+    }, {});
+  } catch {
+    return {};
+  }
 }
 
 function getChatAvatarColor(senderRole: string): string {

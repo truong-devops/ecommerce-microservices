@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"order-service/internal/auth"
 	"order-service/internal/domain"
@@ -159,6 +160,22 @@ func (h *OrderHandler) GetOrderStatusHistory(w http.ResponseWriter, r *http.Requ
 	httpx.WriteSuccess(w, r, http.StatusOK, result)
 }
 
+func (h *OrderHandler) ListCompletedOrdersForRecommendation(w http.ResponseWriter, r *http.Request) {
+	query, err := parseCompletedOrdersQuery(r)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeValidationFailed)
+		return
+	}
+
+	result, err := h.orderService.ListCompletedOrdersForRecommendation(r.Context(), query)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
 func parseListOrdersQuery(r *http.Request) (service.ListOrdersRequest, error) {
 	q := r.URL.Query()
 
@@ -227,6 +244,44 @@ func parseListOrdersQuery(r *http.Request) (service.ListOrdersRequest, error) {
 		UserID:    userID,
 		Search:    search,
 	}, nil
+}
+
+func parseCompletedOrdersQuery(r *http.Request) (service.ListCompletedOrdersRequest, error) {
+	q := r.URL.Query()
+
+	fromRaw := strings.TrimSpace(q.Get("from"))
+	toRaw := strings.TrimSpace(q.Get("to"))
+	if fromRaw == "" || toRaw == "" {
+		return service.ListCompletedOrdersRequest{}, validationError("range", "from and to are required")
+	}
+	from, err := time.Parse(time.RFC3339, fromRaw)
+	if err != nil {
+		return service.ListCompletedOrdersRequest{}, validationError("from", "must be an ISO-8601 datetime")
+	}
+	to, err := time.Parse(time.RFC3339, toRaw)
+	if err != nil {
+		return service.ListCompletedOrdersRequest{}, validationError("to", "must be an ISO-8601 datetime")
+	}
+
+	page := 1
+	if raw := strings.TrimSpace(q.Get("page")); raw != "" {
+		v, err := strconv.Atoi(raw)
+		if err != nil || v < 1 {
+			return service.ListCompletedOrdersRequest{}, validationError("page", "must be an integer >= 1")
+		}
+		page = v
+	}
+
+	pageSize := 500
+	if raw := strings.TrimSpace(q.Get("pageSize")); raw != "" {
+		v, err := strconv.Atoi(raw)
+		if err != nil || v < 1 || v > 1000 {
+			return service.ListCompletedOrdersRequest{}, validationError("pageSize", "must be an integer between 1 and 1000")
+		}
+		pageSize = v
+	}
+
+	return service.ListCompletedOrdersRequest{From: from.UTC(), To: to.UTC(), Page: page, PageSize: pageSize}, nil
 }
 
 func validationError(field, msg string) error {

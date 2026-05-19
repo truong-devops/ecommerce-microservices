@@ -332,7 +332,10 @@ function splitFullName(name: string): { firstName: string; lastName: string } {
 function toBuyerProfile(user: UpstreamUser, fallbackEmail: string): BuyerProfileOutput {
   const firstName = typeof user.firstName === 'string' ? user.firstName.trim() : '';
   const lastName = typeof user.lastName === 'string' ? user.lastName.trim() : '';
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName =
+    firstName && lastName && firstName.toLowerCase() === lastName.toLowerCase()
+      ? firstName
+      : `${firstName} ${lastName}`.trim();
   const gender = normalizeGender(user.gender);
 
   return {

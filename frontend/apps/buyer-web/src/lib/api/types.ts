@@ -113,6 +113,26 @@ export interface ProductSearchOutput {
   };
 }
 
+export interface RecommendationItem {
+  productId: string;
+  score: number;
+  reason: 'frequently_bought_together' | 'cart_pattern_match' | 'popular_fallback' | 'same_category_fallback' | string;
+}
+
+export interface ProductRecommendationOutput {
+  productId: string;
+  sellerId: string | null;
+  generatedAt: string | null;
+  items: RecommendationItem[];
+}
+
+export interface CartRecommendationOutput {
+  productIds: string[];
+  sellerId: string | null;
+  generatedAt: string | null;
+  items: RecommendationItem[];
+}
+
 export interface ListProductsInput {
   page?: number;
   pageSize?: number;

@@ -8,10 +8,19 @@ import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { SellerApiClientError } from '@/lib/api/client';
 import { listSellerOrders } from '@/lib/api/orders';
 import { listSellerProducts } from '@/lib/api/products';
-import type { SellerOrder, SellerOrderStatus, SellerProduct, SellerProductStatus } from '@/lib/api/types';
+import { fetchSellerRecommendationInsights } from '@/lib/api/recommendations';
+import type {
+  SellerOrder,
+  SellerOrderStatus,
+  SellerProduct,
+  SellerProductStatus,
+  SellerRecommendationInsights,
+  SellerRecommendationRule
+} from '@/lib/api/types';
 import { useAuth } from '@/providers/AppProvider';
 
 type Granularity = 'day' | 'month' | 'quarter' | 'year';
+type RecommendationPriorityFilter = 'ALL' | 'VERY_HIGH' | 'HIGH' | 'TEST' | 'WATCH';
 
 interface Bucket {
   key: string;
@@ -30,6 +39,9 @@ export default function SellerSalesAnalyticsPage() {
   const [granularity, setGranularity] = useState<Granularity>('month');
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [products, setProducts] = useState<SellerProduct[]>([]);
+  const [recommendationInsights, setRecommendationInsights] = useState<SellerRecommendationInsights | null>(null);
+  const [recommendationPriorityFilter, setRecommendationPriorityFilter] = useState<RecommendationPriorityFilter>('ALL');
+  const [recommendationSearch, setRecommendationSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,7 +59,7 @@ export default function SellerSalesAnalyticsPage() {
     setError('');
 
     try {
-      const [ordersResult, productsResult] = await Promise.allSettled([
+      const [ordersResult, productsResult, recommendationsResult] = await Promise.allSettled([
         listSellerOrders(accessToken, {
           page: 1,
           pageSize: 100,
@@ -58,7 +70,8 @@ export default function SellerSalesAnalyticsPage() {
           accessToken,
           page: 1,
           pageSize: 100
-        })
+        }),
+        fetchSellerRecommendationInsights(accessToken, 10)
       ]);
 
       if (ordersResult.status === 'fulfilled') {
@@ -69,17 +82,25 @@ export default function SellerSalesAnalyticsPage() {
         setProducts(productsResult.value.items);
       }
 
-      if (ordersResult.status === 'rejected' && productsResult.status === 'rejected') {
+      if (recommendationsResult.status === 'fulfilled') {
+        setRecommendationInsights(recommendationsResult.value);
+      } else {
+        setRecommendationInsights(null);
+      }
+
+      if (ordersResult.status === 'rejected' && productsResult.status === 'rejected' && recommendationsResult.status === 'rejected') {
         throw ordersResult.reason;
       }
 
-      if (ordersResult.status === 'rejected' || productsResult.status === 'rejected') {
+      if (ordersResult.status === 'rejected' || productsResult.status === 'rejected' || recommendationsResult.status === 'rejected') {
         const partialError =
           ordersResult.status === 'rejected'
             ? ordersResult.reason
             : productsResult.status === 'rejected'
               ? productsResult.reason
-              : new Error('Unknown partial error');
+              : recommendationsResult.status === 'rejected'
+                ? recommendationsResult.reason
+                : new Error('Unknown partial error');
         if (partialError instanceof SellerApiClientError) {
           setError(`Một phần dữ liệu chưa tải được: ${partialError.message}`);
         } else {
@@ -94,6 +115,7 @@ export default function SellerSalesAnalyticsPage() {
       }
       setOrders([]);
       setProducts([]);
+      setRecommendationInsights(null);
     } finally {
       setLoading(false);
     }
@@ -192,6 +214,40 @@ export default function SellerSalesAnalyticsPage() {
     [revenueSeries]
   );
 
+  const productNameById = useMemo(() => {
+    const names = new Map(products.map((product) => [product.id, product.name]));
+    Object.entries(recommendationInsights?.productNames ?? {}).forEach(([productId, name]) => {
+      if (name.trim()) {
+        names.set(productId, name);
+      }
+    });
+    return names;
+  }, [products, recommendationInsights?.productNames]);
+
+  const filteredRecommendationItems = useMemo(() => {
+    const items = recommendationInsights?.items ?? [];
+    const keyword = recommendationSearch.trim().toLowerCase();
+
+    return items.filter((rule) => {
+      if (recommendationPriorityFilter !== 'ALL' && recommendationPriorityLevel(rule) !== recommendationPriorityFilter) {
+        return false;
+      }
+
+      if (!keyword) {
+        return true;
+      }
+
+      const searchable = [
+        ...rule.antecedentProductIds.map((id) => productNameById.get(id) ?? id),
+        productNameById.get(rule.consequentProductId) ?? rule.consequentProductId
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(keyword);
+    });
+  }, [productNameById, recommendationInsights?.items, recommendationPriorityFilter, recommendationSearch]);
+
   if (!ready) {
     return <main className="flex min-h-screen items-center justify-center text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
   }
@@ -284,6 +340,86 @@ export default function SellerSalesAnalyticsPage() {
             <ChartCard title="Cơ Cấu Sản Phẩm Trên Kênh" subtitle="Tỷ trọng theo trạng thái sản phẩm">
               <DonutChart data={productStatusDistribution} />
             </ChartCard>
+          </section>
+
+          <section className="mt-4 rounded-lg border border-[#f3d7d0] bg-white p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">Sản phẩm thường được mua cùng</h2>
+                <p className="mt-1 text-sm text-slate-500">Gợi ý bán kèm dựa trên các đơn đã hoàn tất trong 90 ngày gần đây.</p>
+              </div>
+              <p className="text-xs text-slate-500">
+                {recommendationInsights?.latestTrainingRun
+                  ? formatDataRefreshStatus(recommendationInsights.latestTrainingRun.status, recommendationInsights.latestTrainingRun.finishedAt ?? recommendationInsights.latestTrainingRun.startedAt)
+                  : 'Chưa có dữ liệu gợi ý'}
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr]">
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium text-slate-600">Mức gợi ý</span>
+                <select
+                  value={recommendationPriorityFilter}
+                  onChange={(event) => setRecommendationPriorityFilter(event.target.value as RecommendationPriorityFilter)}
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-[#ee4d2d]"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="VERY_HIGH">Rất nên gợi ý</option>
+                  <option value="HIGH">Nên gợi ý</option>
+                  <option value="TEST">Có thể thử</option>
+                  <option value="WATCH">Theo dõi thêm</option>
+                </select>
+              </label>
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium text-slate-600">Tìm sản phẩm</span>
+                <input
+                  value={recommendationSearch}
+                  onChange={(event) => setRecommendationSearch(event.target.value)}
+                  placeholder="Nhập tên sản phẩm cần xem"
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-[#ee4d2d]"
+                />
+              </label>
+            </div>
+
+            <div className="mt-4 overflow-x-auto">
+              {recommendationInsights && recommendationInsights.items.length > 0 ? (
+                <table className="min-w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+                      <th className="py-2 pr-4 font-semibold">Khi mua</th>
+                      <th className="py-2 pr-4 font-semibold">Nên gợi ý</th>
+                      <th className="py-2 pr-4 font-semibold">Tỷ lệ mua thêm</th>
+                      <th className="py-2 pr-4 font-semibold">Ưu tiên hiển thị</th>
+                      <th className="py-2 pr-4 font-semibold">Số đơn cùng mua</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRecommendationItems.map((rule) => (
+                      <tr key={rule.ruleId} className="border-b border-slate-100">
+                        <td className="py-3 pr-4 font-medium text-slate-800">
+                          {rule.antecedentProductIds.map((id) => productNameById.get(id) ?? shortId(id)).join(' + ')}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-700">{productNameById.get(rule.consequentProductId) ?? shortId(rule.consequentProductId)}</td>
+                        <td className="py-3 pr-4 text-slate-700">{formatPercent(rule.confidence)}</td>
+                        <td className="py-3 pr-4 text-slate-700">{recommendationPriority(rule)}</td>
+                        <td className="py-3 pr-4 text-slate-700">
+                          {rule.supportCount}/{rule.transactionCount} đơn
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                  Chưa có dữ liệu gợi ý bán kèm. Dữ liệu sẽ xuất hiện sau khi có đủ đơn đã hoàn tất.
+                </p>
+              )}
+              {recommendationInsights && recommendationInsights.items.length > 0 && filteredRecommendationItems.length === 0 ? (
+                <p className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                  Không có gợi ý nào khớp với bộ lọc hiện tại.
+                </p>
+              ) : null}
+            </div>
           </section>
 
           <p className="mt-3 text-xs text-slate-400">{loading ? 'Đang cập nhật dữ liệu...' : `Cập nhật lúc ${new Date().toLocaleString('vi-VN')}`}</p>
@@ -612,6 +748,69 @@ function formatCurrency(value: number): string {
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatDataRefreshStatus(status: string, value?: string | null): string {
+  const normalized = status.trim().toUpperCase();
+  const label =
+    normalized === 'SUCCEEDED'
+      ? 'Dữ liệu đã cập nhật'
+      : normalized === 'RUNNING'
+        ? 'Đang cập nhật dữ liệu'
+        : normalized === 'FAILED'
+          ? 'Cập nhật dữ liệu lỗi'
+          : 'Trạng thái dữ liệu';
+
+  return `${label} - ${formatDateTime(value)}`;
+}
+
+function recommendationPriority(rule: SellerRecommendationRule): string {
+  switch (recommendationPriorityLevel(rule)) {
+    case 'VERY_HIGH':
+      return 'Rất nên gợi ý';
+    case 'HIGH':
+      return 'Nên gợi ý';
+    case 'TEST':
+      return 'Có thể thử';
+    default:
+      return 'Theo dõi thêm';
+  }
+}
+
+function recommendationPriorityLevel(rule: SellerRecommendationRule): Exclude<RecommendationPriorityFilter, 'ALL'> {
+  if (rule.confidence >= 0.8 && rule.supportCount >= 4) {
+    return 'VERY_HIGH';
+  }
+  if (rule.confidence >= 0.5 && rule.supportCount >= 3) {
+    return 'HIGH';
+  }
+  if (rule.confidence >= 0.25) {
+    return 'TEST';
+  }
+  return 'WATCH';
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) {
+    return '--';
+  }
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return '--';
+  }
+  return date.toLocaleString('vi-VN');
+}
+
+function shortId(value: string): string {
+  const normalized = value.trim();
+  if (normalized.length <= 12) {
+    return normalized;
+  }
+  return `${normalized.slice(0, 6)}...${normalized.slice(-4)}`;
 }
 
 function formatDate(value?: Date): string {

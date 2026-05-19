@@ -19,7 +19,8 @@ type Config struct {
 	RedisEnabled bool
 	RedisURL     string
 
-	JWTAccessSecret string
+	JWTAccessSecret      string
+	InternalServiceToken string
 
 	ProductServiceBaseURL string
 	DependencyTimeout     time.Duration
@@ -48,13 +49,14 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		AppName:         getEnv("APP_NAME", "order-service"),
-		AppEnv:          getEnv("APP_ENV", "development"),
-		APIPrefix:       strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
-		DatabaseURL:     strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		RedisEnabled:    parseBool(getEnv("REDIS_ENABLED", "true")),
-		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
-		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		AppName:              getEnv("APP_NAME", "order-service"),
+		AppEnv:               getEnv("APP_ENV", "development"),
+		APIPrefix:            strings.Trim(getEnv("API_PREFIX", "api/v1"), "/"),
+		DatabaseURL:          strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		RedisEnabled:         parseBool(getEnv("REDIS_ENABLED", "true")),
+		RedisURL:             strings.TrimSpace(os.Getenv("REDIS_URL")),
+		JWTAccessSecret:      strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
+		InternalServiceToken: strings.TrimSpace(os.Getenv("INTERNAL_SERVICE_TOKEN")),
 		ProductServiceBaseURL: strings.TrimRight(
 			strings.TrimSpace(getEnv("PRODUCT_SERVICE_BASE_URL", "http://product-service:8080/api/v1")),
 			"/",

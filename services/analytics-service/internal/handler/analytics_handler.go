@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -10,15 +11,17 @@ import (
 	"analytics-service/internal/httpx"
 	"analytics-service/internal/service"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
 type AnalyticsHandler struct {
 	analyticsService *service.AnalyticsService
+	recommendations  *service.RecommendationService
 }
 
-func NewAnalyticsHandler(analyticsService *service.AnalyticsService) *AnalyticsHandler {
-	return &AnalyticsHandler{analyticsService: analyticsService}
+func NewAnalyticsHandler(analyticsService *service.AnalyticsService, recommendations *service.RecommendationService) *AnalyticsHandler {
+	return &AnalyticsHandler{analyticsService: analyticsService, recommendations: recommendations}
 }
 
 func (h *AnalyticsHandler) GetOverview(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +125,65 @@ func (h *AnalyticsHandler) GetVideoSummary(w http.ResponseWriter, r *http.Reques
 	httpx.WriteSuccess(w, r, http.StatusOK, result)
 }
 
+func (h *AnalyticsHandler) GetProductRecommendations(w http.ResponseWriter, r *http.Request) {
+	productID := strings.TrimSpace(chi.URLParam(r, "productId"))
+	if productID == "" {
+		productID = strings.TrimSpace(r.URL.Query().Get("productId"))
+	}
+	limit, err := parseLimit(r, 12)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeBadRequest)
+		return
+	}
+	result, err := h.recommendations.GetByProduct(r.Context(), productID, strings.TrimSpace(r.URL.Query().Get("sellerId")), limit)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
+func (h *AnalyticsHandler) GetCartRecommendations(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ProductIDs []string `json:"productIds"`
+		SellerID   string   `json:"sellerId"`
+		Limit      int      `json:"limit"`
+	}
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{"body": err.Error()})
+		return
+	}
+	result, err := h.recommendations.GetByCart(r.Context(), req.ProductIDs, req.SellerID, req.Limit)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
+func (h *AnalyticsHandler) TrainRecommendations(w http.ResponseWriter, r *http.Request) {
+	result, err := h.recommendations.Train(r.Context())
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
+func (h *AnalyticsHandler) GetRecommendationInsights(w http.ResponseWriter, r *http.Request) {
+	limit, err := parseLimit(r, 20)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeBadRequest)
+		return
+	}
+	result, err := h.recommendations.GetInsights(r.Context(), strings.TrimSpace(r.URL.Query().Get("sellerId")), limit)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
 func parseAnalyticsBaseQuery(r *http.Request) (string, string, string, error) {
 	q := r.URL.Query()
 	fromInput := strings.TrimSpace(q.Get("from"))
@@ -146,4 +208,16 @@ func parseAnalyticsBaseQuery(r *http.Request) (string, string, string, error) {
 	}
 
 	return fromInput, toInput, sellerIDInput, nil
+}
+
+func parseLimit(r *http.Request, fallback int) (int, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get("limit"))
+	if raw == "" {
+		return fallback, nil
+	}
+	limit, err := strconv.Atoi(raw)
+	if err != nil || limit < 1 || limit > 50 {
+		return 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "Validation failed", map[string]any{"limit": "must be an integer between 1 and 50"})
+	}
+	return limit, nil
 }

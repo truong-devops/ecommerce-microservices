@@ -3,9 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { RecommendationSection } from '@/components/home/RecommendationSection';
 import { Header } from '@/components/layout/Header';
 import { fetchProductDetail } from '@/lib/api/products';
-import type { ProductDetailVariant } from '@/lib/api/types';
+import { hydrateProductItems } from '@/lib/api/recommendation-products';
+import { fetchCartRecommendations } from '@/lib/api/recommendations';
+import type { ProductDetailVariant, ProductItem } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import type { CartItem } from '@/providers/AppProvider';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
@@ -33,6 +36,8 @@ export default function CartPage() {
   const [variantSelectedSku, setVariantSelectedSku] = useState<string | null>(null);
   const [isVariantLoading, setIsVariantLoading] = useState(false);
   const [variantError, setVariantError] = useState('');
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
 
   const ready = cartReady && authReady;
   const orderCurrency = items[0]?.currency ? normalizeCurrency(items[0].currency) : 'USD';
@@ -81,6 +86,46 @@ export default function CartPage() {
       return filtered;
     });
   }, [didTouchSelection, items]);
+
+  useEffect(() => {
+    if (!accessToken || items.length === 0) {
+      setRecommendedProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadRecommendations() {
+      setRecommendationLoading(true);
+      try {
+        const cartProductIds = Array.from(new Set(items.map((item) => item.productId)));
+        const recommendation = await fetchCartRecommendations({
+          accessToken: accessToken ?? '',
+          productIds: cartProductIds,
+          limit: 6
+        });
+        const ids = recommendation.items
+          .map((item) => item.productId)
+          .filter((id) => id && !cartProductIds.includes(id))
+          .slice(0, 6);
+        if (!cancelled) {
+          setRecommendedProducts(await hydrateProductItems(ids, 6));
+        }
+      } catch {
+        if (!cancelled) {
+          setRecommendedProducts([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRecommendationLoading(false);
+        }
+      }
+    }
+
+    void loadRecommendations();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, items]);
 
   const toggleSelectItem = (productId: string) => {
     setDidTouchSelection(true);
@@ -334,6 +379,14 @@ export default function CartPage() {
             </div>
           ) : null}
         </section>
+
+        {ready && items.length > 0 && (recommendationLoading || recommendedProducts.length > 0) ? (
+          <RecommendationSection
+            products={recommendedProducts}
+            title={locale === 'vi' ? 'Bạn có thể cần thêm' : 'Complete your cart'}
+            emptyMessage={recommendationLoading ? text.product.loading : text.home.empty}
+          />
+        ) : null}
       </main>
 
       {variantDialogItem ? (

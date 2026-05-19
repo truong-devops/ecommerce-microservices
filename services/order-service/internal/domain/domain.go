@@ -134,6 +134,14 @@ type OrderStatusHistory struct {
 	CreatedAt     time.Time
 }
 
+type CompletedOrder struct {
+	ID          string
+	UserID      string
+	SellerID    *string
+	CompletedAt time.Time
+	Items       []OrderItem
+}
+
 type OutboxStatus string
 
 const (

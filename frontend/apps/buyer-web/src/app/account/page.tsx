@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
@@ -99,13 +100,30 @@ function normalizeDateOfBirth(value: string | null | undefined): string {
 
 function normalizeFormValues(values: ProfileFormValues): ProfileFormValues {
   return {
-    name: values.name.trim(),
+    name: collapseRepeatedName(values.name),
     phone: values.phone.trim(),
     address: values.address.trim(),
     gender: normalizeGender(values.gender),
     dateOfBirth: normalizeDateOfBirth(values.dateOfBirth),
     avatarUrl: values.avatarUrl.trim()
   };
+}
+
+function collapseRepeatedName(value: string): string {
+  const parts = value
+    .trim()
+    .split(/\s+/)
+    .filter((item) => item.length > 0);
+
+  if (parts.length < 2 || parts.length % 2 !== 0) {
+    return parts.join(' ');
+  }
+
+  const middle = parts.length / 2;
+  const left = parts.slice(0, middle).join(' ');
+  const right = parts.slice(middle).join(' ');
+
+  return left.toLowerCase() === right.toLowerCase() ? left : parts.join(' ');
 }
 
 function isValidDateOnly(value: string): boolean {
@@ -223,7 +241,7 @@ export default function AccountPage() {
     }
 
     const nextValues: ProfileFormValues = {
-      name: user.name,
+      name: collapseRepeatedName(user.name),
       phone: user.phone,
       address: user.address,
       gender: normalizeGender(user.gender),
@@ -258,9 +276,14 @@ export default function AccountPage() {
           notification: 'Thông Báo',
           account: 'Tài Khoản Của Tôi',
           profile: 'Hồ Sơ',
+          bank: 'Ngân hàng',
+          addressBook: 'Địa chỉ',
+          changePassword: 'Đổi mật khẩu',
+          notificationSettings: 'Cài đặt thông báo',
+          privacySettings: 'Thiết lập riêng tư',
           order: 'Đơn Mua',
           voucher: 'Kho Voucher',
-          xu: 'Shopee Xu',
+          xu: 'eMall Xu',
           username: 'Tên đăng nhập',
           fullName: 'Tên',
           email: 'Email',
@@ -273,7 +296,9 @@ export default function AccountPage() {
           genderOther: 'Khác',
           genderUnspecified: 'Không muốn trả lời',
           dateOfBirth: 'Ngày sinh',
-          avatarUrl: 'URL ảnh đại diện',
+          avatarUrl: 'Liên kết ảnh đại diện',
+          avatarHint: 'Dán liên kết ảnh http(s). Bỏ trống nếu muốn dùng chữ cái đại diện.',
+          avatarClear: 'Xóa ảnh',
           memberSince: 'Ngày tham gia',
           save: 'Lưu',
           saving: 'Đang lưu...',
@@ -297,6 +322,11 @@ export default function AccountPage() {
           notification: 'Notifications',
           account: 'My Account',
           profile: 'Profile',
+          bank: 'Bank accounts',
+          addressBook: 'Addresses',
+          changePassword: 'Change password',
+          notificationSettings: 'Notification settings',
+          privacySettings: 'Privacy settings',
           order: 'My Orders',
           voucher: 'Vouchers',
           xu: 'Rewards',
@@ -312,7 +342,9 @@ export default function AccountPage() {
           genderOther: 'Other',
           genderUnspecified: 'Prefer not to say',
           dateOfBirth: 'Date of birth',
-          avatarUrl: 'Avatar URL',
+          avatarUrl: 'Avatar link',
+          avatarHint: 'Paste an http(s) image link. Leave empty to use your initial.',
+          avatarClear: 'Remove photo',
           memberSince: 'Member since',
           save: 'Save',
           saving: 'Saving...',
@@ -411,6 +443,7 @@ export default function AccountPage() {
   };
 
   const username = user.email.split('@')[0] ?? user.name;
+  const displayName = normalizedCurrent.name.trim() || username;
   const avatarLetter = (normalizedCurrent.name.trim()[0] ?? user.email[0] ?? 'B').toUpperCase();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -422,11 +455,9 @@ export default function AccountPage() {
         <section className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
           <aside className="rounded-sm bg-transparent">
             <div className="flex items-center gap-3 border-b border-slate-200 pb-5">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-lg font-semibold text-white">
-                {avatarLetter}
-              </div>
+              <AvatarPreview src={avatarPreviewUrl} letter={avatarLetter} className="h-12 w-12 text-lg" />
               <div>
-                <p className="text-sm font-semibold text-slate-900">{username}</p>
+                <p className="max-w-[150px] truncate text-sm font-semibold text-slate-900">{displayName}</p>
                 <p className="text-sm text-slate-500">{accountLabels.editProfile}</p>
               </div>
             </div>
@@ -441,11 +472,11 @@ export default function AccountPage() {
                 </button>
                 <div className="space-y-1 pl-4 text-[14px] text-slate-600">
                   <p className="font-semibold text-brand-500">{accountLabels.profile}</p>
-                  <p>Ngân hàng</p>
-                  <p>Địa Chỉ</p>
-                  <p>Đổi Mật Khẩu</p>
-                  <p>Cài Đặt Thông Báo</p>
-                  <p>Những Thiết Lập Riêng Tư</p>
+                  <p>{accountLabels.bank}</p>
+                  <p>{accountLabels.addressBook}</p>
+                  <p>{accountLabels.changePassword}</p>
+                  <p>{accountLabels.notificationSettings}</p>
+                  <p>{accountLabels.privacySettings}</p>
                 </div>
               </div>
               <div className="space-y-2 font-medium text-slate-900">
@@ -663,12 +694,7 @@ export default function AccountPage() {
               </form>
 
               <div className="flex flex-col items-center border-t border-slate-200 pt-6 lg:border-t-0 lg:pt-2">
-                <div
-                  className="grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br from-amber-500 to-orange-600 bg-cover bg-center text-3xl font-semibold text-white"
-                  style={avatarPreviewUrl ? { backgroundImage: `url(${avatarPreviewUrl})` } : undefined}
-                >
-                  {avatarPreviewUrl ? null : avatarLetter}
-                </div>
+                <AvatarPreview src={avatarPreviewUrl} letter={avatarLetter} className="h-24 w-24 text-3xl" />
 
                 <label className="mt-4 w-full text-sm text-slate-700">
                   <span className="mb-2 block text-center text-slate-500">{accountLabels.avatarUrl}</span>
@@ -684,13 +710,57 @@ export default function AccountPage() {
                     placeholder="https://..."
                     className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
                   />
+                  <span className="mt-2 block text-center text-xs text-slate-400">{accountLabels.avatarHint}</span>
                   {errors.avatarUrl ? <p className="mt-1 text-xs text-red-600">{errors.avatarUrl}</p> : null}
                 </label>
+                {formValues.avatarUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormValues((previous) => ({ ...previous, avatarUrl: '' }));
+                      setErrors((previous) => ({ ...previous, avatarUrl: undefined }));
+                      setNotice(null);
+                    }}
+                    className="mt-3 h-9 rounded-sm border border-slate-300 px-3 text-sm text-slate-600 hover:border-brand-500 hover:text-brand-500"
+                  >
+                    {accountLabels.avatarClear}
+                  </button>
+                ) : null}
               </div>
             </div>
           </article>
         </section>
       </main>
+    </div>
+  );
+}
+
+function AvatarPreview({ src, letter, className = '' }: { src: string | null; letter: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  const imageSrc = src && !failed ? src : null;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  return (
+    <div
+      className={`grid place-items-center overflow-hidden rounded-full bg-gradient-to-br from-amber-500 to-orange-600 font-semibold text-white ${className}`}
+    >
+      {imageSrc ? (
+        <Image
+          src={imageSrc}
+          alt=""
+          width={96}
+          height={96}
+          unoptimized
+          className="h-full w-full object-cover"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span>{letter}</span>
+      )}
     </div>
   );
 }

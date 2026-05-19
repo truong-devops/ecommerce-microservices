@@ -1,9 +1,0 @@
-{
-  "root": true,
-  "env": {
-    "node": true,
-    "es2021": true
-  },
-  "extends": ["expo"],
-  "ignorePatterns": ["dist", "node_modules"]
-}

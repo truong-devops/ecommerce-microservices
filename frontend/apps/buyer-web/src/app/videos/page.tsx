@@ -61,6 +61,7 @@ export default function VideosPage() {
   const keywords = useMemo(() => videos.flatMap((video) => video.products.map((product) => product.name)).slice(0, 8), [videos]);
   const currentVideoId = currentVideo?.videoId ?? '';
   const currentVideoLiked = Boolean(accessToken && currentVideoId && likedVideoIds.has(currentVideoId));
+  const chatEmojis = ['🔥', '❤️', '👍', '😍'];
 
   const handlePlay = useCallback((video: BuyerVideo) => {
     void trackBuyerVideoEvent(video.videoId, 'view-started', buildEventPayload(video));
@@ -381,10 +382,15 @@ export default function VideosPage() {
                     </div>
                   </article>
 
-                  <aside className="rounded-xl border border-slate-200 bg-slate-50 shadow-sm xl:sticky xl:top-24">
-                    <section className="overflow-hidden rounded-xl">
-                      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
-                        <h2 className="text-sm font-semibold text-slate-900">Bình luận</h2>
+                  <aside className="rounded-2xl border border-[#ead8ca] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.08)] xl:sticky xl:top-24">
+                    <section className="overflow-hidden rounded-2xl">
+                      <div className="flex items-center justify-between border-b border-[#ebe3d8] bg-[#fffdfa] px-4 py-3">
+                        <div>
+                          <h2 className="text-lg font-bold text-slate-900">Bình luận</h2>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {accessToken ? 'Trao đổi với shop và người mua khác.' : 'Đăng nhập để tham gia bình luận.'}
+                          </p>
+                        </div>
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-slate-500">{currentVideo.metrics.commentCount ?? comments.length}</span>
                           <button
@@ -392,7 +398,7 @@ export default function VideosPage() {
                             onClick={() => setCommentsCollapsed((current) => !current)}
                             aria-expanded={!commentsCollapsed}
                             aria-label={commentsCollapsed ? 'Hiện bình luận' : 'Ẩn bình luận'}
-                            className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-500 transition hover:border-brand-200 hover:text-brand-600"
+                            className="flex h-7 w-7 items-center justify-center rounded-full border border-[#ead8ca] bg-white text-xs font-bold text-slate-500 transition hover:border-brand-200 hover:text-brand-600"
                           >
                             {commentsCollapsed ? '↓' : '↑'}
                           </button>
@@ -400,18 +406,36 @@ export default function VideosPage() {
                       </div>
                       {!commentsCollapsed ? (
                         <div className="flex max-h-[640px] min-h-[360px] flex-col xl:h-[640px]">
-                          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+                          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#fffdfa] p-3">
                             {commentsStatus === 'loading' ? <p className="text-sm text-slate-500">Đang tải bình luận...</p> : null}
                             {commentsStatus === 'error' ? <p className="text-sm text-red-600">{commentError || 'Không thể tải bình luận.'}</p> : null}
                             {commentsStatus === 'success' && comments.length === 0 ? <p className="text-sm text-slate-500">Chưa có bình luận.</p> : null}
                             {comments.map((comment) => (
-                              <div key={comment.commentId} className="rounded-md bg-white px-3 py-2 shadow-sm">
-                                <p className="text-xs font-semibold text-slate-500">{formatCommentAuthor(comment)}</p>
-                                <p className="mt-1 break-words text-sm text-slate-900">{comment.text}</p>
+                              <div key={comment.commentId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
+                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getCommentAvatarColor(comment.userRole)}`}>
+                                  {getCommentInitial(comment)}
+                                </span>
+                                <span className="min-w-0">
+                                  <p className={`text-xs font-bold uppercase ${getCommentNameColor(comment.userRole)}`}>{formatCommentAuthor(comment)}</p>
+                                  <p className="mt-1 break-words text-sm leading-5 text-slate-900">{comment.text}</p>
+                                </span>
                               </div>
                             ))}
                           </div>
-                          <div className="border-t border-slate-200 bg-white p-3">
+                          <div className="border-t border-[#ebe3d8] bg-white p-3">
+                            <div className="mb-2 flex gap-1.5">
+                              {chatEmojis.map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  type="button"
+                                  onClick={() => setCommentInput((current) => `${current}${emoji}`)}
+                                  disabled={!accessToken || commentSubmitting}
+                                  className="flex h-8 w-8 items-center justify-center rounded-full border border-[#ead8ca] bg-[#fff8f3] text-sm transition hover:border-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
                             <div className="flex gap-2">
                               <input
                                 value={commentInput}
@@ -422,13 +446,13 @@ export default function VideosPage() {
                                   }
                                 }}
                                 placeholder={accessToken ? 'Thêm bình luận...' : 'Đăng nhập để bình luận'}
-                                className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-300"
+                                className="min-w-0 flex-1 rounded-xl border border-[#d7d0c5] bg-[#fbfaf7] px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:bg-white"
                               />
                               <button
                                 type="button"
                                 onClick={() => void handleSubmitComment()}
                                 disabled={!commentInput.trim() || commentSubmitting}
-                                className="rounded-md bg-brand-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 Gửi
                               </button>
@@ -469,8 +493,34 @@ function NavigationButton({ direction, disabled, onClick, label }: { direction: 
 }
 
 function formatCommentAuthor(comment: BuyerVideoComment): string {
-  const role = comment.userRole === 'BUYER' || comment.userRole === 'CUSTOMER' ? 'Buyer' : comment.userRole;
+  const role = comment.userRole === 'BUYER' || comment.userRole === 'CUSTOMER' ? 'Khách hàng' : comment.userRole;
   return `${role} ${comment.userId.slice(0, 8)}`;
+}
+
+function getCommentInitial(comment: BuyerVideoComment): string {
+  return (comment.userRole.trim().charAt(0) || 'U').toUpperCase();
+}
+
+function getCommentAvatarColor(userRole: string): string {
+  const normalizedRole = userRole.toLowerCase();
+  if (normalizedRole.includes('seller')) {
+    return 'bg-brand-500';
+  }
+  if (normalizedRole.includes('admin') || normalizedRole.includes('moderator')) {
+    return 'bg-slate-700';
+  }
+  return 'bg-[#f59e0b]';
+}
+
+function getCommentNameColor(userRole: string): string {
+  const normalizedRole = userRole.toLowerCase();
+  if (normalizedRole.includes('seller')) {
+    return 'text-brand-600';
+  }
+  if (normalizedRole.includes('admin') || normalizedRole.includes('moderator')) {
+    return 'text-slate-700';
+  }
+  return 'text-[#b45309]';
 }
 
 function buildEventPayload(video: BuyerVideo, extra: Record<string, unknown> = {}) {

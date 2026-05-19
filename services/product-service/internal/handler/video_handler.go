@@ -81,6 +81,39 @@ func (h *VideoHandler) GetPublicVideo(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, r, http.StatusOK, response)
 }
 
+func (h *VideoHandler) ListComments(w http.ResponseWriter, r *http.Request) {
+	query, err := parseVideoCommentsQuery(r)
+	if err != nil {
+		httpx.WriteAppError(w, r, err)
+		return
+	}
+	result, err := h.service.ListComments(r.Context(), chi.URLParam(r, "videoId"), query)
+	if err != nil {
+		httpx.WriteAppError(w, r, err)
+		return
+	}
+	httpx.WritePaginated(w, r, http.StatusOK, result.Items, result.Pagination)
+}
+
+func (h *VideoHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+	var input service.CreateVideoCommentInput
+	if err := httpx.DecodeJSONStrict(r, &input); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeBadRequest, "Invalid JSON body", nil)
+		return
+	}
+	response, err := h.service.CreateComment(r.Context(), user, chi.URLParam(r, "videoId"), input)
+	if err != nil {
+		httpx.WriteAppError(w, r, err)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusCreated, response)
+}
+
 func (h *VideoHandler) UpdateVideo(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {
@@ -304,4 +337,17 @@ func parseVideoQuery(r *http.Request) (domain.ListProductVideosQuery, error) {
 		Search:    search,
 		Status:    status,
 	}, nil
+}
+
+func parseVideoCommentsQuery(r *http.Request) (domain.ListVideoCommentsQuery, error) {
+	q := r.URL.Query()
+	page, err := parseIntQuery(q, "page", 1, 1, 0)
+	if err != nil {
+		return domain.ListVideoCommentsQuery{}, err
+	}
+	pageSize, err := parseIntQuery(q, "pageSize", 20, 1, 100)
+	if err != nil {
+		return domain.ListVideoCommentsQuery{}, err
+	}
+	return domain.ListVideoCommentsQuery{Page: page, PageSize: pageSize}, nil
 }

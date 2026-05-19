@@ -23,10 +23,14 @@ type VideoRepository interface {
 	ListFeed(ctx context.Context, query domain.ListProductVideosQuery) ([]domain.ProductVideo, int64, error)
 	FindPublishedByVideoID(ctx context.Context, videoID string) (*domain.ProductVideo, error)
 	IncrementMetricsOnce(ctx context.Context, videoID string, eventKey string, increments map[string]int64) (bool, error)
+	IncrementCommentCount(ctx context.Context, videoID string) error
+	CreateComment(ctx context.Context, payload CreateVideoCommentPayload) (domain.VideoComment, bool, error)
+	ListComments(ctx context.Context, videoID string, query domain.ListVideoCommentsQuery) ([]domain.VideoComment, int64, error)
 }
 
 type mongoVideoRepository struct {
-	collection *mongo.Collection
+	collection        *mongo.Collection
+	commentCollection *mongo.Collection
 }
 
 type CreateVideoPayload struct {
@@ -36,6 +40,15 @@ type CreateVideoPayload struct {
 	Description *string
 	Status      domain.ProductVideoStatus
 	Products    []domain.VideoProductTag
+}
+
+type CreateVideoCommentPayload struct {
+	CommentID       string
+	VideoID         string
+	UserID          string
+	UserRole        domain.Role
+	Text            string
+	ClientCommentID string
 }
 
 type productVideoRecord struct {
@@ -63,8 +76,26 @@ type productVideoRecord struct {
 	UpdatedAt          primitive.DateTime          `bson:"updatedAt"`
 }
 
+type videoCommentRecord struct {
+	ID              primitive.ObjectID        `bson:"_id,omitempty"`
+	CommentID       string                    `bson:"commentId"`
+	VideoID         string                    `bson:"videoId"`
+	UserID          string                    `bson:"userId"`
+	UserRole        domain.Role               `bson:"userRole"`
+	Text            string                    `bson:"text"`
+	Status          domain.VideoCommentStatus `bson:"status"`
+	ClientCommentID string                    `bson:"clientCommentId,omitempty"`
+	CreatedAt       primitive.DateTime        `bson:"createdAt"`
+	UpdatedAt       primitive.DateTime        `bson:"updatedAt"`
+	HiddenAt        *primitive.DateTime       `bson:"hiddenAt,omitempty"`
+	DeletedAt       *primitive.DateTime       `bson:"deletedAt,omitempty"`
+}
+
 func NewMongoVideoRepository(db *mongo.Database) VideoRepository {
-	return &mongoVideoRepository{collection: db.Collection("product_videos")}
+	return &mongoVideoRepository{
+		collection:        db.Collection("product_videos"),
+		commentCollection: db.Collection("product_video_comments"),
+	}
 }
 
 func (r *mongoVideoRepository) EnsureIndexes(ctx context.Context) error {
@@ -76,6 +107,19 @@ func (r *mongoVideoRepository) EnsureIndexes(ctx context.Context) error {
 		{Keys: bson.D{{Key: "products.productId", Value: 1}, {Key: "status", Value: 1}}},
 	}
 	_, err := r.collection.Indexes().CreateMany(ctx, models)
+	if err != nil {
+		return err
+	}
+	commentModels := []mongo.IndexModel{
+		{Keys: bson.D{{Key: "commentId", Value: 1}}, Options: options.Index().SetUnique(true)},
+		{Keys: bson.D{{Key: "videoId", Value: 1}, {Key: "status", Value: 1}, {Key: "createdAt", Value: -1}}},
+		{
+			Keys:    bson.D{{Key: "videoId", Value: 1}, {Key: "userId", Value: 1}, {Key: "clientCommentId", Value: 1}},
+			Options: options.Index().SetUnique(true).SetSparse(true),
+		},
+		{Keys: bson.D{{Key: "status", Value: 1}, {Key: "createdAt", Value: -1}}},
+	}
+	_, err = r.commentCollection.Indexes().CreateMany(ctx, commentModels)
 	return err
 }
 
@@ -94,6 +138,7 @@ func (r *mongoVideoRepository) CreateVideo(ctx context.Context, payload CreateVi
 			QualifiedViewCount: 0,
 			ProductClickCount:  0,
 			AddToCartCount:     0,
+			CommentCount:       0,
 			CTR:                0,
 			AddToCartRate:      0,
 		},
@@ -233,6 +278,92 @@ func (r *mongoVideoRepository) IncrementMetricsOnce(ctx context.Context, videoID
 	return result.ModifiedCount > 0, nil
 }
 
+func (r *mongoVideoRepository) IncrementCommentCount(ctx context.Context, videoID string) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"videoId": videoID, "status": domain.ProductVideoStatusPublished, "archivedAt": nil},
+		bson.M{
+			"$inc": bson.M{"metricsSnapshot.commentCount": 1},
+			"$set": bson.M{"metricsSnapshot.lastAggregatedAt": time.Now().UTC(), "updatedAt": time.Now().UTC()},
+		},
+	)
+	return err
+}
+
+func (r *mongoVideoRepository) CreateComment(ctx context.Context, payload CreateVideoCommentPayload) (domain.VideoComment, bool, error) {
+	now := primitive.NewDateTimeFromTime(time.Now().UTC())
+	record := videoCommentRecord{
+		ID:              primitive.NewObjectID(),
+		CommentID:       payload.CommentID,
+		VideoID:         payload.VideoID,
+		UserID:          payload.UserID,
+		UserRole:        payload.UserRole,
+		Text:            payload.Text,
+		Status:          domain.VideoCommentStatusVisible,
+		ClientCommentID: payload.ClientCommentID,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	if _, err := r.commentCollection.InsertOne(ctx, record); err != nil {
+		if payload.ClientCommentID != "" && mongo.IsDuplicateKeyError(err) {
+			existing, findErr := r.findCommentByClientID(ctx, payload.VideoID, payload.UserID, payload.ClientCommentID)
+			if findErr != nil {
+				return domain.VideoComment{}, false, findErr
+			}
+			if existing != nil {
+				return *existing, false, nil
+			}
+		}
+		return domain.VideoComment{}, false, err
+	}
+	return toVideoCommentDomain(record), true, nil
+}
+
+func (r *mongoVideoRepository) ListComments(ctx context.Context, videoID string, query domain.ListVideoCommentsQuery) ([]domain.VideoComment, int64, error) {
+	filter := bson.M{"videoId": videoID, "status": domain.VideoCommentStatusVisible}
+	total, err := r.commentCollection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	page, pageSize := normalizePage(query.Page, query.PageSize)
+	opts := options.Find().
+		SetSort(bson.D{{Key: "createdAt", Value: -1}}).
+		SetSkip(int64((page - 1) * pageSize)).
+		SetLimit(int64(pageSize))
+	cursor, err := r.commentCollection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	items := []domain.VideoComment{}
+	for cursor.Next(ctx) {
+		var record videoCommentRecord
+		if err := cursor.Decode(&record); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, toVideoCommentDomain(record))
+	}
+	return items, total, cursor.Err()
+}
+
+func (r *mongoVideoRepository) findCommentByClientID(ctx context.Context, videoID, userID, clientCommentID string) (*domain.VideoComment, error) {
+	var record videoCommentRecord
+	err := r.commentCollection.FindOne(ctx, bson.M{
+		"videoId":         videoID,
+		"userId":          userID,
+		"clientCommentId": clientCommentID,
+	}).Decode(&record)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	comment := toVideoCommentDomain(record)
+	return &comment, nil
+}
+
 func (r *mongoVideoRepository) list(ctx context.Context, filter bson.M, query domain.ListProductVideosQuery, sort bson.D) ([]domain.ProductVideo, int64, error) {
 	total, err := r.collection.CountDocuments(ctx, filter)
 	if err != nil {
@@ -284,6 +415,23 @@ func toVideoDomain(record productVideoRecord) domain.ProductVideo {
 		ArchivedAt:         dateTimePtr(record.ArchivedAt),
 		CreatedAt:          record.CreatedAt.Time(),
 		UpdatedAt:          record.UpdatedAt.Time(),
+	}
+}
+
+func toVideoCommentDomain(record videoCommentRecord) domain.VideoComment {
+	return domain.VideoComment{
+		ID:              record.ID.Hex(),
+		CommentID:       record.CommentID,
+		VideoID:         record.VideoID,
+		UserID:          record.UserID,
+		UserRole:        record.UserRole,
+		Text:            record.Text,
+		Status:          record.Status,
+		ClientCommentID: record.ClientCommentID,
+		CreatedAt:       record.CreatedAt.Time(),
+		UpdatedAt:       record.UpdatedAt.Time(),
+		HiddenAt:        dateTimePtr(record.HiddenAt),
+		DeletedAt:       dateTimePtr(record.DeletedAt),
 	}
 }
 

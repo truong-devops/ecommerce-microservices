@@ -15,6 +15,14 @@ const (
 	ProductVideoStatusArchived         ProductVideoStatus = "archived"
 )
 
+type VideoCommentStatus string
+
+const (
+	VideoCommentStatusVisible VideoCommentStatus = "VISIBLE"
+	VideoCommentStatusHidden  VideoCommentStatus = "HIDDEN"
+	VideoCommentStatusDeleted VideoCommentStatus = "DELETED"
+)
+
 type VideoProductTagPosition struct {
 	X        *float64 `bson:"x,omitempty" json:"x,omitempty"`
 	Y        *float64 `bson:"y,omitempty" json:"y,omitempty"`
@@ -47,6 +55,7 @@ type VideoMetricsSnapshot struct {
 	QualifiedViewCount int64      `bson:"qualifiedViewCount" json:"qualifiedViewCount"`
 	ProductClickCount  int64      `bson:"productClickCount" json:"productClickCount"`
 	AddToCartCount     int64      `bson:"addToCartCount" json:"addToCartCount"`
+	CommentCount       int64      `bson:"commentCount" json:"commentCount"`
 	CTR                float64    `bson:"ctr" json:"ctr"`
 	AddToCartRate      float64    `bson:"addToCartRate" json:"addToCartRate"`
 	LastAggregatedAt   *time.Time `bson:"lastAggregatedAt,omitempty" json:"-"`
@@ -77,6 +86,21 @@ type ProductVideo struct {
 	UpdatedAt          time.Time
 }
 
+type VideoComment struct {
+	ID              string
+	CommentID       string
+	VideoID         string
+	UserID          string
+	UserRole        Role
+	Text            string
+	Status          VideoCommentStatus
+	ClientCommentID string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	HiddenAt        *time.Time
+	DeletedAt       *time.Time
+}
+
 type ListProductVideosQuery struct {
 	Page      int
 	PageSize  int
@@ -84,6 +108,11 @@ type ListProductVideosQuery struct {
 	SellerID  string
 	ProductID string
 	Search    string
+}
+
+type ListVideoCommentsQuery struct {
+	Page     int
+	PageSize int
 }
 
 type VideoProductResponse struct {
@@ -132,12 +161,30 @@ type VideoMetricsResponse struct {
 	QualifiedViewCount int64   `json:"qualifiedViewCount"`
 	ProductClickCount  int64   `json:"productClickCount"`
 	AddToCartCount     int64   `json:"addToCartCount"`
+	CommentCount       int64   `json:"commentCount"`
 	CTR                float64 `json:"ctr"`
 	AddToCartRate      float64 `json:"addToCartRate"`
 	LastAggregatedAt   *string `json:"lastAggregatedAt"`
 }
 
+type VideoCommentResponse struct {
+	CommentID       string             `json:"commentId"`
+	VideoID         string             `json:"videoId"`
+	UserID          string             `json:"userId"`
+	UserRole        Role               `json:"userRole"`
+	Text            string             `json:"text"`
+	Status          VideoCommentStatus `json:"status"`
+	ClientCommentID string             `json:"clientCommentId,omitempty"`
+	CreatedAt       string             `json:"createdAt"`
+	UpdatedAt       string             `json:"updatedAt"`
+}
+
 type PaginatedVideos struct {
 	Items      []ProductVideoResponse `json:"items"`
+	Pagination Pagination             `json:"pagination"`
+}
+
+type PaginatedVideoComments struct {
+	Items      []VideoCommentResponse `json:"items"`
 	Pagination Pagination             `json:"pagination"`
 }

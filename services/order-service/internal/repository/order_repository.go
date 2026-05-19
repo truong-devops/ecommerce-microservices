@@ -78,6 +78,13 @@ type ListOrdersQuery struct {
 	Search    *string
 }
 
+type ListCompletedOrdersQuery struct {
+	From     time.Time
+	To       time.Time
+	Page     int
+	PageSize int
+}
+
 type IdempotencyRecord struct {
 	ID             string
 	UserID         string
@@ -416,6 +423,54 @@ func (r *OrderRepository) ListOrders(ctx context.Context, query ListOrdersQuery,
 	}
 	if err := rows.Err(); err != nil {
 		return nil, 0, queryFailed("iterate orders failed", err)
+	}
+
+	itemsByOrder, err := r.listOrderItemsByOrderIDs(ctx, ids)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i := range orders {
+		orders[i].Items = itemsByOrder[orders[i].ID]
+	}
+
+	return orders, total, nil
+}
+
+func (r *OrderRepository) ListCompletedOrders(ctx context.Context, query ListCompletedOrdersQuery) ([]domain.CompletedOrder, int, error) {
+	args := []any{domain.OrderStatusDelivered, query.From, query.To}
+	const whereSQL = "status = $1 AND updated_at >= $2 AND updated_at < $3"
+
+	var total int
+	if err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM orders WHERE "+whereSQL, args...).Scan(&total); err != nil {
+		return nil, 0, queryFailed("count completed orders failed", err)
+	}
+
+	args = append(args, (query.Page-1)*query.PageSize, query.PageSize)
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, user_id, updated_at
+		FROM orders
+		WHERE `+whereSQL+`
+		ORDER BY updated_at ASC, id ASC
+		OFFSET $4
+		LIMIT $5
+	`, args...)
+	if err != nil {
+		return nil, 0, queryFailed("list completed orders failed", err)
+	}
+	defer rows.Close()
+
+	orders := make([]domain.CompletedOrder, 0)
+	ids := make([]string, 0)
+	for rows.Next() {
+		var order domain.CompletedOrder
+		if err := rows.Scan(&order.ID, &order.UserID, &order.CompletedAt); err != nil {
+			return nil, 0, queryFailed("scan completed order failed", err)
+		}
+		orders = append(orders, order)
+		ids = append(ids, order.ID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, queryFailed("iterate completed orders failed", err)
 	}
 
 	itemsByOrder, err := r.listOrderItemsByOrderIDs(ctx, ids)

@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RecommendationSection } from '@/components/home/RecommendationSection';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { createBuyerChatConversation } from '@/lib/api/chat';
 import { fetchBuyerProducts, fetchBuyerShopDetail, fetchProductDetail } from '@/lib/api/products';
+import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import { createBuyerReview, fetchReviewsByProduct, fetchReviewSummaryByProduct } from '@/lib/api/reviews';
 import { formatSellerCode } from '@/lib/order-codes';
 import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
-import type { BuyerShopDetail, ProductDetail, ReviewItem, ReviewSummary } from '@/lib/api/types';
+import type { BuyerShopDetail, ProductDetail, ProductItem, ReviewItem, ReviewSummary } from '@/lib/api/types';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 type ProductPageStatus = 'loading' | 'error' | 'invalid-id' | 'not-found' | 'success';
@@ -50,6 +52,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [shopProductCount, setShopProductCount] = useState<number | null>(null);
   const [shopLoading, setShopLoading] = useState(false);
   const [shopErrorMessage, setShopErrorMessage] = useState('');
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [reviewPageSize] = useState(10);
   const [selectedRatingFilter, setSelectedRatingFilter] = useState<number | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
@@ -143,7 +147,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         chatNeedLogin: 'Bạn cần đăng nhập để chat với nhà bán.',
         chatCustomerOnly: 'Chỉ tài khoản CUSTOMER mới chat với nhà bán.',
         chatCreateFailed: 'Không thể tạo hội thoại chat lúc này.',
-        chatCreating: 'Đang tạo...'
+        chatCreating: 'Đang tạo...',
+        frequentlyBoughtTogether: 'Thường được mua cùng'
       }
     : {
         breadcrumbHome: 'Home',
@@ -200,7 +205,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         chatNeedLogin: 'You must login to chat with this seller.',
         chatCustomerOnly: 'Only CUSTOMER accounts can chat with sellers.',
         chatCreateFailed: 'Cannot create conversation right now.',
-        chatCreating: 'Creating...'
+        chatCreating: 'Creating...',
+        frequentlyBoughtTogether: 'Frequently Bought Together'
       };
 
   const maxQuantity = useMemo(() => {
@@ -337,6 +343,27 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
     void loadShop(product.sellerId);
   }, [loadShop, product?.sellerId, status]);
+
+  const loadRecommendations = useCallback(async (targetProductId: string) => {
+    setRecommendationLoading(true);
+
+    try {
+      setRecommendedProducts(await loadRecommendedProductItems([targetProductId], 6));
+    } catch {
+      setRecommendedProducts([]);
+    } finally {
+      setRecommendationLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status !== 'success' || !product?.id) {
+      setRecommendedProducts([]);
+      return;
+    }
+
+    void loadRecommendations(product.id);
+  }, [loadRecommendations, product?.id, status]);
 
   const handleSubmitReview = useCallback(async () => {
     if (!product || !user || !accessToken) {
@@ -842,6 +869,14 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                 </article>
               ) : null}
             </section>
+
+            {recommendationLoading || recommendedProducts.length > 0 ? (
+              <RecommendationSection
+                products={recommendedProducts}
+                title={detailText.frequentlyBoughtTogether}
+                emptyMessage={recommendationLoading ? text.product.loading : text.home.empty}
+              />
+            ) : null}
 
             <section className="rounded-md bg-white p-4 shadow-card md:p-6">
               <h2 className="mb-4 text-xl font-semibold text-slate-900">{detailText.productInfo}</h2>

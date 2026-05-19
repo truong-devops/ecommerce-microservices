@@ -1,6 +1,6 @@
 # FP-Growth Recommendation Implementation Plan
 
-Status: planning
+Status: MVP implemented; remaining live gateway verification pending
 Last updated: 2026-05-19
 
 ## 1. Goal
@@ -187,7 +187,7 @@ Minimum response shape:
 
 Fallback if internal order endpoint is not ready:
 
-- Use seed JSON/CSV data for demo.
+- Use seed JSON/CSV data with real local product IDs for local validation.
 - Add the internal endpoint before enabling real scheduled training.
 
 Do not:
@@ -441,7 +441,7 @@ Recommended default config:
 
 ```txt
 RECOMMENDATION_TRAINING_ENABLED=true
-RECOMMENDATION_TRAINING_CRON=0 2 * * *
+RECOMMENDATION_TRAINING_HOUR=2
 RECOMMENDATION_WINDOW_DAYS=90
 RECOMMENDATION_MIN_SUPPORT_COUNT=3
 RECOMMENDATION_MIN_CONFIDENCE=0.15
@@ -822,7 +822,7 @@ Add env vars to analytics-service:
 ```txt
 RECOMMENDATION_ENABLED=true
 RECOMMENDATION_TRAINING_ENABLED=true
-RECOMMENDATION_TRAINING_CRON=0 2 * * *
+RECOMMENDATION_TRAINING_HOUR=2
 RECOMMENDATION_WINDOW_DAYS=90
 RECOMMENDATION_MIN_SUPPORT_COUNT=3
 RECOMMENDATION_MIN_CONFIDENCE=0.15
@@ -928,20 +928,29 @@ npm --workspace frontend/apps/seller run build
 
 Need backfill if existing order history should be used.
 
-Preferred:
+Implemented for local validation:
 
-- Add admin-only command or script in analytics-service:
+- Analytics-service has a seed backfill command:
 
 ```txt
-go run ./cmd/backfill-recommendations
+cd services/analytics-service
+RECOMMENDATION_MIN_SUPPORT_COUNT=2 \
+go run ./cmd/backfill-recommendations \
+  -file testdata/recommendation_completed_orders.json
 ```
+
+The command reads completed-order shaped JSON, upserts recommendation transactions, runs FP-Growth, and writes `recommendation_rules`.
+
+Still preferred for production:
+
+- Use the scheduled trainer or admin-only train endpoint to fetch real completed orders from `order-service`.
 
 Backfill input options:
 
 1. Call order-service internal completed-orders endpoint with service token.
-2. Load a seed JSON/CSV file for demo.
+2. Load a seed JSON/CSV file with real local product IDs.
 
-For portfolio/demo, option 2 is acceptable:
+For local validation, option 2 is acceptable when order history has too few multi-item completed orders:
 
 ```txt
 services/analytics-service/testdata/recommendation_transactions.json
@@ -959,7 +968,7 @@ Risk: Order-service is unavailable at 02:00.
 
 Risk: Too little transaction data creates empty rules.
 
-- Mitigation: lower support count in dev, seed demo transactions, add fallback trending products.
+- Mitigation: lower support count in dev, seed local transactions with real product IDs, add fallback trending products.
 
 Risk: Training gets expensive.
 
@@ -1004,43 +1013,44 @@ Project done when:
 
 ## 12. Implementation Checklist
 
-- [ ] Confirm or add order-service internal completed-orders endpoint.
-- [ ] Confirm completed-order response contains `orderId`, `completedAt`, and `items[].productId`.
-- [ ] Add `0002_add_recommendations.sql` migration in `services/analytics-service`.
-- [ ] Add recommendation domain models.
-- [ ] Add analytics-service order client.
-- [ ] Add transaction repository methods.
-- [ ] Add rule repository methods.
-- [ ] Add training run repository methods.
-- [ ] Add completed-order transaction normalization.
-- [ ] Add unit tests for order fetch normalization and idempotency.
-- [ ] Implement FP-tree structure.
-- [ ] Implement frequent itemset mining.
-- [ ] Implement association rule generation.
-- [ ] Implement confidence, support, lift, and score calculation.
-- [ ] Add FP-Growth unit tests with small known dataset.
-- [ ] Add trainer service with config thresholds.
-- [ ] Add manual training endpoint.
-- [ ] Add scheduled training worker.
-- [ ] Add product recommendation endpoint.
-- [ ] Add cart recommendation endpoint.
-- [ ] Add seller insight endpoint.
-- [ ] Add API Gateway public GET route if product recommendations should be public.
-- [ ] Verify existing private `/api/v1/analytics` proxy covers cart and seller endpoints.
-- [ ] Add buyer-web recommendation API client.
-- [ ] Add product detail recommendation section.
-- [ ] Add cart recommendation section.
-- [ ] Add video recommendation rail when video has product IDs.
-- [ ] Add live recommendation rail when session has product IDs.
-- [ ] Add seller analytics top association rules UI.
-- [ ] Add seller training status UI.
-- [ ] Add dev seed/backfill data for recommendation demo.
-- [ ] Document env vars in analytics-service README.
-- [ ] Document local setup steps.
-- [ ] Run `cd services/analytics-service && go test ./...`.
-- [ ] Run `cd services/api-gateway && go test ./...`.
-- [ ] Run `npm --workspace frontend/apps/buyer-web run build`.
-- [ ] Run `npm --workspace frontend/apps/seller run build`.
+- [x] Confirm or add order-service internal completed-orders endpoint.
+- [x] Confirm completed-order response contains `orderId`, `completedAt`, and `items[].productId`.
+- [x] Add `0002_add_recommendations.sql` migration in `services/analytics-service`.
+- [x] Add recommendation domain models.
+- [x] Add analytics-service order client.
+- [x] Add transaction repository methods.
+- [x] Add rule repository methods.
+- [x] Add training run repository methods.
+- [x] Add completed-order transaction normalization.
+- [x] Add unit tests for order fetch normalization and idempotency.
+- [x] Implement FP-tree structure.
+- [x] Implement frequent itemset mining.
+- [x] Implement association rule generation.
+- [x] Implement confidence, support, lift, and score calculation.
+- [x] Add FP-Growth unit tests with small known dataset.
+- [x] Add trainer service with config thresholds.
+- [x] Add manual training endpoint.
+- [x] Add scheduled training worker.
+- [x] Add product recommendation endpoint.
+- [x] Add cart recommendation endpoint.
+- [x] Add seller insight endpoint.
+- [x] Add API Gateway public GET route if product recommendations should be public.
+- [x] Verify existing private `/api/v1/analytics` proxy covers cart and seller endpoints.
+- [x] Add buyer-web recommendation API client.
+- [x] Add product detail recommendation section.
+- [x] Add cart recommendation section.
+- [x] Add video recommendation rail when video has product IDs.
+- [x] Add live recommendation rail when session has product IDs.
+- [x] Add seller analytics top association rules UI.
+- [x] Add seller training status UI.
+- [x] Add dev seed/backfill data with real local product IDs.
+- [x] Document env vars in analytics-service README.
+- [x] Document local setup steps.
+- [x] Run `cd services/order-service && go test ./...`.
+- [x] Run `cd services/analytics-service && go test ./...`.
+- [x] Run `cd services/api-gateway && go test ./...`.
+- [x] Run `npm --workspace frontend/apps/buyer-web run build`.
+- [x] Run `npm --workspace frontend/apps/seller run build`.
 - [ ] Verify product detail recommendations through API Gateway.
 - [ ] Verify cart recommendations through API Gateway.
 - [ ] Verify seller insight endpoint with seller/admin JWT.

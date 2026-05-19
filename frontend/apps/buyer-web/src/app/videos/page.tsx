@@ -5,8 +5,9 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
+import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import { createBuyerVideoComment, listBuyerVideoComments, listBuyerVideos, trackBuyerVideoEvent } from '@/lib/api/videos';
-import type { BuyerVideo, BuyerVideoComment } from '@/lib/api/types';
+import type { BuyerVideo, BuyerVideoComment, ProductItem } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
@@ -28,6 +29,8 @@ export default function VideosPage() {
   const [likedVideoIds, setLikedVideoIds] = useState<Set<string>>(() => new Set());
   const [likeStatus, setLikeStatus] = useState<'idle' | 'login-required'>('idle');
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trackedQualifiedViews = useRef<Set<string>>(new Set());
 
@@ -220,6 +223,38 @@ export default function VideosPage() {
   }, [currentVideoId]);
 
   useEffect(() => {
+    const productIds = currentVideo?.products.map((product) => product.productId) ?? [];
+    if (productIds.length === 0) {
+      setRecommendedProducts([]);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadRecommendations() {
+      setRecommendationLoading(true);
+      try {
+        const items = await loadRecommendedProductItems(productIds, 4);
+        if (!cancelled) {
+          setRecommendedProducts(items);
+        }
+      } catch {
+        if (!cancelled) {
+          setRecommendedProducts([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRecommendationLoading(false);
+        }
+      }
+    }
+
+    void loadRecommendations();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentVideo]);
+
+  useEffect(() => {
     if (shareStatus !== 'copied') {
       return;
     }
@@ -315,6 +350,39 @@ export default function VideosPage() {
                           <span className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-semibold text-white">Mua</span>
                         </Link>
                       ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {recommendationLoading || recommendedProducts.length > 0 ? (
+                  <div className="mt-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mua kèm phổ biến</p>
+                    <div className="mt-2 space-y-2">
+                      {recommendedProducts.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/products/${encodeURIComponent(product.id)}`}
+                          className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 transition hover:border-brand-200 hover:bg-brand-50"
+                        >
+                          <Image
+                            src={product.image || '/icon.svg'}
+                            alt={product.title}
+                            width={44}
+                            height={44}
+                            unoptimized
+                            className="h-11 w-11 rounded-md object-cover"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="line-clamp-1 text-sm font-semibold text-slate-900">{product.title}</span>
+                            <span className="block text-sm font-bold text-brand-600">{formatPrice(product.price)}</span>
+                          </span>
+                        </Link>
+                      ))}
+                      {recommendationLoading && recommendedProducts.length === 0 ? (
+                        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-2 text-xs text-slate-500">
+                          Đang tải gợi ý...
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 ) : null}

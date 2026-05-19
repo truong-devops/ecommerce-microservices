@@ -188,6 +188,42 @@ export interface SellerDashboardData {
   news: SellerNewsItem[];
 }
 
+export interface SellerRecommendationRule {
+  ruleId: string;
+  antecedentProductIds: string[];
+  consequentProductId: string;
+  support: number;
+  confidence: number;
+  lift: number;
+  score: number;
+  supportCount: number;
+  transactionCount: number;
+  generatedAt: string;
+}
+
+export interface SellerRecommendationTrainingRun {
+  runId: string;
+  status: string;
+  windowDays: number;
+  minSupportCount: number;
+  minConfidence: number;
+  maxAntecedentSize: number;
+  transactionCount: number;
+  frequentItemsetCount: number;
+  ruleCount: number;
+  startedAt: string;
+  finishedAt?: string | null;
+  errorMessage?: string | null;
+}
+
+export interface SellerRecommendationInsights {
+  limit: number;
+  sellerId: string | null;
+  latestTrainingRun: SellerRecommendationTrainingRun | null;
+  productNames?: Record<string, string>;
+  items: SellerRecommendationRule[];
+}
+
 export type SellerProductStatus = 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
 
 export interface SellerProductVariantInput {

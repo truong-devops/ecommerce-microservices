@@ -45,6 +45,12 @@ type ShippingSummaryItem struct {
 	TotalEvents int64
 }
 
+type RecommendationTrainingCounts struct {
+	TransactionCount     int64
+	FrequentItemsetCount int64
+	RuleCount            int64
+}
+
 func NewAnalyticsRepository(pool *pgxpool.Pool) *AnalyticsRepository {
 	return &AnalyticsRepository{pool: pool}
 }
@@ -95,6 +101,64 @@ func (r *AnalyticsRepository) EnsureSchema(ctx context.Context) error {
         ON analytics_events_raw (payment_id);
       CREATE INDEX IF NOT EXISTS idx_analytics_events_raw_shipment_id
         ON analytics_events_raw (shipment_id);
+
+      CREATE TABLE IF NOT EXISTS recommendation_transactions (
+        transaction_id TEXT PRIMARY KEY,
+        order_id TEXT NOT NULL,
+        user_id TEXT NULL,
+        seller_id TEXT NULL,
+        product_ids TEXT[] NOT NULL,
+        item_count INT NOT NULL,
+        source_snapshot TEXT NULL,
+        occurred_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_recommendation_transactions_order_id
+        ON recommendation_transactions (order_id);
+      CREATE INDEX IF NOT EXISTS idx_recommendation_transactions_occurred_at
+        ON recommendation_transactions (occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_recommendation_transactions_seller_id
+        ON recommendation_transactions (seller_id);
+
+      CREATE TABLE IF NOT EXISTS recommendation_rules (
+        rule_id TEXT PRIMARY KEY,
+        antecedent_product_ids TEXT[] NOT NULL,
+        consequent_product_id TEXT NOT NULL,
+        support_count BIGINT NOT NULL,
+        antecedent_count BIGINT NOT NULL,
+        consequent_count BIGINT NOT NULL,
+        transaction_count BIGINT NOT NULL,
+        support DOUBLE PRECISION NOT NULL,
+        confidence DOUBLE PRECISION NOT NULL,
+        lift DOUBLE PRECISION NOT NULL,
+        score DOUBLE PRECISION NOT NULL,
+        seller_id TEXT NULL,
+        generated_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_recommendation_rules_antecedent
+        ON recommendation_rules USING GIN (antecedent_product_ids);
+      CREATE INDEX IF NOT EXISTS idx_recommendation_rules_consequent
+        ON recommendation_rules (consequent_product_id);
+      CREATE INDEX IF NOT EXISTS idx_recommendation_rules_seller_score
+        ON recommendation_rules (seller_id, score DESC);
+
+      CREATE TABLE IF NOT EXISTS recommendation_training_runs (
+        run_id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        window_days INT NOT NULL,
+        min_support_count INT NOT NULL,
+        min_confidence DOUBLE PRECISION NOT NULL,
+        max_antecedent_size INT NOT NULL,
+        transaction_count BIGINT NOT NULL DEFAULT 0,
+        frequent_itemset_count BIGINT NOT NULL DEFAULT 0,
+        rule_count BIGINT NOT NULL DEFAULT 0,
+        started_at TIMESTAMPTZ NOT NULL,
+        finished_at TIMESTAMPTZ NULL,
+        error_message TEXT NULL
+      );
     `
 
 	if _, err := r.pool.Exec(ctx, ddl); err != nil {
@@ -229,6 +293,325 @@ func (r *AnalyticsRepository) InsertEvent(ctx context.Context, record domain.Ana
 	return nil
 }
 
+func (r *AnalyticsRepository) UpsertRecommendationTransactions(ctx context.Context, transactions []domain.RecommendationTransaction) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return queryFailed("begin recommendation transaction upsert failed", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, item := range transactions {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO recommendation_transactions (
+				transaction_id,
+				order_id,
+				user_id,
+				seller_id,
+				product_ids,
+				item_count,
+				source_snapshot,
+				occurred_at
+			)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+			ON CONFLICT (order_id)
+			DO UPDATE SET
+				user_id = EXCLUDED.user_id,
+				seller_id = EXCLUDED.seller_id,
+				product_ids = EXCLUDED.product_ids,
+				item_count = EXCLUDED.item_count,
+				source_snapshot = EXCLUDED.source_snapshot,
+				occurred_at = EXCLUDED.occurred_at
+		`,
+			item.TransactionID,
+			item.OrderID,
+			item.UserID,
+			item.SellerID,
+			item.ProductIDs,
+			item.ItemCount,
+			item.SourceSnapshot,
+			item.OccurredAt,
+		)
+		if err != nil {
+			return queryFailed("upsert recommendation transaction failed", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return queryFailed("commit recommendation transaction upsert failed", err)
+	}
+	return nil
+}
+
+func (r *AnalyticsRepository) ListRecommendationTransactions(ctx context.Context, windowDays int, sellerID string) ([]domain.RecommendationTransaction, error) {
+	if windowDays <= 0 {
+		windowDays = 90
+	}
+
+	rows, err := r.pool.Query(ctx, `
+		SELECT transaction_id, order_id, user_id, seller_id, product_ids, item_count, source_snapshot, occurred_at, created_at
+		FROM recommendation_transactions
+		WHERE occurred_at >= NOW() - ($1::int * INTERVAL '1 day')
+			AND ($2 = '' OR seller_id = $2)
+		ORDER BY occurred_at ASC
+	`, windowDays, strings.TrimSpace(sellerID))
+	if err != nil {
+		return nil, queryFailed("list recommendation transactions failed", err)
+	}
+	defer rows.Close()
+
+	out := make([]domain.RecommendationTransaction, 0)
+	for rows.Next() {
+		var item domain.RecommendationTransaction
+		if err := rows.Scan(
+			&item.TransactionID,
+			&item.OrderID,
+			&item.UserID,
+			&item.SellerID,
+			&item.ProductIDs,
+			&item.ItemCount,
+			&item.SourceSnapshot,
+			&item.OccurredAt,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, queryFailed("scan recommendation transaction failed", err)
+		}
+		out = append(out, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, queryFailed("iterate recommendation transactions failed", err)
+	}
+	return out, nil
+}
+
+func (r *AnalyticsRepository) ReplaceRecommendationRules(ctx context.Context, rules []domain.RecommendationRule) error {
+	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return queryFailed("begin recommendation rules replace failed", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM recommendation_rules`); err != nil {
+		return queryFailed("delete recommendation rules failed", err)
+	}
+
+	for _, rule := range rules {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO recommendation_rules (
+				rule_id,
+				antecedent_product_ids,
+				consequent_product_id,
+				support_count,
+				antecedent_count,
+				consequent_count,
+				transaction_count,
+				support,
+				confidence,
+				lift,
+				score,
+				seller_id,
+				generated_at
+			)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+		`,
+			rule.RuleID,
+			rule.AntecedentProductIDs,
+			rule.ConsequentProductID,
+			rule.SupportCount,
+			rule.AntecedentCount,
+			rule.ConsequentCount,
+			rule.TransactionCount,
+			rule.Support,
+			rule.Confidence,
+			rule.Lift,
+			rule.Score,
+			rule.SellerID,
+			rule.GeneratedAt,
+		)
+		if err != nil {
+			return queryFailed("insert recommendation rule failed", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return queryFailed("commit recommendation rules replace failed", err)
+	}
+	return nil
+}
+
+func (r *AnalyticsRepository) QueryRecommendationsByProduct(ctx context.Context, productID, sellerID string, limit int) ([]domain.RecommendationItem, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 12
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT consequent_product_id, score, support, confidence, lift, generated_at
+		FROM recommendation_rules
+		WHERE antecedent_product_ids = ARRAY[$1]::text[]
+			AND ($2 = '' OR seller_id = $2 OR seller_id IS NULL)
+		ORDER BY score DESC, confidence DESC, consequent_product_id ASC
+		LIMIT $3
+	`, strings.TrimSpace(productID), strings.TrimSpace(sellerID), limit)
+	if err != nil {
+		return nil, queryFailed("query product recommendations failed", err)
+	}
+	defer rows.Close()
+	return scanRecommendationItems(rows, "frequently_bought_together")
+}
+
+func (r *AnalyticsRepository) QueryRecommendationsByCart(ctx context.Context, productIDs []string, sellerID string, limit int) ([]domain.RecommendationItem, error) {
+	if len(productIDs) == 0 {
+		return []domain.RecommendationItem{}, nil
+	}
+	if limit <= 0 || limit > 50 {
+		limit = 12
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT consequent_product_id, MAX(score) AS score, MAX(support) AS support, MAX(confidence) AS confidence, MAX(lift) AS lift, MAX(generated_at) AS generated_at
+		FROM recommendation_rules
+		WHERE antecedent_product_ids <@ $1::text[]
+			AND consequent_product_id <> ALL($1::text[])
+			AND ($2 = '' OR seller_id = $2 OR seller_id IS NULL)
+		GROUP BY consequent_product_id
+		ORDER BY score DESC, confidence DESC, consequent_product_id ASC
+		LIMIT $3
+	`, productIDs, strings.TrimSpace(sellerID), limit)
+	if err != nil {
+		return nil, queryFailed("query cart recommendations failed", err)
+	}
+	defer rows.Close()
+	return scanRecommendationItems(rows, "cart_pattern_match")
+}
+
+func (r *AnalyticsRepository) QueryTopRecommendationRules(ctx context.Context, sellerID string, limit int) ([]domain.RecommendationRule, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT rule_id, antecedent_product_ids, consequent_product_id, support_count, antecedent_count,
+			consequent_count, transaction_count, support, confidence, lift, score, seller_id, generated_at, created_at
+		FROM recommendation_rules
+		WHERE ($1 = '' OR seller_id = $1 OR seller_id IS NULL)
+		ORDER BY score DESC, confidence DESC, support_count DESC
+		LIMIT $2
+	`, strings.TrimSpace(sellerID), limit)
+	if err != nil {
+		return nil, queryFailed("query top recommendation rules failed", err)
+	}
+	defer rows.Close()
+
+	rules := make([]domain.RecommendationRule, 0)
+	for rows.Next() {
+		var rule domain.RecommendationRule
+		if err := rows.Scan(
+			&rule.RuleID,
+			&rule.AntecedentProductIDs,
+			&rule.ConsequentProductID,
+			&rule.SupportCount,
+			&rule.AntecedentCount,
+			&rule.ConsequentCount,
+			&rule.TransactionCount,
+			&rule.Support,
+			&rule.Confidence,
+			&rule.Lift,
+			&rule.Score,
+			&rule.SellerID,
+			&rule.GeneratedAt,
+			&rule.CreatedAt,
+		); err != nil {
+			return nil, queryFailed("scan top recommendation rule failed", err)
+		}
+		rules = append(rules, rule)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, queryFailed("iterate top recommendation rules failed", err)
+	}
+	return rules, nil
+}
+
+func (r *AnalyticsRepository) CreateTrainingRun(ctx context.Context, run domain.RecommendationTrainingRun) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO recommendation_training_runs (
+			run_id,
+			status,
+			window_days,
+			min_support_count,
+			min_confidence,
+			max_antecedent_size,
+			transaction_count,
+			frequent_itemset_count,
+			rule_count,
+			started_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+	`,
+		run.RunID,
+		run.Status,
+		run.WindowDays,
+		run.MinSupportCount,
+		run.MinConfidence,
+		run.MaxAntecedentSize,
+		run.TransactionCount,
+		run.FrequentItemsetCount,
+		run.RuleCount,
+		run.StartedAt,
+	)
+	if err != nil {
+		return queryFailed("create recommendation training run failed", err)
+	}
+	return nil
+}
+
+func (r *AnalyticsRepository) FinishTrainingRun(ctx context.Context, runID, status string, counts RecommendationTrainingCounts, errorMessage *string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE recommendation_training_runs
+		SET status = $2,
+			transaction_count = $3,
+			frequent_itemset_count = $4,
+			rule_count = $5,
+			finished_at = NOW(),
+			error_message = $6
+		WHERE run_id = $1
+	`, runID, status, counts.TransactionCount, counts.FrequentItemsetCount, counts.RuleCount, errorMessage)
+	if err != nil {
+		return queryFailed("finish recommendation training run failed", err)
+	}
+	return nil
+}
+
+func (r *AnalyticsRepository) GetLatestTrainingRun(ctx context.Context) (*domain.RecommendationTrainingRun, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT run_id, status, window_days, min_support_count, min_confidence, max_antecedent_size,
+			transaction_count, frequent_itemset_count, rule_count, started_at, finished_at, error_message
+		FROM recommendation_training_runs
+		ORDER BY started_at DESC
+		LIMIT 1
+	`)
+	var run domain.RecommendationTrainingRun
+	if err := row.Scan(
+		&run.RunID,
+		&run.Status,
+		&run.WindowDays,
+		&run.MinSupportCount,
+		&run.MinConfidence,
+		&run.MaxAntecedentSize,
+		&run.TransactionCount,
+		&run.FrequentItemsetCount,
+		&run.RuleCount,
+		&run.StartedAt,
+		&run.FinishedAt,
+		&run.ErrorMessage,
+	); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, queryFailed("get latest recommendation training run failed", err)
+	}
+	return &run, nil
+}
+
 func (r *AnalyticsRepository) QueryOverview(ctx context.Context, rangeInput domain.AnalyticsDateRange) (Overview, error) {
 	const query = `
       SELECT
@@ -262,6 +645,22 @@ func (r *AnalyticsRepository) QueryOverview(ctx context.Context, rangeInput doma
 		return Overview{}, queryFailed("query overview failed", err)
 	}
 	return resp, nil
+}
+
+func scanRecommendationItems(rows pgx.Rows, reason string) ([]domain.RecommendationItem, error) {
+	items := make([]domain.RecommendationItem, 0)
+	for rows.Next() {
+		var item domain.RecommendationItem
+		if err := rows.Scan(&item.ProductID, &item.Score, &item.Support, &item.Confidence, &item.Lift, &item.GeneratedAt); err != nil {
+			return nil, queryFailed("scan recommendation item failed", err)
+		}
+		item.Reason = reason
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, queryFailed("iterate recommendation items failed", err)
+	}
+	return items, nil
 }
 
 func (r *AnalyticsRepository) QueryTimeseries(ctx context.Context, rangeInput domain.AnalyticsDateRange, interval string, eventType string) ([]TimeseriesItem, error) {

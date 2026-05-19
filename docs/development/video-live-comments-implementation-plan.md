@@ -1,6 +1,6 @@
 # Video And Livestream Comments Implementation Plan
 
-Status: phase 1-3 implemented
+Status: phase 1-6 implemented, follow-ups pending
 Last updated: 2026-05-19
 
 ## 1. Goal
@@ -785,27 +785,27 @@ Use this section to mark progress during implementation.
 
 ### Phase 4 - Buyer Web API Proxy And Types
 
-- [ ] Add video comment types.
-- [ ] Add live message history output types if needed.
-- [ ] Add buyer video comment API client methods.
-- [ ] Add buyer live message history API client method.
-- [ ] Add buyer video comment proxy route.
-- [ ] Add buyer live message history proxy route.
+- [x] Add video comment types.
+- [x] Add live message history output types if needed.
+- [x] Add buyer video comment API client methods.
+- [x] Add buyer live message history API client method.
+- [x] Add buyer video comment proxy route.
+- [x] Add buyer live message history proxy route.
 
 ### Phase 5 - Buyer Web UI
 
-- [ ] Add video comment count display.
-- [ ] Add video comment list panel.
-- [ ] Add video comment input and submit flow.
-- [ ] Load video comments when current video changes.
-- [ ] Load live message history on live detail page open.
-- [ ] Preserve realtime live comment append behavior.
-- [ ] Run buyer-web build/typecheck.
+- [x] Add video comment count display.
+- [x] Add video comment list panel.
+- [x] Add video comment input and submit flow.
+- [x] Load video comments when current video changes.
+- [x] Load live message history on live detail page open.
+- [x] Preserve realtime live comment append behavior.
+- [x] Run buyer-web build/typecheck.
 
 ### Phase 6 - Follow-up
 
-- [ ] Surface video `commentCount` in seller metrics where applicable.
-- [ ] Surface live `messageCount` in seller live dashboard where applicable.
+- [x] Surface video `commentCount` in seller metrics where applicable.
+- [x] Surface live `messageCount` in seller live dashboard where applicable.
 - [ ] Add moderation hide/delete endpoints if needed.
 - [ ] Add `video.comment_created` shared Kafka event if analytics requires it.
 - [ ] Evaluate Redis pub/sub fanout for multi-instance live WebSocket broadcast.

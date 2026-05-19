@@ -1,5 +1,5 @@
 import { requestBuyerApi } from './client';
-import type { LiveProduct, LiveSession, LiveSessionDetail, TrackLiveMediaMetricInput } from './types';
+import type { LiveMessagesOutput, LiveProduct, LiveSession, LiveSessionDetail, TrackLiveMediaMetricInput } from './types';
 
 interface ListLiveSessionsInput {
   page?: number;
@@ -33,6 +33,22 @@ export function listLiveProducts(sessionId: string): Promise<LiveProduct[]> {
   return requestBuyerApi<LiveProduct[]>(`/api/buyer/live/sessions/${encodeURIComponent(sessionId)}/products`, {
     method: 'GET',
     cache: 'no-store'
+  });
+}
+
+export function listLiveMessages(
+  sessionId: string,
+  input: { page?: number; pageSize?: number } = {},
+  accessToken?: string | null
+): Promise<LiveMessagesOutput> {
+  const params = new URLSearchParams();
+  params.set('page', String(input.page ?? 1));
+  params.set('pageSize', String(input.pageSize ?? 50));
+
+  return requestBuyerApi<LiveMessagesOutput>(`/api/buyer/live/sessions/${encodeURIComponent(sessionId)}/messages?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
   });
 }
 

@@ -5,19 +5,26 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import { listBuyerVideos, trackBuyerVideoEvent } from '@/lib/api/videos';
-import type { BuyerVideo } from '@/lib/api/types';
+import { createBuyerVideoComment, listBuyerVideoComments, listBuyerVideos, trackBuyerVideoEvent } from '@/lib/api/videos';
+import type { BuyerVideo, BuyerVideoComment } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
-import { useLanguage } from '@/providers/AppProvider';
+import { useAuth, useLanguage } from '@/providers/AppProvider';
 
 type VideosStatus = 'loading' | 'error' | 'success';
 
 export default function VideosPage() {
   const { text } = useLanguage();
+  const { accessToken } = useAuth();
   const [status, setStatus] = useState<VideosStatus>('loading');
   const [error, setError] = useState('');
   const [videos, setVideos] = useState<BuyerVideo[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [comments, setComments] = useState<BuyerVideoComment[]>([]);
+  const [commentsStatus, setCommentsStatus] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
+  const [commentsCollapsed, setCommentsCollapsed] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+  const [commentError, setCommentError] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trackedQualifiedViews = useRef<Set<string>>(new Set());
 
@@ -64,6 +71,62 @@ export default function VideosPage() {
     void trackBuyerVideoEvent(video.videoId, 'product-clicked', buildEventPayload(video, { productId }));
   }, []);
 
+  const loadComments = useCallback(async (videoId: string) => {
+    setCommentsStatus('loading');
+    setCommentError('');
+    try {
+      const result = await listBuyerVideoComments(videoId, { page: 1, pageSize: 30 });
+      setComments(result.items ?? []);
+      setCommentsStatus('success');
+    } catch (loadError) {
+      setComments([]);
+      setCommentsStatus('error');
+      setCommentError(loadError instanceof BuyerApiClientError ? loadError.message : 'Không thể tải bình luận.');
+    }
+  }, []);
+
+  const handleSubmitComment = useCallback(async () => {
+    const textValue = commentInput.trim();
+    if (!currentVideo || !textValue || commentSubmitting) {
+      return;
+    }
+    if (!accessToken) {
+      setCommentError('Bạn cần đăng nhập để bình luận.');
+      return;
+    }
+
+    setCommentSubmitting(true);
+    setCommentError('');
+    try {
+      const created = await createBuyerVideoComment(
+        currentVideo.videoId,
+        {
+          text: textValue,
+          clientCommentId: createClientCommentId()
+        },
+        accessToken
+      );
+      setComments((current) => {
+        if (current.some((comment) => comment.commentId === created.commentId)) {
+          return current;
+        }
+        return [created, ...current].slice(0, 100);
+      });
+      setCommentInput('');
+      setVideos((current) =>
+        current.map((video) =>
+          video.videoId === currentVideo.videoId
+            ? { ...video, metrics: { ...video.metrics, commentCount: (video.metrics.commentCount ?? 0) + 1 } }
+            : video
+        )
+      );
+    } catch (submitError) {
+      setCommentError(submitError instanceof BuyerApiClientError ? submitError.message : 'Không thể gửi bình luận.');
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [accessToken, commentInput, commentSubmitting, currentVideo]);
+
   const goToVideo = useCallback((nextIndex: number) => {
     setCurrentIndex((current) => {
       const bounded = Math.min(Math.max(nextIndex, 0), videos.length - 1);
@@ -94,6 +157,17 @@ export default function VideosPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [goNext, goPrevious]);
+
+  const currentVideoId = currentVideo?.videoId ?? '';
+
+  useEffect(() => {
+    if (!currentVideoId) {
+      setComments([]);
+      setCommentsStatus('idle');
+      return;
+    }
+    void loadComments(currentVideoId);
+  }, [currentVideoId, loadComments]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -127,7 +201,7 @@ export default function VideosPage() {
               <div className="pointer-events-none absolute -left-20 top-24 h-56 w-56 rounded-full bg-brand-100/40 blur-3xl" />
               <div className="pointer-events-none absolute -right-16 bottom-12 h-44 w-44 rounded-full bg-orange-200/30 blur-3xl" />
 
-              <div className="relative grid items-start gap-4 lg:grid-cols-[minmax(250px,320px)_minmax(300px,460px)_78px]">
+              <div className="relative grid items-start gap-4 xl:grid-cols-[minmax(240px,300px)_minmax(300px,430px)_minmax(280px,340px)_56px]">
                 <aside className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur">
                   <div className="rounded-xl border border-slate-100 bg-white p-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Video Space</p>
@@ -200,7 +274,7 @@ export default function VideosPage() {
                   ) : null}
                 </aside>
 
-                <article className="mx-auto w-full max-w-[460px] rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                <article className="mx-auto w-full max-w-[430px] rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                   <div className="mb-3 px-1">
                     {/* <p className="truncate text-xs font-semibold uppercase tracking-wide text-brand-600">{currentVideo.seller.shopName}</p> */}
                     <h1 className="mt-1 truncate text-lg font-semibold text-slate-950">{currentVideo.title}</h1>
@@ -226,13 +300,74 @@ export default function VideosPage() {
 
                     <div className="pointer-events-none absolute left-3 top-3 flex gap-2">
                       <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">{currentVideo.metrics.qualifiedViewCount} views</span>
+                      <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">
+                        {currentVideo.metrics.commentCount ?? 0} bình luận
+                      </span>
                       <span className="rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">Published</span>
                     </div>
                   </div>
-
                 </article>
 
-                <div className="flex self-center min-h-[360px] flex-col items-center justify-center gap-3 lg:min-h-[640px]">
+                <aside className="rounded-xl border border-slate-200 bg-slate-50 shadow-sm xl:sticky xl:top-24">
+                  <section className="overflow-hidden rounded-xl">
+                    <div className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
+                      <h2 className="text-sm font-semibold text-slate-900">Bình luận</h2>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-slate-500">{currentVideo.metrics.commentCount ?? comments.length}</span>
+                        <button
+                          type="button"
+                          onClick={() => setCommentsCollapsed((current) => !current)}
+                          aria-expanded={!commentsCollapsed}
+                          aria-label={commentsCollapsed ? 'Hiện bình luận' : 'Ẩn bình luận'}
+                          className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-500 transition hover:border-brand-200 hover:text-brand-600"
+                        >
+                          {commentsCollapsed ? '↓' : '↑'}
+                        </button>
+                      </div>
+                    </div>
+                    {!commentsCollapsed ? (
+                      <div className="flex max-h-[640px] min-h-[360px] flex-col">
+                        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+                          {commentsStatus === 'loading' ? <p className="text-sm text-slate-500">Đang tải bình luận...</p> : null}
+                          {commentsStatus === 'error' ? <p className="text-sm text-red-600">{commentError || 'Không thể tải bình luận.'}</p> : null}
+                          {commentsStatus === 'success' && comments.length === 0 ? <p className="text-sm text-slate-500">Chưa có bình luận.</p> : null}
+                          {comments.map((comment) => (
+                            <div key={comment.commentId} className="rounded-md bg-white px-3 py-2 shadow-sm">
+                              <p className="text-xs font-semibold text-slate-500">{formatCommentAuthor(comment)}</p>
+                              <p className="mt-1 break-words text-sm text-slate-900">{comment.text}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="border-t border-slate-200 bg-white p-3">
+                          <div className="flex gap-2">
+                            <input
+                              value={commentInput}
+                              onChange={(event) => setCommentInput(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  void handleSubmitComment();
+                                }
+                              }}
+                              placeholder={accessToken ? 'Thêm bình luận...' : 'Đăng nhập để bình luận'}
+                              className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void handleSubmitComment()}
+                              disabled={!commentInput.trim() || commentSubmitting}
+                              className="rounded-md bg-brand-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Gửi
+                            </button>
+                          </div>
+                          {commentError && commentsStatus !== 'error' ? <p className="mt-2 text-xs font-medium text-red-600">{commentError}</p> : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </section>
+                </aside>
+
+                <div className="flex justify-center gap-3 xl:min-h-[640px] xl:flex-col xl:items-center xl:justify-center">
                   <NavigationButton direction="up" disabled={currentIndex <= 0} onClick={goPrevious} label="Video trước" />
                   <NavigationButton direction="down" disabled={currentIndex >= videos.length - 1} onClick={goNext} label="Video sau" />
                 </div>
@@ -259,6 +394,11 @@ function NavigationButton({ direction, disabled, onClick, label }: { direction: 
   );
 }
 
+function formatCommentAuthor(comment: BuyerVideoComment): string {
+  const role = comment.userRole === 'BUYER' || comment.userRole === 'CUSTOMER' ? 'Buyer' : comment.userRole;
+  return `${role} ${comment.userId.slice(0, 8)}`;
+}
+
 function buildEventPayload(video: BuyerVideo, extra: Record<string, unknown> = {}) {
   return {
     source: 'buyer_video_feed',
@@ -267,6 +407,13 @@ function buildEventPayload(video: BuyerVideo, extra: Record<string, unknown> = {
     ...extra,
     productId: typeof extra.productId === 'string' ? extra.productId : video.products[0]?.productId
   };
+}
+
+function createClientCommentId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `comment-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function getAnonymousSessionId(): string {

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import { buildLiveWebSocketUrl, getLiveSession, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
+import { buildLiveWebSocketUrl, getLiveSession, listLiveMessages, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
 import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
@@ -77,6 +77,22 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     void loadDetail();
   }, [loadDetail]);
 
+  const loadMessageHistory = useCallback(async () => {
+    if (!sessionId) {
+      return;
+    }
+    try {
+      const history = await listLiveMessages(sessionId, { page: 1, pageSize: 50 }, accessToken);
+      setMessages(history.items ?? []);
+    } catch {
+      setMessages([]);
+    }
+  }, [accessToken, sessionId]);
+
+  useEffect(() => {
+    void loadMessageHistory();
+  }, [loadMessageHistory]);
+
   useEffect(() => {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
@@ -91,7 +107,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
       if (current.some((item) => item.messageId === message.messageId)) {
         return current;
       }
-      return [...current, message].slice(-100);
+      return [message, ...current].slice(0, 100);
     });
   }, []);
 
@@ -664,7 +680,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
 
               <section className="overflow-hidden rounded-3xl border border-[#ded7cc] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
                 <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#98a2b3]">Realtime chat</p>
+                  {/* <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#98a2b3]">Realtime chat</p> */}
                   <h2 className="mt-1 text-lg font-black tracking-[-0.02em]">Trò chuyện</h2>
                   <p className="mt-1 text-sm text-[#667085]">
                     {user ? 'Trao đổi trực tiếp với shop và người xem khác.' : 'Đăng nhập để tham gia trò chuyện.'}

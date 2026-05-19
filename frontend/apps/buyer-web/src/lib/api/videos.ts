@@ -1,5 +1,5 @@
 import { requestBuyerApi } from './client';
-import type { BuyerVideoFeedOutput, TrackBuyerVideoEventInput } from './types';
+import type { BuyerVideoComment, BuyerVideoCommentsOutput, BuyerVideoFeedOutput, CreateBuyerVideoCommentInput, TrackBuyerVideoEventInput } from './types';
 
 interface ListBuyerVideosInput {
   page?: number;
@@ -34,6 +34,29 @@ export function trackBuyerVideoEvent(
 ): Promise<{ accepted: true }> {
   return requestBuyerApi<{ accepted: true }>(`/api/buyer/videos/${encodeURIComponent(videoId)}/events/${eventType}`, {
     method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export function listBuyerVideoComments(videoId: string, input: { page?: number; pageSize?: number } = {}): Promise<BuyerVideoCommentsOutput> {
+  const params = new URLSearchParams();
+  params.set('page', String(input.page ?? 1));
+  params.set('pageSize', String(input.pageSize ?? 20));
+
+  return requestBuyerApi<BuyerVideoCommentsOutput>(`/api/buyer/videos/${encodeURIComponent(videoId)}/comments?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store'
+  });
+}
+
+export function createBuyerVideoComment(
+  videoId: string,
+  payload: CreateBuyerVideoCommentInput,
+  accessToken?: string | null
+): Promise<BuyerVideoComment> {
+  return requestBuyerApi<BuyerVideoComment>(`/api/buyer/videos/${encodeURIComponent(videoId)}/comments`, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
     body: JSON.stringify(payload)
   });
 }

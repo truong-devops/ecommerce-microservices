@@ -578,11 +578,14 @@ export interface BuyerVideo {
     shopName: string;
   };
   metrics: {
+    viewStartedCount?: number;
     qualifiedViewCount: number;
     productClickCount: number;
     addToCartCount: number;
+    commentCount?: number;
     ctr: number;
     addToCartRate: number;
+    lastAggregatedAt?: string | null;
   };
   publishedAt: string | null;
 }
@@ -603,6 +606,33 @@ export interface TrackBuyerVideoEventInput {
   anonymousSessionId?: string;
   clientEventId?: string;
   watchTimeSec?: number;
+}
+
+export interface BuyerVideoComment {
+  commentId: string;
+  videoId: string;
+  userId: string;
+  userRole: string;
+  text: string;
+  status: 'VISIBLE' | 'HIDDEN' | 'DELETED';
+  clientCommentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuyerVideoCommentsOutput {
+  items: BuyerVideoComment[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateBuyerVideoCommentInput {
+  text: string;
+  clientCommentId?: string;
 }
 
 export interface TrackLiveMediaMetricInput {
@@ -699,4 +729,14 @@ export interface LiveMessage {
   language: string;
   status: 'VISIBLE' | 'HIDDEN' | 'DELETED';
   createdAt: string;
+}
+
+export interface LiveMessagesOutput {
+  items: LiveMessage[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
 }

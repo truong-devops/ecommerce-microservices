@@ -20,7 +20,8 @@ import {
   unpinLiveProduct
 } from '@/lib/api/live';
 import { listSellerProducts } from '@/lib/api/products';
-import type { LiveProduct, LiveSession, SellerProduct } from '@/lib/api/types';
+import { listSellerVideos } from '@/lib/api/videos';
+import type { LiveProduct, LiveSession, SellerProduct, SellerVideo } from '@/lib/api/types';
 import { useAuth } from '@/providers/AppProvider';
 
 const liveOverviewTabs = ['Tổng Quan', 'Xu hướng', 'Tổng Quan Người Dùng', 'Danh Sách Livestreams', 'Phân tích', 'Danh Sách Sản Phẩm'];
@@ -161,6 +162,7 @@ export default function LiveVideoPage() {
   const [liveError, setLiveError] = useState('');
   const [pinProductId, setPinProductId] = useState('');
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
+  const [sellerVideos, setSellerVideos] = useState<SellerVideo[]>([]);
   const [sellerProductsLoading, setSellerProductsLoading] = useState(false);
   const [sellerProductsError, setSellerProductsError] = useState('');
   const [liveForm, setLiveForm] = useState({
@@ -224,12 +226,26 @@ export default function LiveVideoPage() {
     }
   }, [accessToken]);
 
+  const loadSellerVideos = useCallback(async () => {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      const result = await listSellerVideos({ accessToken, page: 1, pageSize: 50 });
+      setSellerVideos(result.items);
+    } catch {
+      setSellerVideos([]);
+    }
+  }, [accessToken]);
+
   useEffect(() => {
     if (ready && user && accessToken) {
       void loadLiveSessions();
       void loadSellerProducts();
+      void loadSellerVideos();
     }
-  }, [accessToken, loadLiveSessions, loadSellerProducts, ready, user]);
+  }, [accessToken, loadLiveSessions, loadSellerProducts, loadSellerVideos, ready, user]);
 
   useEffect(() => {
     if (!accessToken || !selectedLiveSession?.sessionId) {
@@ -642,7 +658,7 @@ export default function LiveVideoPage() {
 
             {isLiveTab && activeOverviewTab === 'Tổng Quan Người Dùng' && <UserOverviewTab />}
 
-            {isLiveTab && activeOverviewTab === 'Danh Sách Livestreams' && <LivestreamListTab />}
+            {isLiveTab && activeOverviewTab === 'Danh Sách Livestreams' && <LivestreamListTab sessions={liveSessions} />}
 
             {isLiveTab && activeOverviewTab === 'Phân tích' && <AnalysisTab />}
 
@@ -651,7 +667,7 @@ export default function LiveVideoPage() {
             {!isLiveTab && activeOverviewTab === 'Tổng Quan' && <VideoOverviewTab />}
             {!isLiveTab && activeOverviewTab === 'Xu hướng' && <VideoTrendTab />}
             {!isLiveTab && activeOverviewTab === 'Tổng Quan Người Dùng' && <VideoUserOverviewTab />}
-            {!isLiveTab && activeOverviewTab === 'Danh sách Video' && <VideoListTab />}
+            {!isLiveTab && activeOverviewTab === 'Danh sách Video' && <VideoListTab videos={sellerVideos} />}
             {!isLiveTab && activeOverviewTab === 'Danh Sách Sản Phẩm' && <VideoProductListTab />}
           </section>
         </main>
@@ -1703,7 +1719,7 @@ function VideoUserOverviewTab() {
   );
 }
 
-function VideoListTab() {
+function VideoListTab({ videos }: { videos: SellerVideo[] }) {
   return (
     <Panel title="Danh sách Video">
       <div className="mb-3 flex justify-end">
@@ -1720,7 +1736,40 @@ function VideoListTab() {
       <DataTable
         headers={['No.', 'Tên Video', 'Lượt xem', 'Lượt thích', 'Bình luận', 'Thời lượng xem Video bình quân', 'Hoạt động']}
         minTableWidth={1200}
-      />
+      >
+        {videos.length === 0 ? (
+          <EmptyTableRow colSpan={7} />
+        ) : (
+          videos.map((video, index) => (
+            <tr key={video.videoId} className="border-t border-slate-100 text-slate-700">
+              <td className="px-3 py-3">{index + 1}</td>
+              <td className="px-3 py-3">
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={video.thumbnailUrl || '/icon.svg'}
+                    alt={video.title}
+                    width={44}
+                    height={44}
+                    unoptimized
+                    className="h-11 w-11 rounded-md object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="line-clamp-1 font-medium text-slate-900">{video.title}</p>
+                    <p className="text-xs text-slate-400">{formatDateTime(video.publishedAt ?? video.createdAt)}</p>
+                  </div>
+                </div>
+              </td>
+              <td className="px-3 py-3">{formatCount(video.metrics.qualifiedViewCount)}</td>
+              <td className="px-3 py-3">-</td>
+              <td className="px-3 py-3">{formatCount(video.metrics.commentCount ?? 0)}</td>
+              <td className="px-3 py-3">{formatDuration(video.durationSec)}</td>
+              <td className="px-3 py-3">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{formatStatusLabel(video.status)}</span>
+              </td>
+            </tr>
+          ))
+        )}
+      </DataTable>
     </Panel>
   );
 }
@@ -1797,7 +1846,7 @@ function UserOverviewTab() {
   );
 }
 
-function LivestreamListTab() {
+function LivestreamListTab({ sessions }: { sessions: LiveSession[] }) {
   return (
     <Panel title="Danh Sách Livestreams">
       <div className="mb-3 flex justify-end">
@@ -1824,7 +1873,30 @@ function LivestreamListTab() {
           'Hoạt động'
         ]}
         minTableWidth={1200}
-      />
+      >
+        {sessions.length === 0 ? (
+          <EmptyTableRow colSpan={9} />
+        ) : (
+          sessions.map((session, index) => (
+            <tr key={session.sessionId} className="border-t border-slate-100 text-slate-700">
+              <td className="px-3 py-3">{index + 1}</td>
+              <td className="px-3 py-3">
+                <p className="line-clamp-1 font-medium text-slate-900">{session.title}</p>
+                <p className="text-xs text-slate-400">{formatDateTime(session.startedAt ?? session.createdAt)}</p>
+              </td>
+              <td className="px-3 py-3">{formatCount(session.metricsSnapshot.messageCount)}</td>
+              <td className="px-3 py-3">{formatCount(session.metricsSnapshot.addToCartCount)}</td>
+              <td className="px-3 py-3">-</td>
+              <td className="px-3 py-3">{formatCount(session.metricsSnapshot.viewerPeak)}</td>
+              <td className="px-3 py-3">-</td>
+              <td className="px-3 py-3">-</td>
+              <td className="px-3 py-3">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{formatStatusLabel(session.status)}</span>
+              </td>
+            </tr>
+          ))
+        )}
+      </DataTable>
     </Panel>
   );
 }
@@ -1893,7 +1965,7 @@ function ProductListTab() {
   );
 }
 
-function DataTable({ headers, minTableWidth }: { headers: string[]; minTableWidth: number }) {
+function DataTable({ headers, minTableWidth, children }: { headers: string[]; minTableWidth: number; children?: ReactNode }) {
   return (
     <div className="overflow-x-auto rounded-md border border-slate-200">
       <table className="w-full border-collapse text-sm" style={{ minWidth: `${minTableWidth}px` }}>
@@ -1906,15 +1978,19 @@ function DataTable({ headers, minTableWidth }: { headers: string[]; minTableWidt
             ))}
           </tr>
         </thead>
-        <tbody>
-          <tr>
-            <td colSpan={headers.length} className="px-3 py-10">
-              <NoDataContent />
-            </td>
-          </tr>
-        </tbody>
+        <tbody>{children ?? <EmptyTableRow colSpan={headers.length} />}</tbody>
       </table>
     </div>
+  );
+}
+
+function EmptyTableRow({ colSpan }: { colSpan: number }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="px-3 py-10">
+        <NoDataContent />
+      </td>
+    </tr>
   );
 }
 
@@ -1925,6 +2001,26 @@ function NoDataContent({ text }: { text?: string }) {
       <p className="mt-2 text-sm text-slate-400">{text ?? 'Không có dữ liệu'}</p>
     </div>
   );
+}
+
+function formatCount(value: number | null | undefined): string {
+  return (value ?? 0).toLocaleString('vi-VN');
+}
+
+function formatDuration(value: number | null | undefined): string {
+  if (!value || value <= 0) {
+    return '-';
+  }
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60);
+  if (minutes <= 0) {
+    return `${seconds}s`;
+  }
+  return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+}
+
+function formatStatusLabel(status: string): string {
+  return status.replaceAll('_', ' ');
 }
 
 function SimpleMetricsGrid({ items }: { items: string[] }) {

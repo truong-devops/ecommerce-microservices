@@ -115,6 +115,30 @@ func TestCreateVideoCommentIsIdempotentByClientCommentID(t *testing.T) {
 	}
 }
 
+func TestCreateVideoCommentBlocksUnsafeText(t *testing.T) {
+	now := time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)
+	repo := &fakeVideoRepo{items: []domain.ProductVideo{{
+		VideoID:   "video-1",
+		SellerID:  "seller-1",
+		Title:     "Demo video",
+		Status:    domain.ProductVideoStatusPublished,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}}}
+	service := NewVideoService(repo, &fakeProductRepo{}, nil, nil, "")
+	user := domain.UserContext{UserID: "buyer-1", Role: domain.RoleBuyer}
+
+	if _, err := service.CreateComment(context.Background(), user, "video-1", CreateVideoCommentInput{Text: "shop cho minh sdt 090.123.4567"}); err == nil {
+		t.Fatal("expected unsafe video comment to be blocked")
+	}
+	if len(repo.comments) != 0 {
+		t.Fatalf("blocked comment should not be persisted, got %d comments", len(repo.comments))
+	}
+	if repo.commentIncrements != 0 {
+		t.Fatalf("blocked comment should not increment count, got %d", repo.commentIncrements)
+	}
+}
+
 func TestCreateVideoCommentValidatesInputAndPublishedVideo(t *testing.T) {
 	now := time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)
 	repo := &fakeVideoRepo{items: []domain.ProductVideo{{

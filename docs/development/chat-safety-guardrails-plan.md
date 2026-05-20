@@ -1,6 +1,6 @@
 # Chat Safety Guardrails Implementation Plan
 
-Status: Planned
+Status: Phases 1-6 implemented; rollout/manual verification pending
 Last updated: 2026-05-20
 
 ## 1. Goal
@@ -763,68 +763,68 @@ Performance:
 
 ### Backend
 
-- [ ] Tạo `chat_safety.go` trong `services/chat-service`.
-- [ ] Implement normalize bỏ dấu tiếng Việt.
-- [ ] Implement compact text để bắt cách chữ/chèn dấu.
-- [ ] Implement digit stream để bắt số điện thoại bị tách/ký tự chen giữa.
-- [ ] Implement map chữ số tiếng Việt sang số.
-- [ ] Implement signal `phone_number`.
-- [ ] Implement signal `email`.
-- [ ] Implement signal `external_link`.
-- [ ] Implement signal `external_contact_platform`.
-- [ ] Implement signal `external_contact_intent`.
-- [ ] Implement signal `off_platform_payment`.
-- [ ] Implement signal `address_exchange`.
-- [ ] Implement risk scoring.
+- [x] Tạo `chat_safety.go` trong `services/chat-service`.
+- [x] Implement normalize bỏ dấu tiếng Việt.
+- [x] Implement compact text để bắt cách chữ/chèn dấu.
+- [x] Implement digit stream để bắt số điện thoại bị tách/ký tự chen giữa.
+- [x] Implement map chữ số tiếng Việt sang số.
+- [x] Implement signal `phone_number`.
+- [x] Implement signal `email`.
+- [x] Implement signal `external_link`.
+- [x] Implement signal `external_contact_platform`.
+- [x] Implement signal `external_contact_intent`.
+- [x] Implement signal `off_platform_payment`.
+- [x] Implement signal `address_exchange`.
+- [x] Implement risk scoring.
 - [ ] Implement block/warn threshold qua config.
-- [ ] Implement mask sensitive text.
-- [ ] Gắn policy vào HTTP `SendMessage`.
-- [ ] Gắn policy vào WebSocket `send_message`.
-- [ ] Trả error code `CHAT_MESSAGE_BLOCKED`.
-- [ ] Trả `score` và `ruleId` trong error details.
-- [ ] Thêm unit test cho blocked cases.
-- [ ] Thêm unit test cho obfuscated cases.
-- [ ] Thêm unit test cho allowed cases.
+- [x] Implement mask sensitive text.
+- [x] Gắn policy vào HTTP `SendMessage`.
+- [x] Gắn policy vào WebSocket `send_message`.
+- [x] Trả error code `CHAT_MESSAGE_BLOCKED`.
+- [x] Trả `score` và `ruleId` trong error details.
+- [x] Thêm unit test cho blocked cases.
+- [x] Thêm unit test cho obfuscated cases.
+- [x] Thêm unit test cho allowed cases.
 
 ### Violation Log
 
-- [ ] Thiết kế schema `chat_violations`.
-- [ ] Thêm repository method `CreateViolation`.
-- [ ] Lưu `score` và `signals`.
-- [ ] Mask phone/email/link trong `textPreview`.
-- [ ] Ghi violation khi message bị block.
-- [ ] Thêm hàm đếm violation gần đây theo `senderId`.
-- [ ] Test log violation.
+- [x] Thiết kế schema `chat_violations`.
+- [x] Thêm repository method `CreateViolation`.
+- [x] Lưu `score` và `signals`.
+- [x] Mask phone/email/link trong `textPreview`.
+- [x] Ghi violation khi message bị block.
+- [x] Thêm hàm đếm violation gần đây theo `senderId`.
+- [x] Test log violation.
 
 ### Buyer FE
 
-- [ ] Tạo helper validate chat text.
-- [ ] Gắn warning vào buyer chat drawer.
-- [ ] Gắn warning vào buyer chat page.
-- [ ] Xử lý backend error `CHAT_MESSAGE_BLOCKED`.
-- [ ] Build buyer-web pass.
+- [x] Tạo helper validate chat text.
+- [x] Gắn warning vào buyer chat drawer.
+- [x] Gắn warning vào buyer chat page.
+- [x] Xử lý backend error `CHAT_MESSAGE_BLOCKED`.
+- [x] Build buyer-web pass.
 
 ### Seller FE
 
-- [ ] Tạo helper validate chat text.
-- [ ] Gắn warning vào seller chat page.
-- [ ] Xử lý backend error `CHAT_MESSAGE_BLOCKED`.
-- [ ] Build seller pass.
+- [x] Tạo helper validate chat text.
+- [x] Gắn warning vào seller chat page.
+- [x] Xử lý backend error `CHAT_MESSAGE_BLOCKED`.
+- [x] Build seller pass.
 
 ### Live/Video
 
-- [ ] Kiểm tra live chat đang dùng service nào.
-- [ ] Gắn policy backend cho live chat nếu cần.
-- [ ] Gắn warning FE cho buyer live page.
-- [ ] Gắn warning FE cho seller live page.
-- [ ] Gắn warning FE cho video comments nếu cần.
+- [x] Kiểm tra live chat đang dùng service nào.
+- [x] Gắn policy backend cho live chat nếu cần.
+- [x] Gắn warning FE cho buyer live page.
+- [x] Gắn warning FE cho seller live page.
+- [x] Gắn warning FE cho video comments nếu cần.
 
 ### Moderator
 
-- [ ] Thêm API list violations.
-- [ ] Thêm moderator page xem violations.
-- [ ] Thêm filter theo rule/user/time.
-- [ ] Build moderator pass.
+- [x] Thêm API list violations.
+- [x] Thêm moderator page xem violations.
+- [x] Thêm filter theo rule/user/time.
+- [x] Build moderator pass.
 
 ### Rollout
 

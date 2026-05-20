@@ -138,3 +138,31 @@ export interface ModerationVideoListOutput {
     totalPages: number;
   };
 }
+
+export interface ChatViolationSignal {
+  ruleId: string;
+  score: number;
+  evidenceType: string;
+}
+
+export interface ChatViolation {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderRole: string;
+  ruleId: string;
+  score: number;
+  signals: ChatViolationSignal[];
+  textPreview: string;
+  createdAt: string;
+}
+
+export interface ChatViolationListOutput {
+  items: ChatViolation[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}

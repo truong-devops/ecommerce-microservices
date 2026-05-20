@@ -560,6 +560,13 @@ func (s *LiveService) SendMessage(ctx context.Context, user domain.UserContext, 
 	if len(text) < 1 || len(text) > 1000 {
 		return domain.LiveMessage{}, validationError("text", "length must be between 1 and 1000")
 	}
+	safetyDecision := ValidateChatMessage(text)
+	if !safetyDecision.Allowed {
+		return domain.LiveMessage{}, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeChatMessageBlocked, safetyDecision.Reason, map[string]any{
+			"ruleId": safetyDecision.RuleID,
+			"score":  safetyDecision.Score,
+		})
+	}
 	clientMessageID := strings.TrimSpace(req.ClientMessageID)
 	if len(clientMessageID) > 128 {
 		return domain.LiveMessage{}, validationError("clientMessageId", "max length is 128")

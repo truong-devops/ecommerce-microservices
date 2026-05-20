@@ -1,9 +1,11 @@
 const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:12010/api/v1';
 const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:12012/api/v1';
+const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? 'http://localhost:12020/api/v1';
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
-  product: PRODUCT_SERVICE_BASE_URL
+  product: PRODUCT_SERVICE_BASE_URL,
+  chat: CHAT_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {

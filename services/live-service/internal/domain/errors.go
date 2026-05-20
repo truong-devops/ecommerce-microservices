@@ -8,6 +8,7 @@ const (
 	ErrorCodeConflict            = "CONFLICT"
 	ErrorCodeRateLimited         = "RATE_LIMITED"
 	ErrorCodeValidationFailed    = "VALIDATION_FAILED"
+	ErrorCodeChatMessageBlocked  = "CHAT_MESSAGE_BLOCKED"
 	ErrorCodeInternalServerError = "INTERNAL_SERVER_ERROR"
 	ErrorCodeServiceUnavailable  = "SERVICE_UNAVAILABLE"
 )

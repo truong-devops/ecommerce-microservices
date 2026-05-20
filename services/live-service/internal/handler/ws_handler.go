@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -174,7 +175,7 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 				Language:        strings.TrimSpace(incoming.Language),
 			})
 			if err != nil {
-				_ = writeJSON(map[string]any{"type": "error", "message": err.Error()})
+				_ = writeJSON(webSocketErrorPayload(err))
 				continue
 			}
 			_ = writeJSON(map[string]any{"type": "ack", "action": "live:message:create", "message": result})
@@ -197,6 +198,24 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			_ = writeJSON(map[string]any{"type": "error", "message": "unsupported event type"})
 		}
 	}
+}
+
+func webSocketErrorPayload(err error) map[string]any {
+	payload := map[string]any{
+		"type":    "error",
+		"message": err.Error(),
+	}
+
+	var appErr *httpx.AppError
+	if errors.As(err, &appErr) {
+		payload["code"] = appErr.Code
+		payload["message"] = appErr.Message
+		if appErr.Details != nil {
+			payload["details"] = appErr.Details
+		}
+	}
+
+	return payload
 }
 
 func (h *WSHandler) isAllowedOrigin(r *http.Request) bool {

@@ -22,6 +22,7 @@ import {
 import { listSellerProducts } from '@/lib/api/products';
 import { listSellerVideos } from '@/lib/api/videos';
 import type { LiveProduct, LiveSession, SellerProduct, SellerVideo } from '@/lib/api/types';
+import { validateChatText } from '@/lib/chat-safety';
 import { useAuth } from '@/providers/AppProvider';
 
 const liveOverviewTabs = ['Tổng Quan', 'Xu hướng', 'Tổng Quan Người Dùng', 'Danh Sách Livestreams', 'Phân tích', 'Danh Sách Sản Phẩm'];
@@ -806,6 +807,7 @@ function LiveOperationsPanel({
   const mediaPublish = selectedSession?.media?.publish;
   const isMediaEngineSession = selectedSession?.media?.provider === 'MEDIAMTX' && mediaPublish?.protocol === 'WHIP' && Boolean(mediaPublish.url);
   const pinnedProductIds = useMemo(() => new Set(pinnedProducts.map((product) => product.productId)), [pinnedProducts]);
+  const replySafety = useMemo(() => validateChatText(replyInput), [replyInput]);
   const pinnableProducts = useMemo(
     () => sellerProducts.filter((product) => !pinnedProductIds.has(product.id)),
     [pinnedProductIds, sellerProducts]
@@ -1121,6 +1123,12 @@ function LiveOperationsPanel({
           return;
         }
 
+        if (payload.type === 'error') {
+          const message = typeof payload.message === 'string' ? payload.message : '';
+          setReplyError(message || 'Không thể gửi bình luận.');
+          return;
+        }
+
         if (payload.fromClientId === clientIdRef.current) {
           return;
         }
@@ -1262,6 +1270,10 @@ function LiveOperationsPanel({
       setReplyError('Hãy bắt đầu LIVE trước khi trả lời bình luận.');
       return;
     }
+    if (!replySafety.allowed) {
+      setReplyError(replySafety.message ?? 'Tin nhắn không phù hợp.');
+      return;
+    }
     if (!sendSignal({ type: 'live:message:create', text, clientMessageId: createClientMessageId() })) {
       connectLiveRoom(false);
       setReplyError('Đang kết nối phòng live. Hãy thử gửi lại sau vài giây.');
@@ -1269,7 +1281,7 @@ function LiveOperationsPanel({
     }
     setReplyInput('');
     setReplyError('');
-  }, [connectLiveRoom, replyInput, selectedSession, sendSignal]);
+  }, [connectLiveRoom, replyInput, replySafety.allowed, replySafety.message, selectedSession, sendSignal]);
 
   useEffect(() => {
     if (selectedSession?.status === 'LIVE') {
@@ -1595,18 +1607,21 @@ function LiveOperationsPanel({
                       }
                     }}
                     disabled={!selectedSession || selectedSession.status !== 'LIVE'}
-                    placeholder={selectedSession?.status === 'LIVE' ? 'Trả lời khách hàng...' : 'Bắt đầu LIVE để trả lời'}
+                    placeholder={selectedSession?.status === 'LIVE' ? 'Chỉ trao đổi về sản phẩm trên eMall...' : 'Bắt đầu LIVE để trả lời'}
                     className="min-w-0 flex-1 rounded-xl border border-[#d7d0c5] bg-[#fbfaf7] px-3 py-2 text-sm outline-none transition focus:border-[#ee4d2d] focus:bg-white disabled:bg-slate-100"
                   />
                   <button
                     type="button"
                     onClick={handleSendLiveReply}
-                    disabled={!replyInput.trim() || !selectedSession || selectedSession.status !== 'LIVE'}
+                    disabled={!replyInput.trim() || !replySafety.allowed || !selectedSession || selectedSession.status !== 'LIVE'}
                     className="rounded-xl bg-[#ee4d2d] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Gửi
                   </button>
                 </div>
+                {!replySafety.allowed && replyInput.trim() ? (
+                  <p className="mt-2 text-xs font-semibold text-[#c2410c]">{replySafety.message}</p>
+                ) : null}
                 {replyError ? <p className="mt-2 text-xs font-medium text-red-600">{replyError}</p> : null}
               </div>
             </div>

@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/chat';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { fetchBuyerShopDetail } from '@/lib/api/products';
+import { validateChatText } from '@/lib/chat-safety';
 import { formatCustomerCode, formatSellerCode } from '@/lib/order-codes';
 import type { BuyerChatConversation, BuyerChatMessage } from '@/lib/api/types';
 
@@ -29,8 +30,8 @@ interface BuyerChatOpenDetail {
 
 type BuyerMessageView = BuyerChatMessage & { localState?: 'pending' | 'failed' };
 
-const BUYER_DRAWER_WIDTH_CLASS = 'w-[800px]';
-const BUYER_DRAWER_LIST_WIDTH_CLASS = 'w-[250px]';
+const BUYER_DRAWER_WIDTH_CLASS = 'w-[920px]';
+const BUYER_DRAWER_LIST_WIDTH_CLASS = 'w-[310px]';
 const BUYER_POLL_INTERVAL_MS = 7000;
 
 function makeFallbackConversation(id: string, sellerId: string): BuyerChatConversation {
@@ -74,6 +75,7 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
     () => conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId]
   );
+  const chatSafety = useMemo(() => validateChatText(messageInput), [messageInput]);
 
   const totalUnread = useMemo(
     () => conversations.reduce((total, item) => total + (item.unread?.buyer ?? 0), 0),
@@ -268,6 +270,10 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
     ) {
       return;
     }
+    if (!chatSafety.allowed) {
+      setErrorMessage(chatSafety.message ?? 'Tin nhắn không hợp lệ');
+      return;
+    }
 
     const optimisticId = `tmp-${Date.now()}`;
     const optimistic: BuyerMessageView = {
@@ -318,7 +324,7 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
     } finally {
       setSendingMessage(false);
     }
-  }, [accessToken, buyerId, creatingConversation, messageInput, open, selectedConversation, selectedConversationId, sendingMessage]);
+  }, [accessToken, buyerId, chatSafety, creatingConversation, messageInput, open, selectedConversation, selectedConversationId, sendingMessage]);
 
   useEffect(() => {
     if (!open || conversations.length === 0) {
@@ -514,7 +520,7 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
 
       {open ? (
         <aside
-          className={`fixed bottom-6 right-16 z-40 hidden h-[620px] max-h-[calc(100vh-120px)] ${BUYER_DRAWER_WIDTH_CLASS} overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl lg:flex`}
+          className={`fixed bottom-6 right-16 z-40 hidden h-[660px] max-h-[calc(100vh-120px)] ${BUYER_DRAWER_WIDTH_CLASS} overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.22)] lg:flex`}
         >
           {!accessToken ? (
             <div className="flex w-full flex-col items-center justify-center gap-3 p-6 text-center">
@@ -525,37 +531,57 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
             </div>
           ) : (
             <div className="flex w-full">
-              <div className={`flex ${BUYER_DRAWER_LIST_WIDTH_CLASS} flex-col border-r border-slate-200`}>
-                <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-                  <p className="text-[30px] leading-none font-semibold text-[#ee4d2d]">Chat</p>
-                  <span className="text-xs text-[#ee4d2d]">({totalUnread})</span>
+              <div className={`flex ${BUYER_DRAWER_LIST_WIDTH_CLASS} flex-col border-r border-slate-200 bg-[#fbfcfe]`}>
+                <div className="border-b border-slate-200 bg-white px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-2xl font-bold leading-none text-slate-950">Tin nhắn</p>
+                      <p className="mt-1 text-xs font-medium text-slate-500">{filteredConversations.length} hội thoại</p>
+                    </div>
+                    <span className="inline-flex min-w-8 items-center justify-center rounded-full bg-[#fff1ec] px-2.5 py-1 text-xs font-bold text-[#ee4d2d]">
+                      {totalUnread > 99 ? '99+' : totalUnread}
+                    </span>
+                  </div>
                 </div>
-                <div className="border-b border-slate-200 px-3 py-2">
+                <div className="border-b border-slate-200 bg-white px-4 py-3">
                   <input
                     value={searchKeyword}
                     onChange={(event) => setSearchKeyword(event.target.value)}
                     placeholder="Tìm theo tên"
-                    className="h-8 w-full rounded border border-slate-300 px-2 text-xs outline-none focus:border-[#ee4d2d]"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none transition focus:border-[#ee4d2d] focus:bg-white"
                   />
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto">
-                  {loadingConversations ? <p className="px-3 py-2 text-xs text-slate-500">Đang tải hội thoại...</p> : null}
+                  {loadingConversations ? <p className="px-4 py-3 text-sm font-medium text-slate-500">Đang tải hội thoại...</p> : null}
                   {!loadingConversations && filteredConversations.length === 0 ? (
-                    <p className="px-3 py-2 text-xs text-slate-500">Bấm Chat Ngay tại shop để bắt đầu hội thoại.</p>
+                    <div className="m-4 rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center">
+                      <p className="text-sm font-semibold text-slate-700">Chưa có hội thoại</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Bấm Chat Ngay tại shop để bắt đầu.</p>
+                    </div>
                   ) : null}
-                  <ul className="divide-y divide-slate-100">
+                  <ul className="space-y-1 p-2">
                     {filteredConversations.map((item) => (
                       <li key={item.id}>
                         <button
                           type="button"
                           onClick={() => setSelectedConversationId(item.id)}
-                          className={`w-full px-3 py-2 text-left ${selectedConversationId === item.id ? 'bg-[#f5f5f5]' : 'hover:bg-slate-50'}`}
+                          className={`group flex w-full items-start gap-3 rounded-xl px-3 py-3 text-left transition ${
+                            selectedConversationId === item.id
+                              ? 'border border-[#ffd6ca] bg-white shadow-sm'
+                              : 'border border-transparent hover:border-slate-200 hover:bg-white'
+                          }`}
                         >
-                        <div className="flex items-start justify-between gap-2">
-                            <p className="truncate text-sm font-semibold text-slate-800">{resolveSellerDisplayName(item)}</p>
-                            <span className="text-[11px] text-slate-400">{formatDayLabel(item.updatedAt)}</span>
-                          </div>
-                          <p className="truncate text-sm text-slate-600">{item.lastMessage?.textPreview ?? 'Chưa có tin nhắn'}</p>
+                          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff1ec] text-sm font-bold text-[#ee4d2d] ring-1 ring-[#ffd8cf]">
+                            {getInitial(resolveSellerDisplayName(item))}
+                            {(item.unread?.buyer ?? 0) > 0 ? <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#ee4d2d] ring-2 ring-white" /> : null}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="truncate text-sm font-bold text-slate-900">{resolveSellerDisplayName(item)}</span>
+                              <span className="shrink-0 text-[11px] font-medium text-slate-400">{formatDayLabel(item.updatedAt)}</span>
+                            </span>
+                            <span className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{formatConversationPreview(item)}</span>
+                          </span>
                         </button>
                       </li>
                     ))}
@@ -563,58 +589,84 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
                 </div>
               </div>
 
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2">
-                  <p className="truncate text-base font-semibold text-slate-800">
-                    {selectedConversation ? resolveSellerDisplayName(selectedConversation) : 'Chưa chọn hội thoại'}
-                  </p>
+              <div className="flex min-w-0 flex-1 flex-col bg-white">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-5 py-4">
+                  {selectedConversation ? (
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1ec] text-base font-bold text-[#ee4d2d] ring-1 ring-[#ffd8cf]">
+                        {getInitial(resolveSellerDisplayName(selectedConversation))}
+                      </span>
+                      <span className="min-w-0">
+                        <p className="truncate text-base font-bold text-slate-950">{resolveSellerDisplayName(selectedConversation)}</p>
+                        <p className="mt-0.5 text-xs font-medium text-emerald-600">Đang hỗ trợ trên eMall</p>
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-base font-bold text-slate-950">Chưa chọn hội thoại</p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">Chọn một shop để bắt đầu.</p>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-slate-100"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-xl leading-none text-slate-500 transition hover:border-[#ee4d2d] hover:bg-[#fff7f3] hover:text-[#ee4d2d]"
+                    aria-label="Đóng chat"
                   >
-                    ✕
+                    ×
                   </button>
                 </div>
 
-                <div className="flex-1 space-y-2 overflow-auto bg-[#fafafa] p-3">
-                  {creatingConversation ? <p className="text-sm text-slate-500">Đang kết nối với shop...</p> : null}
-                  {loadingMessages ? <p className="text-sm text-slate-500">Đang tải tin nhắn...</p> : null}
+                <div className="flex-1 overflow-auto bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_48%,#f8fafc_100%)] p-5">
+                  {creatingConversation ? <p className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-500 shadow-sm">Đang kết nối với shop...</p> : null}
+                  {loadingMessages ? <p className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-500 shadow-sm">Đang tải tin nhắn...</p> : null}
                   {!loadingMessages && !creatingConversation && messages.length === 0 ? (
-                    <p className="text-sm text-slate-500">Chưa có tin nhắn</p>
+                    <div className="mx-auto mt-28 max-w-sm rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-center shadow-sm">
+                      <p className="text-sm font-bold text-slate-800">Chưa có tin nhắn</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Bạn có thể hỏi shop về sản phẩm, đơn hàng hoặc hỗ trợ sau mua.</p>
+                    </div>
                   ) : null}
 
-                  {messages.map((item) => {
-                    const mine = item.senderId === buyerId;
-                    const senderCode =
-                      item.senderCode ||
-                      (mine
-                        ? formatCustomerCode(item.senderId)
-                        : selectedConversation
-                          ? resolveSellerDisplayName(selectedConversation)
-                          : formatSellerCode(item.senderId));
-                    return (
-                      <div key={item.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                        <div
-                          className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
-                            mine ? 'bg-[#ee4d2d] text-white' : 'border border-slate-200 bg-white text-slate-800'
-                          }`}
-                        >
-                          {!mine ? <p className="mb-1 text-[11px] font-medium text-slate-500">{senderCode}</p> : null}
-                          <p className="whitespace-pre-wrap break-words">{item.text}</p>
-                          <p className={`mt-1 text-[11px] ${mine ? 'text-orange-100' : 'text-slate-400'}`}>
-                            {new Date(item.sentAt).toLocaleTimeString()}
-                          </p>
-                          {mine && item.localState === 'pending' ? <p className="text-[10px] text-orange-100">Sending...</p> : null}
-                          {mine && item.localState === 'failed' ? <p className="text-[10px] text-rose-100">Failed</p> : null}
+                  <div className="space-y-4">
+                    {messages.map((item) => {
+                      const mine = item.senderId === buyerId;
+                      const senderCode =
+                        item.senderCode ||
+                        (mine
+                          ? formatCustomerCode(item.senderId)
+                          : selectedConversation
+                            ? resolveSellerDisplayName(selectedConversation)
+                            : formatSellerCode(item.senderId));
+                      return (
+                        <div key={item.id} className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
+                          {!mine ? (
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-[#ee4d2d] ring-1 ring-[#ffd8cf]">
+                              {getInitial(senderCode)}
+                            </span>
+                          ) : null}
+                          <div
+                            className={`max-w-[76%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+                              mine
+                                ? 'rounded-br-md bg-[#ee4d2d] text-white shadow-[#ee4d2d]/20'
+                                : 'rounded-bl-md border border-slate-200 bg-white text-slate-900'
+                            }`}
+                          >
+                            {!mine ? <p className="mb-1 text-[11px] font-bold uppercase text-slate-500">{senderCode}</p> : null}
+                            <p className="whitespace-pre-wrap break-words leading-6">{item.text}</p>
+                            <div className={`mt-2 flex items-center gap-2 text-[11px] ${mine ? 'text-orange-100' : 'text-slate-400'}`}>
+                              <span>{formatMessageTime(item.sentAt)}</span>
+                              {mine && item.localState === 'pending' ? <span>Đang gửi</span> : null}
+                              {mine && item.localState === 'failed' ? <span className="text-rose-100">Gửi lỗi</span> : null}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="border-t border-slate-200 bg-white p-2">
-                  <div className="flex gap-2">
+                <div className="border-t border-slate-200 bg-white px-4 py-3">
+                  <div className="flex items-end gap-2">
                     <input
                       value={messageInput}
                       onChange={(event) => setMessageInput(event.target.value)}
@@ -624,20 +676,21 @@ export function BuyerChatDrawer({ accessToken, buyerId, buyerName }: BuyerChatDr
                           void handleSendMessage();
                         }
                       }}
-                      placeholder={selectedConversationId ? 'Nhập nội dung tin nhắn' : 'Bấm Chat Ngay ở thông tin shop để bắt đầu'}
-                      className="h-10 min-w-0 flex-1 rounded border border-slate-300 px-3 text-sm outline-none focus:border-[#ee4d2d]"
+                      placeholder={selectedConversationId ? 'Chỉ trao đổi về sản phẩm và đơn hàng trên eMall...' : 'Bấm Chat Ngay ở thông tin shop để bắt đầu'}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-[#ee4d2d] focus:bg-white disabled:bg-slate-100"
                       disabled={!selectedConversation || creatingConversation}
                     />
                     <button
                       type="button"
                       onClick={() => void handleSendMessage()}
-                      disabled={!selectedConversation || creatingConversation || sendingMessage || messageInput.trim().length === 0}
-                      className="h-10 rounded bg-[#ee4d2d] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#f3b4a7]"
+                      disabled={!selectedConversation || creatingConversation || sendingMessage || messageInput.trim().length === 0 || !chatSafety.allowed}
+                      className="h-11 rounded-xl bg-[#ee4d2d] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#db4729] disabled:cursor-not-allowed disabled:bg-[#f3b4a7]"
                     >
                       Gửi
                     </button>
                   </div>
-                  {errorMessage ? <p className="mt-1 text-[11px] text-rose-600">{errorMessage}</p> : null}
+                  {!chatSafety.allowed ? <p className="mt-2 text-xs font-semibold text-rose-600">{chatSafety.message}</p> : null}
+                  {errorMessage ? <p className="mt-2 text-xs font-semibold text-rose-600">{errorMessage}</p> : null}
                 </div>
               </div>
             </div>
@@ -692,4 +745,24 @@ function formatDayLabel(value: string): string {
     day: '2-digit',
     month: '2-digit'
   });
+}
+
+function formatMessageTime(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getInitial(value: string): string {
+  return (value.trim().charAt(0) || 'S').toUpperCase();
+}
+
+function formatConversationPreview(conversation: BuyerChatConversation): string {
+  return conversation.lastMessage?.textPreview?.trim() || 'Bắt đầu trao đổi với shop';
 }

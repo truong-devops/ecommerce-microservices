@@ -35,6 +35,16 @@ type ListMessagesRequest struct {
 	Limit     int
 }
 
+type ListChatViolationsRequest struct {
+	Page           int
+	PageSize       int
+	SenderID       string
+	RuleID         string
+	ConversationID string
+	CreatedFrom    time.Time
+	CreatedTo      time.Time
+}
+
 type SendMessageRequest struct {
 	Text            string `json:"text"`
 	ClientMessageID string `json:"clientMessageId,omitempty"`
@@ -167,6 +177,35 @@ func (s *ChatService) ListMessages(ctx context.Context, user domain.UserContext,
 	return map[string]any{"items": resp}, nil
 }
 
+func (s *ChatService) ListChatViolations(ctx context.Context, user domain.UserContext, req ListChatViolationsRequest) (map[string]any, error) {
+	if !canReviewChatViolations(user.Role) {
+		return nil, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Insufficient role", nil)
+	}
+
+	items, totalItems, err := s.repo.ListChatViolations(ctx, repository.ListChatViolationsFilter{
+		ConversationID: req.ConversationID,
+		SenderID:       req.SenderID,
+		RuleID:         req.RuleID,
+		CreatedFrom:    req.CreatedFrom,
+		CreatedTo:      req.CreatedTo,
+		Page:           req.Page,
+		PageSize:       req.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]any{
+		"items": items,
+		"pagination": map[string]any{
+			"page":       req.Page,
+			"pageSize":   req.PageSize,
+			"totalItems": totalItems,
+			"totalPages": totalPages(totalItems, req.PageSize),
+		},
+	}, nil
+}
+
 func (s *ChatService) SendMessage(ctx context.Context, user domain.UserContext, conversationID string, req SendMessageRequest) (map[string]any, error) {
 	text := strings.TrimSpace(req.Text)
 	if len(text) < 1 || len(text) > 2000 {
@@ -192,6 +231,24 @@ func (s *ChatService) SendMessage(ctx context.Context, user domain.UserContext, 
 	}
 	if s.sendLimiter != nil && !s.sendLimiter.Allow(user.UserID) {
 		return nil, httpx.NewAppError(http.StatusTooManyRequests, domain.ErrorCodeRateLimited, "Message rate limit exceeded", nil)
+	}
+
+	safetyDecision := ValidateChatMessage(text)
+	if !safetyDecision.Allowed {
+		_ = s.repo.CreateChatViolation(ctx, repository.CreateChatViolationInput{
+			ConversationID: conversationID,
+			SenderID:       user.UserID,
+			SenderRole:     user.Role,
+			RuleID:         safetyDecision.RuleID,
+			Score:          safetyDecision.Score,
+			Signals:        toViolationSignals(safetyDecision.Signals),
+			TextPreview:    safetyDecision.MaskedText,
+			CreatedAt:      time.Now().UTC(),
+		})
+		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeChatMessageBlocked, safetyDecision.Reason, map[string]any{
+			"ruleId": safetyDecision.RuleID,
+			"score":  safetyDecision.Score,
+		})
 	}
 
 	recipientID := ""
@@ -380,6 +437,15 @@ func hasConversationAccess(user domain.UserContext, conversation domain.Conversa
 	}
 }
 
+func canReviewChatViolations(role domain.Role) bool {
+	switch role {
+	case domain.RoleModerator, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin:
+		return true
+	default:
+		return false
+	}
+}
+
 func conversationToResponse(conversation domain.Conversation) map[string]any {
 	resp := map[string]any{
 		"id":         conversation.ID,
@@ -445,6 +511,18 @@ func messageToResponse(message domain.Message) map[string]any {
 		resp["readBySellerAt"] = message.ReadBySellerAt.UTC().Format(time.RFC3339Nano)
 	}
 	return resp
+}
+
+func toViolationSignals(signals []ChatSafetySignal) []repository.ChatViolationSignalInput {
+	items := make([]repository.ChatViolationSignalInput, 0, len(signals))
+	for _, signal := range signals {
+		items = append(items, repository.ChatViolationSignalInput{
+			RuleID:       signal.RuleID,
+			Score:        signal.Score,
+			EvidenceType: signal.EvidenceType,
+		})
+	}
+	return items
 }
 
 func buildConversationKey(buyerID, sellerID string) string {

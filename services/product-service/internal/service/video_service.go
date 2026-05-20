@@ -529,6 +529,13 @@ func (s *VideoService) CreateComment(ctx context.Context, user domain.UserContex
 	if len(text) < 1 || len(text) > 1000 {
 		return domain.VideoCommentResponse{}, validationError("text must be between 1 and 1000 characters")
 	}
+	safetyDecision := ValidateChatMessage(text)
+	if !safetyDecision.Allowed {
+		return domain.VideoCommentResponse{}, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeChatMessageBlocked, safetyDecision.Reason, map[string]any{
+			"ruleId": safetyDecision.RuleID,
+			"score":  safetyDecision.Score,
+		})
+	}
 	clientCommentID := strings.TrimSpace(input.ClientCommentID)
 	if len(clientCommentID) > 128 {
 		return domain.VideoCommentResponse{}, validationError("clientCommentId must be at most 128 characters")

@@ -54,6 +54,7 @@ func mountUsersRoutes(r chi.Router, base string, h *handler.UserHandler) {
 	r.Patch(base+"/me", h.UpdateMe)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Post(base, h.CreateUser)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Get(base, h.ListUsers)
+	r.With(auth.RequireRoles(auth.RoleSeller, auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Get(base+"/public", h.ListPublicUsers)
 	r.With(auth.RequireSelfOrRoles("id", auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Get(base+"/{id}", h.GetUserByID)
 	r.With(auth.RequireSelfOrRoles("id", auth.RoleAdmin, auth.RoleSuperAdmin)).Patch(base+"/{id}", h.UpdateUser)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Patch(base+"/{id}/status", h.UpdateUserStatus)

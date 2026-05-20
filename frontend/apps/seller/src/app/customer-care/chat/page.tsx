@@ -52,6 +52,7 @@ export default function CustomerCareChatPage() {
     () => conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId]
   );
+  const selectedBuyerName = selectedConversation ? resolveBuyerDisplayName(selectedConversation) : '';
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -318,7 +319,7 @@ export default function CustomerCareChatPage() {
                       className={`w-full px-3 py-2 text-left transition ${item.id === selectedConversationId ? 'bg-orange-50' : 'hover:bg-slate-50'}`}
                       onClick={() => setSelectedConversationId(item.id)}
                     >
-                      <p className="truncate text-sm font-semibold text-slate-800">Buyer: {item.buyerId.slice(0, 8)}</p>
+                      <p className="truncate text-sm font-semibold text-slate-800">{resolveBuyerDisplayName(item)}</p>
                       <p className="truncate text-xs text-slate-500">{item.lastMessage?.textPreview ?? 'Chưa có tin nhắn'}</p>
                     </button>
                   </li>
@@ -328,7 +329,7 @@ export default function CustomerCareChatPage() {
 
             <section className="col-span-12 flex min-h-[60vh] flex-col rounded-md border border-slate-200 lg:col-span-8">
               <div className="border-b border-slate-200 px-3 py-2 text-sm text-slate-700">
-                {selectedConversation ? `Conversation ${selectedConversation.id.slice(0, 8)}...` : 'Chọn hội thoại'}
+                {selectedConversation ? selectedBuyerName : 'Chọn hội thoại'}
               </div>
 
               <div className="flex-1 space-y-2 overflow-auto p-3">
@@ -392,4 +393,17 @@ function upsertMessage(messages: SellerMessageView[], incoming: SellerMessageVie
     return next;
   }
   return [...messages, { ...incoming }].sort((a, b) => a.seq - b.seq);
+}
+
+function resolveBuyerDisplayName(conversation: SellerChatConversation): string {
+  const name = conversation.context?.buyerName?.trim();
+  if (name) {
+    return name;
+  }
+
+  if (conversation.buyerCode?.trim()) {
+    return `Khách hàng ${conversation.buyerCode.trim()}`;
+  }
+
+  return `Khách hàng ${conversation.buyerId.slice(0, 8)}`;
 }

@@ -37,6 +37,7 @@ func New(
 		private.Use(requireJWT)
 
 		chatBase := "/" + cfg.APIPrefix + "/chat"
+		private.With(auth.RequireRoles(domain.RoleModerator, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Get(chatBase+"/violations", chatHandler.ListViolations)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleBuyer, domain.RoleSeller, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Post(chatBase+"/conversations", chatHandler.CreateConversation)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleBuyer, domain.RoleSeller, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Get(chatBase+"/conversations", chatHandler.ListConversations)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleBuyer, domain.RoleSeller, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Get(chatBase+"/conversations/{id}/messages", chatHandler.ListMessages)

@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { createBuyerChatConversation, listBuyerChatConversations, listBuyerChatMessages, markBuyerChatRead, sendBuyerChatMessage } from '@/lib/api/chat';
 import { BuyerApiClientError } from '@/lib/api/client';
+import { validateChatText } from '@/lib/chat-safety';
 import type { BuyerChatConversation, BuyerChatMessage } from '@/lib/api/types';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
@@ -57,6 +58,7 @@ function BuyerChatPageContent() {
     () => conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId]
   );
+  const chatSafety = useMemo(() => validateChatText(messageInput), [messageInput]);
 
   const filteredConversations = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
@@ -292,6 +294,10 @@ function BuyerChatPageContent() {
     if (!accessToken || !selectedConversationId || !textValue || sendingMessage) {
       return;
     }
+    if (!chatSafety.allowed) {
+      setErrorMessage(chatSafety.message ?? 'Tin nhắn không hợp lệ');
+      return;
+    }
 
     const optimisticId = `tmp-${Date.now()}`;
     const optimistic: BuyerMessageView = {
@@ -341,7 +347,7 @@ function BuyerChatPageContent() {
     } finally {
       setSendingMessage(false);
     }
-  }, [accessToken, messageInput, selectedConversationId, sendingMessage, user?.id, user?.role]);
+  }, [accessToken, chatSafety, messageInput, selectedConversationId, sendingMessage, user?.id, user?.role]);
 
   if (!ready) {
     return (
@@ -416,19 +422,20 @@ function BuyerChatPageContent() {
                           void handleSendMessage();
                         }
                       }}
-                      placeholder={selectedConversationId ? 'Nhập nội dung tin nhắn' : 'Hãy chọn hội thoại hoặc tạo chat mới ở panel bên phải'}
+                      placeholder={selectedConversationId ? 'Chỉ trao đổi về sản phẩm và đơn hàng trên eMall...' : 'Hãy chọn hội thoại hoặc tạo chat mới ở panel bên phải'}
                       className="h-11 flex-1 rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-[#ee4d2d]"
                       disabled={!selectedConversationId}
                     />
                     <button
                       type="button"
                       onClick={() => void handleSendMessage()}
-                      disabled={!selectedConversationId || sendingMessage || messageInput.trim().length === 0}
+                      disabled={!selectedConversationId || sendingMessage || messageInput.trim().length === 0 || !chatSafety.allowed}
                       className="h-11 rounded-md bg-[#ee4d2d] px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#f3b4a7]"
                     >
                       Gửi
                     </button>
                   </div>
+                  {!chatSafety.allowed ? <p className="mt-2 text-xs text-rose-600">{chatSafety.message}</p> : null}
                   {errorMessage ? <p className="mt-2 text-xs text-rose-600">{errorMessage}</p> : null}
                 </div>
               </div>

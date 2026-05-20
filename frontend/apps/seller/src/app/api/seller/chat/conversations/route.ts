@@ -5,6 +5,19 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const CHAT_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT']);
 
+interface SellerChatConversationPayload {
+  items?: unknown;
+}
+
+interface PublicUserProfile {
+  id: string;
+  displayName?: string;
+}
+
+interface PublicUsersOutput {
+  items?: PublicUserProfile[];
+}
+
 export async function GET(request: Request) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) {
@@ -36,7 +49,8 @@ export async function GET(request: Request) {
       }
     });
 
-    return ok(payload, 'backend');
+    const hydrated = await hydrateBuyerNames(payload, accessToken);
+    return ok(hydrated, 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -89,4 +103,93 @@ function sanitizePositiveInt(raw: string | null, fallback: number, min: number, 
   if (normalized < min) return min;
   if (normalized > max) return max;
   return normalized;
+}
+
+async function hydrateBuyerNames(payload: unknown, accessToken: string): Promise<unknown> {
+  const conversations = getConversationItems(payload);
+  const buyerIds = conversations
+    .map((item) => getStringField(item, 'buyerId'))
+    .filter((value): value is string => Boolean(value));
+  const uniqueBuyerIds = [...new Set(buyerIds)];
+  if (uniqueBuyerIds.length === 0) {
+    return payload;
+  }
+
+  let nameMap: Record<string, string> = {};
+  try {
+    const query = new URLSearchParams();
+    query.set('ids', uniqueBuyerIds.join(','));
+    const profiles = await requestUpstream<PublicUsersOutput>(`${serviceBaseUrls.user}/users/public?${query.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    });
+
+    nameMap = (profiles.items ?? []).reduce<Record<string, string>>((accumulator, profile) => {
+      if (profile.id && profile.displayName?.trim()) {
+        accumulator[profile.id] = profile.displayName.trim();
+      }
+      return accumulator;
+    }, {});
+  } catch {
+    return payload;
+  }
+
+  if (Object.keys(nameMap).length === 0) {
+    return payload;
+  }
+
+  const hydrateOne = (item: unknown): unknown => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return item;
+    }
+
+    const conversation = item as Record<string, unknown>;
+    const buyerId = getStringField(conversation, 'buyerId');
+    const buyerName = buyerId ? nameMap[buyerId] : '';
+    if (!buyerName) {
+      return item;
+    }
+
+    const currentContext = conversation.context && typeof conversation.context === 'object' && !Array.isArray(conversation.context)
+      ? (conversation.context as Record<string, unknown>)
+      : {};
+
+    return {
+      ...conversation,
+      context: {
+        ...currentContext,
+        buyerName
+      }
+    };
+  };
+
+  if (Array.isArray(payload)) {
+    return payload.map(hydrateOne);
+  }
+
+  if (payload && typeof payload === 'object' && Array.isArray((payload as SellerChatConversationPayload).items)) {
+    return {
+      ...(payload as Record<string, unknown>),
+      items: ((payload as SellerChatConversationPayload).items as unknown[]).map(hydrateOne)
+    };
+  }
+
+  return payload;
+}
+
+function getConversationItems(payload: unknown): Record<string, unknown>[] {
+  const rawItems: unknown[] = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === 'object' && Array.isArray((payload as SellerChatConversationPayload).items)
+      ? ((payload as SellerChatConversationPayload).items as unknown[])
+      : [];
+
+  return rawItems.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item));
+}
+
+function getStringField(input: Record<string, unknown>, field: string): string {
+  const value = input[field];
+  return typeof value === 'string' ? value.trim() : '';
 }

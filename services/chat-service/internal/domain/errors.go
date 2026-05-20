@@ -10,4 +10,5 @@ const (
 	ErrorCodeValidationFailed    = "VALIDATION_FAILED"
 	ErrorCodeInternalServerError = "INTERNAL_SERVER_ERROR"
 	ErrorCodeServiceUnavailable  = "SERVICE_UNAVAILABLE"
+	ErrorCodeChatMessageBlocked  = "CHAT_MESSAGE_BLOCKED"
 )

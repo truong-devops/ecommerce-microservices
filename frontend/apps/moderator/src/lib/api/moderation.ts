@@ -1,5 +1,5 @@
 import { requestModeratorApi } from './client';
-import type { ModerationListOutput, ModerationProduct, ModerationProductStatus, ModerationVideo, ModerationVideoListOutput } from './types';
+import type { ChatViolationListOutput, ModerationListOutput, ModerationProduct, ModerationProductStatus, ModerationVideo, ModerationVideoListOutput } from './types';
 
 interface ListModerationProductsInput {
   accessToken: string;
@@ -67,6 +67,44 @@ export function listModerationVideos(input: { accessToken: string; page?: number
   }
 
   return requestModeratorApi<ModerationVideoListOutput>(`/api/moderator/moderation/videos?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`
+    }
+  });
+}
+
+export function listChatViolations(input: {
+  accessToken: string;
+  page?: number;
+  pageSize?: number;
+  senderId?: string;
+  ruleId?: string;
+  conversationId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+}): Promise<ChatViolationListOutput> {
+  const params = new URLSearchParams();
+  params.set('page', String(input.page ?? 1));
+  params.set('pageSize', String(input.pageSize ?? 50));
+  if (input.senderId) {
+    params.set('senderId', input.senderId);
+  }
+  if (input.ruleId) {
+    params.set('ruleId', input.ruleId);
+  }
+  if (input.conversationId) {
+    params.set('conversationId', input.conversationId);
+  }
+  if (input.createdFrom) {
+    params.set('createdFrom', input.createdFrom);
+  }
+  if (input.createdTo) {
+    params.set('createdTo', input.createdTo);
+  }
+
+  return requestModeratorApi<ChatViolationListOutput>(`/api/moderator/chat/violations?${params.toString()}`, {
     method: 'GET',
     cache: 'no-store',
     headers: {

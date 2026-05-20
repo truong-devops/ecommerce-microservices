@@ -13,6 +13,7 @@ import {
   sendSellerChatMessage
 } from '@/lib/api/chat';
 import type { SellerChatConversation, SellerChatMessage } from '@/lib/api/types';
+import { validateChatText } from '@/lib/chat-safety';
 import { useAuth } from '@/providers/AppProvider';
 
 function toWsBase(raw: string): string {
@@ -52,6 +53,8 @@ export default function CustomerCareChatPage() {
     () => conversations.find((item) => item.id === selectedConversationId) ?? null,
     [conversations, selectedConversationId]
   );
+  const selectedBuyerName = selectedConversation ? resolveBuyerDisplayName(selectedConversation) : '';
+  const chatSafety = useMemo(() => validateChatText(messageInput), [messageInput]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -214,6 +217,10 @@ export default function CustomerCareChatPage() {
     if (!text || !accessToken || !selectedConversationId || sendingMessage) {
       return;
     }
+    if (!chatSafety.allowed) {
+      setErrorMessage(chatSafety.message ?? 'Tin nhắn không hợp lệ');
+      return;
+    }
 
     const optimisticId = `tmp-${Date.now()}`;
     const optimisticMessage: SellerMessageView = {
@@ -259,7 +266,7 @@ export default function CustomerCareChatPage() {
     } finally {
       setSendingMessage(false);
     }
-  }, [accessToken, messageInput, selectedConversationId, sendingMessage, user?.id, user?.role]);
+  }, [accessToken, chatSafety, messageInput, selectedConversationId, sendingMessage, user?.id, user?.role]);
 
   if (!ready) {
     return (
@@ -303,55 +310,134 @@ export default function CustomerCareChatPage() {
             </span>
           </div>
 
-          <section className="grid min-h-[70vh] grid-cols-12 gap-3 rounded-md border border-slate-200 bg-white p-3">
-            <aside className="col-span-12 overflow-auto rounded-md border border-slate-200 lg:col-span-4">
-              <div className="border-b border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800">Hội thoại</div>
+          <section className="grid min-h-[76vh] grid-cols-12 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+            <aside className="col-span-12 flex min-h-[260px] flex-col border-b border-slate-200 bg-[#fbfcfe] lg:col-span-4 lg:border-b-0 lg:border-r">
+              <div className="border-b border-slate-200 bg-white px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xl font-bold text-slate-950">Hội thoại</p>
+                    <p className="mt-1 text-xs font-medium text-slate-500">{conversations.length} khách hàng</p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${wsConnected ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                    {wsConnected ? 'Realtime' : 'Polling'}
+                  </span>
+                </div>
+              </div>
 
-              {loadingConversations ? <div className="px-3 py-2 text-sm text-slate-500">Đang tải...</div> : null}
-              {!loadingConversations && conversations.length === 0 ? <div className="px-3 py-2 text-sm text-slate-500">Chưa có hội thoại</div> : null}
+              <div className="min-h-0 flex-1 overflow-auto p-2">
+                {loadingConversations ? <div className="px-3 py-3 text-sm font-medium text-slate-500">Đang tải...</div> : null}
+                {!loadingConversations && conversations.length === 0 ? (
+                  <div className="m-2 rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center">
+                    <p className="text-sm font-semibold text-slate-700">Chưa có hội thoại</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Khi khách nhắn tin cho shop, hội thoại sẽ hiện ở đây.</p>
+                  </div>
+                ) : null}
 
-              <ul className="divide-y divide-slate-200">
-                {conversations.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className={`w-full px-3 py-2 text-left transition ${item.id === selectedConversationId ? 'bg-orange-50' : 'hover:bg-slate-50'}`}
-                      onClick={() => setSelectedConversationId(item.id)}
-                    >
-                      <p className="truncate text-sm font-semibold text-slate-800">Buyer: {item.buyerId.slice(0, 8)}</p>
-                      <p className="truncate text-xs text-slate-500">{item.lastMessage?.textPreview ?? 'Chưa có tin nhắn'}</p>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                <ul className="space-y-1">
+                  {conversations.map((item) => {
+                    const buyerName = resolveBuyerDisplayName(item);
+                    const unread = item.unread?.seller ?? 0;
+                    return (
+                      <li key={item.id}>
+                        <button
+                          type="button"
+                          className={`group flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left transition ${
+                            item.id === selectedConversationId
+                              ? 'border-[#ffd6ca] bg-white shadow-sm'
+                              : 'border-transparent hover:border-slate-200 hover:bg-white'
+                          }`}
+                          onClick={() => setSelectedConversationId(item.id)}
+                        >
+                          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff1ec] text-sm font-bold text-[#ee4d2d] ring-1 ring-[#ffd8cf]">
+                            {getInitial(buyerName)}
+                            {unread > 0 ? <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[#ee4d2d] ring-2 ring-white" /> : null}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="truncate text-sm font-bold text-slate-900">{buyerName}</span>
+                              <span className="shrink-0 text-[11px] font-medium text-slate-400">{formatDayLabel(item.updatedAt)}</span>
+                            </span>
+                            <span className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{formatConversationPreview(item)}</span>
+                          </span>
+                          {unread > 0 ? (
+                            <span className="mt-0.5 inline-flex min-w-5 justify-center rounded-full bg-[#ee4d2d] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                              {unread > 99 ? '99+' : unread}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </aside>
 
-            <section className="col-span-12 flex min-h-[60vh] flex-col rounded-md border border-slate-200 lg:col-span-8">
-              <div className="border-b border-slate-200 px-3 py-2 text-sm text-slate-700">
-                {selectedConversation ? `Conversation ${selectedConversation.id.slice(0, 8)}...` : 'Chọn hội thoại'}
+            <section className="col-span-12 flex min-h-[70vh] flex-col lg:col-span-8">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-5 py-4">
+                {selectedConversation ? (
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#fff1ec] text-base font-bold text-[#ee4d2d] ring-1 ring-[#ffd8cf]">
+                      {getInitial(selectedBuyerName)}
+                    </span>
+                    <span className="min-w-0">
+                      <p className="truncate text-base font-bold text-slate-950">{selectedBuyerName}</p>
+                      <p className="mt-0.5 text-xs font-medium text-slate-500">Trao đổi về sản phẩm và đơn hàng trên eMall</p>
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-base font-bold text-slate-950">Chọn hội thoại</p>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">Chọn khách hàng ở bên trái để bắt đầu trả lời.</p>
+                  </div>
+                )}
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${wsConnected ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {wsConnected ? 'Đang kết nối trực tiếp' : 'Tự động làm mới'}
+                </span>
               </div>
 
-              <div className="flex-1 space-y-2 overflow-auto p-3">
-                {loadingMessages ? <p className="text-sm text-slate-500">Đang tải tin nhắn...</p> : null}
-                {!loadingMessages && messages.length === 0 ? <p className="text-sm text-slate-500">Chưa có tin nhắn</p> : null}
+              <div className="flex-1 overflow-auto bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_48%,#f8fafc_100%)] p-5">
+                {loadingMessages ? <p className="rounded-xl bg-white px-4 py-3 text-sm font-medium text-slate-500 shadow-sm">Đang tải tin nhắn...</p> : null}
+                {!loadingMessages && messages.length === 0 ? (
+                  <div className="mx-auto mt-28 max-w-sm rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-center shadow-sm">
+                    <p className="text-sm font-bold text-slate-800">Chưa có tin nhắn</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Khách chưa gửi nội dung nào trong hội thoại này.</p>
+                  </div>
+                ) : null}
 
-                {messages.map((item) => {
-                  const mine = item.senderId === user.id;
-                  return (
-                    <div key={item.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[78%] rounded-lg px-3 py-2 text-sm ${mine ? 'bg-[#ee4d2d] text-white' : 'bg-slate-100 text-slate-800'}`}>
-                        <p>{item.text}</p>
-                        <p className={`mt-1 text-[10px] ${mine ? 'text-orange-100' : 'text-slate-400'}`}>{new Date(item.sentAt).toLocaleString()}</p>
-                        {mine && item.localState === 'pending' ? <p className="mt-0.5 text-[10px] text-orange-100">Sending...</p> : null}
-                        {mine && item.localState === 'failed' ? <p className="mt-0.5 text-[10px] text-rose-100">Failed</p> : null}
+                <div className="space-y-4">
+                  {messages.map((item) => {
+                    const mine = item.senderId === user.id;
+                    const senderName = mine ? 'Shop' : selectedBuyerName || 'Khách hàng';
+                    return (
+                      <div key={item.id} className={`flex items-end gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
+                        {!mine ? (
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-[#ee4d2d] ring-1 ring-[#ffd8cf]">
+                            {getInitial(senderName)}
+                          </span>
+                        ) : null}
+                        <div
+                          className={`max-w-[76%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+                            mine
+                              ? 'rounded-br-md bg-[#ee4d2d] text-white shadow-[#ee4d2d]/20'
+                              : 'rounded-bl-md border border-slate-200 bg-white text-slate-900'
+                          }`}
+                        >
+                          {!mine ? <p className="mb-1 text-[11px] font-bold uppercase text-slate-500">{senderName}</p> : null}
+                          <p className="whitespace-pre-wrap break-words leading-6">{item.text}</p>
+                          <div className={`mt-2 flex items-center gap-2 text-[11px] ${mine ? 'text-orange-100' : 'text-slate-400'}`}>
+                            <span>{formatMessageTime(item.sentAt)}</span>
+                            {mine && item.localState === 'pending' ? <span>Đang gửi</span> : null}
+                            {mine && item.localState === 'failed' ? <span className="text-rose-100">Gửi lỗi</span> : null}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="border-t border-slate-200 p-3">
-                <div className="flex gap-2">
+              <div className="border-t border-slate-200 bg-white px-4 py-3">
+                <div className="flex items-end gap-2">
                   <input
                     value={messageInput}
                     onChange={(event) => setMessageInput(event.target.value)}
@@ -361,20 +447,21 @@ export default function CustomerCareChatPage() {
                         void handleSendMessage();
                       }
                     }}
-                    placeholder="Nhập tin nhắn..."
-                    className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#ee4d2d]"
+                    placeholder="Chỉ trao đổi về sản phẩm và đơn hàng trên eMall..."
+                    className="h-11 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none transition focus:border-[#ee4d2d] focus:bg-white disabled:bg-slate-100"
                     disabled={!selectedConversationId}
                   />
                   <button
                     type="button"
                     onClick={() => void handleSendMessage()}
-                    disabled={!selectedConversationId || sendingMessage}
-                    className="rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!selectedConversationId || sendingMessage || messageInput.trim().length === 0 || !chatSafety.allowed}
+                    className="h-11 rounded-xl bg-[#ee4d2d] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#db4729] disabled:cursor-not-allowed disabled:bg-[#f3b4a7]"
                   >
                     Gửi
                   </button>
                 </div>
-                {errorMessage ? <p className="mt-2 text-xs text-rose-600">{errorMessage}</p> : null}
+                {!chatSafety.allowed ? <p className="mt-2 text-xs font-semibold text-rose-600">{chatSafety.message}</p> : null}
+                {errorMessage ? <p className="mt-2 text-xs font-semibold text-rose-600">{errorMessage}</p> : null}
               </div>
             </section>
           </section>
@@ -392,4 +479,49 @@ function upsertMessage(messages: SellerMessageView[], incoming: SellerMessageVie
     return next;
   }
   return [...messages, { ...incoming }].sort((a, b) => a.seq - b.seq);
+}
+
+function resolveBuyerDisplayName(conversation: SellerChatConversation): string {
+  const name = conversation.context?.buyerName?.trim();
+  if (name) {
+    return name;
+  }
+
+  if (conversation.buyerCode?.trim()) {
+    return `Khách hàng ${conversation.buyerCode.trim()}`;
+  }
+
+  return `Khách hàng ${conversation.buyerId.slice(0, 8)}`;
+}
+
+function formatDayLabel(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit'
+  });
+}
+
+function formatMessageTime(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function getInitial(value: string): string {
+  return (value.trim().charAt(0) || 'K').toUpperCase();
+}
+
+function formatConversationPreview(conversation: SellerChatConversation): string {
+  return conversation.lastMessage?.textPreview?.trim() || 'Chưa có tin nhắn';
 }

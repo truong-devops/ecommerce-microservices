@@ -7,6 +7,7 @@ const (
 	ErrorCodeNotFound            = "NOT_FOUND"
 	ErrorCodeConflict            = "CONFLICT"
 	ErrorCodeValidationFailed    = "VALIDATION_FAILED"
+	ErrorCodeChatMessageBlocked  = "CHAT_MESSAGE_BLOCKED"
 	ErrorCodeInternalServerError = "INTERNAL_SERVER_ERROR"
 	ErrorCodeServiceUnavailable  = "SERVICE_UNAVAILABLE"
 	ErrorCodeProductNotFound     = "PRODUCT_NOT_FOUND"

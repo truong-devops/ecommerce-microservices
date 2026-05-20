@@ -8,6 +8,7 @@ import { BuyerApiClientError } from '@/lib/api/client';
 import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import { createBuyerVideoComment, listBuyerVideoComments, listBuyerVideos, trackBuyerVideoEvent } from '@/lib/api/videos';
 import type { BuyerVideo, BuyerVideoComment, ProductItem } from '@/lib/api/types';
+import { validateChatText } from '@/lib/chat-safety';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
@@ -77,6 +78,7 @@ export default function VideosPage() {
   const currentVideoId = currentVideo?.videoId ?? '';
   const currentVideoLiked = Boolean(accessToken && currentVideoId && likedVideoIds.has(currentVideoId));
   const chatEmojis = ['🔥', '❤️', '👍', '😍'];
+  const commentSafety = useMemo(() => validateChatText(commentInput), [commentInput]);
 
   const handlePlay = useCallback((video: BuyerVideo) => {
     void trackBuyerVideoEvent(video.videoId, 'view-started', buildEventPayload(video));
@@ -117,6 +119,10 @@ export default function VideosPage() {
       setCommentError('Bạn cần đăng nhập để bình luận.');
       return;
     }
+    if (!commentSafety.allowed) {
+      setCommentError(commentSafety.message ?? 'Bình luận không phù hợp.');
+      return;
+    }
 
     setCommentSubmitting(true);
     setCommentError('');
@@ -148,7 +154,7 @@ export default function VideosPage() {
     } finally {
       setCommentSubmitting(false);
     }
-  }, [accessToken, commentInput, commentSubmitting, currentVideo]);
+  }, [accessToken, commentInput, commentSafety.allowed, commentSafety.message, commentSubmitting, currentVideo]);
 
   const handleToggleLike = useCallback((videoId: string) => {
     if (!accessToken) {
@@ -525,18 +531,21 @@ export default function VideosPage() {
                                     void handleSubmitComment();
                                   }
                                 }}
-                                placeholder={accessToken ? 'Thêm bình luận...' : 'Đăng nhập để bình luận'}
+                                placeholder={accessToken ? 'Chỉ trao đổi về sản phẩm trên eMall...' : 'Đăng nhập để bình luận'}
                                 className="min-w-0 flex-1 rounded-xl border border-[#d7d0c5] bg-[#fbfaf7] px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:bg-white"
                               />
                               <button
                                 type="button"
                                 onClick={() => void handleSubmitComment()}
-                                disabled={!commentInput.trim() || commentSubmitting}
+                                disabled={!commentInput.trim() || !commentSafety.allowed || commentSubmitting}
                                 className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 Gửi
                               </button>
                             </div>
+                            {!commentSafety.allowed && commentInput.trim() ? (
+                              <p className="mt-2 text-xs font-semibold text-[#c2410c]">{commentSafety.message}</p>
+                            ) : null}
                             {commentError && commentsStatus !== 'error' ? <p className="mt-2 text-xs font-medium text-red-600">{commentError}</p> : null}
                           </div>
                         </div>

@@ -140,6 +140,27 @@ func (s *UserService) FindOne(ctx context.Context, id string) (*domain.User, err
 	return user, nil
 }
 
+func (s *UserService) ListPublicProfiles(ctx context.Context, ids []string) ([]domain.User, error) {
+	uniqueIDs := make([]string, 0, len(ids))
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		normalized := strings.TrimSpace(id)
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		uniqueIDs = append(uniqueIDs, normalized)
+		if len(uniqueIDs) >= 100 {
+			break
+		}
+	}
+
+	return s.repo.FindByIDs(ctx, uniqueIDs)
+}
+
 func (s *UserService) ResolveSelf(ctx context.Context, subjectID, email, role string) (*domain.User, error) {
 	subjectID = strings.TrimSpace(subjectID)
 	email = strings.ToLower(strings.TrimSpace(email))

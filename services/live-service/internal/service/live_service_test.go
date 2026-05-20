@@ -204,6 +204,37 @@ func TestSendMessageIsIdempotentAndBroadcasts(t *testing.T) {
 	}
 }
 
+func TestSendMessageBlocksUnsafeText(t *testing.T) {
+	ctx := context.Background()
+	repo := newMemoryRepo()
+	publisher := &fakePublisher{}
+	broadcaster := &fakeBroadcaster{}
+	svc := NewLiveService(repo, fakeProductVerifier{}, publisher, broadcaster, nil)
+	seller := testUser("seller-1", domain.RoleSeller)
+	buyer := testUser("buyer-1", domain.RoleBuyer)
+
+	session, err := svc.CreateSession(ctx, seller, CreateSessionRequest{Title: "Demo livestream", PlaybackURL: "https://example.com/live.m3u8"})
+	if err != nil {
+		t.Fatalf("CreateSession returned error: %v", err)
+	}
+	if _, err := svc.StartSession(ctx, seller, session.SessionID); err != nil {
+		t.Fatalf("StartSession returned error: %v", err)
+	}
+
+	if _, err := svc.SendMessage(ctx, buyer, session.SessionID, SendMessageRequest{Text: "kb z a l o minh nha 090 123 4567"}); err == nil {
+		t.Fatal("expected unsafe live message to be blocked")
+	}
+	if len(repo.messages) != 0 {
+		t.Fatalf("blocked message should not be persisted, got %d messages", len(repo.messages))
+	}
+	if publisher.has(domain.EventMessageCreated) {
+		t.Fatal("blocked message should not publish event")
+	}
+	if broadcaster.hasType("live:message:new") {
+		t.Fatal("blocked message should not broadcast")
+	}
+}
+
 func TestListMessagesReturnsVisibleHistoryForViewableSession(t *testing.T) {
 	ctx := context.Background()
 	repo := newMemoryRepo()

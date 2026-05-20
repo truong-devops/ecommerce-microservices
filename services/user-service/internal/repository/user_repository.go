@@ -83,6 +83,33 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*domain.User,
 	return &user, nil
 }
 
+func (r *UserRepository) FindByIDs(ctx context.Context, ids []string) ([]domain.User, error) {
+	if len(ids) == 0 {
+		return []domain.User{}, nil
+	}
+
+	query := `SELECT ` + userColumns + ` FROM users WHERE id = ANY($1) AND status != $2`
+	rows, err := r.pool.Query(ctx, query, ids, domain.UserStatusDeleted)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]domain.User, 0, len(ids))
+	for rows.Next() {
+		user, scanErr := scanUser(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		users = append(users, user)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (r *UserRepository) FindByEmailAnyStatus(ctx context.Context, email string) (*domain.User, error) {
 	query := `SELECT ` + userColumns + ` FROM users WHERE lower(email) = lower($1) LIMIT 1`
 	row := r.pool.QueryRow(ctx, query, email)

@@ -133,6 +133,30 @@ func TestCreateMessageIdempotencyAndUnreadCounter(t *testing.T) {
 	if outboxCount != 1 {
 		t.Fatalf("expected exactly 1 outbox event for idempotent sends, got %d", outboxCount)
 	}
+
+	if err := repo.CreateChatViolation(ctx, CreateChatViolationInput{
+		ConversationID: conversation.ID,
+		SenderID:       "buyer-1",
+		SenderRole:     domain.RoleBuyer,
+		RuleID:         "phone_number",
+		Score:          90,
+		Signals:        []ChatViolationSignalInput{{RuleID: "phone_number", Score: 90, EvidenceType: "phone"}},
+		TextPreview:    "09******67",
+		CreatedAt:      time.Now().UTC(),
+	}); err != nil {
+		t.Fatalf("create violation: %v", err)
+	}
+
+	violations, total, err := repo.ListChatViolations(ctx, ListChatViolationsFilter{SenderID: "buyer-1", RuleID: "phone_number", Page: 1, PageSize: 20})
+	if err != nil {
+		t.Fatalf("list violations: %v", err)
+	}
+	if total != 1 || len(violations) != 1 {
+		t.Fatalf("expected one violation, total=%d items=%d", total, len(violations))
+	}
+	if violations[0].TextPreview != "09******67" || violations[0].Signals[0].RuleID != "phone_number" {
+		t.Fatalf("unexpected violation: %+v", violations[0])
+	}
 }
 
 func toPtr(value string) *string {

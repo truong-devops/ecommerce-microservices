@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -97,6 +98,28 @@ func (h *ChatHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.chatService.ListMessages(r.Context(), user, chi.URLParam(r, "id"), query)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
+func (h *ChatHandler) ListViolations(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	query, err := parseListViolationsQuery(r)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeValidationFailed)
+		return
+	}
+
+	result, err := h.chatService.ListChatViolations(r.Context(), user, query)
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
 		return
@@ -272,14 +295,14 @@ func (h *ChatHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 				ClientMessageID: strings.TrimSpace(incoming.ClientMessageID),
 			})
 			if err != nil {
-				_ = writeJSON(map[string]any{"type": "error", "message": err.Error()})
+				_ = writeJSON(webSocketErrorPayload(err))
 				continue
 			}
 			_ = writeJSON(map[string]any{"type": "ack", "action": "send_message", "message": result})
 		case "mark_read":
 			result, err := h.chatService.MarkRead(ctx, user, conversationID, service.MarkReadRequest{})
 			if err != nil {
-				_ = writeJSON(map[string]any{"type": "error", "message": err.Error()})
+				_ = writeJSON(webSocketErrorPayload(err))
 				continue
 			}
 			_ = writeJSON(map[string]any{"type": "ack", "action": "mark_read", "result": result})
@@ -287,6 +310,21 @@ func (h *ChatHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			_ = writeJSON(map[string]any{"type": "error", "message": "unsupported event type"})
 		}
 	}
+}
+
+func webSocketErrorPayload(err error) map[string]any {
+	payload := map[string]any{
+		"type":    "error",
+		"message": err.Error(),
+	}
+	var appErr *httpx.AppError
+	if errors.As(err, &appErr) {
+		payload["code"] = appErr.Code
+		if appErr.Details != nil {
+			payload["details"] = appErr.Details
+		}
+	}
+	return payload
 }
 
 func (h *ChatHandler) isAllowedOrigin(r *http.Request) bool {
@@ -357,6 +395,55 @@ func parseListMessagesQuery(r *http.Request) (service.ListMessagesRequest, error
 	}
 
 	return service.ListMessagesRequest{Limit: limit, BeforeSeq: beforeSeq}, nil
+}
+
+func parseListViolationsQuery(r *http.Request) (service.ListChatViolationsRequest, error) {
+	q := r.URL.Query()
+
+	page := 1
+	if raw := strings.TrimSpace(q.Get("page")); raw != "" {
+		v, err := strconv.Atoi(raw)
+		if err != nil || v < 1 {
+			return service.ListChatViolationsRequest{}, validationError("page", "must be an integer >= 1")
+		}
+		page = v
+	}
+
+	pageSize := 50
+	if raw := strings.TrimSpace(q.Get("pageSize")); raw != "" {
+		v, err := strconv.Atoi(raw)
+		if err != nil || v < 1 || v > 200 {
+			return service.ListChatViolationsRequest{}, validationError("pageSize", "must be an integer between 1 and 200")
+		}
+		pageSize = v
+	}
+
+	createdFrom, err := parseOptionalTime(q.Get("createdFrom"))
+	if err != nil {
+		return service.ListChatViolationsRequest{}, validationError("createdFrom", "must be RFC3339 time")
+	}
+	createdTo, err := parseOptionalTime(q.Get("createdTo"))
+	if err != nil {
+		return service.ListChatViolationsRequest{}, validationError("createdTo", "must be RFC3339 time")
+	}
+
+	return service.ListChatViolationsRequest{
+		Page:           page,
+		PageSize:       pageSize,
+		SenderID:       strings.TrimSpace(q.Get("senderId")),
+		RuleID:         strings.TrimSpace(q.Get("ruleId")),
+		ConversationID: strings.TrimSpace(q.Get("conversationId")),
+		CreatedFrom:    createdFrom,
+		CreatedTo:      createdTo,
+	}, nil
+}
+
+func parseOptionalTime(raw string) (time.Time, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return time.Time{}, nil
+	}
+	return time.Parse(time.RFC3339, value)
 }
 
 func validationError(field, msg string) error {

@@ -125,6 +125,24 @@ type OutboxEvent struct {
 	PublishedAt *time.Time
 }
 
+type ChatViolationSignal struct {
+	RuleID       string `json:"ruleId"`
+	Score        int    `json:"score"`
+	EvidenceType string `json:"evidenceType"`
+}
+
+type ChatViolation struct {
+	ID             string                `json:"id"`
+	ConversationID string                `json:"conversationId"`
+	SenderID       string                `json:"senderId"`
+	SenderRole     Role                  `json:"senderRole"`
+	RuleID         string                `json:"ruleId"`
+	Score          int                   `json:"score"`
+	Signals        []ChatViolationSignal `json:"signals"`
+	TextPreview    string                `json:"textPreview"`
+	CreatedAt      time.Time             `json:"createdAt"`
+}
+
 const (
 	EventConversationCreated = "chat.conversation.created"
 	EventMessageCreated      = "chat.message.created"

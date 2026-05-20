@@ -9,6 +9,7 @@ import { BuyerApiClientError } from '@/lib/api/client';
 import { buildLiveWebSocketUrl, getLiveSession, listLiveMessages, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
 import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail, ProductItem } from '@/lib/api/types';
+import { validateChatText } from '@/lib/chat-safety';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
@@ -50,6 +51,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const [messages, setMessages] = useState<LiveMessage[]>([]);
   const [viewerCount, setViewerCount] = useState(0);
   const [chatInput, setChatInput] = useState('');
+  const [chatError, setChatError] = useState('');
   const [error, setError] = useState('');
   const [playbackReloadKey, setPlaybackReloadKey] = useState(0);
   const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
@@ -252,6 +254,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const session = detail?.session ?? null;
   const mediaPlayback = session?.media?.playback;
   const usesMediaEnginePlayback = mediaPlayback?.protocol === 'WEBRTC' && Boolean(mediaPlayback.url);
+  const chatSafety = useMemo(() => validateChatText(chatInput), [chatInput]);
 
   useEffect(() => {
     if (!sessionId || (detail?.session.status !== 'LIVE' && detail?.session.status !== 'PAUSED')) {
@@ -283,9 +286,16 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
         return;
       }
 
+      if (payload.type === 'error') {
+        const message = typeof payload.message === 'string' ? payload.message : '';
+        setChatError(message || 'Không thể gửi tin nhắn.');
+        return;
+      }
+
       const nextMessage = payload.message;
       if ((payload.type === 'live:message:new' || payload.type === 'ack') && isLiveMessage(nextMessage)) {
         appendUniqueMessage(nextMessage);
+        setChatError('');
         return;
       }
 
@@ -523,6 +533,10 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     if (!textValue || socketRef.current?.readyState !== WebSocket.OPEN) {
       return;
     }
+    if (!chatSafety.allowed) {
+      setChatError(chatSafety.message ?? 'Tin nhắn không phù hợp.');
+      return;
+    }
 
     socketRef.current.send(
       JSON.stringify({
@@ -533,7 +547,8 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
       })
     );
     setChatInput('');
-  }, [chatInput]);
+    setChatError('');
+  }, [chatInput, chatSafety.allowed, chatSafety.message]);
 
   const handleOpenProduct = useCallback(
     (productId: string) => {
@@ -834,12 +849,16 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                       <button
                         type="button"
                         onClick={handleSendMessage}
-                        disabled={!isSessionLive || !chatInput.trim() || !accessToken || socketStatus !== 'connected'}
+                        disabled={!isSessionLive || !chatInput.trim() || !chatSafety.allowed || !accessToken || socketStatus !== 'connected'}
                         className="rounded-xl bg-[#ee4d2d] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Gửi
                       </button>
                     </div>
+                    {!chatSafety.allowed && chatInput.trim() ? (
+                      <p className="mt-2 text-xs font-semibold text-[#c2410c]">{chatSafety.message}</p>
+                    ) : null}
+                    {chatError ? <p className="mt-2 text-xs font-semibold text-red-600">{chatError}</p> : null}
                   </div>
                 </div>
               </section>

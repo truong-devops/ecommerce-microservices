@@ -20,6 +20,7 @@ type ChatRepository struct {
 	conversations *mongo.Collection
 	messages      *mongo.Collection
 	outbox        *mongo.Collection
+	violations    *mongo.Collection
 }
 
 type CreateConversationInput struct {
@@ -52,12 +53,40 @@ type SendMessageTxResult struct {
 	Created bool
 }
 
+type ChatViolationSignalInput struct {
+	RuleID       string
+	Score        int
+	EvidenceType string
+}
+
+type CreateChatViolationInput struct {
+	ConversationID string
+	SenderID       string
+	SenderRole     domain.Role
+	RuleID         string
+	Score          int
+	Signals        []ChatViolationSignalInput
+	TextPreview    string
+	CreatedAt      time.Time
+}
+
+type ListChatViolationsFilter struct {
+	ConversationID string
+	SenderID       string
+	RuleID         string
+	CreatedFrom    time.Time
+	CreatedTo      time.Time
+	Page           int
+	PageSize       int
+}
+
 func NewChatRepository(db *mongo.Database) *ChatRepository {
 	return &ChatRepository{
 		db:            db,
 		conversations: db.Collection("conversations"),
 		messages:      db.Collection("messages"),
 		outbox:        db.Collection("outbox_events"),
+		violations:    db.Collection("chat_violations"),
 	}
 }
 
@@ -83,6 +112,14 @@ func (r *ChatRepository) EnsureIndexes(ctx context.Context) error {
 		},
 	}
 	if _, err := r.messages.Indexes().CreateMany(ctx, messageIndexes); err != nil {
+		return err
+	}
+
+	violationIndexes := []mongo.IndexModel{
+		{Keys: bson.D{{Key: "senderId", Value: 1}, {Key: "createdAt", Value: -1}}},
+		{Keys: bson.D{{Key: "conversationId", Value: 1}, {Key: "createdAt", Value: -1}}},
+	}
+	if _, err := r.violations.Indexes().CreateMany(ctx, violationIndexes); err != nil {
 		return err
 	}
 
@@ -259,6 +296,102 @@ func (r *ChatRepository) FindMessageByClientID(ctx context.Context, conversation
 	}
 	mapped := mapMessage(doc)
 	return &mapped, nil
+}
+
+func (r *ChatRepository) CreateChatViolation(ctx context.Context, input CreateChatViolationInput) error {
+	conversationOID, err := parseObjectID(input.ConversationID)
+	if err != nil {
+		return nil
+	}
+
+	createdAt := input.CreatedAt
+	if createdAt.IsZero() {
+		createdAt = time.Now().UTC()
+	}
+
+	signals := make([]chatViolationSignalDoc, 0, len(input.Signals))
+	for _, signal := range input.Signals {
+		signals = append(signals, chatViolationSignalDoc{
+			RuleID:       signal.RuleID,
+			Score:        signal.Score,
+			EvidenceType: signal.EvidenceType,
+		})
+	}
+
+	_, err = r.violations.InsertOne(ctx, chatViolationDoc{
+		ID:             primitive.NewObjectID(),
+		ConversationID: conversationOID,
+		SenderID:       input.SenderID,
+		SenderRole:     input.SenderRole,
+		RuleID:         input.RuleID,
+		Score:          input.Score,
+		Signals:        signals,
+		TextPreview:    input.TextPreview,
+		CreatedAt:      createdAt,
+	})
+	return err
+}
+
+func (r *ChatRepository) CountRecentChatViolations(ctx context.Context, senderID string, since time.Time) (int64, error) {
+	return r.violations.CountDocuments(ctx, bson.M{
+		"senderId": strings.TrimSpace(senderID),
+		"createdAt": bson.M{
+			"$gte": since,
+		},
+	})
+}
+
+func (r *ChatRepository) ListChatViolations(ctx context.Context, filter ListChatViolationsFilter) ([]domain.ChatViolation, int64, error) {
+	query := bson.M{}
+	if senderID := strings.TrimSpace(filter.SenderID); senderID != "" {
+		query["senderId"] = senderID
+	}
+	if ruleID := strings.TrimSpace(filter.RuleID); ruleID != "" {
+		query["ruleId"] = ruleID
+	}
+	if conversationID := strings.TrimSpace(filter.ConversationID); conversationID != "" {
+		conversationOID, err := parseObjectID(conversationID)
+		if err != nil {
+			return []domain.ChatViolation{}, 0, nil
+		}
+		query["conversationId"] = conversationOID
+	}
+	if !filter.CreatedFrom.IsZero() || !filter.CreatedTo.IsZero() {
+		createdAt := bson.M{}
+		if !filter.CreatedFrom.IsZero() {
+			createdAt["$gte"] = filter.CreatedFrom.UTC()
+		}
+		if !filter.CreatedTo.IsZero() {
+			createdAt["$lte"] = filter.CreatedTo.UTC()
+		}
+		query["createdAt"] = createdAt
+	}
+
+	total, err := r.violations.CountDocuments(ctx, query)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	skip := int64((filter.Page - 1) * filter.PageSize)
+	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}}).SetSkip(skip).SetLimit(int64(filter.PageSize))
+	cur, err := r.violations.Find(ctx, query, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cur.Close(ctx)
+
+	items := make([]domain.ChatViolation, 0)
+	for cur.Next(ctx) {
+		var doc chatViolationDoc
+		if err := cur.Decode(&doc); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, mapChatViolation(doc))
+	}
+	if err := cur.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
 }
 
 func (r *ChatRepository) NextSequence(ctx context.Context, conversationID string) (int64, error) {
@@ -752,6 +885,24 @@ type messageDoc struct {
 	ReadBySellerAt  *time.Time         `bson:"readBySellerAt,omitempty"`
 }
 
+type chatViolationSignalDoc struct {
+	RuleID       string `bson:"ruleId"`
+	Score        int    `bson:"score"`
+	EvidenceType string `bson:"evidenceType"`
+}
+
+type chatViolationDoc struct {
+	ID             primitive.ObjectID       `bson:"_id,omitempty"`
+	ConversationID primitive.ObjectID       `bson:"conversationId"`
+	SenderID       string                   `bson:"senderId"`
+	SenderRole     domain.Role              `bson:"senderRole"`
+	RuleID         string                   `bson:"ruleId"`
+	Score          int                      `bson:"score"`
+	Signals        []chatViolationSignalDoc `bson:"signals"`
+	TextPreview    string                   `bson:"textPreview"`
+	CreatedAt      time.Time                `bson:"createdAt"`
+}
+
 type outboxDoc struct {
 	ID          primitive.ObjectID  `bson:"_id,omitempty"`
 	AggregateID string              `bson:"aggregateId"`
@@ -810,6 +961,28 @@ func mapMessage(doc messageDoc) domain.Message {
 		DeletedAt:       doc.DeletedAt,
 		ReadByBuyerAt:   doc.ReadByBuyerAt,
 		ReadBySellerAt:  doc.ReadBySellerAt,
+	}
+}
+
+func mapChatViolation(doc chatViolationDoc) domain.ChatViolation {
+	signals := make([]domain.ChatViolationSignal, 0, len(doc.Signals))
+	for _, signal := range doc.Signals {
+		signals = append(signals, domain.ChatViolationSignal{
+			RuleID:       signal.RuleID,
+			Score:        signal.Score,
+			EvidenceType: signal.EvidenceType,
+		})
+	}
+	return domain.ChatViolation{
+		ID:             doc.ID.Hex(),
+		ConversationID: doc.ConversationID.Hex(),
+		SenderID:       doc.SenderID,
+		SenderRole:     doc.SenderRole,
+		RuleID:         doc.RuleID,
+		Score:          doc.Score,
+		Signals:        signals,
+		TextPreview:    doc.TextPreview,
+		CreatedAt:      doc.CreatedAt,
 	}
 }
 

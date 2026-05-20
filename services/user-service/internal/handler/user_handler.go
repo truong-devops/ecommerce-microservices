@@ -64,6 +64,27 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *UserHandler) ListPublicUsers(w http.ResponseWriter, r *http.Request) {
+	ids := parsePublicUserIDs(r)
+	if len(ids) == 0 {
+		httpx.WriteSuccess(w, r, http.StatusOK, map[string]any{"items": []map[string]any{}})
+		return
+	}
+
+	users, err := h.userService.ListPublicProfiles(r.Context(), ids)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalError)
+		return
+	}
+
+	items := make([]map[string]any, 0, len(users))
+	for i := range users {
+		items = append(items, toPublicUserProfile(&users[i]))
+	}
+
+	httpx.WriteSuccess(w, r, http.StatusOK, map[string]any{"items": items})
+}
+
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	user, err := h.userService.FindOne(r.Context(), id)
@@ -227,6 +248,32 @@ func parseListUsersQuery(r *http.Request) (domain.ListUsersQuery, error) {
 	}, nil
 }
 
+func parsePublicUserIDs(r *http.Request) []string {
+	raw := strings.TrimSpace(r.URL.Query().Get("ids"))
+	if raw == "" {
+		return []string{}
+	}
+
+	ids := make([]string, 0)
+	seen := make(map[string]struct{})
+	for _, part := range strings.Split(raw, ",") {
+		id := strings.TrimSpace(part)
+		if id == "" {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+		if len(ids) >= 100 {
+			break
+		}
+	}
+
+	return ids
+}
+
 func withUserCodes(user *domain.User) map[string]any {
 	if user == nil {
 		return map[string]any{}
@@ -258,6 +305,24 @@ func withUserCodes(user *domain.User) map[string]any {
 	}
 
 	return payload
+}
+
+func toPublicUserProfile(user *domain.User) map[string]any {
+	if user == nil {
+		return map[string]any{}
+	}
+
+	displayName := strings.TrimSpace(strings.Join([]string{user.FirstName, user.LastName}, " "))
+	if displayName == "" {
+		displayName = strings.TrimSpace(user.Email)
+	}
+
+	return map[string]any{
+		"id":          user.ID,
+		"userCode":    formatCode(user.ID, "USR"),
+		"displayName": displayName,
+		"avatarUrl":   user.AvatarURL,
+	}
 }
 
 func formatCode(raw string, prefix string) string {

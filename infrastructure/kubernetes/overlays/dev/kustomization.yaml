@@ -8,17 +8,17 @@ resources:
 
 images:
   - name: api-gateway
-    newName: docker.io/truongdevops/api-gateway
+    newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
     newTag: dev
   - name: auth-service
-    newName: docker.io/truongdevops/auth-service
+    newName: docker.io/vantruong179/ecommerce-microservices-auth-service
     newTag: dev
   - name: user-service
-    newName: docker.io/truongdevops/user-service
+    newName: docker.io/vantruong179/ecommerce-microservices-user-service
     newTag: dev
   - name: product-service
-    newName: docker.io/truongdevops/product-service
+    newName: docker.io/vantruong179/ecommerce-microservices-product-service
     newTag: dev
   - name: cart-service
-    newName: docker.io/truongdevops/cart-service
+    newName: docker.io/vantruong179/ecommerce-microservices-cart-service
     newTag: dev

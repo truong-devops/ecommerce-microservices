@@ -4,7 +4,7 @@ metadata:
   name: letsencrypt-http01
 spec:
   acme:
-    email: admin@dt-commerce.site
+    email: vantruong1305.vn@gmail.com
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       name: letsencrypt-http01-account-key

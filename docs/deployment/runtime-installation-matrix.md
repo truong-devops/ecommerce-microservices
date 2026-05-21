@@ -31,7 +31,7 @@ Máy này chạy CI/CD tooling, reverse proxy cho tooling và các scanner. Dock
 
 | Thành phần | Cách dùng | Ghi chú |
 |---|---|---|
-| Docker Hub | SaaS bên ngoài | Lưu image `docker.io/<username>/<service>:<tag>` để Kubernetes pull |
+| Docker Hub | SaaS bên ngoài | Lưu image `docker.io/vantruong179/ecommerce-microservices-<service>:<tag>` để Kubernetes pull |
 
 ### Cài Bên Trong Jenkins Container
 

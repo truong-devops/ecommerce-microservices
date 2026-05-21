@@ -18,7 +18,7 @@ proxy_service:
   https_keypairs: []
   acme:
     enabled: true
-    email: admin@dt-commerce.site
+    email: vantruong1305.vn@gmail.com
 
 ssh_service:
   enabled: false

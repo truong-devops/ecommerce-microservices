@@ -8,6 +8,6 @@ ingress:
     source: letsEncrypt
 
 letsEncrypt:
-  email: admin@dt-commerce.site
+  email: vantruong1305.vn@gmail.com
   ingress:
     class: nginx

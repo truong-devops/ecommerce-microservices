@@ -40,3 +40,7 @@ build/
 # Go local caches
 .gocache/
 .gomodcache/
+
+# Quan trọng 
+docs/deployment/personalization-values-checklist.md
+docs/deployment/start-here-end-to-end-runbook.md

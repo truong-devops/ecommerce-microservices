@@ -9,7 +9,8 @@ pipeline {
 
   parameters {
     string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service', description: 'Comma-separated services to build and deploy')
-    string(name: 'REGISTRY', defaultValue: 'docker.io/truongdevops', description: 'Docker Hub namespace, for example docker.io/<dockerhub-username>')
+    string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace')
+    string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins username/password credential for Docker Hub')
     string(name: 'NAMESPACE', defaultValue: 'ecommerce-dev', description: 'Kubernetes namespace')
     string(name: 'KUSTOMIZE_DIR', defaultValue: 'infrastructure/kubernetes/overlays/dev', description: 'Kustomize overlay to apply')
@@ -124,11 +125,12 @@ pipeline {
       steps {
         script {
           selectedServices().each { svc ->
+            def image = dockerImageFor(svc)
             sh """
               set -eu
               docker build \
-                -t ${params.REGISTRY}/${svc}:${env.IMAGE_TAG} \
-                -t ${params.REGISTRY}/${svc}:dev \
+                -t ${image}:${env.IMAGE_TAG} \
+                -t ${image}:dev \
                 services/${svc}
             """
           }
@@ -140,6 +142,7 @@ pipeline {
       steps {
         script {
           selectedServices().each { svc ->
+            def image = dockerImageFor(svc)
             sh """
               set -eu
               trivy image \
@@ -147,7 +150,7 @@ pipeline {
                 --exit-code 1 \
                 --format table \
                 --output reports/trivy/image-${svc}.txt \
-                ${params.REGISTRY}/${svc}:${env.IMAGE_TAG}
+                ${image}:${env.IMAGE_TAG}
             """
           }
         }
@@ -158,10 +161,11 @@ pipeline {
       steps {
         script {
           selectedServices().each { svc ->
+            def image = dockerImageFor(svc)
             sh """
               set -eu
-              docker push ${params.REGISTRY}/${svc}:${env.IMAGE_TAG}
-              docker push ${params.REGISTRY}/${svc}:dev
+              docker push ${image}:${env.IMAGE_TAG}
+              docker push ${image}:dev
             """
           }
         }
@@ -180,10 +184,11 @@ pipeline {
               """
 
               selectedServices().each { svc ->
+                def image = dockerImageFor(svc)
                 sh """
                   set -eu
                   export KUBECONFIG="\$KUBECONFIG_FILE"
-                  kubectl -n ${params.NAMESPACE} set image deployment/${svc} ${svc}=${params.REGISTRY}/${svc}:${env.IMAGE_TAG}
+                  kubectl -n ${params.NAMESPACE} set image deployment/${svc} ${svc}=${image}:${env.IMAGE_TAG}
                   kubectl -n ${params.NAMESPACE} rollout status deployment/${svc} --timeout=240s
                 """
               }
@@ -228,4 +233,8 @@ def selectedServices() {
     error "Unsupported service(s): ${unknown.join(', ')}"
   }
   return selected
+}
+
+def dockerImageFor(String serviceName) {
+  return "${params.REGISTRY}/${params.IMAGE_REPO_PREFIX}${serviceName}"
 }

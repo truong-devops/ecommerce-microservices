@@ -4,6 +4,18 @@ Tài liệu này mô tả phương án triển khai dự án ecommerce microserv
 
 Ghi chú quan trọng: tên file có chữ `c10k`, nhưng phương án 4 VPS trong tài liệu này ưu tiên **demo DevSecOps + Kubernetes thực tế**, không tối ưu để benchmark C10K nặng. Nếu sau này muốn test C10K nghiêm túc, nên bổ sung máy load test riêng và nâng cấu hình worker/app.
 
+Nếu bạn muốn làm từ từ theo kiểu checklist cho người mới, bắt đầu từ file:
+
+```txt
+docs/deployment/start-here-end-to-end-runbook.md
+```
+
+Trước khi triển khai thật, rà file checklist cá nhân hóa:
+
+```txt
+docs/deployment/personalization-values-checklist.md
+```
+
 ## 1. Kết Luận Kiến Trúc
 
 Bạn quyết định dùng **4 VPS**, nên phương án hợp lý nhất là:
@@ -183,7 +195,7 @@ flowchart TB
     nginxhost["Nginx<br/>reverse proxy tooling"]
     jenkins["Jenkins"]
     docker["Docker Engine / Buildx"]
-    dockerhub["Docker Hub<br/>docker.io/truongdevops"]
+    dockerhub["Docker Hub<br/>docker.io/vantruong179"]
     trivy["Trivy<br/>filesystem + image scan"]
     owasp["OWASP Dependency Check"]
     sonar["SonarQube<br/>optional"]
@@ -491,13 +503,17 @@ sudo usermod -aG docker $USER
 Trong tài liệu này, namespace mặc định là:
 
 ```txt
-docker.io/truongdevops
+docker.io/vantruong179
 ```
 
-Nếu Docker Hub username/organization của bạn khác, thay toàn bộ `docker.io/truongdevops` bằng namespace thật, ví dụ:
+Repo Docker Hub của bạn đang dùng prefix `ecommerce-microservices-`, nên image sẽ có dạng:
 
 ```txt
-docker.io/<DOCKERHUB_USERNAME>
+docker.io/vantruong179/ecommerce-microservices-api-gateway:dev
+docker.io/vantruong179/ecommerce-microservices-auth-service:dev
+docker.io/vantruong179/ecommerce-microservices-user-service:dev
+docker.io/vantruong179/ecommerce-microservices-product-service:dev
+docker.io/vantruong179/ecommerce-microservices-cart-service:dev
 ```
 
 Các bước cần làm:
@@ -506,11 +522,11 @@ Các bước cần làm:
 2. Tạo repository cho từng service, hoặc để Jenkins push lần đầu nếu namespace cho phép tạo repo tự động:
 
 ```txt
-api-gateway
-auth-service
-user-service
-product-service
-cart-service
+ecommerce-microservices-api-gateway
+ecommerce-microservices-auth-service
+ecommerce-microservices-user-service
+ecommerce-microservices-product-service
+ecommerce-microservices-cart-service
 ```
 
 3. Tạo Docker Hub Access Token:
@@ -538,9 +554,9 @@ Sau đó test push image nhỏ:
 
 ```bash
 docker pull alpine:3.20
-docker tag alpine:3.20 docker.io/<DOCKERHUB_USERNAME>/smoke-alpine:3.20
-docker push docker.io/<DOCKERHUB_USERNAME>/smoke-alpine:3.20
-docker pull docker.io/<DOCKERHUB_USERNAME>/smoke-alpine:3.20
+docker tag alpine:3.20 docker.io/vantruong179/smoke-alpine:3.20
+docker push docker.io/vantruong179/smoke-alpine:3.20
+docker pull docker.io/vantruong179/smoke-alpine:3.20
 ```
 
 ### Chạy Jenkins
@@ -999,7 +1015,8 @@ Manifest mặc định dùng:
 
 ```txt
 Namespace: ecommerce-dev
-Docker Hub: docker.io/truongdevops
+Docker Hub: docker.io/vantruong179
+Repo prefix: ecommerce-microservices-
 Image tag: dev
 Ingress:   api.dt-commerce.site
 Storage:   local-path
@@ -1014,21 +1031,22 @@ cd ~/ecommerce-microservices
 
 docker login
 
-REGISTRY=docker.io/truongdevops
+REGISTRY=docker.io/vantruong179
+IMAGE_REPO_PREFIX=ecommerce-microservices-
 TAG=dev
 SERVICES="api-gateway auth-service user-service product-service cart-service"
 
 for svc in $SERVICES; do
-  docker build -t "$REGISTRY/$svc:$TAG" "services/$svc"
-  docker push "$REGISTRY/$svc:$TAG"
+  docker build -t "$REGISTRY/$IMAGE_REPO_PREFIX$svc:$TAG" "services/$svc"
+  docker push "$REGISTRY/$IMAGE_REPO_PREFIX$svc:$TAG"
 done
 ```
 
 Kiểm tra image đã push lên Docker Hub:
 
 ```bash
-docker pull docker.io/truongdevops/api-gateway:dev
-docker image inspect docker.io/truongdevops/api-gateway:dev
+docker pull docker.io/vantruong179/ecommerce-microservices-api-gateway:dev
+docker image inspect docker.io/vantruong179/ecommerce-microservices-api-gateway:dev
 ```
 
 ### 21.2 Tạo Namespace Và Secret
@@ -1168,10 +1186,10 @@ ClusterIssuer đã có sẵn ở:
 infrastructure/kubernetes/addons/cert-manager/cluster-issuer.yaml
 ```
 
-Sửa email thật của bạn nếu không dùng `admin@dt-commerce.site`:
+Sửa email thật của bạn nếu không dùng `vantruong1305.vn@gmail.com`:
 
 ```bash
-sed -i 's/admin@dt-commerce.site/<YOUR_EMAIL>/g' infrastructure/kubernetes/addons/cert-manager/cluster-issuer.yaml
+sed -i 's/vantruong1305.vn@gmail.com/<YOUR_EMAIL>/g' infrastructure/kubernetes/addons/cert-manager/cluster-issuer.yaml
 kubectl apply -f infrastructure/kubernetes/addons/cert-manager/cluster-issuer.yaml
 ```
 
@@ -1287,7 +1305,7 @@ helm repo update
 kubectl create namespace cattle-system --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-Nếu muốn dùng email Let's Encrypt khác `admin@dt-commerce.site`, sửa:
+Nếu muốn dùng email Let's Encrypt khác `vantruong1305.vn@gmail.com`, sửa:
 
 ```txt
 infrastructure/kubernetes/addons/rancher/values.yaml
@@ -1368,7 +1386,7 @@ Trong file, kiểm tra:
 ```txt
 cluster_name: teleport.dt-commerce.site
 public_addr: teleport.dt-commerce.site:443
-acme.email: admin@dt-commerce.site hoặc email thật của bạn
+acme.email: vantruong1305.vn@gmail.com hoặc email thật của bạn
 ```
 
 Start Teleport:
@@ -1549,7 +1567,8 @@ Parameters quan trọng:
 | Parameter | Giá trị mặc định | Ghi chú |
 |---|---|---|
 | `SERVICES` | `api-gateway,auth-service,user-service,product-service,cart-service` | Slice đầu |
-| `REGISTRY` | `docker.io/truongdevops` | Docker Hub namespace |
+| `REGISTRY` | `docker.io/vantruong179` | Docker Hub namespace |
+| `IMAGE_REPO_PREFIX` | `ecommerce-microservices-` | Prefix repo đang có trên Docker Hub |
 | `DOCKERHUB_CREDENTIAL_ID` | `dockerhub-credentials` | Credential để Jenkins `docker login` trước khi push |
 | `RUN_OWASP_DEPENDENCY_CHECK` | `true` | Có thể tắt lần đầu nếu NVD download quá lâu |
 | `RUN_SONARQUBE` | `false` | Bật sau khi SonarQube/token ổn |
@@ -1580,7 +1599,8 @@ Parameters mặc định:
 |---|---|---|
 | `SERVICES` | `api-gateway,auth-service,user-service,product-service,cart-service` | Phải khớp CI |
 | `IMAGE_TAG` | rỗng | CI job truyền git short SHA sang |
-| `REGISTRY` | `docker.io/truongdevops` | Docker Hub namespace |
+| `REGISTRY` | `docker.io/vantruong179` | Docker Hub namespace |
+| `IMAGE_REPO_PREFIX` | `ecommerce-microservices-` | Prefix repo đang có trên Docker Hub |
 | `KUSTOMIZE_DIR` | `infrastructure/kubernetes/overlays/dev` | Argo CD đang watch path này |
 | `GIT_BRANCH` | `main` | Branch Argo CD watch |
 | `GITHUB_REPO` | `https://github.com/truong-devops/ecommerce-microservices.git` | Repo thật |
@@ -1612,11 +1632,11 @@ Nếu webhook chưa dùng được, có thể chạy job thủ công trước.
 CI push image:
 
 ```txt
-docker.io/truongdevops/api-gateway:<git-short-sha>
-docker.io/truongdevops/auth-service:<git-short-sha>
-docker.io/truongdevops/user-service:<git-short-sha>
-docker.io/truongdevops/product-service:<git-short-sha>
-docker.io/truongdevops/cart-service:<git-short-sha>
+docker.io/vantruong179/ecommerce-microservices-api-gateway:<git-short-sha>
+docker.io/vantruong179/ecommerce-microservices-auth-service:<git-short-sha>
+docker.io/vantruong179/ecommerce-microservices-user-service:<git-short-sha>
+docker.io/vantruong179/ecommerce-microservices-product-service:<git-short-sha>
+docker.io/vantruong179/ecommerce-microservices-cart-service:<git-short-sha>
 ```
 
 CD commit image tag vào:

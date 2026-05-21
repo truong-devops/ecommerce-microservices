@@ -10,7 +10,8 @@ pipeline {
   parameters {
     string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service', description: 'Comma-separated services to update in Kustomize')
     string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag produced by the CI build job, normally git short SHA')
-    string(name: 'REGISTRY', defaultValue: 'docker.io/truongdevops', description: 'Docker Hub namespace used by Kubernetes')
+    string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace used by Kubernetes')
+    string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'KUSTOMIZE_DIR', defaultValue: 'infrastructure/kubernetes/overlays/dev', description: 'Kustomize overlay watched by Argo CD')
     string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Branch watched by Argo CD')
     string(name: 'GITHUB_REPO', defaultValue: 'https://github.com/truong-devops/ecommerce-microservices.git', description: 'GitHub repository URL')
@@ -38,13 +39,14 @@ pipeline {
       steps {
         script {
           selectedServices().each { svc ->
+            def image = dockerImageFor(svc)
             sh """
               set -eu
               docker run --rm \
                 -v "\$PWD/${params.KUSTOMIZE_DIR}:/work" \
                 -w /work \
                 registry.k8s.io/kustomize/kustomize:v5.4.3 \
-                edit set image ${svc}=${params.REGISTRY}/${svc}:${params.IMAGE_TAG}
+                edit set image ${svc}=${image}:${params.IMAGE_TAG}
             """
           }
         }
@@ -109,4 +111,8 @@ def selectedServices() {
     error "Unsupported service(s): ${unknown.join(', ')}"
   }
   return selected
+}
+
+def dockerImageFor(String serviceName) {
+  return "${params.REGISTRY}/${params.IMAGE_REPO_PREFIX}${serviceName}"
 }

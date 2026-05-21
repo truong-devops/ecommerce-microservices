@@ -1,9 +1,9 @@
 CREATE TABLE oauth_accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
-  provider VARCHAR(64) NOT NULL,
-  provider_user_id VARCHAR(255) NOT NULL,
-  provider_email VARCHAR(255) NOT NULL,
+  provider VARCHAR NOT NULL,
+  provider_user_id VARCHAR NOT NULL,
+  provider_email VARCHAR NOT NULL,
   provider_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -2,8 +2,8 @@ services:
   user-service-db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: euser
+      POSTGRES_PASSWORD: euser
       POSTGRES_DB: ecommerce_user
     restart: unless-stopped
     ports:
@@ -11,7 +11,7 @@ services:
     volumes:
       - user_service_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d ecommerce_user']
+      test: ['CMD-SHELL', 'pg_isready -U euser -d ecommerce_user']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -30,8 +30,8 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DB_HOST: user-service-db
       DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_USERNAME: euser
+      DB_PASSWORD: euser
       DB_NAME: ecommerce_user
       DB_SSL: 'false'
       DB_MIGRATIONS_RUN: 'true'

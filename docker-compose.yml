@@ -122,7 +122,7 @@ services:
       JWT_REFRESH_EXPIRES_IN: 45d
       JWT_MFA_SECRET: dev-shared-jwt-mfa-secret-min-32-chars
       REFRESH_TOKEN_PEPPER: dev-refresh-token-pepper-16chars
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/auth_db
+      DATABASE_URL: postgresql://eauth:eauth@postgres:5432/ecommerce_auth
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
@@ -169,8 +169,8 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
+      DB_USERNAME: euser
+      DB_PASSWORD: euser
       DB_NAME: ecommerce_user
       DB_SSL: 'false'
       DB_MIGRATIONS_RUN: 'true'
@@ -270,7 +270,7 @@ services:
       APP_ENV: development
       PORT: 8080
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://ecart:ecart@postgres:5432/ecommerce_cart
       DB_SSL: 'false'
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
@@ -313,7 +313,7 @@ services:
       PORT: 8080
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://eorder:eorder@postgres:5432/ecommerce_order
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       PRODUCT_SERVICE_BASE_URL: http://product-service:8080/api/v1
@@ -365,7 +365,7 @@ services:
       APP_ENV: development
       PORT: 8080
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://epayment:epayment@postgres:5432/ecommerce_payment
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       ORDER_SERVICE_BASE_URL: http://api-gateway:8080/api/v1
@@ -403,7 +403,7 @@ services:
       APP_ENV: development
       PORT: 8080
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://einventory:einventory@postgres:5432/ecommerce_inventory
       DB_SSL: 'false'
       REDIS_ENABLED: 'false'
       REDIS_URL: redis://redis:6379
@@ -449,7 +449,7 @@ services:
       ORDER_SERVICE_BASE_URL: http://order-service:8080/api/v1
       DEPENDENCY_TIMEOUT_MS: 5000
       SHIPPING_WEBHOOK_SIGNING_SECRET: dev-shipping-webhook-signing-secret
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://eshipping:eshipping@postgres:5432/ecommerce_shipping
       DB_SSL: 'false'
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
@@ -601,7 +601,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       PORT: 8080
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://enotification:enotification@postgres:5432/ecommerce_notification
       REDIS_URL: redis://redis:6379
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: /migrations/0001_init_notification_service.sql
@@ -629,7 +629,7 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       PORT: 8080
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://eanalytics:eanalytics@postgres:5432/ecommerce_analytics
       DB_SSL: 'false'
       DB_POOL_MAX: 10
       REDIS_URL: redis://redis:6379

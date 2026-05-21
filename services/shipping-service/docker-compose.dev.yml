@@ -25,13 +25,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
+      POSTGRES_USER: eshipping
+      POSTGRES_PASSWORD: eshipping
+      POSTGRES_DB: ecommerce_shipping
     volumes:
       - shipping_service_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      test: ['CMD-SHELL', 'pg_isready -U eshipping -d ecommerce_shipping']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -53,7 +53,7 @@ services:
     environment:
       APP_ENV: development
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://eshipping:eshipping@postgres:5432/ecommerce_shipping
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:9092
     ports:

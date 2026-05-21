@@ -1,0 +1,9 @@
+roles: kube
+proxyAddr: teleport.dt-commerce.site:443
+kubeClusterName: ecommerce-kubeadm-dev
+
+authToken: CHANGE_ME_JOIN_TOKEN
+
+labels:
+  env: dev
+  project: dt-commerce

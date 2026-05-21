@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      nodeSelector:
+        workload: app
+      containers:
+        - name: auth-service
+          image: auth-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ecommerce-common-config
+            - secretRef:
+                name: ecommerce-secrets
+          env:
+            - name: APP_NAME
+              value: auth-service
+            - name: DATABASE_URL
+              value: postgresql://eauth:eauth@postgres:5432/ecommerce_auth
+            - name: JWT_ACCESS_EXPIRES_IN
+              value: 8h
+            - name: JWT_REFRESH_EXPIRES_IN
+              value: 45d
+            - name: JWT_MFA_EXPIRES_IN
+              value: 10m
+            - name: GOOGLE_OAUTH_REDIRECT_URI
+              value: https://api.dt-commerce.site/api/v1/auth/oauth/google/callback
+            - name: GOOGLE_OAUTH_SCOPES
+              value: openid email profile
+            - name: BUYER_WEB_BASE_URL
+              value: https://buyer.dt-commerce.site
+            - name: SELLER_WEB_BASE_URL
+              value: https://seller.dt-commerce.site
+            - name: MODERATOR_WEB_BASE_URL
+              value: https://moderator.dt-commerce.site
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /api/v1/live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

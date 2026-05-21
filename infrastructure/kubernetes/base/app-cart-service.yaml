@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  labels:
+    app: cart-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+    spec:
+      nodeSelector:
+        workload: app
+      containers:
+        - name: cart-service
+          image: cart-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ecommerce-common-config
+            - secretRef:
+                name: ecommerce-secrets
+          env:
+            - name: APP_NAME
+              value: cart-service
+            - name: DATABASE_URL
+              value: postgresql://ecart:ecart@postgres:5432/ecommerce_cart?sslmode=disable
+            - name: CART_PERSISTENCE_ENABLED
+              value: "true"
+            - name: DB_MIGRATIONS_RUN
+              value: "true"
+            - name: MIGRATION_FILE
+              value: /migrations/0001_init_cart_service.sql
+            - name: CART_VALIDATE_EXTERNAL
+              value: "false"
+            - name: PRODUCT_SERVICE_BASE_URL
+              value: http://product-service:8080/api/v1
+            - name: INVENTORY_SERVICE_BASE_URL
+              value: http://not-deployed-inventory-service:8080/api/v1
+            - name: CART_DEFAULT_CURRENCY
+              value: USD
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /api/v1/live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  labels:
+    app: cart-service
+spec:
+  type: ClusterIP
+  selector:
+    app: cart-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

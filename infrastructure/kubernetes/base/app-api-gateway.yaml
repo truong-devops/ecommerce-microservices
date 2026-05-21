@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      nodeSelector:
+        workload: app
+      containers:
+        - name: api-gateway
+          image: api-gateway:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: ecommerce-common-config
+            - secretRef:
+                name: ecommerce-secrets
+          env:
+            - name: APP_NAME
+              value: api-gateway
+            - name: AUTH_SERVICE_URL
+              value: http://auth-service:8080
+            - name: USER_SERVICE_URL
+              value: http://user-service:8080
+            - name: PRODUCT_SERVICE_URL
+              value: http://product-service:8080
+            - name: CART_SERVICE_URL
+              value: http://cart-service:8080
+            - name: MEDIA_SERVICE_URL
+              value: http://not-deployed-media-service:8080
+            - name: ORDER_SERVICE_URL
+              value: http://not-deployed-order-service:8080
+            - name: PAYMENT_SERVICE_URL
+              value: http://not-deployed-payment-service:8080
+            - name: INVENTORY_SERVICE_URL
+              value: http://not-deployed-inventory-service:8080
+            - name: SHIPPING_SERVICE_URL
+              value: http://not-deployed-shipping-service:8080
+            - name: REVIEW_SERVICE_URL
+              value: http://not-deployed-review-service:8080
+            - name: NOTIFICATION_SERVICE_URL
+              value: http://not-deployed-notification-service:8080
+            - name: ANALYTICS_SERVICE_URL
+              value: http://not-deployed-analytics-service:8080
+            - name: CHAT_SERVICE_URL
+              value: http://not-deployed-chat-service:8080
+            - name: LIVE_SERVICE_URL
+              value: http://not-deployed-live-service:8080
+            - name: CORS_ALLOWED_ORIGINS
+              value: "*"
+            - name: RATE_LIMIT_RPS
+              value: "50"
+            - name: RATE_LIMIT_BURST
+              value: "100"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

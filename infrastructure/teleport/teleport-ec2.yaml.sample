@@ -1,0 +1,24 @@
+version: v3
+teleport:
+  nodename: teleport-access-01
+  data_dir: /var/lib/teleport
+  log:
+    output: stderr
+    severity: INFO
+
+auth_service:
+  enabled: true
+  cluster_name: teleport.dt-commerce.site
+  listen_addr: 0.0.0.0:3025
+
+proxy_service:
+  enabled: true
+  web_listen_addr: 0.0.0.0:443
+  public_addr: teleport.dt-commerce.site:443
+  https_keypairs: []
+  acme:
+    enabled: true
+    email: admin@dt-commerce.site
+
+ssh_service:
+  enabled: false

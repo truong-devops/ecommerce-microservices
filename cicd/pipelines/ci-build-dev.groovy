@@ -8,18 +8,16 @@ pipeline {
   }
 
   parameters {
-    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service', description: 'Comma-separated services to build and deploy')
+    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service', description: 'Comma-separated services to build')
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins username/password credential for Docker Hub')
-    string(name: 'NAMESPACE', defaultValue: 'ecommerce-dev', description: 'Kubernetes namespace')
-    string(name: 'KUSTOMIZE_DIR', defaultValue: 'infrastructure/kubernetes/overlays/dev', description: 'Kustomize overlay to apply')
-    string(name: 'API_BASE_URL', defaultValue: 'https://api.dt-commerce.site', description: 'Public API base URL for smoke test')
-    booleanParam(name: 'RUN_OWASP_DEPENDENCY_CHECK', defaultValue: false, description: 'Run OWASP Dependency Check when dependency-check.sh is installed')
-  }
-
-  environment {
-    KUBECONFIG_CREDENTIAL_ID = 'kubeconfig-ecommerce-dev'
+    booleanParam(name: 'RUN_OWASP_DEPENDENCY_CHECK', defaultValue: true, description: 'Run OWASP Dependency Check when dependency-check.sh is installed')
+    booleanParam(name: 'RUN_SONARQUBE', defaultValue: false, description: 'Run SonarQube analysis when scanner/credentials are configured')
+    string(name: 'SONAR_HOST_URL', defaultValue: 'https://sonar.dt-commerce.site', description: 'SonarQube URL')
+    string(name: 'SONAR_CREDENTIAL_ID', defaultValue: 'sonar-token', description: 'Jenkins Secret text credential containing the SonarQube token')
+    booleanParam(name: 'TRIGGER_CD_JOB', defaultValue: true, description: 'Trigger the GitOps CD job after images are pushed')
+    string(name: 'CD_JOB_NAME', defaultValue: 'ecommerce-dev-cd-gitops', description: 'Jenkins CD job to trigger')
   }
 
   stages {
@@ -34,7 +32,7 @@ pipeline {
         }
         sh '''
           set -eu
-          mkdir -p reports/trivy reports/dependency-check
+          mkdir -p reports/trivy reports/dependency-check reports/sonar
           echo "IMAGE_TAG=${IMAGE_TAG}"
           echo "SELECTED_SERVICES=${SELECTED_SERVICES}"
         '''
@@ -97,16 +95,39 @@ pipeline {
       steps {
         sh '''
           set -eu
-          if ! command -v dependency-check.sh >/dev/null 2>&1; then
-            echo "dependency-check.sh is not installed"
-            exit 1
-          fi
-          dependency-check.sh \
+          docker run --rm \
+            -v "$PWD:/src" \
+            -v "$PWD/reports/dependency-check:/report" \
+            owasp/dependency-check:latest \
             --project ecommerce-microservices \
-            --scan services \
+            --scan /src/services \
             --format HTML \
-            --out reports/dependency-check
+            --out /report \
+            --failOnCVSS 9
         '''
+      }
+    }
+
+    stage('SonarQube Analysis') {
+      when {
+        expression { return params.RUN_SONARQUBE }
+      }
+      steps {
+        withCredentials([string(credentialsId: params.SONAR_CREDENTIAL_ID, variable: 'SONAR_TOKEN')]) {
+          sh """
+            set -eu
+            docker run --rm \
+              -e SONAR_HOST_URL="${params.SONAR_HOST_URL}" \
+              -e SONAR_TOKEN="\${SONAR_TOKEN}" \
+              -v "\$PWD:/usr/src" \
+              sonarsource/sonar-scanner-cli:latest \
+              -Dsonar.projectKey=ecommerce-microservices \
+              -Dsonar.projectName=ecommerce-microservices \
+              -Dsonar.sources=services \
+              -Dsonar.host.url="${params.SONAR_HOST_URL}" \
+              -Dsonar.token="\${SONAR_TOKEN}"
+          """
+        }
       }
     }
 
@@ -172,48 +193,21 @@ pipeline {
       }
     }
 
-    stage('Deploy Kubernetes') {
-      steps {
-        withCredentials([file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG_FILE')]) {
-          script {
-            try {
-              sh """
-                set -eu
-                export KUBECONFIG="\$KUBECONFIG_FILE"
-                kubectl apply -k ${params.KUSTOMIZE_DIR}
-              """
-
-              selectedServices().each { svc ->
-                def image = dockerImageFor(svc)
-                sh """
-                  set -eu
-                  export KUBECONFIG="\$KUBECONFIG_FILE"
-                  kubectl -n ${params.NAMESPACE} set image deployment/${svc} ${svc}=${image}:${env.IMAGE_TAG}
-                  kubectl -n ${params.NAMESPACE} rollout status deployment/${svc} --timeout=240s
-                """
-              }
-            } catch (err) {
-              selectedServices().each { svc ->
-                sh """
-                  set +e
-                  export KUBECONFIG="\$KUBECONFIG_FILE"
-                  kubectl -n ${params.NAMESPACE} rollout undo deployment/${svc}
-                """
-              }
-              throw err
-            }
-          }
-        }
+    stage('Trigger CD GitOps Job') {
+      when {
+        expression { return params.TRIGGER_CD_JOB }
       }
-    }
-
-    stage('Smoke Test') {
       steps {
-        sh '''
-          set -eu
-          curl -fsS "${API_BASE_URL}/health"
-          curl -fsS "${API_BASE_URL}/api/v1/products" >/dev/null
-        '''
+        build job: params.CD_JOB_NAME,
+          wait: false,
+          parameters: [
+            string(name: 'SERVICES', value: env.SELECTED_SERVICES),
+            string(name: 'IMAGE_TAG', value: env.IMAGE_TAG),
+            string(name: 'REGISTRY', value: params.REGISTRY),
+            string(name: 'IMAGE_REPO_PREFIX', value: params.IMAGE_REPO_PREFIX),
+            string(name: 'GIT_BRANCH', value: env.BRANCH_NAME ?: 'main'),
+            string(name: 'API_BASE_URL', value: 'https://api.dt-commerce.site')
+          ]
       }
     }
   }
@@ -221,6 +215,9 @@ pipeline {
   post {
     always {
       archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+    }
+    success {
+      echo "Built image tag: ${env.IMAGE_TAG}. Run the CD GitOps job with this tag."
     }
   }
 }

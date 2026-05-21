@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - data-postgres.yaml
+  - data-mongo.yaml
+  - data-redis.yaml
+  - app-auth-service.yaml
+  - app-user-service.yaml
+  - app-product-service.yaml
+  - app-cart-service.yaml
+  - app-api-gateway.yaml
+  - ingress.yaml
+
+configMapGenerator:
+  - name: postgres-init-sql
+    files:
+      - init-multiple-dbs.sql=postgres-init-multiple-dbs.sql
+
+generatorOptions:
+  disableNameSuffixHash: true

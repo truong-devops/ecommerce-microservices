@@ -1,0 +1,21 @@
+version: v3
+teleport:
+  nodename: CHANGE_ME_NODE_NAME
+  data_dir: /var/lib/teleport
+  proxy_server: teleport.dt-commerce.site:443
+  auth_token: CHANGE_ME_JOIN_TOKEN
+  log:
+    output: stderr
+    severity: INFO
+
+ssh_service:
+  enabled: true
+  labels:
+    env: dev
+    project: dt-commerce
+
+auth_service:
+  enabled: false
+
+proxy_service:
+  enabled: false

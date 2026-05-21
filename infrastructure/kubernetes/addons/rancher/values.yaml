@@ -1,0 +1,13 @@
+hostname: rancher.dt-commerce.site
+replicas: 1
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  tls:
+    source: letsEncrypt
+
+letsEncrypt:
+  email: vantruong1305.vn@gmail.com
+  ingress:
+    class: nginx

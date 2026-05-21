@@ -80,7 +80,7 @@ func main() {
 		PlaybackProtocol: domainLivePlaybackProtocol(cfg.LiveMediaPlaybackProtocol),
 		IngestBaseURL:    cfg.LiveMediaIngestBaseURL,
 		PlaybackBaseURL:  cfg.LiveMediaPlaybackBaseURL,
-	}))
+	}), service.WithRealtimeRedis(redisService))
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	liveHandler := handler.NewLiveHandler(liveService)

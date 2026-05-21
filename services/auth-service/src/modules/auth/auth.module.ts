@@ -24,6 +24,7 @@ import { AuthService } from './services/auth.service';
 import { EventsPublisherService } from './services/events-publisher.service';
 import { MfaService } from './services/mfa.service';
 import { PasswordService } from './services/password.service';
+import { RateLimiterService } from './services/rate-limiter.service';
 import { SessionService } from './services/session.service';
 import { TokenService } from './services/token.service';
 
@@ -45,6 +46,7 @@ import { TokenService } from './services/token.service';
   providers: [
     AuthService,
     PasswordService,
+    RateLimiterService,
     TokenService,
     SessionService,
     MfaService,

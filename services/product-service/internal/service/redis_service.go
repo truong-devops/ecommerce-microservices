@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -49,6 +51,56 @@ func (s *RedisService) IsAccessTokenRevoked(_ *http.Request, jti string) (bool, 
 		return false, err
 	}
 	return value != "", nil
+}
+
+func (s *RedisService) GetJSON(ctx context.Context, key string, dest any) error {
+	if s == nil || !s.enabled || s.client == nil {
+		return redis.Nil
+	}
+	value, err := s.client.Get(ctx, key).Bytes()
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(value, dest)
+}
+
+func (s *RedisService) SetJSON(ctx context.Context, key string, value any, ttl time.Duration) error {
+	if s == nil || !s.enabled || s.client == nil {
+		return nil
+	}
+	payload, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return s.client.Set(ctx, key, payload, ttl).Err()
+}
+
+func (s *RedisService) AddToSet(ctx context.Context, setKey string, ttl time.Duration, members ...string) error {
+	if s == nil || !s.enabled || s.client == nil || len(members) == 0 {
+		return nil
+	}
+	args := make([]any, 0, len(members))
+	for _, member := range members {
+		args = append(args, member)
+	}
+	if err := s.client.SAdd(ctx, setKey, args...).Err(); err != nil {
+		return err
+	}
+	return s.client.Expire(ctx, setKey, ttl).Err()
+}
+
+func (s *RedisService) SetMembers(ctx context.Context, setKey string) ([]string, error) {
+	if s == nil || !s.enabled || s.client == nil {
+		return nil, nil
+	}
+	return s.client.SMembers(ctx, setKey).Result()
+}
+
+func (s *RedisService) Delete(ctx context.Context, keys ...string) error {
+	if s == nil || !s.enabled || s.client == nil || len(keys) == 0 {
+		return nil
+	}
+	return s.client.Del(ctx, keys...).Err()
 }
 
 func (s *RedisService) Close() error {

@@ -314,11 +314,9 @@ func (s *ChatService) SendMessage(ctx context.Context, user domain.UserContext, 
 	message := txResult.Message
 
 	if txResult.Created {
-		_ = s.redis.PublishJSON(ctx, redisConversationChannel(conversationID), map[string]any{
-			"type":           domain.EventMessageCreated,
-			"conversationId": conversationID,
-			"message":        messageToResponse(message),
-		})
+		_ = s.redis.PublishJSON(ctx, redisConversationChannel(conversationID), chatPubSubEnvelope(domain.EventMessageCreated, conversationID, message.ID, message.SentAt, map[string]any{
+			"message": messageToResponse(message),
+		}))
 	}
 
 	return messageToResponse(message), nil
@@ -362,14 +360,12 @@ func (s *ChatService) MarkRead(ctx context.Context, user domain.UserContext, con
 		return nil, err
 	}
 
-	_ = s.redis.PublishJSON(ctx, redisConversationChannel(conversationID), map[string]any{
-		"type":           domain.EventMessageRead,
-		"conversationId": conversationID,
-		"readerId":       user.UserID,
-		"readerCode":     formatUserCode(user.UserID, user.Role),
-		"readerRole":     user.Role,
-		"readAt":         now.Format(time.RFC3339Nano),
-	})
+	_ = s.redis.PublishJSON(ctx, redisConversationChannel(conversationID), chatPubSubEnvelope(domain.EventMessageRead, conversationID, "", now, map[string]any{
+		"readerId":   user.UserID,
+		"readerCode": formatUserCode(user.UserID, user.Role),
+		"readerRole": user.Role,
+		"readAt":     now.Format(time.RFC3339Nano),
+	}))
 
 	return map[string]any{
 		"conversationId": conversationID,
@@ -397,6 +393,22 @@ func (s *ChatService) AssertConversationAccess(ctx context.Context, user domain.
 
 func redisConversationChannel(conversationID string) string {
 	return "chat:conversation:" + strings.TrimSpace(conversationID)
+}
+
+func chatPubSubEnvelope(eventType, conversationID, messageID string, occurredAt time.Time, payload map[string]any) map[string]any {
+	envelope := map[string]any{
+		"type":           strings.TrimSpace(eventType),
+		"version":        1,
+		"conversationId": strings.TrimSpace(conversationID),
+		"occurredAt":     occurredAt.UTC().Format(time.RFC3339Nano),
+	}
+	if strings.TrimSpace(messageID) != "" {
+		envelope["messageId"] = strings.TrimSpace(messageID)
+	}
+	for key, value := range payload {
+		envelope[key] = value
+	}
+	return envelope
 }
 
 func resolveParticipantIDs(user domain.UserContext, req CreateConversationRequest) (string, string, error) {

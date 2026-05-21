@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -18,6 +19,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
+
+const liveViewerPresenceTTL = 90 * time.Second
 
 type WSHandler struct {
 	liveService    *service.LiveService
@@ -74,27 +77,28 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 
 	client := &livews.Client{SessionID: sessionID, Send: make(chan any, 32)}
 	localCount := h.hub.Register(client)
+	viewerPresenceID := uuid.NewString()
 
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
 	viewerCount := int64(localCount)
 	if h.redis != nil && h.redis.Enabled() {
-		if count, err := h.redis.IncrementPresence(ctx, sessionID, 2*time.Hour); err == nil && count > 0 {
+		if count, err := h.redis.TrackViewerPresence(ctx, sessionID, viewerPresenceID, liveViewerPresenceTTL); err == nil && count > 0 {
 			viewerCount = count
 		}
 	}
 	h.liveService.TrackViewerJoined(ctx, user, sessionID, viewerCount)
-	_ = h.hub.Broadcast(ctx, sessionID, map[string]any{"type": "live:viewer:count", "count": viewerCount})
+	_ = h.broadcastRealtime(ctx, sessionID, map[string]any{"type": "live:viewer:count", "count": viewerCount})
 	defer func() {
 		count := int64(h.hub.Unregister(client))
 		if h.redis != nil && h.redis.Enabled() {
-			if redisCount, err := h.redis.DecrementPresence(context.Background(), sessionID); err == nil {
+			if redisCount, err := h.redis.RemoveViewerPresence(context.Background(), sessionID, viewerPresenceID); err == nil {
 				count = redisCount
 			}
 		}
 		h.liveService.TrackViewerLeft(context.Background(), user, sessionID, count)
-		_ = h.hub.Broadcast(context.Background(), sessionID, map[string]any{"type": "live:viewer:count", "count": count})
+		_ = h.broadcastRealtime(context.Background(), sessionID, map[string]any{"type": "live:viewer:count", "count": count})
 	}()
 
 	var writeMu sync.Mutex
@@ -123,10 +127,41 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	if h.redis != nil && h.redis.Enabled() {
+		pubsub, err := h.redis.Subscribe(ctx, service.LiveSessionChannel(sessionID))
+		if err == nil && pubsub != nil {
+			defer pubsub.Close()
+			go func() {
+				ch := pubsub.Channel()
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case msg, ok := <-ch:
+						if !ok {
+							return
+						}
+						var payload map[string]any
+						if err := json.Unmarshal([]byte(msg.Payload), &payload); err != nil {
+							continue
+						}
+						if err := writeJSON(payload); err != nil {
+							cancel()
+							return
+						}
+					}
+				}
+			}()
+		}
+	}
+
 	conn.SetReadLimit(1 << 20)
 	_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
 		_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		if h.redis != nil && h.redis.Enabled() {
+			_ = h.redis.RefreshViewerPresence(context.Background(), sessionID, viewerPresenceID, liveViewerPresenceTTL)
+		}
 		return nil
 	})
 
@@ -138,6 +173,9 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				if h.redis != nil && h.redis.Enabled() {
+					_ = h.redis.RefreshViewerPresence(context.Background(), sessionID, viewerPresenceID, liveViewerPresenceTTL)
+				}
 				writeMu.Lock()
 				conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 				err := conn.WriteMessage(websocket.PingMessage, []byte("ping"))
@@ -180,7 +218,7 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			}
 			_ = writeJSON(map[string]any{"type": "ack", "action": "live:message:create", "message": result})
 		case "live:webrtc:broadcaster-ready", "live:webrtc:viewer-ready", "live:webrtc:offer", "live:webrtc:answer", "live:webrtc:ice-candidate":
-			_ = h.hub.Broadcast(ctx, sessionID, map[string]any{
+			_ = h.broadcastRealtime(ctx, sessionID, map[string]any{
 				"type":           strings.ToLower(strings.TrimSpace(incoming.Type)),
 				"fromClientId":   strings.TrimSpace(incoming.ClientID),
 				"targetClientId": strings.TrimSpace(incoming.TargetClientID),
@@ -198,6 +236,17 @@ func (h *WSHandler) WebSocket(w http.ResponseWriter, r *http.Request) {
 			_ = writeJSON(map[string]any{"type": "error", "message": "unsupported event type"})
 		}
 	}
+}
+
+func (h *WSHandler) broadcastRealtime(ctx context.Context, sessionID string, payload map[string]any) error {
+	if h.redis != nil && h.redis.Enabled() {
+		if eventType, ok := payload["type"].(string); ok && strings.TrimSpace(eventType) != "" {
+			if err := h.redis.PublishJSON(ctx, service.LiveSessionChannel(sessionID), service.LivePubSubEnvelope(eventType, sessionID, payload)); err == nil {
+				return nil
+			}
+		}
+	}
+	return h.hub.Broadcast(ctx, sessionID, payload)
 }
 
 func webSocketErrorPayload(err error) map[string]any {

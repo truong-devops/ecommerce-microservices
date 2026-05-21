@@ -2,11 +2,11 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ecommerce
-      POSTGRES_PASSWORD: ecommerce
-      POSTGRES_DB: ecommerce
+      POSTGRES_USER: einventory
+      POSTGRES_PASSWORD: einventory
+      POSTGRES_DB: ecommerce_inventory
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ecommerce -d ecommerce']
+      test: ['CMD-SHELL', 'pg_isready -U einventory -d ecommerce_inventory']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -30,7 +30,7 @@ services:
       APP_ENV: development
       PORT: 3007
       API_PREFIX: api/v1
-      DATABASE_URL: postgresql://ecommerce:ecommerce@postgres:5432/ecommerce
+      DATABASE_URL: postgresql://einventory:einventory@postgres:5432/ecommerce_inventory
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       REDIS_ENABLED: 'false'
       REDIS_URL: redis://redis:6379

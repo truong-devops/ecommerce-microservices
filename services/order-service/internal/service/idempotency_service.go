@@ -30,6 +30,8 @@ type IdempotencyService struct {
 	lockTTLSeconds   int
 }
 
+const createOrderIdempotencyLockPrefix = "idem:order:create"
+
 func NewIdempotencyService(repo *repository.OrderRepository, redis *RedisService, recordTTLMinutes, lockTTLSeconds int) *IdempotencyService {
 	return &IdempotencyService{
 		repo:             repo,
@@ -53,7 +55,7 @@ func (s *IdempotencyService) AcquireForCreateOrder(ctx context.Context, userID, 
 		return s.handleExisting(*existing, requestHash)
 	}
 
-	lockKey := "idem:lock:" + userID + ":" + idempotencyKey
+	lockKey := createOrderIdempotencyLockKey(userID, idempotencyKey)
 	lockOk, err := s.redis.SetNXWithTTL(ctx, lockKey, uuid.NewString(), time.Duration(s.lockTTLSeconds)*time.Second)
 	if err != nil {
 		return AcquireResult{}, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Failed to acquire idempotency lock", nil)
@@ -157,4 +159,8 @@ func hashValue(value any) (string, error) {
 	}
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+func createOrderIdempotencyLockKey(userID, idempotencyKey string) string {
+	return createOrderIdempotencyLockPrefix + ":" + userID + ":" + idempotencyKey
 }

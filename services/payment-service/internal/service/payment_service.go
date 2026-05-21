@@ -822,6 +822,8 @@ func (s *PaymentService) HandleOrderCreatedEvent(
 	currency string,
 	orderNumber *string,
 	requestID string,
+	eventID string,
+	topic string,
 	partition int,
 	offset int64,
 ) error {
@@ -834,6 +836,20 @@ func (s *PaymentService) HandleOrderCreatedEvent(
 		return err
 	}
 	defer tx.Rollback(ctx)
+
+	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
+		EventID:     eventID,
+		EventType:   "order.created",
+		Topic:       topic,
+		Partition:   partition,
+		OffsetValue: offset,
+	})
+	if err != nil {
+		return err
+	}
+	if alreadyProcessed {
+		return tx.Commit(ctx)
+	}
 
 	existing, err := s.repo.FindPaymentByOrderIDForUpdate(ctx, tx, orderID)
 	if err != nil {

@@ -29,6 +29,15 @@ type CreateOutboxEventInput struct {
 	Payload       map[string]any
 }
 
+type ProcessedEventInput struct {
+	ConsumerName string
+	EventID      string
+	EventType    string
+	Topic        string
+	Partition    int
+	OffsetValue  int64
+}
+
 func NewInventoryRepository(db *pgxpool.Pool) *InventoryRepository {
 	return &InventoryRepository{db: db}
 }
@@ -229,11 +238,33 @@ func (r *InventoryRepository) InsertOutboxEvent(ctx context.Context, tx pgx.Tx, 
 	return nil
 }
 
+func (r *InventoryRepository) TryMarkEventProcessed(ctx context.Context, tx pgx.Tx, input ProcessedEventInput) (bool, error) {
+	consumerName := input.ConsumerName
+	if consumerName == "" {
+		consumerName = "inventory-service"
+	}
+	eventID := input.EventID
+	if eventID == "" {
+		eventID = fmt.Sprintf("%s:%d:%d", input.Topic, input.Partition, input.OffsetValue)
+	}
+	tag, err := tx.Exec(ctx, `
+		INSERT INTO processed_events (
+			consumer_name, event_id, event_type, topic, partition, offset_value
+		) VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT DO NOTHING
+	`, consumerName, eventID, input.EventType, input.Topic, input.Partition, input.OffsetValue)
+	if err != nil {
+		return false, queryFailed("mark event processed failed", err)
+	}
+	return tag.RowsAffected() == 0, nil
+}
+
 func (r *InventoryRepository) FindDispatchableOutboxEvents(ctx context.Context, limit int) ([]domain.OutboxEvent, error) {
 	rows, err := r.db.Query(ctx, `
 		SELECT id, aggregate_type, aggregate_id, event_type, payload, status, retry_count, next_retry_at, created_at, published_at
 		FROM outbox_events
-		WHERE status = 'PENDING' OR (status = 'FAILED' AND next_retry_at IS NOT NULL AND next_retry_at <= now())
+		WHERE event_type LIKE 'inventory.%'
+			AND (status = 'PENDING' OR (status = 'FAILED' AND next_retry_at IS NOT NULL AND next_retry_at <= now()))
 		ORDER BY created_at ASC
 		LIMIT $1
 	`, limit)

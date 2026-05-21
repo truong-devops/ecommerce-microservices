@@ -13,6 +13,7 @@ import (
 
 	"order-service/internal/domain"
 	"order-service/internal/httpx"
+	"order-service/internal/metrics"
 	"order-service/internal/repository"
 
 	"github.com/jackc/pgx/v5"
@@ -74,15 +75,21 @@ type OrderService struct {
 	repo              *repository.OrderRepository
 	idempotency       *IdempotencyService
 	productCatalog    *ProductCatalogClient
+	sagaMetrics       *metrics.CheckoutSagaMetrics
 	defaultStatusTime func() time.Time
 	orderSeq          uint64
 }
 
-func NewOrderService(repo *repository.OrderRepository, idem *IdempotencyService, productCatalog *ProductCatalogClient) *OrderService {
+func NewOrderService(repo *repository.OrderRepository, idem *IdempotencyService, productCatalog *ProductCatalogClient, sagaMetrics ...*metrics.CheckoutSagaMetrics) *OrderService {
+	var checkoutMetrics *metrics.CheckoutSagaMetrics
+	if len(sagaMetrics) > 0 {
+		checkoutMetrics = sagaMetrics[0]
+	}
 	return &OrderService{
 		repo:              repo,
 		idempotency:       idem,
 		productCatalog:    productCatalog,
+		sagaMetrics:       checkoutMetrics,
 		defaultStatusTime: func() time.Time { return time.Now().UTC() },
 	}
 }
@@ -144,6 +151,10 @@ func (s *OrderService) CreateOrder(ctx context.Context, user domain.UserContext,
 		return nil, err
 	}
 
+	if err := s.repo.CreateOrderSagaState(ctx, tx, createdOrder.ID); err != nil {
+		return nil, err
+	}
+
 	createdItems, err := s.repo.CreateOrderItems(ctx, tx, createdOrder.ID, normalizedItems)
 	if err != nil {
 		return nil, err
@@ -190,6 +201,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, user domain.UserContext,
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
+	s.sagaMetrics.IncStarted()
 	return response, nil
 }
 

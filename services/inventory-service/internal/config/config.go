@@ -30,11 +30,13 @@ type Config struct {
 	DispatchBatch    int
 	DispatchMaxRetry int
 
-	KafkaEnabled         bool
-	KafkaClientID        string
-	KafkaConsumerGroup   string
-	KafkaBrokers         []string
-	InventoryEventsTopic string
+	KafkaEnabled             bool
+	KafkaClientID            string
+	KafkaConsumerGroup       string
+	OrderEventsTopic         string
+	OrderEventsConsumerGroup string
+	KafkaBrokers             []string
+	InventoryEventsTopic     string
 
 	RunMigrations bool
 	MigrationFile string
@@ -51,11 +53,13 @@ func Load() (Config, error) {
 		RedisURL:        strings.TrimSpace(os.Getenv("REDIS_URL")),
 		JWTAccessSecret: strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
 
-		KafkaEnabled:         parseBool(getEnv("KAFKA_ENABLED", "false")),
-		KafkaClientID:        getEnv("KAFKA_CLIENT_ID", "inventory-service"),
-		KafkaConsumerGroup:   getEnv("KAFKA_CONSUMER_GROUP_ID", "inventory-service-group"),
-		KafkaBrokers:         parseCSV(getEnv("KAFKA_BROKERS", "localhost:9092")),
-		InventoryEventsTopic: getEnv("INVENTORY_EVENTS_TOPIC", "inventory.events"),
+		KafkaEnabled:             parseBool(getEnv("KAFKA_ENABLED", "false")),
+		KafkaClientID:            getEnv("KAFKA_CLIENT_ID", "inventory-service"),
+		KafkaConsumerGroup:       getEnv("KAFKA_CONSUMER_GROUP_ID", "inventory-service-group"),
+		OrderEventsTopic:         getEnv("ORDER_EVENTS_TOPIC", "order.events"),
+		OrderEventsConsumerGroup: getEnv("ORDER_EVENTS_CONSUMER_GROUP", "inventory-service-order-events-group"),
+		KafkaBrokers:             parseCSV(getEnv("KAFKA_BROKERS", "localhost:9092")),
+		InventoryEventsTopic:     getEnv("INVENTORY_EVENTS_TOPIC", "inventory.events"),
 
 		RunMigrations: parseBool(getEnv("DB_MIGRATIONS_RUN", "true")),
 		MigrationFile: getEnv("MIGRATION_FILE", "migrations/0001_init_inventory_service.sql"),

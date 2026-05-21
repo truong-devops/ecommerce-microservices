@@ -68,6 +68,15 @@ type CreateOutboxEventInput struct {
 	Payload       map[string]any
 }
 
+type ProcessedEventInput struct {
+	ConsumerName string
+	EventID      string
+	EventType    string
+	Topic        string
+	Partition    int
+	OffsetValue  int64
+}
+
 type ListOrdersQuery struct {
 	Page      int
 	PageSize  int
@@ -220,6 +229,123 @@ func (r *OrderRepository) InsertOutboxEvent(ctx context.Context, tx pgx.Tx, inpu
 		return queryFailed("insert outbox event failed", err)
 	}
 	return nil
+}
+
+func (r *OrderRepository) CreateOrderSagaState(ctx context.Context, tx pgx.Tx, orderID string) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO order_saga_states (
+			order_id, saga_status, inventory_status, payment_status
+		)
+		VALUES ($1,$2,$3,$4)
+		ON CONFLICT (order_id) DO NOTHING
+	`,
+		orderID,
+		domain.SagaStatusPending,
+		domain.SagaInventoryStatusPending,
+		domain.SagaPaymentStatusPending,
+	)
+	if err != nil {
+		return queryFailed("create order saga state failed", err)
+	}
+	return nil
+}
+
+func (r *OrderRepository) FindOrderSagaStateForUpdate(ctx context.Context, tx pgx.Tx, orderID string) (*domain.OrderSagaState, error) {
+	row := tx.QueryRow(ctx, `
+		SELECT order_id, saga_status, inventory_status, payment_status,
+			inventory_event_id, payment_event_id, failure_code, failure_reason,
+			created_at, updated_at
+		FROM order_saga_states
+		WHERE order_id = $1
+		FOR UPDATE
+	`, orderID)
+
+	state, err := scanOrderSagaStateRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("find order saga state failed", err)
+	}
+	return &state, nil
+}
+
+func (r *OrderRepository) FindStalePendingSagaOrderIDs(ctx context.Context, cutoff time.Time, limit int) ([]string, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT order_id
+		FROM order_saga_states
+		WHERE saga_status = $1
+			AND updated_at < $2
+		ORDER BY updated_at ASC
+		LIMIT $3
+	`, domain.SagaStatusPending, cutoff, limit)
+	if err != nil {
+		return nil, queryFailed("find stale pending saga states failed", err)
+	}
+	defer rows.Close()
+
+	orderIDs := make([]string, 0)
+	for rows.Next() {
+		var orderID string
+		if err := rows.Scan(&orderID); err != nil {
+			return nil, queryFailed("scan stale saga order id failed", err)
+		}
+		orderIDs = append(orderIDs, orderID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, queryFailed("iterate stale saga order ids failed", err)
+	}
+	return orderIDs, nil
+}
+
+func (r *OrderRepository) UpdateOrderSagaState(ctx context.Context, tx pgx.Tx, state domain.OrderSagaState) error {
+	_, err := tx.Exec(ctx, `
+		UPDATE order_saga_states
+		SET saga_status = $2,
+			inventory_status = $3,
+			payment_status = $4,
+			inventory_event_id = $5,
+			payment_event_id = $6,
+			failure_code = $7,
+			failure_reason = $8,
+			updated_at = now()
+		WHERE order_id = $1
+	`,
+		state.OrderID,
+		state.SagaStatus,
+		state.InventoryStatus,
+		state.PaymentStatus,
+		state.InventoryEventID,
+		state.PaymentEventID,
+		state.FailureCode,
+		state.FailureReason,
+	)
+	if err != nil {
+		return queryFailed("update order saga state failed", err)
+	}
+	return nil
+}
+
+func (r *OrderRepository) TryMarkEventProcessed(ctx context.Context, tx pgx.Tx, input ProcessedEventInput) (bool, error) {
+	consumerName := strings.TrimSpace(input.ConsumerName)
+	if consumerName == "" {
+		consumerName = "order-service"
+	}
+	eventID := strings.TrimSpace(input.EventID)
+	if eventID == "" {
+		eventID = fmt.Sprintf("%s:%d:%d", strings.TrimSpace(input.Topic), input.Partition, input.OffsetValue)
+	}
+	tag, err := tx.Exec(ctx, `
+		INSERT INTO processed_events (
+			consumer_name, event_id, event_type, topic, partition, offset_value
+		)
+		VALUES ($1,$2,$3,$4,$5,$6)
+		ON CONFLICT DO NOTHING
+	`, consumerName, eventID, input.EventType, input.Topic, input.Partition, input.OffsetValue)
+	if err != nil {
+		return false, queryFailed("mark event processed failed", err)
+	}
+	return tag.RowsAffected() == 0, nil
 }
 
 func (r *OrderRepository) FindOrderByID(ctx context.Context, id string) (*domain.Order, error) {
@@ -574,8 +700,9 @@ func (r *OrderRepository) FindDispatchableOutboxEvents(ctx context.Context, batc
 		SELECT id, aggregate_type, aggregate_id, event_type, payload, status,
 			retry_count, next_retry_at, created_at, published_at
 		FROM outbox_events
-		WHERE status = $1
-			OR (status = $2 AND next_retry_at IS NOT NULL AND next_retry_at <= now())
+		WHERE event_type LIKE 'order.%'
+			AND (status = $1
+				OR (status = $2 AND next_retry_at IS NOT NULL AND next_retry_at <= now()))
 		ORDER BY created_at ASC
 		LIMIT $3
 	`, domain.OutboxStatusPending, domain.OutboxStatusFailed, batchSize)
@@ -777,6 +904,34 @@ func scanIdempotencyRecordRow(row interface{ Scan(dest ...any) error }) (Idempot
 	}
 
 	return record, nil
+}
+
+func scanOrderSagaStateRow(row interface{ Scan(dest ...any) error }) (domain.OrderSagaState, error) {
+	var state domain.OrderSagaState
+	var sagaStatus string
+	var inventoryStatus string
+	var paymentStatus string
+
+	err := row.Scan(
+		&state.OrderID,
+		&sagaStatus,
+		&inventoryStatus,
+		&paymentStatus,
+		&state.InventoryEventID,
+		&state.PaymentEventID,
+		&state.FailureCode,
+		&state.FailureReason,
+		&state.CreatedAt,
+		&state.UpdatedAt,
+	)
+	if err != nil {
+		return domain.OrderSagaState{}, err
+	}
+
+	state.SagaStatus = domain.SagaStatus(sagaStatus)
+	state.InventoryStatus = domain.SagaInventoryStatus(inventoryStatus)
+	state.PaymentStatus = domain.SagaPaymentStatus(paymentStatus)
+	return state, nil
 }
 
 func scanOutboxEventRow(row interface{ Scan(dest ...any) error }) (domain.OutboxEvent, error) {

@@ -8,6 +8,7 @@ import (
 	"order-service/internal/domain"
 	"order-service/internal/handler"
 	"order-service/internal/httpx"
+	"order-service/internal/metrics"
 	"order-service/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
@@ -20,6 +21,7 @@ func New(
 	revocationChecker auth.RevokedTokenChecker,
 	orderHandler *handler.OrderHandler,
 	healthHandler *handler.HealthHandler,
+	checkoutSagaMetrics *metrics.CheckoutSagaMetrics,
 ) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID())
@@ -30,6 +32,10 @@ func New(
 	r.Get(base+"/health", healthHandler.Health)
 	r.Get(base+"/ready", healthHandler.Ready)
 	r.Get(base+"/live", healthHandler.Live)
+	if checkoutSagaMetrics != nil {
+		r.Get("/metrics", checkoutSagaMetrics.Handler())
+		r.Get(base+"/metrics", checkoutSagaMetrics.Handler())
+	}
 
 	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, revocationChecker, logger)
 	requireInternalToken := func(next http.Handler) http.Handler {

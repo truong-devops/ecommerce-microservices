@@ -19,6 +19,20 @@ export interface InventoryReservedEvent {
   metadata: InventoryEventMetadata;
 }
 
+export interface InventoryReservationFailedLine {
+  sku: string;
+  requestedQuantity: number;
+  availableQuantity: number | null;
+}
+
+export interface InventoryReservationFailedEvent {
+  orderId: string;
+  reason: string;
+  message: string;
+  items: InventoryReservationFailedLine[];
+  metadata: InventoryEventMetadata;
+}
+
 export interface InventoryReleasedEvent {
   orderId: string;
   status: 'RELEASED';

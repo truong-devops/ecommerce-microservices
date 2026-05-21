@@ -26,6 +26,7 @@ type LiveService struct {
 	productVerifier ProductVerifier
 	publisher       EventPublisher
 	broadcaster     Broadcaster
+	redis           *RedisService
 	sendLimiter     *SendRateLimiter
 	mediaSettings   MediaSettings
 }
@@ -124,6 +125,12 @@ func DefaultMediaSettings() MediaSettings {
 func WithMediaSettings(settings MediaSettings) LiveServiceOption {
 	return func(s *LiveService) {
 		s.mediaSettings = settings
+	}
+}
+
+func WithRealtimeRedis(redis *RedisService) LiveServiceOption {
+	return func(s *LiveService) {
+		s.redis = redis
 	}
 }
 
@@ -736,10 +743,36 @@ func (s *LiveService) publish(ctx context.Context, eventType string, payload map
 }
 
 func (s *LiveService) broadcast(ctx context.Context, sessionID string, payload any) error {
+	if s.redis != nil && s.redis.Enabled() {
+		if event, ok := payload.(map[string]any); ok {
+			if eventType, ok := event["type"].(string); ok && strings.TrimSpace(eventType) != "" {
+				if err := s.redis.PublishJSON(ctx, LiveSessionChannel(sessionID), LivePubSubEnvelope(eventType, sessionID, event)); err == nil {
+					return nil
+				}
+			}
+		}
+	}
 	if s.broadcaster == nil {
 		return nil
 	}
 	return s.broadcaster.Broadcast(ctx, sessionID, payload)
+}
+
+func LiveSessionChannel(sessionID string) string {
+	return "live:session:" + strings.TrimSpace(sessionID)
+}
+
+func LivePubSubEnvelope(eventType, sessionID string, payload map[string]any) map[string]any {
+	envelope := map[string]any{
+		"type":       strings.TrimSpace(eventType),
+		"version":    1,
+		"sessionId":  strings.TrimSpace(sessionID),
+		"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
+	}
+	for key, value := range payload {
+		envelope[key] = value
+	}
+	return envelope
 }
 
 func canManageLive(role domain.Role) bool {

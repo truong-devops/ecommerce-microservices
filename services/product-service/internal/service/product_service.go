@@ -2,12 +2,16 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"math"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"product-service/internal/domain"
 	"product-service/internal/events"
@@ -23,6 +27,7 @@ type ProductService struct {
 	search             *search.ProductSearchClient
 	events             events.ProductEventPublisher
 	mediaPublicBaseURL string
+	cache              jsonCacheStore
 }
 
 type ProductVariantInput struct {
@@ -73,6 +78,26 @@ func NewProductService(repo repository.ProductRepository, searchClient *search.P
 		events:             eventPublisher,
 		mediaPublicBaseURL: strings.TrimRight(mediaPublicBaseURL, "/"),
 	}
+}
+
+type jsonCacheStore interface {
+	GetJSON(ctx context.Context, key string, dest any) error
+	SetJSON(ctx context.Context, key string, value any, ttl time.Duration) error
+	AddToSet(ctx context.Context, setKey string, ttl time.Duration, members ...string) error
+	SetMembers(ctx context.Context, setKey string) ([]string, error)
+	Delete(ctx context.Context, keys ...string) error
+}
+
+const (
+	productListCacheTTL   = 60 * time.Second
+	productDetailCacheTTL = 5 * time.Minute
+	productCacheSetTTL    = 30 * time.Minute
+	productCacheKeySet    = "cache:product:keys:v1"
+)
+
+func (s *ProductService) WithCache(cache jsonCacheStore) *ProductService {
+	s.cache = cache
+	return s
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, r *http.Request, user domain.UserContext, input CreateProductInput) (domain.ProductResponse, error) {
@@ -132,25 +157,35 @@ func (s *ProductService) CreateProduct(ctx context.Context, r *http.Request, use
 	if s.events != nil {
 		_ = s.events.PublishProductCreated(ctx, response, user, middleware.RequestIDFromContext(r.Context()))
 	}
+	s.invalidateProductCache(ctx)
 	return response, nil
 }
 
 func (s *ProductService) ListPublicProducts(ctx context.Context, query domain.ListProductsQuery) (domain.PaginatedProducts, error) {
 	normalized := normalizeProductQuery(query)
+	cacheKey := productListCacheKey(normalized)
+	var cached domain.PaginatedProducts
+	if s.readCache(ctx, cacheKey, &cached) {
+		return cached, nil
+	}
 	if s.search != nil {
 		if result, err := s.search.SearchProducts(ctx, normalized, domain.ProductStatusActive, ""); err == nil && result != nil {
 			docs, err := s.repo.FindByIDsOrdered(ctx, result.IDs)
 			if err != nil {
 				return domain.PaginatedProducts{}, err
 			}
-			return s.paginatedProducts(docs, normalized, result.TotalItems), nil
+			response := s.paginatedProducts(docs, normalized, result.TotalItems)
+			s.writeTrackedCache(ctx, productCacheKeySet, cacheKey, response, productListCacheTTL)
+			return response, nil
 		}
 	}
 	items, total, err := s.repo.List(ctx, normalized, repository.ProductListFixed{Status: domain.ProductStatusActive})
 	if err != nil {
 		return domain.PaginatedProducts{}, err
 	}
-	return s.paginatedProducts(items, normalized, total), nil
+	response := s.paginatedProducts(items, normalized, total)
+	s.writeTrackedCache(ctx, productCacheKeySet, cacheKey, response, productListCacheTTL)
+	return response, nil
 }
 
 func (s *ProductService) ListManagedProducts(ctx context.Context, user domain.UserContext, query domain.ListProductsQuery) (domain.PaginatedProducts, error) {
@@ -176,14 +211,22 @@ func (s *ProductService) ListManagedProducts(ctx context.Context, user domain.Us
 }
 
 func (s *ProductService) GetPublicProductByID(ctx context.Context, id string) (domain.ProductResponse, error) {
-	product, err := s.repo.FindByID(ctx, strings.TrimSpace(id), false)
+	trimmedID := strings.TrimSpace(id)
+	cacheKey := productDetailCacheKey(trimmedID)
+	var cached domain.ProductResponse
+	if s.readCache(ctx, cacheKey, &cached) {
+		return cached, nil
+	}
+	product, err := s.repo.FindByID(ctx, trimmedID, false)
 	if err != nil {
 		return domain.ProductResponse{}, err
 	}
 	if product == nil || product.Status != domain.ProductStatusActive {
 		return domain.ProductResponse{}, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeProductNotFound, "Product not found", nil)
 	}
-	return s.ToProductResponse(*product), nil
+	response := s.ToProductResponse(*product)
+	s.writeTrackedCache(ctx, productCacheKeySet, cacheKey, response, productDetailCacheTTL)
+	return response, nil
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, r *http.Request, user domain.UserContext, id string, input UpdateProductInput) (domain.ProductResponse, error) {
@@ -304,6 +347,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, r *http.Request, use
 	if s.events != nil {
 		_ = s.events.PublishProductUpdated(ctx, response, user, middleware.RequestIDFromContext(r.Context()))
 	}
+	s.invalidateProductCache(ctx)
 	return response, nil
 }
 
@@ -335,6 +379,7 @@ func (s *ProductService) UpdateProductStatus(ctx context.Context, r *http.Reques
 	if s.events != nil {
 		_ = s.events.PublishProductStatusChanged(ctx, response, user, middleware.RequestIDFromContext(r.Context()), strings.TrimSpace(input.Reason))
 	}
+	s.invalidateProductCache(ctx)
 	return response, nil
 }
 
@@ -360,7 +405,39 @@ func (s *ProductService) DeleteProduct(ctx context.Context, r *http.Request, use
 	if s.events != nil {
 		_ = s.events.PublishProductDeleted(ctx, response, user, middleware.RequestIDFromContext(r.Context()))
 	}
+	s.invalidateProductCache(ctx)
 	return response, nil
+}
+
+func (s *ProductService) readCache(ctx context.Context, key string, dest any) bool {
+	if s.cache == nil || key == "" {
+		return false
+	}
+	return s.cache.GetJSON(ctx, key, dest) == nil
+}
+
+func (s *ProductService) writeTrackedCache(ctx context.Context, setKey string, key string, value any, ttl time.Duration) {
+	if s.cache == nil || key == "" {
+		return
+	}
+	if err := s.cache.SetJSON(ctx, key, value, ttl); err != nil {
+		return
+	}
+	_ = s.cache.AddToSet(ctx, setKey, productCacheSetTTL, key)
+}
+
+func (s *ProductService) invalidateProductCache(ctx context.Context) {
+	if s.cache == nil {
+		return
+	}
+	keys, err := s.cache.SetMembers(ctx, productCacheKeySet)
+	if err != nil {
+		return
+	}
+	if len(keys) > 0 {
+		_ = s.cache.Delete(ctx, keys...)
+	}
+	_ = s.cache.Delete(ctx, productCacheKeySet)
 }
 
 func (s *ProductService) requireProduct(ctx context.Context, id string) (*domain.Product, error) {
@@ -599,6 +676,16 @@ func normalizeProductQuery(query domain.ListProductsQuery) domain.ListProductsQu
 		query.SortOrder = domain.SortOrderDesc
 	}
 	return query
+}
+
+func productListCacheKey(query domain.ListProductsQuery) string {
+	payload, _ := json.Marshal(query)
+	sum := sha256.Sum256(payload)
+	return "cache:product:list:v1:" + hex.EncodeToString(sum[:])
+}
+
+func productDetailCacheKey(productID string) string {
+	return "cache:product:detail:v1:" + strings.TrimSpace(productID)
 }
 
 func normalizeVariants(input []ProductVariantInput) ([]domain.ProductVariant, error) {

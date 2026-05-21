@@ -19,20 +19,26 @@ import {
   VerifyEmailDto
 } from '../dto';
 import { AuthService } from '../services/auth.service';
+import { RateLimiterService } from '../services/rate-limiter.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly rateLimiter: RateLimiterService
+  ) {}
 
   @Public()
   @Post('register')
-  register(@Body() dto: RegisterDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+  async register(@Body() dto: RegisterDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+    await this.rateLimiter.assertRegisterAllowed(request);
     return this.authService.register(dto, request);
   }
 
   @Public()
   @Post('login')
-  login(@Body() dto: LoginDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+  async login(@Body() dto: LoginDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+    await this.rateLimiter.assertLoginAllowed(request, dto.email);
     return this.authService.login(dto, request);
   }
 
@@ -42,8 +48,10 @@ export class AuthController {
     @Query('app') app: string,
     @Query('callbackUrl') callbackUrl: string,
     @Query('returnUrl') returnUrl: string | undefined,
+    @Req() request: RequestWithContext,
     @Res() response: Response
   ): Promise<void> {
+    await this.rateLimiter.assertOauthAllowed(request);
     const authorizeUrl = await this.authService.buildGoogleAuthorizeUrl({
       app,
       callbackUrl,
@@ -72,7 +80,8 @@ export class AuthController {
 
   @Public()
   @Post('oauth/exchange-ticket')
-  exchangeOauthTicket(@Body() dto: OauthExchangeTicketDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+  async exchangeOauthTicket(@Body() dto: OauthExchangeTicketDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+    await this.rateLimiter.assertOauthAllowed(request);
     return this.authService.exchangeOauthTicket(dto, request);
   }
 
@@ -104,13 +113,15 @@ export class AuthController {
 
   @Public()
   @Post('resend-verify-email')
-  resendVerifyEmail(@Body() dto: ResendVerifyEmailDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+  async resendVerifyEmail(@Body() dto: ResendVerifyEmailDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+    await this.rateLimiter.assertResendVerifyEmailAllowed(dto.email);
     return this.authService.resendVerifyEmail(dto, request);
   }
 
   @Public()
   @Post('forgot-password')
-  forgotPassword(@Body() dto: ForgotPasswordDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() request: RequestWithContext): Promise<Record<string, unknown>> {
+    await this.rateLimiter.assertForgotPasswordAllowed(dto.email);
     return this.authService.forgotPassword(dto, request);
   }
 

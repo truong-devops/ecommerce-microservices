@@ -14,7 +14,8 @@ import (
 )
 
 type ShopDecorService struct {
-	repo repository.ShopDecorRepository
+	repo  repository.ShopDecorRepository
+	cache jsonCacheStore
 }
 
 type UpdateShopDecorInput struct {
@@ -33,16 +34,32 @@ func NewShopDecorService(repo repository.ShopDecorRepository) *ShopDecorService 
 	return &ShopDecorService{repo: repo}
 }
 
+const shopDecorCacheTTL = 10 * time.Minute
+
+func (s *ShopDecorService) WithCache(cache jsonCacheStore) *ShopDecorService {
+	s.cache = cache
+	return s
+}
+
 func (s *ShopDecorService) GetPublicShopDecor(ctx context.Context, sellerID string) (domain.ShopDecorResponse, error) {
 	sellerID = strings.TrimSpace(sellerID)
+	cacheKey := shopDecorCacheKey(sellerID)
+	var cached domain.ShopDecorResponse
+	if s.readCache(ctx, cacheKey, &cached) {
+		return cached, nil
+	}
 	found, err := s.repo.FindBySellerID(ctx, sellerID)
 	if err != nil {
 		return domain.ShopDecorResponse{}, err
 	}
 	if found == nil {
-		return buildDefaultDecor(sellerID), nil
+		response := buildDefaultDecor(sellerID)
+		s.writeCache(ctx, cacheKey, response)
+		return response, nil
 	}
-	return toShopDecorResponse(*found), nil
+	response := toShopDecorResponse(*found)
+	s.writeCache(ctx, cacheKey, response)
+	return response, nil
 }
 
 func (s *ShopDecorService) GetMyShopDecor(ctx context.Context, user domain.UserContext) (domain.ShopDecorResponse, error) {
@@ -68,7 +85,33 @@ func (s *ShopDecorService) UpdateMyShopDecor(ctx context.Context, user domain.Us
 	if err != nil {
 		return domain.ShopDecorResponse{}, err
 	}
+	_ = s.deleteCache(ctx, shopDecorCacheKey(user.UserID))
 	return toShopDecorResponse(updated), nil
+}
+
+func (s *ShopDecorService) readCache(ctx context.Context, key string, dest any) bool {
+	if s.cache == nil || key == "" {
+		return false
+	}
+	return s.cache.GetJSON(ctx, key, dest) == nil
+}
+
+func (s *ShopDecorService) writeCache(ctx context.Context, key string, value domain.ShopDecorResponse) {
+	if s.cache == nil || key == "" {
+		return
+	}
+	_ = s.cache.SetJSON(ctx, key, value, shopDecorCacheTTL)
+}
+
+func (s *ShopDecorService) deleteCache(ctx context.Context, key string) error {
+	if s.cache == nil || key == "" {
+		return nil
+	}
+	return s.cache.Delete(ctx, key)
+}
+
+func shopDecorCacheKey(sellerID string) string {
+	return "cache:shop-decor:v1:" + strings.TrimSpace(sellerID)
 }
 
 func normalizeShopDecorPayload(input UpdateShopDecorInput) repository.UpsertShopDecorPayload {

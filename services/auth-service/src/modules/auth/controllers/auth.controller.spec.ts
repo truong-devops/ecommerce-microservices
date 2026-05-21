@@ -25,7 +25,8 @@ describe('AuthController', () => {
       })
     };
 
-    const controller = new AuthController(authService as never);
+    const rateLimiter = {};
+    const controller = new AuthController(authService as never, rateLimiter as never);
     const result = await controller.getMe(currentUser);
 
     expect(authService.getMe).toHaveBeenCalledWith(currentUser);
@@ -39,5 +40,21 @@ describe('AuthController', () => {
       }
     });
   });
-});
 
+  it('rate limits login before delegating to authService', async () => {
+    const authService = {
+      login: jest.fn().mockResolvedValue({ accessToken: 'token' })
+    };
+    const rateLimiter = {
+      assertLoginAllowed: jest.fn().mockResolvedValue(undefined)
+    };
+    const controller = new AuthController(authService as never, rateLimiter as never);
+    const request = { ip: '127.0.0.1', header: jest.fn() };
+    const dto = { email: 'USER@example.com', password: 'password-123' };
+
+    await expect(controller.login(dto as never, request as never)).resolves.toEqual({ accessToken: 'token' });
+
+    expect(rateLimiter.assertLoginAllowed).toHaveBeenCalledWith(request, dto.email);
+    expect(authService.login).toHaveBeenCalledWith(dto, request);
+  });
+});

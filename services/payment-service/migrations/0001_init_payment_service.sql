@@ -1,3 +1,5 @@
+SELECT pg_advisory_lock(77001601);
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$
@@ -46,9 +48,13 @@ END $$;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'role') THEN
-    CREATE TYPE role AS ENUM ('CUSTOMER', 'ADMIN', 'SUPPORT', 'WAREHOUSE', 'SELLER', 'SUPER_ADMIN');
+    CREATE TYPE role AS ENUM ('BUYER', 'CUSTOMER', 'SELLER', 'ADMIN', 'MODERATOR', 'SUPPORT', 'WAREHOUSE', 'SUPER_ADMIN', 'SERVICE');
   END IF;
 END $$;
+
+ALTER TYPE role ADD VALUE IF NOT EXISTS 'BUYER';
+ALTER TYPE role ADD VALUE IF NOT EXISTS 'MODERATOR';
+ALTER TYPE role ADD VALUE IF NOT EXISTS 'SERVICE';
 
 DO $$
 BEGIN
@@ -189,3 +195,24 @@ CREATE TABLE IF NOT EXISTS outbox_events (
 CREATE INDEX IF NOT EXISTS idx_outbox_events_status ON outbox_events(status);
 CREATE INDEX IF NOT EXISTS idx_outbox_events_created_at ON outbox_events(created_at);
 CREATE INDEX IF NOT EXISTS idx_outbox_events_next_retry_at ON outbox_events(next_retry_at);
+
+CREATE TABLE IF NOT EXISTS processed_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  consumer_name varchar(128) NOT NULL DEFAULT 'payment-service',
+  event_id varchar(128) NOT NULL,
+  event_type varchar(128) NOT NULL,
+  topic varchar(128) NOT NULL,
+  partition integer NOT NULL,
+  offset_value bigint NOT NULL,
+  processed_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE processed_events ADD COLUMN IF NOT EXISTS consumer_name varchar(128) NOT NULL DEFAULT 'payment-service';
+ALTER TABLE processed_events DROP CONSTRAINT IF EXISTS processed_events_event_id_key;
+ALTER TABLE processed_events DROP CONSTRAINT IF EXISTS processed_events_topic_partition_offset_value_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_processed_events_consumer_event_id ON processed_events(consumer_name, event_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_processed_events_consumer_offset ON processed_events(consumer_name, topic, partition, offset_value);
+CREATE INDEX IF NOT EXISTS idx_processed_events_type ON processed_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_processed_events_processed_at ON processed_events(processed_at);
+
+SELECT pg_advisory_unlock(77001601);

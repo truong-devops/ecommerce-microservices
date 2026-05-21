@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"order-service/internal/config"
-	"order-service/internal/service"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
@@ -38,6 +38,7 @@ func (p *Publisher) Publish(ctx context.Context, eventType string, payload map[s
 
 	topics := p.resolveTopics(eventType)
 	message, err := json.Marshal(map[string]any{
+		"eventId":    uuid.NewString(),
 		"eventType":  eventType,
 		"payload":    payload,
 		"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
@@ -86,21 +87,6 @@ func (p *Publisher) writerForTopic(topic string) *kafka.Writer {
 	return writer
 }
 
-func (p *Publisher) resolveTopics(eventType string) []string {
-	topicSet := map[string]struct{}{
-		p.cfg.OrderEventsTopic:        {},
-		p.cfg.AnalyticsEventsTopic:    {},
-		p.cfg.NotificationEventsTopic: {},
-	}
-
-	if eventType == service.EventOrderCreated || eventType == service.EventOrderCancelled {
-		topicSet[p.cfg.InventoryEventsTopic] = struct{}{}
-		topicSet[p.cfg.PaymentEventsTopic] = struct{}{}
-	}
-
-	out := make([]string, 0, len(topicSet))
-	for topic := range topicSet {
-		out = append(out, topic)
-	}
-	return out
+func (p *Publisher) resolveTopics(_ string) []string {
+	return []string{p.cfg.OrderEventsTopic}
 }

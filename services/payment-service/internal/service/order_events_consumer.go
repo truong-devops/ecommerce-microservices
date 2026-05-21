@@ -14,6 +14,7 @@ import (
 )
 
 type KafkaEnvelope struct {
+	EventID   string         `json:"eventId"`
 	EventType string         `json:"eventType"`
 	Payload   map[string]any `json:"payload"`
 }
@@ -118,7 +119,20 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 		requestID = "kafka"
 	}
 
-	return c.service.HandleOrderCreatedEvent(ctx, orderID, userID, totalAmount, currency, orderNumber, requestID, msg.Partition, msg.Offset)
+	topic := msg.Topic
+	if strings.TrimSpace(topic) == "" {
+		topic = c.topic
+	}
+	c.logger.Info("checkout saga order event received",
+		zap.String("requestId", requestID),
+		zap.String("eventId", strings.TrimSpace(envelope.EventID)),
+		zap.String("eventType", strings.TrimSpace(envelope.EventType)),
+		zap.String("orderId", orderID),
+		zap.String("topic", topic),
+		zap.Int("partition", msg.Partition),
+		zap.Int64("offset", msg.Offset),
+	)
+	return c.service.HandleOrderCreatedEvent(ctx, orderID, userID, totalAmount, currency, orderNumber, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
 }
 
 func asString(v any) string {

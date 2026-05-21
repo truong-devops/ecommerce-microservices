@@ -14,6 +14,7 @@ import (
 	"order-service/internal/config"
 	"order-service/internal/events"
 	"order-service/internal/handler"
+	"order-service/internal/metrics"
 	"order-service/internal/repository"
 	"order-service/internal/router"
 	"order-service/internal/service"
@@ -64,23 +65,33 @@ func main() {
 	}()
 
 	repo := repository.NewOrderRepository(pool)
+	checkoutSagaMetrics := metrics.NewCheckoutSagaMetrics()
 	idemService := service.NewIdempotencyService(repo, redisService, cfg.IdempotencyRecordTTLMinutes, cfg.IdempotencyLockTTLSeconds)
 	productCatalogClient := service.NewProductCatalogClient(cfg.ProductServiceBaseURL, cfg.DependencyTimeout)
-	orderService := service.NewOrderService(repo, idemService, productCatalogClient)
+	orderService := service.NewOrderService(repo, idemService, productCatalogClient, checkoutSagaMetrics)
+	orderSagaService := service.NewOrderSagaService(repo, logger, checkoutSagaMetrics)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	orderHandler := handler.NewOrderHandler(orderService)
 	healthHandler := handler.NewHealthHandler(healthService)
 
-	httpHandler := router.New(cfg, logger, redisService, orderHandler, healthHandler)
+	httpHandler := router.New(cfg, logger, redisService, orderHandler, healthHandler, checkoutSagaMetrics)
 
 	publisher := events.NewPublisher(cfg, logger)
 	defer publisher.Close()
 
 	dispatcher := events.NewDispatcher(repo, publisher, logger, cfg.DispatchInterval, cfg.DispatchBatch, cfg.DispatchMaxRetry)
+	inventoryConsumer := events.NewInventorySagaConsumer(cfg, logger, orderSagaService)
+	paymentConsumer := events.NewPaymentSagaConsumer(cfg, logger, orderSagaService)
+	sagaTimeoutWorker := service.NewSagaTimeoutWorker(orderSagaService, logger, cfg.SagaTimeoutEnabled, cfg.SagaTimeoutInterval, cfg.SagaTimeoutAfter, cfg.SagaTimeoutBatch)
+	defer inventoryConsumer.Close()
+	defer paymentConsumer.Close()
 	runCtx, runCancel := context.WithCancel(context.Background())
 	defer runCancel()
 	go dispatcher.Run(runCtx)
+	go inventoryConsumer.Run(runCtx)
+	go paymentConsumer.Run(runCtx)
+	go sagaTimeoutWorker.Run(runCtx)
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),

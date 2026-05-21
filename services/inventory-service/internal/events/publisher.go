@@ -7,6 +7,7 @@ import (
 
 	"inventory-service/internal/config"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
@@ -42,6 +43,7 @@ func (p *Publisher) Publish(ctx context.Context, eventType string, payload map[s
 		return nil
 	}
 	body, err := json.Marshal(map[string]any{
+		"eventId":    uuid.NewString(),
 		"eventType":  eventType,
 		"payload":    payload,
 		"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),

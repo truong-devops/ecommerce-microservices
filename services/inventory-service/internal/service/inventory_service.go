@@ -13,16 +13,18 @@ import (
 	"inventory-service/internal/repository"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"go.uber.org/zap"
 )
 
 const (
-	EventInventoryReserved  = "inventory.reserved"
-	EventInventoryReleased  = "inventory.released"
-	EventInventoryAdjusted  = "inventory.adjusted"
-	EventInventoryConfirmed = "inventory.confirmed"
-	EventInventoryExpired   = "inventory.expired"
+	EventInventoryReserved          = "inventory.reserved"
+	EventInventoryReservationFailed = "inventory.reservation-failed"
+	EventInventoryReleased          = "inventory.released"
+	EventInventoryAdjusted          = "inventory.adjusted"
+	EventInventoryConfirmed         = "inventory.confirmed"
+	EventInventoryExpired           = "inventory.expired"
 )
 
 type InventoryActor struct {
@@ -58,6 +60,20 @@ type ReserveInventoryRequest struct {
 	Items      []ReserveInventoryItem
 	TTLMinutes *int
 	Reason     *string
+}
+
+type OrderCreatedEvent struct {
+	OrderID string
+	Items   []ReserveInventoryItem
+}
+
+type EventMeta struct {
+	EventID     string
+	EventType   string
+	Topic       string
+	Partition   int
+	OffsetValue int64
+	RequestID   string
 }
 
 type InventoryService struct {
@@ -245,6 +261,86 @@ func (s *InventoryService) ReserveInventory(
 	return nil, err
 }
 
+func (s *InventoryService) ReserveInventoryFromOrderCreated(ctx context.Context, event OrderCreatedEvent, meta EventMeta) (map[string]any, error) {
+	orderID := strings.TrimSpace(event.OrderID)
+	requestID := strings.TrimSpace(meta.RequestID)
+	if requestID == "" {
+		requestID = "kafka-" + meta.Topic
+	}
+	if orderID == "" || !isUUID(orderID) {
+		return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "order.created event has invalid orderId", nil)
+	}
+
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
+		EventID:     meta.EventID,
+		EventType:   meta.EventType,
+		Topic:       meta.Topic,
+		Partition:   meta.Partition,
+		OffsetValue: meta.OffsetValue,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if alreadyProcessed {
+		if err := tx.Commit(ctx); err != nil {
+			return nil, err
+		}
+		return map[string]any{"orderId": orderID, "idempotent": true, "skipped": true}, nil
+	}
+
+	items := normalizeReserveItems(event.Items)
+	if len(items) == 0 {
+		payload, err := s.insertReservationFailedEvent(ctx, tx, orderID, domain.ErrorCodeValidationFailed, "order.created event has no reservable items", nil, requestID)
+		if err != nil {
+			return nil, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return nil, err
+		}
+		return payload, nil
+	}
+	for _, item := range items {
+		if item.SKU == "" || item.Quantity <= 0 {
+			payload, err := s.insertReservationFailedEvent(ctx, tx, orderID, domain.ErrorCodeValidationFailed, "order.created event has invalid reservation item", items, requestID)
+			if err != nil {
+				return nil, err
+			}
+			if err := tx.Commit(ctx); err != nil {
+				return nil, err
+			}
+			return payload, nil
+		}
+	}
+
+	reason := "Order created event"
+	result, err := s.reserveInventoryInTx(ctx, tx, systemActor, requestID, orderID, items, s.defaultTTL, &reason)
+	if err == nil {
+		if err := tx.Commit(ctx); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+
+	var appErr *httpx.AppError
+	if errors.As(err, &appErr) && isReservationBusinessFailure(appErr.Code) {
+		payload, failureErr := s.insertReservationFailedEvent(ctx, tx, orderID, appErr.Code, appErr.Message, buildFailedReservationLines(items, appErr.Details), requestID)
+		if failureErr != nil {
+			return nil, failureErr
+		}
+		if commitErr := tx.Commit(ctx); commitErr != nil {
+			return nil, commitErr
+		}
+		return payload, nil
+	}
+	return nil, err
+}
+
 func (s *InventoryService) reserveInventoryTx(
 	ctx context.Context,
 	actor InventoryActor,
@@ -259,15 +355,32 @@ func (s *InventoryService) reserveInventoryTx(
 	}
 	defer tx.Rollback(ctx)
 
+	result, err := s.reserveInventoryInTx(ctx, tx, actor, requestID, orderID, items, ttl, reason)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *InventoryService) reserveInventoryInTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	actor InventoryActor,
+	requestID, orderID string,
+	items []ReserveInventoryItem,
+	ttl time.Duration,
+	reason *string,
+) (map[string]any, error) {
 	existing, err := s.repo.FindActiveReservationsByOrderIDForUpdate(ctx, tx, orderID)
 	if err != nil {
 		return nil, err
 	}
 	if len(existing) > 0 {
 		if isSameReservation(existing, items) {
-			if err := tx.Commit(ctx); err != nil {
-				return nil, err
-			}
 			return toReservationResponse(orderID, existing, true, nil), nil
 		}
 		return nil, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeInventoryReservationConflict, "Active reservation conflict for order "+orderID, nil)
@@ -341,11 +454,52 @@ func (s *InventoryService) reserveInventoryTx(
 	}); err != nil {
 		return nil, err
 	}
+	return toReservationResponse(orderID, savedReservations, false, nil), nil
+}
 
+func (s *InventoryService) publishReservationFailed(ctx context.Context, orderID, reason, message string, items []ReserveInventoryItem, requestID string) (map[string]any, error) {
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	payload, err := s.insertReservationFailedEvent(ctx, tx, orderID, reason, message, items, requestID)
+	if err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
-	return toReservationResponse(orderID, savedReservations, false, nil), nil
+	return payload, nil
+}
+
+func (s *InventoryService) insertReservationFailedEvent(ctx context.Context, tx pgx.Tx, orderID, reason, message string, items []ReserveInventoryItem, requestID string) (map[string]any, error) {
+	payloadItems := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		payloadItems = append(payloadItems, map[string]any{
+			"sku":               item.SKU,
+			"requestedQuantity": item.Quantity,
+			"availableQuantity": nil,
+		})
+	}
+
+	payload := map[string]any{
+		"orderId":  orderID,
+		"reason":   reason,
+		"message":  message,
+		"items":    payloadItems,
+		"metadata": buildEventMetadata(requestID, systemActor),
+	}
+	if err := s.repo.InsertOutboxEvent(ctx, tx, repository.CreateOutboxEventInput{
+		AggregateType: "inventory-reservation",
+		AggregateID:   orderID,
+		EventType:     EventInventoryReservationFailed,
+		Payload:       payload,
+	}); err != nil {
+		return nil, err
+	}
+	return payload, nil
 }
 
 func (s *InventoryService) ReleaseReservations(ctx context.Context, actor domain.UserContext, requestID, orderID string, reason *string) (map[string]any, error) {
@@ -359,6 +513,16 @@ func (s *InventoryService) ConfirmReservations(ctx context.Context, actor domain
 func (s *InventoryService) ReleaseReservationsFromOrderCancellation(ctx context.Context, orderID, requestID string) (map[string]any, error) {
 	reason := "Order cancelled event"
 	return s.settleReservations(ctx, systemActor, requestID, orderID, domain.InventoryReservationStatusReleased, EventInventoryReleased, &reason, true)
+}
+
+func (s *InventoryService) ReleaseReservationsFromOrderFailed(ctx context.Context, orderID, requestID string) (map[string]any, error) {
+	reason := "Order failed event"
+	return s.settleReservations(ctx, systemActor, requestID, orderID, domain.InventoryReservationStatusReleased, EventInventoryReleased, &reason, true)
+}
+
+func (s *InventoryService) ConfirmReservationsFromOrderConfirmed(ctx context.Context, orderID, requestID string) (map[string]any, error) {
+	reason := "Order confirmed event"
+	return s.settleReservations(ctx, systemActor, requestID, orderID, domain.InventoryReservationStatusConfirmed, EventInventoryConfirmed, &reason, true)
 }
 
 func (s *InventoryService) ExpireActiveReservationsBatch(ctx context.Context) error {
@@ -577,6 +741,49 @@ func mapReservationStatusToMovementType(status domain.InventoryReservationStatus
 		return domain.InventoryMovementTypeConfirm
 	default:
 		return domain.InventoryMovementTypeExpire
+	}
+}
+
+func isReservationBusinessFailure(code string) bool {
+	switch code {
+	case domain.ErrorCodeInventoryInsufficientStock,
+		domain.ErrorCodeInventorySkuNotFound,
+		domain.ErrorCodeInventoryReservationConflict,
+		domain.ErrorCodeValidationFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+func buildFailedReservationLines(items []ReserveInventoryItem, details any) []ReserveInventoryItem {
+	if len(items) == 0 {
+		return []ReserveInventoryItem{}
+	}
+	if detailMap, ok := details.(map[string]any); ok {
+		if sku, ok := detailMap["sku"].(string); ok && strings.TrimSpace(sku) != "" {
+			if requested, ok := numberToInt(detailMap["requestedQuantity"]); ok {
+				return []ReserveInventoryItem{{SKU: normalizeSKU(sku), Quantity: requested}}
+			}
+		}
+	}
+	return items
+}
+
+func numberToInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	case float64:
+		return int(n), true
+	case float32:
+		return int(n), true
+	default:
+		return 0, false
 	}
 }
 

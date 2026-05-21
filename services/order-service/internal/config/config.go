@@ -32,16 +32,23 @@ type Config struct {
 	DispatchBatch    int
 	DispatchMaxRetry int
 
+	SagaTimeoutEnabled  bool
+	SagaTimeoutInterval time.Duration
+	SagaTimeoutAfter    time.Duration
+	SagaTimeoutBatch    int
+
 	KafkaEnabled  bool
 	KafkaClientID string
 	KafkaBrokers  []string
 
-	OrderEventsTopic        string
-	InventoryEventsTopic    string
-	PaymentEventsTopic      string
-	NotificationEventsTopic string
-	AnalyticsEventsTopic    string
-	AuditEventsTopic        string
+	OrderEventsTopic             string
+	InventoryEventsTopic         string
+	InventoryEventsConsumerGroup string
+	PaymentEventsTopic           string
+	PaymentEventsConsumerGroup   string
+	NotificationEventsTopic      string
+	AnalyticsEventsTopic         string
+	AuditEventsTopic             string
 
 	RunMigrations bool
 	MigrationFile string
@@ -61,17 +68,20 @@ func Load() (Config, error) {
 			strings.TrimSpace(getEnv("PRODUCT_SERVICE_BASE_URL", "http://product-service:8080/api/v1")),
 			"/",
 		),
+		SagaTimeoutEnabled: parseBool(getEnv("CHECKOUT_SAGA_TIMEOUT_ENABLED", "true")),
 
 		KafkaEnabled:  parseBool(getEnv("KAFKA_ENABLED", "true")),
 		KafkaClientID: getEnv("KAFKA_CLIENT_ID", "order-service"),
 		KafkaBrokers:  parseCSV(getEnv("KAFKA_BROKERS", "localhost:9092")),
 
-		OrderEventsTopic:        getEnv("ORDER_EVENTS_TOPIC", "order.events"),
-		InventoryEventsTopic:    getEnv("INVENTORY_EVENTS_TOPIC", "inventory.events"),
-		PaymentEventsTopic:      getEnv("PAYMENT_EVENTS_TOPIC", "payment.events"),
-		NotificationEventsTopic: getEnv("NOTIFICATION_EVENTS_TOPIC", "notification.events"),
-		AnalyticsEventsTopic:    getEnv("ANALYTICS_EVENTS_TOPIC", "analytics.events"),
-		AuditEventsTopic:        getEnv("AUDIT_EVENTS_TOPIC", "audit.events"),
+		OrderEventsTopic:             getEnv("ORDER_EVENTS_TOPIC", "order.events"),
+		InventoryEventsTopic:         getEnv("INVENTORY_EVENTS_TOPIC", "inventory.events"),
+		InventoryEventsConsumerGroup: getEnv("INVENTORY_EVENTS_CONSUMER_GROUP", "order-service-inventory-events-group"),
+		PaymentEventsTopic:           getEnv("PAYMENT_EVENTS_TOPIC", "payment.events"),
+		PaymentEventsConsumerGroup:   getEnv("PAYMENT_EVENTS_CONSUMER_GROUP", "order-service-payment-events-group"),
+		NotificationEventsTopic:      getEnv("NOTIFICATION_EVENTS_TOPIC", "notification.events"),
+		AnalyticsEventsTopic:         getEnv("ANALYTICS_EVENTS_TOPIC", "analytics.events"),
+		AuditEventsTopic:             getEnv("AUDIT_EVENTS_TOPIC", "audit.events"),
 
 		RunMigrations: parseBool(getEnv("DB_MIGRATIONS_RUN", "true")),
 		MigrationFile: getEnv("MIGRATION_FILE", "migrations/0001_init_order_service.sql"),
@@ -133,6 +143,24 @@ func Load() (Config, error) {
 	if cfg.RedisEnabled && cfg.RedisURL == "" {
 		return Config{}, fmt.Errorf("REDIS_URL is required when REDIS_ENABLED=true")
 	}
+
+	timeoutIntervalMs, err := strconv.Atoi(getEnv("CHECKOUT_SAGA_TIMEOUT_INTERVAL_MS", "60000"))
+	if err != nil || timeoutIntervalMs < 1000 {
+		return Config{}, fmt.Errorf("CHECKOUT_SAGA_TIMEOUT_INTERVAL_MS must be >= 1000")
+	}
+	cfg.SagaTimeoutInterval = time.Duration(timeoutIntervalMs) * time.Millisecond
+
+	timeoutAfterMs, err := strconv.Atoi(getEnv("CHECKOUT_SAGA_TIMEOUT_AFTER_MS", "900000"))
+	if err != nil || timeoutAfterMs < 1000 {
+		return Config{}, fmt.Errorf("CHECKOUT_SAGA_TIMEOUT_AFTER_MS must be >= 1000")
+	}
+	cfg.SagaTimeoutAfter = time.Duration(timeoutAfterMs) * time.Millisecond
+
+	timeoutBatch, err := strconv.Atoi(getEnv("CHECKOUT_SAGA_TIMEOUT_BATCH_SIZE", "100"))
+	if err != nil || timeoutBatch < 1 || timeoutBatch > 1000 {
+		return Config{}, fmt.Errorf("CHECKOUT_SAGA_TIMEOUT_BATCH_SIZE must be between 1 and 1000")
+	}
+	cfg.SagaTimeoutBatch = timeoutBatch
 
 	if cfg.KafkaEnabled && len(cfg.KafkaBrokers) == 0 {
 		return Config{}, fmt.Errorf("KAFKA_BROKERS is required when KAFKA_ENABLED=true")

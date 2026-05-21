@@ -96,6 +96,33 @@ func IsValidOrderStatus(status OrderStatus) bool {
 	}
 }
 
+type SagaStatus string
+
+const (
+	SagaStatusPending   SagaStatus = "PENDING"
+	SagaStatusCompleted SagaStatus = "COMPLETED"
+	SagaStatusFailed    SagaStatus = "FAILED"
+)
+
+type SagaInventoryStatus string
+
+const (
+	SagaInventoryStatusPending   SagaInventoryStatus = "PENDING"
+	SagaInventoryStatusReserved  SagaInventoryStatus = "RESERVED"
+	SagaInventoryStatusFailed    SagaInventoryStatus = "FAILED"
+	SagaInventoryStatusReleased  SagaInventoryStatus = "RELEASED"
+	SagaInventoryStatusConfirmed SagaInventoryStatus = "CONFIRMED"
+	SagaInventoryStatusExpired   SagaInventoryStatus = "EXPIRED"
+)
+
+type SagaPaymentStatus string
+
+const (
+	SagaPaymentStatusPending  SagaPaymentStatus = "PENDING"
+	SagaPaymentStatusCaptured SagaPaymentStatus = "CAPTURED"
+	SagaPaymentStatusFailed   SagaPaymentStatus = "FAILED"
+)
+
 type Order struct {
 	ID             string
 	OrderNumber    string
@@ -110,6 +137,19 @@ type Order struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	Items          []OrderItem
+}
+
+type OrderSagaState struct {
+	OrderID          string
+	SagaStatus       SagaStatus
+	InventoryStatus  SagaInventoryStatus
+	PaymentStatus    SagaPaymentStatus
+	InventoryEventID *string
+	PaymentEventID   *string
+	FailureCode      *string
+	FailureReason    *string
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 type OrderItem struct {

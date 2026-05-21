@@ -5,6 +5,16 @@ export interface OrderEventMetadata {
   actorRole: string;
 }
 
+export interface OrderEventItem {
+  id?: string;
+  productId: string;
+  sku: string;
+  productName?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 export interface OrderCreatedEvent {
   orderId: string;
   orderNumber: string;
@@ -12,6 +22,7 @@ export interface OrderCreatedEvent {
   status: string;
   totalAmount: number;
   currency: string;
+  items: OrderEventItem[];
   metadata: OrderEventMetadata;
 }
 

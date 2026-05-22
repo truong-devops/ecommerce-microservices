@@ -1,3 +1,5 @@
+name: ecommerce-frontend
+
 x-frontend-defaults: &frontend-defaults
   restart: unless-stopped
   extra_hosts:
@@ -28,7 +30,7 @@ services:
       LIVE_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       ANALYTICS_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
     ports:
-      - '8888:3000'
+      - '127.0.0.1:8888:3000'
 
   seller:
     <<: *frontend-defaults
@@ -53,7 +55,7 @@ services:
       LIVE_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       MEDIA_PUBLIC_BASE_URL: http://localhost:12030/ecommerce-media
     ports:
-      - '6789:3000'
+      - '127.0.0.1:6789:3000'
 
   moderator:
     <<: *frontend-defaults
@@ -68,4 +70,4 @@ services:
       PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:12012/api/v1
       CHAT_SERVICE_BASE_URL: http://host.docker.internal:12020/api/v1
     ports:
-      - '1111:3000'
+      - '127.0.0.1:1111:3000'

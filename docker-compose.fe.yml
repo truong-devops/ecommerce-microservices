@@ -1,0 +1,71 @@
+x-frontend-defaults: &frontend-defaults
+  restart: unless-stopped
+  extra_hosts:
+    - 'host.docker.internal:host-gateway'
+  environment:
+    NODE_ENV: production
+    NEXT_TELEMETRY_DISABLED: '1'
+
+services:
+  buyer-web:
+    <<: *frontend-defaults
+    image: ecommerce-frontend-buyer-web:dev
+    build:
+      context: .
+      dockerfile: frontend/apps/buyer-web/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      API_GATEWAY_BASE_URL: http://host.docker.internal:12000/api/v1
+      AUTH_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      USER_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      REVIEW_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      ORDER_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      PAYMENT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      SHIPPING_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      CHAT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      LIVE_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      ANALYTICS_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+    ports:
+      - '8888:3000'
+
+  seller:
+    <<: *frontend-defaults
+    image: ecommerce-frontend-seller:dev
+    build:
+      context: .
+      dockerfile: frontend/apps/seller/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      API_GATEWAY_BASE_URL: http://host.docker.internal:12000/api/v1
+      AUTH_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      ANALYTICS_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      ORDER_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      SHIPPING_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      NOTIFICATION_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      USER_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      CHAT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      MEDIA_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      LIVE_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      MEDIA_PUBLIC_BASE_URL: http://localhost:12030/ecommerce-media
+    ports:
+      - '6789:3000'
+
+  moderator:
+    <<: *frontend-defaults
+    image: ecommerce-frontend-moderator:dev
+    build:
+      context: .
+      dockerfile: frontend/apps/moderator/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      AUTH_SERVICE_BASE_URL: http://host.docker.internal:12010/api/v1
+      PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:12012/api/v1
+      CHAT_SERVICE_BASE_URL: http://host.docker.internal:12020/api/v1
+    ports:
+      - '1111:3000'

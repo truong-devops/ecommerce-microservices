@@ -50,8 +50,8 @@ pipeline {
               sh """
                 set -eu
                 docker run --rm \
-                  -v "\$PWD/services/${svc}:/src" \
-                  -w /src \
+                  --volumes-from "\$(hostname)" \
+                  -w "\$PWD/services/${svc}" \
                   golang:1.24-alpine \
                   sh -lc '/usr/local/go/bin/go test ./...'
               """
@@ -59,8 +59,8 @@ pipeline {
               sh '''
                 set -eu
                 docker run --rm \
-                  -v "$PWD/services/auth-service:/src" \
-                  -w /src \
+                  --volumes-from "$(hostname)" \
+                  -w "$PWD/services/auth-service" \
                   node:20-alpine \
                   sh -lc 'npm ci --no-audit --no-fund && npm test'
               '''

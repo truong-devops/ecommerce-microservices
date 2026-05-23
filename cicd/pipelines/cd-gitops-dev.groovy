@@ -43,8 +43,8 @@ pipeline {
             sh """
               set -eu
               docker run --rm \
-                -v "\$PWD/${params.KUSTOMIZE_DIR}:/work" \
-                -w /work \
+                --volumes-from "\$(hostname)" \
+                -w "\$PWD/${params.KUSTOMIZE_DIR}" \
                 registry.k8s.io/kustomize/kustomize:v5.4.3 \
                 edit set image ${svc}=${image}:${params.IMAGE_TAG}
             """

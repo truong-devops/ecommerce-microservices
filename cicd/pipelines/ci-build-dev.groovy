@@ -48,8 +48,8 @@ pipeline {
               sh """
                 set -eu
                 docker run --rm \
-                  -v "\$PWD/services/${svc}:/src" \
-                  -w /src \
+                  --volumes-from "\$(hostname)" \
+                  -w "\$PWD/services/${svc}" \
                   golang:1.24-alpine \
                   sh -lc '/usr/local/go/bin/go test ./...'
               """
@@ -57,8 +57,8 @@ pipeline {
               sh '''
                 set -eu
                 docker run --rm \
-                  -v "$PWD/services/auth-service:/src" \
-                  -w /src \
+                  --volumes-from "$(hostname)" \
+                  -w "$PWD/services/auth-service" \
                   node:20-alpine \
                   sh -lc 'npm ci --no-audit --no-fund && npm test'
               '''
@@ -96,13 +96,12 @@ pipeline {
         sh '''
           set -eu
           docker run --rm \
-            -v "$PWD:/src" \
-            -v "$PWD/reports/dependency-check:/report" \
+            --volumes-from "$(hostname)" \
             owasp/dependency-check:latest \
             --project ecommerce-microservices \
-            --scan /src/services \
+            --scan "$PWD/services" \
             --format HTML \
-            --out /report \
+            --out "$PWD/reports/dependency-check" \
             --failOnCVSS 9
         '''
       }
@@ -117,9 +116,10 @@ pipeline {
           sh """
             set -eu
             docker run --rm \
+              --volumes-from "\$(hostname)" \
+              -w "\$PWD" \
               -e SONAR_HOST_URL="${params.SONAR_HOST_URL}" \
               -e SONAR_TOKEN="\${SONAR_TOKEN}" \
-              -v "\$PWD:/usr/src" \
               sonarsource/sonar-scanner-cli:latest \
               -Dsonar.projectKey=ecommerce-microservices \
               -Dsonar.projectName=ecommerce-microservices \

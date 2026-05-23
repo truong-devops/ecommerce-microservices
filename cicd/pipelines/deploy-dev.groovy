@@ -53,7 +53,7 @@ pipeline {
                   -v "\$PWD/services/${svc}:/src" \
                   -w /src \
                   golang:1.24-alpine \
-                  sh -lc 'go test ./...'
+                  sh -lc '/usr/local/go/bin/go test ./...'
               """
             } else if (svc == 'auth-service') {
               sh '''

@@ -54,10 +54,10 @@ images:
     newTag: dev
   - name: buyer-web
     newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-    newTag: live-ws-stable-20260525
+    newTag: oauth-google-prod-20260525
   - name: seller-web
     newName: docker.io/vantruong179/ecommerce-microservices-seller-web
-    newTag: live-ws-stable-20260525
+    newTag: oauth-google-prod-20260525
   - name: moderator-web
     newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
     newTag: dev

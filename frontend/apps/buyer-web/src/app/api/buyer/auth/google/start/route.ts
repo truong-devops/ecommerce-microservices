@@ -11,7 +11,23 @@ export async function GET(request: Request) {
   authorizeUrl.searchParams.set('callbackUrl', callbackUrl);
   authorizeUrl.searchParams.set('returnUrl', returnUrl);
 
-  return NextResponse.redirect(authorizeUrl.toString());
+  try {
+    const response = await fetch(authorizeUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      redirect: 'manual'
+    });
+    const location = response.headers.get('location');
+    if (response.status >= 300 && response.status < 400 && location) {
+      return NextResponse.redirect(location);
+    }
+  } catch {
+    // Redirect to the login page below with a useful production-safe error.
+  }
+
+  const loginUrl = new URL('/login', requestUrl.origin);
+  loginUrl.searchParams.set('oauthError', 'Không thể bắt đầu đăng nhập Google');
+  return NextResponse.redirect(loginUrl);
 }
 
 function resolveReturnUrl(raw: string | null): string {

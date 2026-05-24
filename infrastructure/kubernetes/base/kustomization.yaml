@@ -8,6 +8,7 @@ resources:
   - data-mongo.yaml
   - data-redis.yaml
   - data-minio.yaml
+  - data-mediamtx.yaml
   - data-kafka.yaml
   - app-auth-service.yaml
   - app-user-service.yaml
@@ -28,6 +29,7 @@ resources:
   - frontend-seller.yaml
   - frontend-moderator.yaml
   - ingress.yaml
+  - ingress-mediamtx.yaml
 
 configMapGenerator:
   - name: postgres-init-sql

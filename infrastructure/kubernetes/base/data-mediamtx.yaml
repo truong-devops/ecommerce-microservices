@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediamtx
+  labels:
+    app: mediamtx
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mediamtx
+  template:
+    metadata:
+      labels:
+        app: mediamtx
+    spec:
+      nodeSelector:
+        workload: app
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: mediamtx
+          image: bluenviron/mediamtx:1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: hls
+              containerPort: 8888
+            - name: webrtc-http
+              containerPort: 8889
+            - name: webrtc-udp
+              containerPort: 8189
+              protocol: UDP
+          env:
+            - name: MTX_HLSVARIANT
+              value: lowLatency
+            - name: MTX_HLSALLOWORIGINS
+              value: https://buyer.dt-commerce.site,https://seller.dt-commerce.site
+            - name: MTX_WEBRTCALLOWORIGINS
+              value: https://buyer.dt-commerce.site,https://seller.dt-commerce.site
+            - name: MTX_WEBRTCIPSFROMINTERFACES
+              value: "no"
+            - name: MTX_WEBRTCADDITIONALHOSTS
+              value: 103.179.172.220
+          readinessProbe:
+            tcpSocket:
+              port: webrtc-http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: webrtc-http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mediamtx
+  labels:
+    app: mediamtx
+spec:
+  type: ClusterIP
+  selector:
+    app: mediamtx
+  ports:
+    - name: hls
+      port: 8888
+      targetPort: hls
+    - name: webrtc-http
+      port: 8889
+      targetPort: webrtc-http

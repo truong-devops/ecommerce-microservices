@@ -42,7 +42,17 @@ spec:
             - name: PRODUCT_SERVICE_BASE_URL
               value: http://product-service:8080/api/v1
             - name: LIVE_MEDIA_MODE
-              value: p2p_legacy
+              value: media_engine
+            - name: LIVE_MEDIA_PROVIDER
+              value: MEDIAMTX
+            - name: LIVE_MEDIA_INGEST_PROTOCOL
+              value: WHIP
+            - name: LIVE_MEDIA_PLAYBACK_PROTOCOL
+              value: HLS
+            - name: LIVE_MEDIA_INGEST_BASE_URL
+              value: https://live-ingest.dt-commerce.site
+            - name: LIVE_MEDIA_PLAYBACK_BASE_URL
+              value: https://live-playback.dt-commerce.site
             - name: WS_ALLOWED_ORIGINS
               value: "*"
           readinessProbe:

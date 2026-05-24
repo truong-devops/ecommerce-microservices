@@ -1942,3 +1942,467 @@ Nếu mục tiêu chỉ là demo nhanh, ít lỗi và tiết kiệm tiền hơn,
 - Rancher Helm chart options: https://ranchermanager.docs.rancher.com/getting-started/installation-and-upgrade/installation-references/helm-chart-options
 - Teleport Linux install: https://goteleport.com/docs/installation/linux/
 - Teleport kube agent Helm chart: https://goteleport.com/docs/reference/helm-reference/teleport-kube-agent/
+
+## 38. Tóm Tắt Triển Khai Thực Tế Từ 4 VPS Đã Mua
+
+Từ tình trạng thực tế đã có 4 VPS CloudFly, hướng triển khai nên đi theo mục tiêu: dựng nền tảng sạch trước, chạy Kubernetes ổn định trước, rồi mới thêm CI/CD, GitOps, Rancher, monitoring và các thành phần phụ.
+
+Các máy hiện tại:
+
+| Hostname | Public IP | Private IP | Vai trò |
+|---|---|---|---|
+| `devsecops-01` | `103.166.185.99` | `192.168.1.179` | Jenkins, Docker build/push, security scan |
+| `k8s-cp-01` | `103.179.172.95` | `192.168.1.148` | Kubernetes control-plane |
+| `k8s-worker-01` | `103.179.172.220` | `192.168.1.120` | App workloads, ingress, Argo CD, Rancher |
+| `k8s-worker-02` | `103.82.25.228` | `192.168.1.119` | Data, Redis, MongoDB, PostgreSQL, observability |
+
+DNS nên trỏ như sau:
+
+| Domain | Trỏ về |
+|---|---|
+| `api.dt-commerce.site` | `103.179.172.220` |
+| `jenkins.dt-commerce.site` | `103.166.185.99` |
+| `sonar.dt-commerce.site` | `103.166.185.99` nếu bật SonarQube |
+| `argocd.dt-commerce.site` | `103.179.172.220` |
+| `rancher.dt-commerce.site` | `103.179.172.220` |
+| `grafana.dt-commerce.site` | `103.179.172.220` nếu public Grafana |
+| `teleport.dt-commerce.site` | VPS/EC2 Teleport riêng nếu có |
+
+Kinh nghiệm quan trọng nhất:
+
+- Đừng cài Jenkins, kubeadm, ingress, cert-manager, Argo CD, Rancher cùng lúc. Mỗi lớp phải có lệnh kiểm tra pass rồi mới qua lớp sau.
+- Dùng private IP cho Kubernetes node communication nếu provider đã có private network.
+- Không bật UFW quá sớm nếu chưa có rule SSH/Kubernetes rõ ràng, vì rất dễ tự khóa SSH hoặc làm node không join được.
+- Control-plane không nên chạy workload nặng. Với 4 VPS, giữ `k8s-cp-01` sạch là lựa chọn đúng.
+- Deploy slice nhỏ trước: `api-gateway`, `auth-service`, `user-service`, `product-service`, `cart-service`, PostgreSQL, MongoDB, Redis. Chỉ mở rộng sau khi slice này chạy ổn.
+- Jenkins chỉ build/scan/push image và cập nhật tag GitOps. Runtime app phải nằm trong Kubernetes.
+- Không dùng tag `latest` làm tag triển khai chính. Dùng commit SHA hoặc build number để rollback rõ ràng.
+- Secret thật không ghi vào Git. Docker Hub token, GitHub PAT, JWT secret, DB password phải lưu ở Jenkins/Kubernetes Secret/password manager.
+
+## 39. Quy Trình Chuẩn Cho Lần Triển Khai Sau
+
+Quy trình này là đường đi chuẩn để tránh lỗi dây chuyền. Khi một bước chưa pass, không chuyển sang bước tiếp theo.
+
+### Bước 1: Chốt inventory và DNS
+
+Ghi lại đầy đủ:
+
+```txt
+- Hostname từng VPS
+- Public IP từng VPS
+- Private IP từng VPS
+- Domain/subdomain cần dùng
+- SSH user/key đang dùng
+- Provider private network đã bật hay chưa
+```
+
+Kiểm tra trên từng VPS:
+
+```bash
+hostname
+hostname -I
+ip -4 addr
+curl -4 ifconfig.me
+```
+
+Kiểm tra DNS sau khi tạo A record:
+
+```bash
+dig +short api.dt-commerce.site
+dig +short jenkins.dt-commerce.site
+dig +short argocd.dt-commerce.site
+dig +short rancher.dt-commerce.site
+```
+
+### Bước 2: Bootstrap Linux trên cả 4 VPS
+
+Chạy trên cả 4 máy:
+
+```bash
+sudo apt update
+sudo apt -y upgrade
+sudo apt -y install curl wget git vim htop jq unzip ca-certificates gnupg lsb-release ufw fail2ban apt-transport-https net-tools dnsutils
+sudo timedatectl set-timezone Asia/Ho_Chi_Minh
+```
+
+Set hostname đúng trên từng máy:
+
+```bash
+sudo hostnamectl set-hostname devsecops-01
+sudo hostnamectl set-hostname k8s-cp-01
+sudo hostnamectl set-hostname k8s-worker-01
+sudo hostnamectl set-hostname k8s-worker-02
+```
+
+Chỉ chạy dòng hostname tương ứng trên đúng máy.
+
+Cập nhật `/etc/hosts` trên cả 4 máy bằng private IP:
+
+```bash
+sudo tee -a /etc/hosts >/dev/null <<'EOF'
+192.168.1.179  devsecops-01
+192.168.1.148  k8s-cp-01
+192.168.1.120  k8s-worker-01
+192.168.1.119  k8s-worker-02
+EOF
+```
+
+Kiểm tra thông nhau:
+
+```bash
+ping -c 2 devsecops-01
+ping -c 2 k8s-cp-01
+ping -c 2 k8s-worker-01
+ping -c 2 k8s-worker-02
+```
+
+### Bước 3: Chuẩn bị 3 node Kubernetes
+
+Chỉ chạy trên:
+
+```txt
+k8s-cp-01
+k8s-worker-01
+k8s-worker-02
+```
+
+Không chạy trên `devsecops-01`.
+
+```bash
+sudo swapoff -a
+sudo sed -i '/ swap / s/^/#/' /etc/fstab
+
+cat <<'EOF' | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+cat <<'EOF' | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward                 = 1
+EOF
+
+sudo sysctl --system
+```
+
+### Bước 4: Cài container runtime và kubeadm
+
+Trên 3 node Kubernetes:
+
+1. Cài `containerd`.
+2. Bật `SystemdCgroup = true`.
+3. Restart `containerd`.
+4. Cài `kubeadm`, `kubelet`, `kubectl`.
+5. `apt-mark hold` các package Kubernetes.
+
+Kiểm tra trước khi init:
+
+```bash
+systemctl status containerd --no-pager
+containerd config dump | grep SystemdCgroup
+swapoff --show
+```
+
+### Bước 5: Init control-plane bằng private IP
+
+Trên `k8s-cp-01`, init cluster với advertise address là private IP:
+
+```bash
+sudo kubeadm init \
+  --apiserver-advertise-address=192.168.1.148 \
+  --pod-network-cidr=192.168.0.0/16 \
+  --node-name=k8s-cp-01
+```
+
+Sau đó cấu hình kubeconfig:
+
+```bash
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl get nodes
+```
+
+Lưu lại `kubeadm join ...` command ngay sau khi init.
+
+### Bước 6: Cài CNI rồi mới join worker
+
+Cài Calico/Cilium trước khi kỳ vọng pod network chạy ổn:
+
+```bash
+kubectl get pods -A
+kubectl get nodes -o wide
+```
+
+Join `k8s-worker-01` và `k8s-worker-02` bằng command từ `kubeadm init`. Nếu join command hết hạn, tạo lại trên `k8s-cp-01`:
+
+```bash
+kubeadm token create --print-join-command
+```
+
+Sau khi join:
+
+```bash
+kubectl get nodes -o wide
+kubectl get pods -A
+```
+
+### Bước 7: Label node và cài addon nền
+
+Label node:
+
+```bash
+kubectl label node k8s-worker-01 workload=app
+kubectl label node k8s-worker-02 workload=data
+kubectl get nodes --show-labels
+```
+
+Cài theo thứ tự:
+
+1. `metrics-server`
+2. `ingress-nginx`
+3. `local-path-provisioner` hoặc StorageClass tương đương
+4. `cert-manager`
+
+Kiểm tra:
+
+```bash
+kubectl get pods -A
+kubectl get svc -A
+kubectl get storageclass
+kubectl top nodes
+```
+
+### Bước 8: Dựng Jenkins sau khi nền VPS ổn
+
+Trên `devsecops-01`:
+
+1. Cài Docker.
+2. Chạy Jenkins.
+3. Cài plugin cần thiết.
+4. Tạo credentials:
+   - `github-ecommerce-token`
+   - `dockerhub-credentials`
+   - `sonar-token` nếu dùng Sonar
+   - `kubeconfig-ecommerce-dev` nếu cần fallback deploy
+5. Test Docker Hub login/push bằng một image nhỏ trước.
+
+Jenkins pass khi:
+
+```txt
+- Truy cập được jenkins.dt-commerce.site
+- Login được Jenkins UI
+- Docker build chạy được
+- Docker push lên đúng namespace docker.io/vantruong179
+- GitHub PAT clone/push được repo GitOps
+```
+
+### Bước 9: Deploy slice nhỏ thủ công trước GitOps
+
+Không deploy toàn bộ hệ thống ngay. Bắt đầu:
+
+```txt
+api-gateway
+auth-service
+user-service
+product-service
+cart-service
+postgres
+mongodb
+redis
+```
+
+Thứ tự kiểm tra:
+
+```bash
+kubectl create namespace ecommerce-dev
+kubectl -n ecommerce-dev get pods -o wide
+kubectl -n ecommerce-dev get svc
+kubectl -n ecommerce-dev describe pod <pod-loi>
+kubectl -n ecommerce-dev logs <pod> --tail=100
+```
+
+Chỉ cấu hình HTTPS sau khi HTTP nội bộ và ingress HTTP đã pass.
+
+### Bước 10: Bật GitOps và pipeline đầy đủ
+
+Sau khi deploy thủ công pass:
+
+1. Cài Argo CD.
+2. Tạo Argo CD Application trỏ vào overlay dev.
+3. Jenkins build/test/scan/push image.
+4. Jenkins cập nhật image tag trong Git.
+5. Argo CD sync tag mới vào cluster.
+6. Rollback bằng Git revert hoặc đổi tag cũ.
+
+Pipeline chuẩn:
+
+```txt
+GitHub push
+-> Jenkins test/lint
+-> Trivy filesystem scan
+-> OWASP Dependency Check
+-> Docker build
+-> Trivy image scan
+-> Docker push
+-> Commit image tag vào Git
+-> Argo CD sync
+-> Kubernetes rollout
+```
+
+### Bước 11: Cài Rancher, monitoring, Teleport sau cùng
+
+Chỉ cài các thành phần này khi app slice và GitOps đã ổn:
+
+```txt
+Rancher
+Prometheus/Grafana
+Loki/Promtail
+Teleport
+```
+
+Lý do: các thành phần này tốn RAM, nhiều CRD, nhiều pod và làm debug khó hơn nếu Kubernetes nền chưa sạch.
+
+### Bước 12: Siết firewall cuối cùng
+
+Sau khi đã xác nhận SSH, Kubernetes, ingress, Jenkins đều hoạt động:
+
+- Public chỉ mở port cần thiết.
+- Kubernetes internal port chỉ allow private network.
+- `6443` chỉ allow IP cá nhân, `devsecops-01` hoặc Teleport.
+- Nếu dùng Teleport ổn định, giảm dần SSH public.
+
+Trước khi bật UFW, luôn có một SSH session thứ hai để rollback rule nếu tự khóa.
+
+## 40. Lỗi Có Thể Gặp Và Cách Kiểm Tra Nhanh
+
+| Lỗi | Dấu hiệu | Cách kiểm tra | Hướng xử lý |
+|---|---|---|---|
+| Sai hostname | Node hiện tên lạ trong Kubernetes hoặc log khó đọc | `hostnamectl`, `kubectl get nodes` | Set lại hostname trước khi init/join. Nếu node đã join sai tên, drain/delete/join lại. |
+| Sai `/etc/hosts` | Ping hostname sai IP hoặc không ping được node | `getent hosts k8s-cp-01`, `ping k8s-worker-01` | Sửa `/etc/hosts` trên cả 4 VPS, ưu tiên private IP. |
+| Private network chưa thông | Worker không join được hoặc node NotReady | `ping <private-ip>`, `nc -vz <cp-private-ip> 6443` | Kiểm tra CloudFly private network, route, firewall provider. |
+| Bật UFW quá sớm | Mất SSH hoặc worker không join được | `ufw status verbose`, provider console | Mở lại SSH, `6443`, port kubelet/CNI nội bộ; nếu cần tạm `ufw disable`. |
+| Swap chưa tắt | `kubeadm init/join` báo lỗi preflight | `swapon --show` | `swapoff -a` và comment dòng swap trong `/etc/fstab`. |
+| Thiếu kernel module | Pod network/CNI lỗi | `lsmod`, `sysctl net.ipv4.ip_forward` | Load `overlay`, `br_netfilter`, apply sysctl Kubernetes. |
+| containerd dùng sai cgroup | Kubelet lỗi hoặc node NotReady | `containerd config dump`, `journalctl -u kubelet` | Set `SystemdCgroup = true`, restart `containerd` và `kubelet`. |
+| Init bằng public IP thay vì private IP | Node đi qua public network, firewall phức tạp | `kubectl get nodes -o wide`, xem INTERNAL-IP | Init lại nếu mới dựng; nếu đã chạy lâu thì cân nhắc reset cluster lab. |
+| Pod CIDR đụng private network | CNI lỗi, pod không route được | `kubectl get nodes -o jsonpath='{.items[*].spec.podCIDR}'` | Chọn pod CIDR không trùng private network/VPC. |
+| CNI chưa chạy | Node `NotReady`, CoreDNS Pending/CrashLoop | `kubectl get pods -n kube-system`, `kubectl describe node` | Cài Calico/Cilium đúng manifest và đúng pod CIDR. |
+| Join token hết hạn | Worker join báo token invalid | `kubeadm token list` | Tạo lại bằng `kubeadm token create --print-join-command`. |
+| Port 6443 bị chặn | Worker không join, kubectl từ ngoài timeout | `nc -vz k8s-cp-01 6443`, `curl -k https://<cp-ip>:6443/healthz` | Mở firewall/provider security group cho IP cần thiết. |
+| Image pull lỗi | Pod `ImagePullBackOff` hoặc `ErrImagePull` | `kubectl describe pod`, `kubectl get events -A` | Kiểm tra image tag, Docker Hub repo, imagePullSecret nếu private. |
+| Dùng tag `latest` | Rollback khó, pod chạy image không như kỳ vọng | `kubectl describe deploy`, `kubectl rollout history` | Dùng tag theo commit SHA/build number. |
+| Secret thiếu hoặc sai | Pod CrashLoop, app báo thiếu env | `kubectl -n ecommerce-dev describe pod`, `kubectl -n ecommerce-dev get secret` | Tạo lại Kubernetes Secret, đối chiếu tên key với manifest/env. |
+| Database chưa sẵn sàng | App CrashLoop hoặc healthcheck fail | `kubectl logs`, `kubectl get endpoints` | Thêm readiness/liveness hợp lý, kiểm tra service DNS và password. |
+| PVC Pending | PostgreSQL/MongoDB không start | `kubectl get pvc -A`, `kubectl describe pvc` | Cài StorageClass, set default hoặc khai báo `storageClassName`. |
+| Ingress không có external IP | Domain trỏ đúng nhưng không vào app | `kubectl get svc -n ingress-nginx`, `kubectl get ingress -A` | Với bare metal VPS, dùng NodePort/hostNetwork/LoadBalancer phù hợp plan. |
+| DNS chưa propagate | Truy cập domain ra IP cũ hoặc rỗng | `dig +short <domain>`, `dig @8.8.8.8 <domain>` | Chờ TTL, sửa A record đúng IP worker ingress. |
+| Cert-manager không cấp cert | HTTPS lỗi, certificate Pending | `kubectl describe certificate`, `kubectl logs -n cert-manager deploy/cert-manager` | Kiểm tra DNS, ingress class, ClusterIssuer, port 80/443. |
+| Jenkins không push Docker Hub | Pipeline fail ở docker push | Jenkins console log, `docker login` | Kiểm tra credential ID, username namespace, token Docker Hub. |
+| Jenkins không push Git | GitOps tag không được commit | Jenkins console log, GitHub PAT scope | Kiểm tra PAT quyền repo, remote URL, user/email Git. |
+| Argo CD không sync | App OutOfSync hoặc Degraded | `argocd app get`, UI Argo CD, `kubectl describe app` | Kiểm tra path overlay, repo credential, manifest lỗi, namespace. |
+| Rancher thiếu RAM | Pod Rancher CrashLoop/OOMKilled | `kubectl top pods`, `kubectl describe pod` | Tăng resource, giảm workload khác, ưu tiên cài sau khi cluster ổn. |
+| Prometheus/Loki đầy disk | Worker data gần hết disk | `df -h`, `du -sh /var/lib/containerd /var/lib/kubelet` | Giảm retention, prune image, tăng disk worker data. |
+| Kubeconfig sai context | `kubectl` thao tác nhầm cluster/namespace | `kubectl config current-context`, `kubectl config get-contexts` | Đặt context rõ tên, dùng `-n ecommerce-dev` khi thao tác app. |
+| Lỡ commit secret | Secret xuất hiện trong Git history | `git log -p`, secret scanning | Rotate secret ngay, xóa khỏi repo và xử lý history nếu cần. |
+| Deploy quá nhiều service lúc đầu | Cluster khó debug, pod Pending/OOM | `kubectl get pods -A`, `kubectl top nodes` | Quay về slice nhỏ, set request/limit thấp, mở rộng từng service. |
+
+## 41. Runbook Bật Kafka Preview Và Rollback
+
+Kafka trong lab này chỉ nên bật sau khi backend, frontend, PostgreSQL, MongoDB, Redis và MinIO đã chạy ổn. Bật theo hai bước: deploy Kafka trước, kiểm tra broker trước, sau đó mới restart các service cần đọc `KAFKA_ENABLED=true`.
+
+### Bước 1: Backup trạng thái đang chạy
+
+Chạy trên `k8s-cp-01` trước khi apply manifest Kafka:
+
+```bash
+cd ~/ecommerce-microservices
+
+BACKUP_TS="$(date +%F-%H%M)"
+kubectl -n ecommerce-dev get deploy,svc,pvc,cm -o yaml > "/root/ecommerce-dev-before-kafka-${BACKUP_TS}.yaml"
+kubectl -n ecommerce-dev get pods -o wide > "/root/ecommerce-dev-before-kafka-pods-${BACKUP_TS}.txt"
+kubectl -n ecommerce-dev get ingress -o yaml > "/root/ecommerce-dev-before-kafka-ingress-${BACKUP_TS}.yaml"
+```
+
+Nếu chuẩn bị commit code, tạo thêm nhánh backup local:
+
+```bash
+git branch backup/before-kafka-preview
+```
+
+### Bước 2: Apply Kafka trước, chưa restart app vội
+
+```bash
+kubectl apply -k infrastructure/kubernetes/overlays/dev
+kubectl -n ecommerce-dev rollout status deploy/kafka --timeout=300s
+kubectl -n ecommerce-dev get pods -o wide | grep kafka
+kubectl -n ecommerce-dev logs deploy/kafka --tail=120
+```
+
+Test broker bằng pod tạm:
+
+```bash
+kubectl -n ecommerce-dev run kafka-test --rm -it \
+  --image=bitnami/kafka:3.7.0 \
+  --restart=Never -- \
+  bash -lc 'kafka-topics.sh --bootstrap-server kafka:9092 --list'
+```
+
+Nếu lệnh trên chạy được, Kafka service DNS `kafka:9092` đã ổn.
+
+### Bước 3: Restart từng service cần Kafka
+
+Không restart toàn bộ cluster cùng lúc. Bắt đầu với auth và các service đang dùng config chung:
+
+```bash
+kubectl -n ecommerce-dev rollout restart deploy/auth-service deploy/user-service deploy/product-service deploy/cart-service
+kubectl -n ecommerce-dev rollout status deploy/auth-service --timeout=180s
+kubectl -n ecommerce-dev rollout status deploy/user-service --timeout=180s
+kubectl -n ecommerce-dev rollout status deploy/product-service --timeout=180s
+kubectl -n ecommerce-dev rollout status deploy/cart-service --timeout=180s
+```
+
+Kiểm tra:
+
+```bash
+kubectl -n ecommerce-dev get pods --field-selector=status.phase!=Running,status.phase!=Succeeded
+curl -k https://api.dt-commerce.site/health
+curl -k https://api.dt-commerce.site/api/v1/products
+```
+
+Sau đó thử đăng ký tài khoản trên `https://buyer.dt-commerce.site/register`. Nếu vẫn lỗi, xem log:
+
+```bash
+kubectl -n ecommerce-dev logs deploy/auth-service --tail=160
+kubectl -n ecommerce-dev logs deploy/api-gateway --tail=160
+kubectl -n ecommerce-dev logs deploy/kafka --tail=160
+```
+
+### Rollback nhanh nếu Kafka gây lỗi
+
+Nếu service bị timeout hoặc pod crash, tắt Kafka cho app trước:
+
+```bash
+kubectl -n ecommerce-dev set env deploy/auth-service deploy/user-service deploy/product-service deploy/cart-service KAFKA_ENABLED=false
+kubectl -n ecommerce-dev rollout status deploy/auth-service --timeout=180s
+kubectl -n ecommerce-dev rollout status deploy/user-service --timeout=180s
+kubectl -n ecommerce-dev rollout status deploy/product-service --timeout=180s
+kubectl -n ecommerce-dev rollout status deploy/cart-service --timeout=180s
+```
+
+Nếu cần dừng hẳn broker:
+
+```bash
+kubectl -n ecommerce-dev scale deploy/kafka --replicas=0
+```
+
+Rollback bằng GitOps chuẩn là revert commit Kafka rồi apply/sync lại:
+
+```bash
+git revert <commit-bat-kafka>
+kubectl apply -k infrastructure/kubernetes/overlays/dev
+```

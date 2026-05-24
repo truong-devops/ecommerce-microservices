@@ -49,6 +49,7 @@ export default () => ({
     resetPasswordTokenTtlMinutes: Number(process.env.RESET_PASSWORD_TOKEN_TTL_MINUTES ?? 30)
   },
   kafka: {
+    enabled: process.env.KAFKA_ENABLED === 'true',
     brokers: (process.env.KAFKA_BROKERS ?? 'localhost:9092').split(',').map((value) => value.trim()),
     userEventsTopic: process.env.USER_EVENTS_TOPIC ?? 'user.events',
     notificationEventsTopic: process.env.NOTIFICATION_EVENTS_TOPIC ?? 'notification.events',

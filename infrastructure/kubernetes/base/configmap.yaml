@@ -9,6 +9,6 @@ data:
   API_PREFIX: api/v1
   REDIS_ENABLED: "true"
   REDIS_URL: redis://redis:6379
-  KAFKA_ENABLED: "false"
+  KAFKA_ENABLED: "true"
   KAFKA_BROKERS: kafka:9092
   DB_SSL: "false"

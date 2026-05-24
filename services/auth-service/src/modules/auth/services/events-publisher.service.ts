@@ -5,6 +5,7 @@ import { AppLogger } from '../../../common/utils/app-logger.util';
 
 @Injectable()
 export class EventsPublisherService implements OnModuleDestroy {
+  private readonly enabled: boolean;
   private readonly kafka: Kafka;
   private readonly producer: Producer;
   private isConnected = false;
@@ -13,6 +14,7 @@ export class EventsPublisherService implements OnModuleDestroy {
     private readonly configService: ConfigService,
     private readonly logger: AppLogger
   ) {
+    this.enabled = this.configService.get<boolean>('kafka.enabled', false);
     this.kafka = new Kafka({
       clientId: 'auth-service',
       brokers: this.configService.get<string[]>('kafka.brokers', ['localhost:9092'])
@@ -40,6 +42,10 @@ export class EventsPublisherService implements OnModuleDestroy {
   }
 
   private async ensureConnected(): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
     if (this.isConnected) {
       return;
     }
@@ -60,6 +66,10 @@ export class EventsPublisherService implements OnModuleDestroy {
   }
 
   private async publish(topic: string, eventType: string, payload: Record<string, unknown>): Promise<void> {
+    if (!this.enabled) {
+      return;
+    }
+
     await this.ensureConnected();
     if (!this.isConnected) {
       return;

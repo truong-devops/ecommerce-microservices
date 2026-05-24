@@ -8,6 +8,7 @@ resources:
   - data-mongo.yaml
   - data-redis.yaml
   - data-minio.yaml
+  - data-kafka.yaml
   - app-auth-service.yaml
   - app-user-service.yaml
   - app-product-service.yaml

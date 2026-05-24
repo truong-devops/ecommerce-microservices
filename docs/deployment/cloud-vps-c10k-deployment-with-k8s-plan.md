@@ -157,6 +157,7 @@ Máy này chạy app layer:
 - `cart-service`
 - `order-service`
 - Các service demo khác nếu đủ RAM
+- MediaMTX cho publish/playback livestream realtime
 - `ingress-nginx`
 
 Node này sẽ được label:
@@ -208,6 +209,7 @@ flowchart TB
       ingress["ingress-nginx"]
       gateway["api-gateway"]
       appsvc["auth / user / product / cart / order"]
+      mediamtx["MediaMTX<br/>livestream WHIP/HLS/WebRTC"]
       argo["Argo CD<br/>GitOps deploy"]
       rancher["Rancher<br/>cluster management UI"]
     end
@@ -225,6 +227,7 @@ flowchart TB
   end
 
   user["Người dùng / trình duyệt"] -->|"HTTPS api.dt-commerce.site"| ingress
+  user -->|"HTTPS WHIP/HLS + UDP 8189 WebRTC"| mediamtx
   github -->|"webhook / poll SCM"| jenkins
   nginxhost --> jenkins
   nginxhost --> sonar
@@ -297,6 +300,8 @@ Cấu hình DNS:
 | Subdomain | Trỏ tới | Mục đích |
 |---|---|---|
 | `api.dt-commerce.site` | Public IP `k8s-worker-01` hoặc Load Balancer | Public API/app |
+| `live-ingest.dt-commerce.site` | Public IP `k8s-worker-01` | MediaMTX WHIP publish từ seller |
+| `live-playback.dt-commerce.site` | Public IP `k8s-worker-01` | MediaMTX HLS playback cho buyer |
 | `jenkins.dt-commerce.site` | Public IP `devsecops-01` | Jenkins UI |
 | `teleport.dt-commerce.site` | Public IP EC2/VPS Teleport | Zero-trust access vào SSH/K8s |
 | `argocd.dt-commerce.site` | Public IP `k8s-worker-01` | Argo CD UI/API |
@@ -327,7 +332,7 @@ k8s-cp-01 <-> k8s-worker-01/k8s-worker-02
 |---|---|---|
 | `devsecops-01` | 22, 80, 443 | SSH, reverse proxy Jenkins/Sonar |
 | `k8s-cp-01` | 22, 6443 allowlist | Kubernetes API chỉ nên allow IP của bạn và `devsecops-01` |
-| `k8s-worker-01` | 22, 80, 443 | Ingress public cho app |
+| `k8s-worker-01` | 22, 80, 443, 8189/UDP | Ingress public cho app và MediaMTX WebRTC media |
 | `k8s-worker-02` | 22, 80, 443 optional | Chỉ mở nếu public Grafana qua ingress/node này |
 
 ### Port nội bộ cần cho Kubernetes
@@ -1159,12 +1164,17 @@ Luồng app public:
 
 ```txt
 Internet -> api.dt-commerce.site -> k8s-worker-01:80/443 -> ingress-nginx -> api-gateway -> services
+Seller -> live-ingest.dt-commerce.site:443 -> ingress-nginx -> MediaMTX WHIP
+Buyer  -> live-playback.dt-commerce.site:443 -> ingress-nginx -> MediaMTX HLS
+Browser <-> k8s-worker-01:8189/UDP <-> MediaMTX WebRTC media
 ```
 
 Các DNS cần trỏ về public IP `k8s-worker-01`:
 
 ```txt
 api.dt-commerce.site
+live-ingest.dt-commerce.site
+live-playback.dt-commerce.site
 argocd.dt-commerce.site
 rancher.dt-commerce.site
 grafana.dt-commerce.site
@@ -1961,6 +1971,8 @@ DNS nên trỏ như sau:
 | Domain | Trỏ về |
 |---|---|
 | `api.dt-commerce.site` | `103.179.172.220` |
+| `live-ingest.dt-commerce.site` | `103.179.172.220` |
+| `live-playback.dt-commerce.site` | `103.179.172.220` |
 | `jenkins.dt-commerce.site` | `103.166.185.99` |
 | `sonar.dt-commerce.site` | `103.166.185.99` nếu bật SonarQube |
 | `argocd.dt-commerce.site` | `103.179.172.220` |

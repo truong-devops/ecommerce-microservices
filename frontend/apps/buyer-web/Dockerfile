@@ -25,6 +25,10 @@ FROM deps AS builder
 WORKDIR /repo
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_API_GATEWAY_WS_URL=wss://api.dt-commerce.site/api/v1
+ARG NEXT_PUBLIC_CHAT_WS_BASE_URL=https://api.dt-commerce.site
+ENV NEXT_PUBLIC_API_GATEWAY_WS_URL=${NEXT_PUBLIC_API_GATEWAY_WS_URL}
+ENV NEXT_PUBLIC_CHAT_WS_BASE_URL=${NEXT_PUBLIC_CHAT_WS_BASE_URL}
 
 COPY frontend/apps/buyer-web ./frontend/apps/buyer-web
 COPY frontend/packages ./frontend/packages

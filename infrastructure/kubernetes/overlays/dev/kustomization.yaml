@@ -9,7 +9,7 @@ resources:
 images:
   - name: api-gateway
     newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-    newTag: dev
+    newTag: live-ws-stable-20260525
   - name: auth-service
     newName: docker.io/vantruong179/ecommerce-microservices-auth-service
     newTag: dev
@@ -54,10 +54,10 @@ images:
     newTag: dev
   - name: buyer-web
     newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-    newTag: live-smooth-20260525
+    newTag: live-ws-stable-20260525
   - name: seller-web
     newName: docker.io/vantruong179/ecommerce-microservices-seller-web
-    newTag: live-smooth-20260525
+    newTag: live-ws-stable-20260525
   - name: moderator-web
     newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
     newTag: dev

@@ -500,7 +500,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
 
     void publishWHEPOffer(peer, mediaPlayback.url)
       .then(() => {
-        if (!cancelled) {
+        if (!cancelled && !remoteStreamRef.current) {
           setRealtimeStatus('connecting');
         }
       })

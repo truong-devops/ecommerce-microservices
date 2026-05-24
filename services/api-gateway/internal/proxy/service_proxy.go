@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
 	"api-gateway/internal/middleware"
@@ -88,6 +89,11 @@ func NewServiceProxy(name, rawURL string, timeout time.Duration, logger *zap.Log
 }
 
 func (s *ServiceProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if isWebSocketUpgrade(r) {
+		s.proxy.ServeHTTP(w, r)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), s.timeout)
 	defer cancel()
 
@@ -107,4 +113,11 @@ func isTimeoutError(err error) bool {
 		return true
 	}
 	return false
+}
+
+func isWebSocketUpgrade(r *http.Request) bool {
+	if !strings.EqualFold(strings.TrimSpace(r.Header.Get("Upgrade")), "websocket") {
+		return false
+	}
+	return strings.Contains(strings.ToLower(strings.TrimSpace(r.Header.Get("Connection"))), "upgrade")
 }

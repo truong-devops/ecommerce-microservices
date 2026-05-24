@@ -70,6 +70,8 @@ const DEFAULT_PLAYBACK_URL = 'https://interactive-examples.mdn.mozilla.net/media
 const BUYER_WEB_URL = process.env.NEXT_PUBLIC_BUYER_WEB_URL ?? 'http://localhost:8888';
 const BUYER_PROFILES_STORAGE_KEY = 'buyer_profiles';
 const SELECTED_LIVE_SESSION_STORAGE_KEY = 'seller_selected_live_session_id';
+const LIVE_VIDEO_MAX_BITRATE_BPS = 1_200_000;
+const LIVE_VIDEO_MAX_FRAMERATE = 24;
 const trendGroups = [
   {
     title: 'Số liệu chính:',
@@ -1038,9 +1040,12 @@ function LiveOperationsPanel({
 
     const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     mediaEnginePeerRef.current = peer;
-    liveTracks.forEach((track) => {
-      peer.addTrack(track, previewStream);
-    });
+    for (const track of liveTracks) {
+      const sender = peer.addTrack(track, previewStream);
+      if (track.kind === 'video') {
+        await configureLiveVideoSender(sender);
+      }
+    }
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === 'connected') {
         if (mediaEngineDisconnectTimerRef.current) {
@@ -1363,7 +1368,14 @@ function LiveOperationsPanel({
       try {
         const stream =
           mode === 'camera'
-            ? await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            ? await navigator.mediaDevices.getUserMedia({
+                video: {
+                  width: { ideal: 1280, max: 1280 },
+                  height: { ideal: 720, max: 720 },
+                  frameRate: { ideal: LIVE_VIDEO_MAX_FRAMERATE, max: LIVE_VIDEO_MAX_FRAMERATE }
+                },
+                audio: true
+              })
             : await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
 
         stream.getVideoTracks().forEach((track) => {
@@ -1982,6 +1994,19 @@ function getLiveMediaTracks(stream: MediaStream): MediaStreamTrack[] {
 
 function hasLiveVideoTrack(stream: MediaStream): boolean {
   return getLiveMediaTracks(stream).some((track) => track.kind === 'video');
+}
+
+async function configureLiveVideoSender(sender: RTCRtpSender): Promise<void> {
+  const parameters = sender.getParameters();
+  const baseEncoding = parameters.encodings[0] ?? {};
+  parameters.encodings = [
+    {
+      ...baseEncoding,
+      maxBitrate: LIVE_VIDEO_MAX_BITRATE_BPS,
+      maxFramerate: LIVE_VIDEO_MAX_FRAMERATE
+    }
+  ];
+  await sender.setParameters(parameters).catch(() => undefined);
 }
 
 function waitForIceGatheringComplete(peer: RTCPeerConnection): Promise<void> {

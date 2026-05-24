@@ -2347,9 +2347,9 @@ Test broker bằng pod tạm:
 
 ```bash
 kubectl -n ecommerce-dev run kafka-test --rm -it \
-  --image=bitnami/kafka:3.7.0 \
+  --image=apache/kafka:3.7.2 \
   --restart=Never -- \
-  bash -lc 'kafka-topics.sh --bootstrap-server kafka:9092 --list'
+  bash -lc '/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list'
 ```
 
 Nếu lệnh trên chạy được, Kafka service DNS `kafka:9092` đã ổn.

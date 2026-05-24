@@ -157,7 +157,7 @@ Máy này chạy app layer:
 - `cart-service`
 - `order-service`
 - Các service demo khác nếu đủ RAM
-- MediaMTX cho publish/playback livestream realtime
+- MediaMTX cho publish/playback livestream realtime qua WHIP/WHEP
 - `ingress-nginx`
 
 Node này sẽ được label:
@@ -209,7 +209,7 @@ flowchart TB
       ingress["ingress-nginx"]
       gateway["api-gateway"]
       appsvc["auth / user / product / cart / order"]
-      mediamtx["MediaMTX<br/>livestream WHIP/HLS/WebRTC"]
+      mediamtx["MediaMTX<br/>livestream WHIP/WHEP WebRTC"]
       argo["Argo CD<br/>GitOps deploy"]
       rancher["Rancher<br/>cluster management UI"]
     end
@@ -227,7 +227,7 @@ flowchart TB
   end
 
   user["Người dùng / trình duyệt"] -->|"HTTPS api.dt-commerce.site"| ingress
-  user -->|"HTTPS WHIP/HLS + UDP 8189 WebRTC"| mediamtx
+  user -->|"HTTPS WHIP/WHEP + UDP 8189 WebRTC"| mediamtx
   github -->|"webhook / poll SCM"| jenkins
   nginxhost --> jenkins
   nginxhost --> sonar
@@ -300,8 +300,8 @@ Cấu hình DNS:
 | Subdomain | Trỏ tới | Mục đích |
 |---|---|---|
 | `api.dt-commerce.site` | Public IP `k8s-worker-01` hoặc Load Balancer | Public API/app |
-| `live-ingest.dt-commerce.site` | Public IP `k8s-worker-01` | MediaMTX WHIP publish từ seller |
-| `live-playback.dt-commerce.site` | Public IP `k8s-worker-01` | MediaMTX HLS playback cho buyer |
+| `live-ingest.dt-commerce.site` | Public IP `k8s-worker-01` | MediaMTX WHIP publish và WHEP playback |
+| `live-playback.dt-commerce.site` | Public IP `k8s-worker-01` | MediaMTX HLS fallback nếu cần sau này |
 | `jenkins.dt-commerce.site` | Public IP `devsecops-01` | Jenkins UI |
 | `teleport.dt-commerce.site` | Public IP EC2/VPS Teleport | Zero-trust access vào SSH/K8s |
 | `argocd.dt-commerce.site` | Public IP `k8s-worker-01` | Argo CD UI/API |
@@ -1165,7 +1165,7 @@ Luồng app public:
 ```txt
 Internet -> api.dt-commerce.site -> k8s-worker-01:80/443 -> ingress-nginx -> api-gateway -> services
 Seller -> live-ingest.dt-commerce.site:443 -> ingress-nginx -> MediaMTX WHIP
-Buyer  -> live-playback.dt-commerce.site:443 -> ingress-nginx -> MediaMTX HLS
+Buyer  -> live-ingest.dt-commerce.site:443 -> ingress-nginx -> MediaMTX WHEP
 Browser <-> k8s-worker-01:8189/UDP <-> MediaMTX WebRTC media
 ```
 

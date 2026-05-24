@@ -48,13 +48,13 @@ spec:
             - name: LIVE_MEDIA_INGEST_PROTOCOL
               value: WHIP
             - name: LIVE_MEDIA_PLAYBACK_PROTOCOL
-              value: HLS
+              value: WEBRTC
             - name: LIVE_MEDIA_INGEST_BASE_URL
               value: https://live-ingest.dt-commerce.site
             - name: LIVE_MEDIA_PLAYBACK_BASE_URL
-              value: https://live-playback.dt-commerce.site
+              value: https://live-ingest.dt-commerce.site
             - name: WS_ALLOWED_ORIGINS
-              value: "*"
+              value: https://seller.dt-commerce.site,https://buyer.dt-commerce.site
           readinessProbe:
             httpGet:
               path: /api/v1/health

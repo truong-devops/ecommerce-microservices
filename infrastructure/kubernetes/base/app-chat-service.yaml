@@ -40,7 +40,7 @@ spec:
             - name: REDIS_ENABLED
               value: "true"
             - name: WS_ALLOWED_ORIGINS
-              value: "*"
+              value: https://seller.dt-commerce.site,https://buyer.dt-commerce.site,https://moderator.dt-commerce.site
           readinessProbe:
             httpGet:
               path: /api/v1/health

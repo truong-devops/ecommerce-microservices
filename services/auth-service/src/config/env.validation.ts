@@ -29,6 +29,7 @@ export const envValidationSchema = Joi.object({
   MODERATOR_WEB_BASE_URL: Joi.string().uri().default('http://localhost:1111'),
 
   EMAIL_VERIFY_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(60),
+  AUTH_REQUIRE_EMAIL_VERIFICATION: Joi.boolean().default(true),
   RESET_PASSWORD_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(30),
 
   REFRESH_TOKEN_PEPPER: Joi.string().min(16).required(),

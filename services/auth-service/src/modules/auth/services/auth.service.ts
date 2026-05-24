@@ -177,7 +177,7 @@ export class AuthService {
       });
     }
 
-    if (!user.isEmailVerified) {
+    if (this.isEmailVerificationRequired() && !user.isEmailVerified) {
       throw new UnauthorizedException({
         code: ErrorCode.EMAIL_NOT_VERIFIED,
         message: 'Email is not verified'
@@ -1283,6 +1283,10 @@ export class AuthService {
 
   private isDevelopment(): boolean {
     return this.configService.get<string>('app.env') === 'development';
+  }
+
+  private isEmailVerificationRequired(): boolean {
+    return this.configService.get<boolean>('security.requireEmailVerification', true);
   }
 }
 

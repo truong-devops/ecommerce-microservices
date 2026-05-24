@@ -43,6 +43,8 @@ spec:
               value: https://api.dt-commerce.site/api/v1/auth/oauth/google/callback
             - name: GOOGLE_OAUTH_SCOPES
               value: openid email profile
+            - name: AUTH_REQUIRE_EMAIL_VERIFICATION
+              value: "false"
             - name: BUYER_WEB_BASE_URL
               value: https://buyer.dt-commerce.site
             - name: SELLER_WEB_BASE_URL

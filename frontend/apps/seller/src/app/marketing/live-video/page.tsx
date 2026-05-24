@@ -789,6 +789,7 @@ function LiveOperationsPanel({
   const viewerPeersRef = useRef<Map<string, SellerViewerPeer>>(new Map());
   const signalSocketRef = useRef<WebSocket | null>(null);
   const mediaEnginePeerRef = useRef<RTCPeerConnection | null>(null);
+  const mediaEngineDisconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clientIdRef = useRef(createClientMessageId());
   const manualRealtimeStopRef = useRef(false);
   const pendingBroadcasterReadyRef = useRef(false);
@@ -897,6 +898,10 @@ function LiveOperationsPanel({
   );
 
   const closeRealtimeBroadcast = useCallback((nextStatus: 'idle' | 'connecting' = 'idle', options?: { closeRoom?: boolean }) => {
+    if (mediaEngineDisconnectTimerRef.current) {
+      clearTimeout(mediaEngineDisconnectTimerRef.current);
+      mediaEngineDisconnectTimerRef.current = null;
+    }
     mediaEnginePeerRef.current?.close();
     mediaEnginePeerRef.current = null;
     viewerPeersRef.current.forEach((entry) => {
@@ -1038,16 +1043,32 @@ function LiveOperationsPanel({
     });
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === 'connected') {
+        if (mediaEngineDisconnectTimerRef.current) {
+          clearTimeout(mediaEngineDisconnectTimerRef.current);
+          mediaEngineDisconnectTimerRef.current = null;
+        }
         setRealtimeStatus('connected');
         setRealtimeError('');
       }
-      if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
+      if (peer.connectionState === 'failed') {
         if (mediaEnginePeerRef.current === peer) {
           mediaEnginePeerRef.current = null;
         }
         peer.close();
         setRealtimeStatus('error');
         setRealtimeError('Kết nối publish đến MediaMTX bị ngắt.');
+      }
+      if (peer.connectionState === 'disconnected' && !mediaEngineDisconnectTimerRef.current) {
+        mediaEngineDisconnectTimerRef.current = setTimeout(() => {
+          mediaEngineDisconnectTimerRef.current = null;
+          if (mediaEnginePeerRef.current !== peer || peer.connectionState !== 'disconnected') {
+            return;
+          }
+          mediaEnginePeerRef.current = null;
+          peer.close();
+          setRealtimeStatus('error');
+          setRealtimeError('Kết nối publish đến MediaMTX bị ngắt.');
+        }, 5000);
       }
     };
 

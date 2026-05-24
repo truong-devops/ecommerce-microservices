@@ -42,6 +42,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
   const pendingIceCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const realtimeRetryTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaPlaybackRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mediaPlaybackDisconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [status, setStatus] = useState<LiveDetailStatus>('loading');
   const [socketStatus, setSocketStatus] = useState<SocketStatus>('idle');
   const [realtimeStatus, setRealtimeStatus] = useState<'waiting' | 'connecting' | 'connected' | 'fallback' | 'error'>('fallback');
@@ -197,6 +198,13 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     if (mediaPlaybackRetryTimerRef.current) {
       clearTimeout(mediaPlaybackRetryTimerRef.current);
       mediaPlaybackRetryTimerRef.current = null;
+    }
+  }, []);
+
+  const clearMediaPlaybackDisconnectTimer = useCallback(() => {
+    if (mediaPlaybackDisconnectTimerRef.current) {
+      clearTimeout(mediaPlaybackDisconnectTimerRef.current);
+      mediaPlaybackDisconnectTimerRef.current = null;
     }
   }, []);
 
@@ -429,6 +437,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     };
     const peer = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
     clearMediaPlaybackRetryTimer();
+    clearMediaPlaybackDisconnectTimer();
     mediaPlaybackPeerRef.current?.close();
     mediaPlaybackPeerRef.current = peer;
     remoteStreamRef.current = null;
@@ -449,6 +458,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
       setRemoteStream(new MediaStream(currentStream.getTracks()));
       setRealtimeStatus('connected');
       clearMediaPlaybackRetryTimer();
+      clearMediaPlaybackDisconnectTimer();
       if (!firstFrameTrackedRef.current) {
         firstFrameTrackedRef.current = true;
         emitMediaMetric({
@@ -459,7 +469,10 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
       }
     };
     peer.onconnectionstatechange = () => {
-      if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') {
+      if (peer.connectionState === 'connected') {
+        clearMediaPlaybackDisconnectTimer();
+      }
+      if (peer.connectionState === 'failed') {
         setRealtimeStatus('error');
         scheduleMediaPlaybackReconnect();
         emitMediaMetric({
@@ -467,6 +480,21 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
           playbackProtocol: mediaPlayback.protocol,
           errorCode: peer.connectionState
         });
+      }
+      if (peer.connectionState === 'disconnected' && !mediaPlaybackDisconnectTimerRef.current) {
+        mediaPlaybackDisconnectTimerRef.current = setTimeout(() => {
+          mediaPlaybackDisconnectTimerRef.current = null;
+          if (peer.connectionState !== 'disconnected') {
+            return;
+          }
+          setRealtimeStatus('error');
+          scheduleMediaPlaybackReconnect();
+          emitMediaMetric({
+            metricType: 'playback_error',
+            playbackProtocol: mediaPlayback.protocol,
+            errorCode: 'disconnected'
+          });
+        }, 5000);
       }
     };
 
@@ -492,6 +520,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     return () => {
       cancelled = true;
       clearMediaPlaybackRetryTimer();
+      clearMediaPlaybackDisconnectTimer();
       if (mediaPlaybackPeerRef.current === peer) {
         mediaPlaybackPeerRef.current = null;
       }
@@ -499,6 +528,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     };
   }, [
     clearMediaPlaybackRetryTimer,
+    clearMediaPlaybackDisconnectTimer,
     detail?.session.status,
     emitMediaMetric,
     mediaPlayback?.protocol,

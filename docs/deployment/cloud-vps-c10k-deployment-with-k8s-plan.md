@@ -332,7 +332,7 @@ k8s-cp-01 <-> k8s-worker-01/k8s-worker-02
 |---|---|---|
 | `devsecops-01` | 22, 80, 443 | SSH, reverse proxy Jenkins/Sonar |
 | `k8s-cp-01` | 22, 6443 allowlist | Kubernetes API chỉ nên allow IP của bạn và `devsecops-01` |
-| `k8s-worker-01` | 22, 80, 443, 8189/UDP | Ingress public cho app và MediaMTX WebRTC media |
+| `k8s-worker-01` | 22, 80, 443, 8189/UDP, 8189/TCP | Ingress public cho app và MediaMTX WebRTC media/fallback |
 | `k8s-worker-02` | 22, 80, 443 optional | Chỉ mở nếu public Grafana qua ingress/node này |
 
 ### Port nội bộ cần cho Kubernetes
@@ -1166,7 +1166,7 @@ Luồng app public:
 Internet -> api.dt-commerce.site -> k8s-worker-01:80/443 -> ingress-nginx -> api-gateway -> services
 Seller -> live-ingest.dt-commerce.site:443 -> ingress-nginx -> MediaMTX WHIP
 Buyer  -> live-ingest.dt-commerce.site:443 -> ingress-nginx -> MediaMTX WHEP
-Browser <-> k8s-worker-01:8189/UDP <-> MediaMTX WebRTC media
+Browser <-> k8s-worker-01:8189/UDP (ưu tiên) hoặc 8189/TCP (fallback) <-> MediaMTX WebRTC media
 ```
 
 Các DNS cần trỏ về public IP `k8s-worker-01`:

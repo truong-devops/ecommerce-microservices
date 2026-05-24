@@ -32,6 +32,9 @@ spec:
             - name: webrtc-udp
               containerPort: 8189
               protocol: UDP
+            - name: webrtc-tcp
+              containerPort: 8189
+              protocol: TCP
           env:
             - name: MTX_HLSVARIANT
               value: lowLatency
@@ -43,6 +46,8 @@ spec:
               value: "no"
             - name: MTX_WEBRTCADDITIONALHOSTS
               value: 103.179.172.220
+            - name: MTX_WEBRTCLOCALTCPADDRESS
+              value: :8189
           readinessProbe:
             tcpSocket:
               port: webrtc-http

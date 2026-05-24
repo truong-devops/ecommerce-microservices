@@ -15,6 +15,13 @@ spec:
     - host: api.dt-commerce.site
       http:
         paths:
+          - path: /ecommerce-media
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  name: api
           - path: /
             pathType: Prefix
             backend:

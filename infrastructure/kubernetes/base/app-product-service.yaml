@@ -36,7 +36,7 @@ spec:
             - name: DATABASE_NAME
               value: ecommerce_product
             - name: MEDIA_PUBLIC_BASE_URL
-              value: https://api.dt-commerce.site/media
+              value: https://api.dt-commerce.site/ecommerce-media
             - name: SEARCH_ENABLED
               value: "false"
             - name: VIDEO_REVIEW_REQUIRED

@@ -57,9 +57,9 @@ spec:
             - name: NEXT_PUBLIC_BUYER_WEB_URL
               value: https://buyer.dt-commerce.site
             - name: NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL
-              value: https://api.dt-commerce.site/media
+              value: https://api.dt-commerce.site/ecommerce-media
             - name: MEDIA_PUBLIC_BASE_URL
-              value: https://api.dt-commerce.site/media
+              value: https://api.dt-commerce.site/ecommerce-media
             - name: NEXT_PUBLIC_API_GATEWAY_WS_URL
               value: wss://api.dt-commerce.site/api/v1
             - name: NEXT_PUBLIC_CHAT_WS_BASE_URL

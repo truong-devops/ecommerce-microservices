@@ -83,10 +83,11 @@ metadata:
   labels:
     app: mongo
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: mongo
   ports:
     - name: mongo
       port: 27017
       targetPort: mongo
+      nodePort: 32017

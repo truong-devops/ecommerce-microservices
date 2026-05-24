@@ -22,3 +22,33 @@ images:
   - name: cart-service
     newName: docker.io/vantruong179/ecommerce-microservices-cart-service
     newTag: dev
+  - name: order-service
+    newName: docker.io/vantruong179/ecommerce-microservices-order-service
+    newTag: dev
+  - name: payment-service
+    newName: docker.io/vantruong179/ecommerce-microservices-payment-service
+    newTag: dev
+  - name: inventory-service
+    newName: docker.io/vantruong179/ecommerce-microservices-inventory-service
+    newTag: dev
+  - name: shipping-service
+    newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
+    newTag: dev
+  - name: notification-service
+    newName: docker.io/vantruong179/ecommerce-microservices-notification-service
+    newTag: dev
+  - name: analytics-service
+    newName: docker.io/vantruong179/ecommerce-microservices-analytics-service
+    newTag: dev
+  - name: review-service
+    newName: docker.io/vantruong179/ecommerce-microservices-review-service
+    newTag: dev
+  - name: chat-service
+    newName: docker.io/vantruong179/ecommerce-microservices-chat-service
+    newTag: dev
+  - name: live-service
+    newName: docker.io/vantruong179/ecommerce-microservices-live-service
+    newTag: dev
+  - name: media-service
+    newName: docker.io/vantruong179/ecommerce-microservices-media-service
+    newTag: dev

@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cart-service
+  name: review-service
   labels:
-    app: cart-service
+    app: review-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cart-service
+      app: review-service
   template:
     metadata:
       labels:
-        app: cart-service
+        app: review-service
     spec:
       nodeSelector:
         workload: app
       containers:
-        - name: cart-service
-          image: cart-service:dev
+        - name: review-service
+          image: review-service:dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -30,23 +30,13 @@ spec:
                 name: ecommerce-secrets
           env:
             - name: APP_NAME
-              value: cart-service
-            - name: DATABASE_URL
-              value: postgresql://ecart:ecart@postgres:5432/ecommerce_cart?sslmode=disable
-            - name: CART_PERSISTENCE_ENABLED
+              value: review-service
+            - name: MONGODB_URI
+              value: mongodb://mongo:27017/ecommerce_review
+            - name: MONGODB_DATABASE
+              value: ecommerce_review
+            - name: REDIS_ENABLED
               value: "true"
-            - name: DB_MIGRATIONS_RUN
-              value: "true"
-            - name: MIGRATION_FILE
-              value: /migrations/0001_init_cart_service.sql
-            - name: CART_VALIDATE_EXTERNAL
-              value: "false"
-            - name: PRODUCT_SERVICE_BASE_URL
-              value: http://product-service:8080/api/v1
-            - name: INVENTORY_SERVICE_BASE_URL
-              value: http://inventory-service:8080/api/v1
-            - name: CART_DEFAULT_CURRENCY
-              value: USD
           readinessProbe:
             httpGet:
               path: /api/v1/health
@@ -74,13 +64,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cart-service
+  name: review-service
   labels:
-    app: cart-service
+    app: review-service
 spec:
   type: ClusterIP
   selector:
-    app: cart-service
+    app: review-service
   ports:
     - name: http
       port: 8080

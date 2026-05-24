@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cart-service
+  name: payment-service
   labels:
-    app: cart-service
+    app: payment-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cart-service
+      app: payment-service
   template:
     metadata:
       labels:
-        app: cart-service
+        app: payment-service
     spec:
       nodeSelector:
         workload: app
       containers:
-        - name: cart-service
-          image: cart-service:dev
+        - name: payment-service
+          image: payment-service:dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -30,23 +30,21 @@ spec:
                 name: ecommerce-secrets
           env:
             - name: APP_NAME
-              value: cart-service
+              value: payment-service
             - name: DATABASE_URL
-              value: postgresql://ecart:ecart@postgres:5432/ecommerce_cart?sslmode=disable
-            - name: CART_PERSISTENCE_ENABLED
-              value: "true"
+              value: postgresql://epayment:epayment@postgres:5432/ecommerce_payment?sslmode=disable
             - name: DB_MIGRATIONS_RUN
               value: "true"
             - name: MIGRATION_FILE
-              value: /migrations/0001_init_cart_service.sql
-            - name: CART_VALIDATE_EXTERNAL
+              value: /migrations/0001_init_payment_service.sql
+            - name: KAFKA_ENABLED
               value: "false"
-            - name: PRODUCT_SERVICE_BASE_URL
-              value: http://product-service:8080/api/v1
-            - name: INVENTORY_SERVICE_BASE_URL
-              value: http://inventory-service:8080/api/v1
-            - name: CART_DEFAULT_CURRENCY
-              value: USD
+            - name: REDIS_ENABLED
+              value: "true"
+            - name: ORDER_SERVICE_BASE_URL
+              value: http://order-service:8080/api/v1
+            - name: PAYMENT_GATEWAY
+              value: mock
           readinessProbe:
             httpGet:
               path: /api/v1/health
@@ -74,13 +72,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cart-service
+  name: payment-service
   labels:
-    app: cart-service
+    app: payment-service
 spec:
   type: ClusterIP
   selector:
-    app: cart-service
+    app: payment-service
   ports:
     - name: http
       port: 8080

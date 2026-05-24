@@ -8,7 +8,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service', description: 'Comma-separated services to build')
+    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services to build')
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins username/password credential for Docker Hub')
@@ -42,7 +42,7 @@ pipeline {
     stage('Unit Test') {
       steps {
         script {
-          def goServices = ['api-gateway', 'user-service', 'product-service', 'cart-service']
+          def goServices = ['api-gateway', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
           selectedServices().each { svc ->
             if (goServices.contains(svc)) {
               sh """
@@ -223,7 +223,7 @@ pipeline {
 }
 
 def selectedServices() {
-  def allowedServices = ['api-gateway', 'auth-service', 'user-service', 'product-service', 'cart-service']
+  def allowedServices = ['api-gateway', 'auth-service', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
   def selected = env.SELECTED_SERVICES?.split(',')?.collect { it.trim() }?.findAll { it } ?: allowedServices
   def unknown = selected.findAll { !allowedServices.contains(it) }
   if (unknown) {

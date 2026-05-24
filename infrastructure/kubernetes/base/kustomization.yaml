@@ -7,10 +7,21 @@ resources:
   - data-postgres.yaml
   - data-mongo.yaml
   - data-redis.yaml
+  - data-minio.yaml
   - app-auth-service.yaml
   - app-user-service.yaml
   - app-product-service.yaml
   - app-cart-service.yaml
+  - app-order-service.yaml
+  - app-payment-service.yaml
+  - app-inventory-service.yaml
+  - app-shipping-service.yaml
+  - app-notification-service.yaml
+  - app-analytics-service.yaml
+  - app-review-service.yaml
+  - app-chat-service.yaml
+  - app-live-service.yaml
+  - app-media-service.yaml
   - app-api-gateway.yaml
   - ingress.yaml
 

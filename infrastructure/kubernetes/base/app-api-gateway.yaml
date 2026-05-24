@@ -40,25 +40,25 @@ spec:
             - name: CART_SERVICE_URL
               value: http://cart-service:8080
             - name: MEDIA_SERVICE_URL
-              value: http://not-deployed-media-service:8080
+              value: http://media-service:8080
             - name: ORDER_SERVICE_URL
-              value: http://not-deployed-order-service:8080
+              value: http://order-service:8080
             - name: PAYMENT_SERVICE_URL
-              value: http://not-deployed-payment-service:8080
+              value: http://payment-service:8080
             - name: INVENTORY_SERVICE_URL
-              value: http://not-deployed-inventory-service:8080
+              value: http://inventory-service:8080
             - name: SHIPPING_SERVICE_URL
-              value: http://not-deployed-shipping-service:8080
+              value: http://shipping-service:8080
             - name: REVIEW_SERVICE_URL
-              value: http://not-deployed-review-service:8080
+              value: http://review-service:8080
             - name: NOTIFICATION_SERVICE_URL
-              value: http://not-deployed-notification-service:8080
+              value: http://notification-service:8080
             - name: ANALYTICS_SERVICE_URL
-              value: http://not-deployed-analytics-service:8080
+              value: http://analytics-service:8080
             - name: CHAT_SERVICE_URL
-              value: http://not-deployed-chat-service:8080
+              value: http://chat-service:8080
             - name: LIVE_SERVICE_URL
-              value: http://not-deployed-live-service:8080
+              value: http://live-service:8080
             - name: CORS_ALLOWED_ORIGINS
               value: "*"
             - name: RATE_LIMIT_RPS

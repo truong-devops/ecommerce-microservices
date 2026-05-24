@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { resolvePublicWebOrigin } from '@/lib/server/public-origin';
 import { serviceBaseUrls } from '@/lib/server/upstream-client';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const callbackUrl = new URL('/api/seller/auth/google/callback', requestUrl.origin).toString();
+  const publicOrigin = resolvePublicWebOrigin(request);
+  const callbackUrl = new URL('/api/seller/auth/google/callback', publicOrigin).toString();
 
   const authorizeUrl = new URL(`${ensureApiV1Base(serviceBaseUrls.auth)}/auth/oauth/google/authorize`);
   authorizeUrl.searchParams.set('app', 'seller');
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
     // Redirect to the login page below with a useful production-safe error.
   }
 
-  const loginUrl = new URL('/login', requestUrl.origin);
+  const loginUrl = new URL('/login', publicOrigin);
   loginUrl.searchParams.set('oauthError', 'Không thể bắt đầu đăng nhập Google');
   return NextResponse.redirect(loginUrl);
 }

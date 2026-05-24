@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { resolvePublicWebOrigin } from '@/lib/server/public-origin';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const DASHBOARD_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT']);
@@ -17,7 +18,7 @@ interface ExchangeResponse {
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
-  const loginUrl = new URL('/login', requestUrl.origin);
+  const loginUrl = new URL('/login', resolvePublicWebOrigin(request));
   const ticket = requestUrl.searchParams.get('ticket');
   const error = requestUrl.searchParams.get('error');
   const message = requestUrl.searchParams.get('message');

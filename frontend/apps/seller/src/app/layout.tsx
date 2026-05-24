@@ -1,15 +1,8 @@
 import type { Metadata } from 'next';
-import { Public_Sans } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { SellerAuthGuard } from '@/components/auth/seller-auth-guard';
 import { AppProvider } from '@/providers/AppProvider';
 import './globals.css';
-
-const publicSans = Public_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-body'
-});
 
 export const metadata: Metadata = {
   title: 'emall - Kênh người bán',
@@ -19,7 +12,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={publicSans.variable}>
+      <body>
         <AppProvider>
           <SellerAuthGuard>{children}</SellerAuthGuard>
         </AppProvider>

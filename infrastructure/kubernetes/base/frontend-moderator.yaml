@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: moderator-web
+  labels:
+    app: moderator-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: moderator-web
+  template:
+    metadata:
+      labels:
+        app: moderator-web
+    spec:
+      nodeSelector:
+        workload: app
+      containers:
+        - name: moderator-web
+          image: moderator-web:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: 0.0.0.0
+            - name: NODE_ENV
+              value: production
+            - name: AUTH_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: PRODUCT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: CHAT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: NEXT_PUBLIC_PRODUCT_ASSET_BASE_URL
+              value: https://api.dt-commerce.site/api/v1/products/assets
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: moderator-web
+  labels:
+    app: moderator-web
+spec:
+  type: ClusterIP
+  selector:
+    app: moderator-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: moderator-web
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-http01
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - moderator.dt-commerce.site
+      secretName: moderator-dt-commerce-site-tls
+  rules:
+    - host: moderator.dt-commerce.site
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: moderator-web
+                port:
+                  name: http

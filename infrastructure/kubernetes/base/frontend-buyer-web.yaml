@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buyer-web
+  labels:
+    app: buyer-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: buyer-web
+  template:
+    metadata:
+      labels:
+        app: buyer-web
+    spec:
+      nodeSelector:
+        workload: app
+      containers:
+        - name: buyer-web
+          image: buyer-web:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: 0.0.0.0
+            - name: NODE_ENV
+              value: production
+            - name: API_GATEWAY_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: AUTH_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: USER_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: PRODUCT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: REVIEW_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: ORDER_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: PAYMENT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: SHIPPING_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: CHAT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: LIVE_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: ANALYTICS_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: NEXT_PUBLIC_API_GATEWAY_WS_URL
+              value: wss://api.dt-commerce.site/api/v1
+            - name: NEXT_PUBLIC_CHAT_WS_BASE_URL
+              value: https://api.dt-commerce.site
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: buyer-web
+  labels:
+    app: buyer-web
+spec:
+  type: ClusterIP
+  selector:
+    app: buyer-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: buyer-web
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-http01
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - buyer.dt-commerce.site
+      secretName: buyer-dt-commerce-site-tls
+  rules:
+    - host: buyer.dt-commerce.site
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: buyer-web
+                port:
+                  name: http

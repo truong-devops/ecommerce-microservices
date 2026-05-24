@@ -23,6 +23,9 @@ resources:
   - app-live-service.yaml
   - app-media-service.yaml
   - app-api-gateway.yaml
+  - frontend-buyer-web.yaml
+  - frontend-seller.yaml
+  - frontend-moderator.yaml
   - ingress.yaml
 
 configMapGenerator:

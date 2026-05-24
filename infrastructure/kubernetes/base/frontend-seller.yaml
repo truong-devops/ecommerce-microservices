@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seller-web
+  labels:
+    app: seller-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seller-web
+  template:
+    metadata:
+      labels:
+        app: seller-web
+    spec:
+      nodeSelector:
+        workload: app
+      containers:
+        - name: seller-web
+          image: seller-web:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: 0.0.0.0
+            - name: NODE_ENV
+              value: production
+            - name: API_GATEWAY_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: AUTH_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: ANALYTICS_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: ORDER_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: PRODUCT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: SHIPPING_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: NOTIFICATION_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: INVENTORY_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: USER_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: CHAT_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: MEDIA_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: LIVE_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
+            - name: NEXT_PUBLIC_BUYER_WEB_URL
+              value: https://buyer.dt-commerce.site
+            - name: NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL
+              value: https://api.dt-commerce.site/media
+            - name: MEDIA_PUBLIC_BASE_URL
+              value: https://api.dt-commerce.site/media
+            - name: NEXT_PUBLIC_API_GATEWAY_WS_URL
+              value: wss://api.dt-commerce.site/api/v1
+            - name: NEXT_PUBLIC_CHAT_WS_BASE_URL
+              value: https://api.dt-commerce.site
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: seller-web
+  labels:
+    app: seller-web
+spec:
+  type: ClusterIP
+  selector:
+    app: seller-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: seller-web
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-http01
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - seller.dt-commerce.site
+      secretName: seller-dt-commerce-site-tls
+  rules:
+    - host: seller.dt-commerce.site
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: seller-web
+                port:
+                  name: http

@@ -52,3 +52,12 @@ images:
   - name: media-service
     newName: docker.io/vantruong179/ecommerce-microservices-media-service
     newTag: dev
+  - name: buyer-web
+    newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
+    newTag: dev
+  - name: seller-web
+    newName: docker.io/vantruong179/ecommerce-microservices-seller-web
+    newTag: dev
+  - name: moderator-web
+    newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
+    newTag: dev

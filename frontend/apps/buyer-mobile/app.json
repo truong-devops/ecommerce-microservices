@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "DT Commerce Buyer",
+    "slug": "dt-commerce-buyer",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "dtcommercebuyer",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "site.dtcommerce.buyermobile"
+    },
+    "android": {
+      "package": "site.dtcommerce.buyermobile"
+    }
+  }
+}

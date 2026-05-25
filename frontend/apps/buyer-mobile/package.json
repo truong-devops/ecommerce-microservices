@@ -1,0 +1,33 @@
+{
+  "name": "@frontend/buyer-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.4"
+  },
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "dev": "expo start",
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/domain/media-playback.test.ts"
+  },
+  "dependencies": {
+    "expo": "~54.0.34",
+    "expo-constants": "~18.0.10",
+    "expo-status-bar": "~3.0.9",
+    "expo-video": "~3.0.16",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.1",
+    "@types/react": "~19.1.17",
+    "babel-preset-expo": "~54.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

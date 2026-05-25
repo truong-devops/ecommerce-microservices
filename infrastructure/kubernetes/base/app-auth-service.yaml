@@ -47,6 +47,8 @@ spec:
               value: "false"
             - name: BUYER_WEB_BASE_URL
               value: https://buyer.dt-commerce.site
+            - name: BUYER_MOBILE_OAUTH_CALLBACK_URL
+              value: dtcommercebuyer://auth/google/callback
             - name: SELLER_WEB_BASE_URL
               value: https://seller.dt-commerce.site
             - name: MODERATOR_WEB_BASE_URL

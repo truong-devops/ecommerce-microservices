@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"api-gateway/internal/auth"
 	"api-gateway/internal/config"
@@ -30,6 +31,15 @@ func New(
 	}
 
 	healthHandler := handlers.NewHealthHandler(cfg, logger)
+	buyerExperienceHandler := handlers.NewBuyerExperienceHandler(
+		cfg.Services[config.ServiceProduct].URL,
+		cfg.Services[config.ServiceProduct].Timeout,
+	)
+	buyerReviewHandler := handlers.NewBuyerReviewHandler(
+		cfg.Services[config.ServiceOrder].URL,
+		cfg.Services[config.ServiceReview].URL,
+		cfg.Services[config.ServiceReview].Timeout,
+	)
 	jwtMiddleware := auth.Middleware(cfg.JWTSecret, revocationChecker, logger)
 
 	r := chi.NewRouter()
@@ -67,6 +77,11 @@ func New(
 		public.Method(http.MethodGet, "/api/v1/auth/oauth/google/callback", proxies[config.ServiceAuth])
 		public.Method(http.MethodPost, "/api/auth/oauth/exchange-ticket", proxies[config.ServiceAuth])
 		public.Method(http.MethodPost, "/api/v1/auth/oauth/exchange-ticket", proxies[config.ServiceAuth])
+
+		public.Get("/api/v1/buyer-experience/home", buyerExperienceHandler.Home)
+		public.Get("/api/v1/buyer-experience/products", buyerExperienceHandler.Products)
+		public.Get("/api/v1/buyer-experience/products/{productId}", buyerExperienceHandler.ProductDetail)
+		public.Get("/api/v1/buyer-experience/shops/{sellerId}", buyerExperienceHandler.Shop)
 
 		public.Method(http.MethodGet, "/api/products", proxies[config.ServiceProduct])
 		public.Method(http.MethodGet, "/api/products/*", proxies[config.ServiceProduct])
@@ -107,6 +122,19 @@ func New(
 		public.Method(http.MethodPost, "/api/v1/live/sessions/{sessionId}/events/media-metric", proxies[config.ServiceLive])
 		public.Method(http.MethodGet, "/api/analytics/recommendations/products/{productId}", proxies[config.ServiceAnalytics])
 		public.Method(http.MethodGet, "/api/v1/analytics/recommendations/products/{productId}", proxies[config.ServiceAnalytics])
+
+		public.Method(http.MethodGet, "/api/v1/buyer-experience/videos/feed", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
+		public.Method(http.MethodGet, "/api/v1/buyer-experience/videos/*", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
+		public.Method(http.MethodPost, "/api/v1/buyer-experience/videos/{videoId}/events/view-started", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
+		public.Method(http.MethodPost, "/api/v1/buyer-experience/videos/{videoId}/events/view-qualified", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
+		public.Method(http.MethodPost, "/api/v1/buyer-experience/videos/{videoId}/events/product-clicked", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
+		public.Method(http.MethodPost, "/api/v1/buyer-experience/videos/{videoId}/events/add-to-cart", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
+
+		public.Method(http.MethodGet, "/api/v1/buyer-experience/live/sessions", rewritePathPrefix("/api/v1/buyer-experience/live", "/api/v1/live", proxies[config.ServiceLive]))
+		public.Method(http.MethodGet, "/api/v1/buyer-experience/live/sessions/*", rewritePathPrefix("/api/v1/buyer-experience/live", "/api/v1/live", proxies[config.ServiceLive]))
+		public.Method(http.MethodGet, "/api/v1/buyer-experience/live/ws", rewritePathPrefix("/api/v1/buyer-experience/live", "/api/v1/live", proxies[config.ServiceLive]))
+		public.Method(http.MethodPost, "/api/v1/buyer-experience/live/sessions/{sessionId}/events/product-clicked", rewritePathPrefix("/api/v1/buyer-experience/live", "/api/v1/live", proxies[config.ServiceLive]))
+		public.Method(http.MethodPost, "/api/v1/buyer-experience/live/sessions/{sessionId}/events/media-metric", rewritePathPrefix("/api/v1/buyer-experience/live", "/api/v1/live", proxies[config.ServiceLive]))
 	})
 
 	r.Group(func(private chi.Router) {
@@ -136,6 +164,8 @@ func New(
 		mountPrefix(private, "/api/v1/chat", proxies[config.ServiceChat])
 		mountPrefix(private, "/api/live", proxies[config.ServiceLive])
 		mountPrefix(private, "/api/v1/live", proxies[config.ServiceLive])
+		private.Post("/api/v1/buyer-experience/reviews", buyerReviewHandler.Create)
+		private.Method(http.MethodPost, "/api/v1/buyer-experience/videos/{videoId}/comments", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
 		mountPrefix(private, "/api/moderation/videos", proxies[config.ServiceProduct])
 		mountPrefix(private, "/api/v1/moderation/videos", proxies[config.ServiceProduct])
 
@@ -209,4 +239,16 @@ func mountMethodPrefix(r chi.Router, method, prefix string, h http.Handler) {
 	r.Method(method, prefix, h)
 	r.Method(method, prefix+"/", h)
 	r.Method(method, prefix+"/*", h)
+}
+
+func rewritePathPrefix(from, to string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, from) {
+			cloned := r.Clone(r.Context())
+			cloned.URL.Path = to + strings.TrimPrefix(r.URL.Path, from)
+			next.ServeHTTP(w, cloned)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }

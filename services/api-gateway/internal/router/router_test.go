@@ -45,6 +45,21 @@ func TestPrivateV1RoutesRequireAuth(t *testing.T) {
 	}
 }
 
+func TestBuyerExperienceReviewCreateRequiresAuth(t *testing.T) {
+	handler, err := New(testGatewayConfig(), zap.NewNop(), observability.NewMetrics("api-gateway-review-test"), nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/buyer-experience/reviews", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected review create to require auth, got %d", rec.Code)
+	}
+}
+
 func TestPublicShopRoutesAreMounted(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-test")
@@ -145,6 +160,44 @@ func TestPublicLiveMessageHistoryRouteIsMounted(t *testing.T) {
 	}
 }
 
+func TestPublicBuyerExperienceEngagementRoutesAreMounted(t *testing.T) {
+	handler, err := New(testGatewayConfig(), zap.NewNop(), observability.NewMetrics("api-gateway-buyer-engagement-test"), nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+	paths := []string{
+		"/api/v1/buyer-experience/videos/feed",
+		"/api/v1/buyer-experience/videos/video-123/comments",
+		"/api/v1/buyer-experience/live/sessions",
+		"/api/v1/buyer-experience/live/sessions/live-123/products",
+	}
+	for _, path := range paths {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+			t.Fatalf("expected public Buyer Experience route mounted for %s, got %d", path, rec.Code)
+		}
+	}
+}
+
+func TestRewritePathPrefixForwardsBuyerExperiencePath(t *testing.T) {
+	var forwardedPath string
+	next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		forwardedPath = req.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	rec := httptest.NewRecorder()
+	rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", next).ServeHTTP(
+		rec,
+		httptest.NewRequest(http.MethodGet, "/api/v1/buyer-experience/videos/video-123/comments", nil),
+	)
+
+	if forwardedPath != "/api/v1/videos/video-123/comments" {
+		t.Fatalf("expected rewritten upstream path, got %s", forwardedPath)
+	}
+}
+
 func TestPrivateVideoManagementRoutesRequireAuth(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-video-private-test")
@@ -160,6 +213,7 @@ func TestPrivateVideoManagementRoutesRequireAuth(t *testing.T) {
 	}{
 		{method: http.MethodPost, path: "/api/v1/videos"},
 		{method: http.MethodPost, path: "/api/v1/videos/video-123/comments"},
+		{method: http.MethodPost, path: "/api/v1/buyer-experience/videos/video-123/comments"},
 		{method: http.MethodPatch, path: "/api/v1/videos/video-123"},
 		{method: http.MethodDelete, path: "/api/v1/videos/video-123"},
 	}
@@ -208,6 +262,32 @@ func TestPublicGoogleOAuthRoutesAreMounted(t *testing.T) {
 
 			if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
 				t.Fatalf("expected mounted public proxy route for %s %s, got %d", tc.method, tc.path, rec.Code)
+			}
+		})
+	}
+}
+
+func TestPublicBuyerExperienceRoutesAreMounted(t *testing.T) {
+	cfg := testGatewayConfig()
+	metrics := observability.NewMetrics("api-gateway-buyer-experience-test")
+
+	handler, err := New(cfg, zap.NewNop(), metrics, nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	for _, path := range []string{
+		"/api/v1/buyer-experience/home",
+		"/api/v1/buyer-experience/products",
+		"/api/v1/buyer-experience/products/product-123",
+		"/api/v1/buyer-experience/shops/seller-123",
+	} {
+		t.Run(path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+			if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+				t.Fatalf("expected mounted public buyer experience route for %s, got %d", path, rec.Code)
 			}
 		})
 	}

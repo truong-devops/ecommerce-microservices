@@ -8,6 +8,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Role, ADMIN_ROLES } from '../../../common/constants/role.enum';
 import { ErrorCode } from '../../../common/constants/error-code.enum';
 import { AppException } from '../../../common/utils/app-exception.util';
@@ -46,19 +47,21 @@ import { OauthAccountRepository } from '../repositories/oauth-account.repository
 
 const GOOGLE_OAUTH_PROVIDER = 'google';
 
-const OAUTH_APP_NAMES = ['buyer-web', 'seller', 'moderator'] as const;
+const OAUTH_APP_NAMES = ['buyer-web', 'buyer-mobile', 'seller', 'moderator'] as const;
 type OauthAppName = (typeof OAUTH_APP_NAMES)[number];
 
 interface OauthStatePayload {
   app: OauthAppName;
   callbackUrl: string;
   returnUrl: string;
+  codeChallenge?: string;
 }
 
 interface OauthLoginTicketPayload {
   app: OauthAppName;
   userId: string;
   returnUrl: string;
+  codeChallenge?: string;
 }
 
 interface GoogleTokenResponse {
@@ -265,16 +268,18 @@ export class AuthService {
     };
   }
 
-  async buildGoogleAuthorizeUrl(input: { app: string; callbackUrl: string; returnUrl?: string }): Promise<string> {
+  async buildGoogleAuthorizeUrl(input: { app: string; callbackUrl: string; returnUrl?: string; codeChallenge?: string }): Promise<string> {
     const app = this.parseOauthApp(input.app);
     const callbackUrl = this.validateAppCallbackUrl(app, input.callbackUrl);
     const returnUrl = this.resolveReturnUrl(input.returnUrl);
+    const codeChallenge = this.validatePkceChallenge(app, input.codeChallenge);
     const state = this.passwordService.generateOpaqueToken();
 
     const payload: OauthStatePayload = {
       app,
       callbackUrl,
-      returnUrl
+      returnUrl,
+      ...(codeChallenge ? { codeChallenge } : {})
     };
 
     await this.redisService.setWithTtl(this.oauthStateKey(state), JSON.stringify(payload), this.getOauthStateTtlSeconds());
@@ -337,7 +342,8 @@ export class AuthService {
       const ticketPayload: OauthLoginTicketPayload = {
         app: statePayload.app,
         userId: user.id,
-        returnUrl: statePayload.returnUrl
+        returnUrl: statePayload.returnUrl,
+        ...(statePayload.codeChallenge ? { codeChallenge: statePayload.codeChallenge } : {})
       };
 
       await this.redisService.setWithTtl(
@@ -374,6 +380,7 @@ export class AuthService {
         message: 'Invalid or expired login ticket'
       });
     }
+    this.assertPkceVerifier(app, ticketPayload.codeChallenge, dto.codeVerifier);
 
     const user = await this.userRepository.findById(ticketPayload.userId);
     if (!user || !user.isActive) {
@@ -932,6 +939,20 @@ export class AuthService {
       });
     }
 
+    if (app === 'buyer-mobile') {
+      const configuredCallback = this.configService.get<string>(
+        'oauth.buyerMobileCallbackUrl',
+        'dtcommercebuyer://auth/google/callback'
+      );
+      if (parsed.toString() !== new URL(configuredCallback).toString()) {
+        throw new BadRequestException({
+          code: ErrorCode.BAD_REQUEST,
+          message: 'Callback URL is not allowed'
+        });
+      }
+      return parsed.toString();
+    }
+
     if (!['http:', 'https:'].includes(parsed.protocol)) {
       throw new BadRequestException({
         code: ErrorCode.BAD_REQUEST,
@@ -964,6 +985,11 @@ export class AuthService {
       case 'buyer-web':
         baseUrl = this.configService.get<string>('oauth.appBaseUrls.buyerWeb', 'http://localhost:8888');
         break;
+      case 'buyer-mobile':
+        throw new InternalServerErrorException({
+          code: ErrorCode.INTERNAL_SERVER_ERROR,
+          message: 'Mobile OAuth callback does not have a web origin'
+        });
       case 'seller':
         baseUrl = this.configService.get<string>('oauth.appBaseUrls.seller', 'http://localhost:6789');
         break;
@@ -993,6 +1019,8 @@ export class AuthService {
     switch (app) {
       case 'buyer-web':
         return '/api/buyer/auth/google/callback';
+      case 'buyer-mobile':
+        return '/google/callback';
       case 'seller':
         return '/api/seller/auth/google/callback';
       case 'moderator':
@@ -1005,6 +1033,7 @@ export class AuthService {
   private isRoleAllowedForApp(app: OauthAppName, role: string): boolean {
     switch (app) {
       case 'buyer-web':
+      case 'buyer-mobile':
         return role === Role.CUSTOMER;
       case 'seller':
         return ['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role);
@@ -1046,7 +1075,8 @@ export class AuthService {
       return {
         app,
         callbackUrl: this.validateAppCallbackUrl(app, parsed.callbackUrl),
-        returnUrl: this.resolveReturnUrl(parsed.returnUrl)
+        returnUrl: this.resolveReturnUrl(parsed.returnUrl),
+        ...(parsed.codeChallenge ? { codeChallenge: this.validatePkceChallenge(app, parsed.codeChallenge) } : {})
       };
     } catch {
       return null;
@@ -1075,7 +1105,8 @@ export class AuthService {
       return {
         app: this.parseOauthApp(parsed.app),
         userId: parsed.userId,
-        returnUrl: this.resolveReturnUrl(parsed.returnUrl)
+        returnUrl: this.resolveReturnUrl(parsed.returnUrl),
+        ...(typeof parsed.codeChallenge === 'string' ? { codeChallenge: parsed.codeChallenge } : {})
       };
     } catch {
       return null;
@@ -1084,6 +1115,40 @@ export class AuthService {
 
   private getOauthStateTtlSeconds(): number {
     return this.configService.get<number>('oauth.stateTtlSeconds', 600);
+  }
+
+  private validatePkceChallenge(app: OauthAppName, raw: string | undefined): string | undefined {
+    if (app !== 'buyer-mobile') {
+      return undefined;
+    }
+    const value = raw?.trim() ?? '';
+    if (!/^[A-Za-z0-9_-]{43,128}$/.test(value)) {
+      throw new BadRequestException({
+        code: ErrorCode.BAD_REQUEST,
+        message: 'Mobile OAuth requires a valid PKCE code challenge'
+      });
+    }
+    return value;
+  }
+
+  private assertPkceVerifier(app: OauthAppName, challenge: string | undefined, verifier: string | undefined): void {
+    if (app !== 'buyer-mobile') {
+      return;
+    }
+    const value = verifier?.trim() ?? '';
+    if (!challenge || !/^[A-Za-z0-9._~-]{43,128}$/.test(value)) {
+      throw new UnauthorizedException({
+        code: ErrorCode.UNAUTHORIZED,
+        message: 'Invalid OAuth PKCE verifier'
+      });
+    }
+    const actual = createHash('sha256').update(value).digest('base64url');
+    if (!timingSafeEqual(Buffer.from(actual), Buffer.from(challenge))) {
+      throw new UnauthorizedException({
+        code: ErrorCode.UNAUTHORIZED,
+        message: 'Invalid OAuth PKCE verifier'
+      });
+    }
   }
 
   private getOauthLoginTicketTtlSeconds(): number {

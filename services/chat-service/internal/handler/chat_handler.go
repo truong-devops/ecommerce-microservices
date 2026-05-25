@@ -330,7 +330,9 @@ func webSocketErrorPayload(err error) map[string]any {
 func (h *ChatHandler) isAllowedOrigin(r *http.Request) bool {
 	origin := strings.TrimSpace(r.Header.Get("Origin"))
 	if origin == "" {
-		return false
+		// Native WebSocket clients do not send browser Origin; JWT auth was
+		// already enforced before the upgrade through the token subprotocol.
+		return true
 	}
 
 	parsed, err := url.Parse(origin)

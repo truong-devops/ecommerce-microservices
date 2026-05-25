@@ -130,6 +130,7 @@ services:
       GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:12010/api/v1/auth/oauth/google/callback}
       GOOGLE_OAUTH_SCOPES: ${GOOGLE_OAUTH_SCOPES:-openid email profile}
       BUYER_WEB_BASE_URL: ${BUYER_WEB_BASE_URL:-http://localhost:8888}
+      BUYER_MOBILE_OAUTH_CALLBACK_URL: ${BUYER_MOBILE_OAUTH_CALLBACK_URL:-dtcommercebuyer://auth/google/callback}
       SELLER_WEB_BASE_URL: ${SELLER_WEB_BASE_URL:-http://localhost:6789}
       MODERATOR_WEB_BASE_URL: ${MODERATOR_WEB_BASE_URL:-http://localhost:1111}
     ports:

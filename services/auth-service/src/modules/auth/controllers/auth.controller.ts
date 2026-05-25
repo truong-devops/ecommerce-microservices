@@ -48,6 +48,7 @@ export class AuthController {
     @Query('app') app: string,
     @Query('callbackUrl') callbackUrl: string,
     @Query('returnUrl') returnUrl: string | undefined,
+    @Query('codeChallenge') codeChallenge: string | undefined,
     @Req() request: RequestWithContext,
     @Res() response: Response
   ): Promise<void> {
@@ -55,7 +56,8 @@ export class AuthController {
     const authorizeUrl = await this.authService.buildGoogleAuthorizeUrl({
       app,
       callbackUrl,
-      returnUrl
+      returnUrl,
+      codeChallenge
     });
 
     response.redirect(302, authorizeUrl);

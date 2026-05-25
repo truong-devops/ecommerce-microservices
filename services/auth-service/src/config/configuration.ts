@@ -39,7 +39,8 @@ export default () => ({
       buyerWeb: process.env.BUYER_WEB_BASE_URL ?? 'http://localhost:8888',
       seller: process.env.SELLER_WEB_BASE_URL ?? 'http://localhost:6789',
       moderator: process.env.MODERATOR_WEB_BASE_URL ?? 'http://localhost:1111'
-    }
+    },
+    buyerMobileCallbackUrl: process.env.BUYER_MOBILE_OAUTH_CALLBACK_URL ?? 'dtcommercebuyer://auth/google/callback'
   },
   security: {
     refreshTokenPepper: process.env.REFRESH_TOKEN_PEPPER,

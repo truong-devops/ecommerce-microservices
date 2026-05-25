@@ -270,7 +270,8 @@ func webSocketErrorPayload(err error) map[string]any {
 func (h *WSHandler) isAllowedOrigin(r *http.Request) bool {
 	origin := strings.TrimSpace(r.Header.Get("Origin"))
 	if origin == "" {
-		return false
+		// Native WebSocket clients do not send a browser Origin header.
+		return true
 	}
 	parsed, err := url.Parse(origin)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {

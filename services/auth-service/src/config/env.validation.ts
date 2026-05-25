@@ -27,6 +27,7 @@ export const envValidationSchema = Joi.object({
   BUYER_WEB_BASE_URL: Joi.string().uri().default('http://localhost:8888'),
   SELLER_WEB_BASE_URL: Joi.string().uri().default('http://localhost:6789'),
   MODERATOR_WEB_BASE_URL: Joi.string().uri().default('http://localhost:1111'),
+  BUYER_MOBILE_OAUTH_CALLBACK_URL: Joi.string().uri({ allowRelative: false, allowQuerySquareBrackets: true }).default('dtcommercebuyer://auth/google/callback'),
 
   EMAIL_VERIFY_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(60),
   AUTH_REQUIRE_EMAIL_VERIFICATION: Joi.boolean().default(true),

@@ -57,4 +57,32 @@ describe('AuthController', () => {
     expect(rateLimiter.assertLoginAllowed).toHaveBeenCalledWith(request, dto.email);
     expect(authService.login).toHaveBeenCalledWith(dto, request);
   });
+
+  it('passes the mobile PKCE challenge to Google authorization', async () => {
+    const authService = {
+      buildGoogleAuthorizeUrl: jest.fn().mockResolvedValue('https://accounts.google.com/authorize')
+    };
+    const rateLimiter = {
+      assertOauthAllowed: jest.fn().mockResolvedValue(undefined)
+    };
+    const response = { redirect: jest.fn() };
+    const request = { ip: '127.0.0.1' };
+    const controller = new AuthController(authService as never, rateLimiter as never);
+
+    await controller.googleAuthorize(
+      'buyer-mobile',
+      'dtcommercebuyer://auth/google/callback',
+      '/',
+      'challenge',
+      request as never,
+      response as never
+    );
+
+    expect(authService.buildGoogleAuthorizeUrl).toHaveBeenCalledWith({
+      app: 'buyer-mobile',
+      callbackUrl: 'dtcommercebuyer://auth/google/callback',
+      returnUrl: '/',
+      codeChallenge: 'challenge'
+    });
+  });
 });

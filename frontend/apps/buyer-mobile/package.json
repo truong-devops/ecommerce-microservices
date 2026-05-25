@@ -5,23 +5,36 @@
   "engines": {
     "node": ">=20.19.4"
   },
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/domain/media-playback.test.ts"
+    "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
+    "@frontend/buyer-contracts": "*",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@tanstack/react-query": "^5.90.20",
     "expo": "~54.0.34",
     "expo-constants": "~18.0.10",
+    "expo-crypto": "~15.0.8",
+    "expo-linking": "~8.0.11",
+    "expo-router": "~6.0.23",
+    "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "expo-video": "~3.0.16",
+    "expo-web-browser": "~15.0.10",
     "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-safe-area-context": "~5.6.2"
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "^0.21.0",
+    "react-native-webview": "13.15.0"
   },
   "devDependencies": {
     "@types/node": "^22.8.1",

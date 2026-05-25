@@ -1,7 +1,7 @@
 import { normalizeRemoteAssetUrl } from '../utils/asset-url';
 
 export type PlaybackSourceStatus = 'playable' | 'thumbnail-only' | 'missing' | 'invalid';
-export type PlaybackSourceKind = 'hls' | 'mp4' | 'fallback' | 'thumbnail';
+export type PlaybackSourceKind = 'hls' | 'mp4' | 'webrtc' | 'fallback' | 'thumbnail';
 
 export interface PlaybackSource {
   status: PlaybackSourceStatus;

@@ -22,7 +22,7 @@ Plan này thay thế góc nhìn "chỉ kiểm thử video/live" bằng lộ trì
 - BFF routes web: `frontend/apps/buyer-web/src/app/api/buyer/**`
 - Client/API types: `frontend/apps/buyer-web/src/lib/api/*`
 - Auth, cart, locale state: `frontend/apps/buyer-web/src/providers/AppProvider.tsx`
-- Mobile hiện tại: `frontend/apps/buyer-mobile/App.tsx` và `src/domain/remote-api.ts`
+- Baseline mobile trước Phase 0-3: `frontend/apps/buyer-mobile/App.tsx` và `src/domain/remote-api.ts`; đã được thay bằng Expo Router shell tại checkpoint triển khai bên dưới.
 
 ### Tham khảo sản phẩm mobile
 
@@ -853,6 +853,17 @@ Nghiệm thu:
 - Token không được lưu ở plain storage hoặc xuất hiện trong logs.
 - Auth-required action quay lại đúng context sau login.
 
+### Checkpoint triển khai Phase 0-3 - 2026-05-25
+
+| Phase | Đã triển khai trong repo | Kiểm thử đã thêm | Còn lại trước khi đạt nghiệm thu phase |
+| --- | --- | --- | --- |
+| Phase 0 | Package `@frontend/buyer-contracts` cho envelope, home/catalog và auth DTO; runtime config validation mobile | Contract envelope/query unit tests; mobile runtime config tests | Design handoff hình ảnh, event taxonomy chính thức và CI chạy Node ARM64 `>=20.19.4` |
+| Phase 1 | Gateway public boundary `/api/v1/buyer-experience/home`, `/products`, `/products/{productId}`, `/shops/{sellerId}`; mobile không gọi Next BFF cho discovery mới | Go unit tests mapping/query/upstream error và public route mounting | Recommendation endpoint chuyên biệt, metrics/comparison fixtures, migrate buyer-web sang boundary mới |
+| Phase 2 | Expo Router shell với Home, Khám phá, Giỏ hàng guard, Tài khoản; Query provider, core tiles/buttons/states, API client và Metro single-React resolution cho monorepo | Typecheck mobile; config/session/media unit tests; iOS Metro bundle | Offline/error boundary, telemetry, component gallery và QA trên thiết bị |
+| Phase 3 | Email login/register UI; Google system-browser flow; deep link `dtcommercebuyer://auth/google/callback`; SecureStore; session bootstrap/refresh/logout; backend allowlist và PKCE ticket binding | OAuth deep-link/PKCE mobile tests; auth-service OAuth/controller tests và TypeScript build | Rollout auth/gateway mới, cấu hình Google production, end-to-end login trên thiết bị và return-context hoàn chỉnh |
+
+Checkpoint này là implementation slice đầu tiên của lộ trình dài hạn. Không đánh dấu toàn bộ nghiệm thu production là hoàn tất khi chưa rollout API mới và chạy device E2E.
+
 ### Phase 4 - Discovery, catalog, product và shop
 
 - Implement Home với placement DTO thật: categories, deals, top search, recommendation, video/live entry.
@@ -906,6 +917,17 @@ Nghiệm thu:
 - Message không duplicate/mất khi disconnect/reconnect.
 - Buyer chat được với seller từ product/order trong tối đa hai thao tác sau khi đã login.
 
+### Checkpoint triển khai Phase 4-7 - 2026-05-25
+
+| Phase | Đã triển khai trong repo | Kiểm thử đã thêm/chạy | Còn lại trước khi đạt nghiệm thu phase |
+| --- | --- | --- | --- |
+| Phase 4 | Product detail mobile có gallery, variant, stock, review preview, sticky cart/buy CTA và entry shop/chat; shop decor/catalog; gateway product detail trả `defaultSku`, `stock`, `attributes` thật | Gateway product inventory/default SKU mapping test; shared query filter test; mobile typecheck và iOS Metro bundle | Video/live placement ở Home, analytics impression/click, infinite pagination và comparison fixture với buyer-web |
+| Phase 5 | Cart local-first persist bằng `AsyncStorage` versioned; select/quantity/remove/totals; checkout address prefill; stable idempotency key khi submit/retry; online payment intent/action; order list/detail/cancel/confirm received/buy again | Cart reducer/persistence/order-payload unit tests; `order-service` và `payment-service` Go test suites | Contract COD, shipment timeline, product stale-price/stock UI revalidation, recommendations, resume payment E2E trên device |
+| Phase 6 | Profile fetch/update và validation; review summary/list ở detail; order-detail entry viết review; gateway `/api/v1/buyer-experience/reviews` bắt buộc order `DELIVERED` chứa product trước khi forward | Profile validation tests; review eligibility mobile tests; gateway authorization/eligibility tests | Avatar upload strategy, filter/pagination review UI, migrate web sang cùng eligibility boundary và production rollout |
+| Phase 7 | Tab conversation list không nhập seller ID; tạo conversation từ product; message UI; optimistic send theo `clientMessageId`; REST catch-up, unread/read, reconnect backoff; native WS auth subprotocol được chat-service hỗ trợ | Chat merge/reconnect/message-limit unit tests; chat-service native-origin/browser-origin tests và toàn suite | Entry chat từ order/shop, namespace Buyer Experience đồng nhất cho toàn bộ chat REST, test web/mobile đồng thời và disconnect trên thiết bị thật |
+
+Checkpoint này là implementation slice chạy được trong source tree. Commerce/profile/chat vẫn dùng một số gateway route `/api/v1/*` hiện có trong khi boundary Buyer Experience được hoàn thiện dần; không coi các phase đạt production DoD cho tới khi rollout và device E2E hoàn tất.
+
 ### Phase 8 - Shoppable video
 
 - Implement vertical feed, player lifecycle, thumbnail/retry/error states và memory controls.
@@ -944,6 +966,16 @@ Nghiệm thu:
 
 - Web/mobile dùng chung public contract đã version hóa.
 - Release candidate đạt manual device checklist và monitoring/rollback sẵn sàng.
+
+### Checkpoint triển khai Phase 8-10 - 2026-05-25
+
+| Phase | Đã triển khai trong repo | Kiểm thử đã thêm/chạy | Còn lại trước khi đạt nghiệm thu phase |
+| --- | --- | --- | --- |
+| Phase 8 | Tab video dọc dùng feed thật, lifecycle play/pause, product click/quick add, comments, local like, share deep link giữ `videoId`, analytics view/qualified/product/cart; Home có entry Video/Live | Unit tests domain video/playback; mobile typecheck và unit suite | Product sheet dạng overlay đầy đủ, prefetch/memory tuning, slow-network và playback thực trên device production |
+| Phase 9 | Tab live discovery và room; player HLS/LL-HLS, pinned products, realtime message/viewer/pin refresh, reconnect/backoff, metric tracking; live-service cho phép native WS không có browser `Origin` | Unit tests live capability/message/reconnect; live-service handler/service/full suite; mobile typecheck và unit suite | Backend production hiện có thể trả WHEP/WebRTC; cần tích hợp native WebRTC hoặc chốt HLS trước khi tính playback parity, sau đó device/load test và dashboard |
+| Phase 10 | Gateway có namespace `/api/v1/buyer-experience/videos` và `/live` rewrite sang service contracts; comment video giữ JWT gate; các BFF route Video/Live của `buyer-web` chuyển sang boundary gateway chung | Gateway router/handler/full suite; buyer-web lint; contracts typecheck/unit tests | Migrate các BFF commerce/profile/chat còn lại, comparison fixtures/E2E, security/accessibility/performance audit, signing/staging rollout/rollback |
+
+Checkpoint này xác nhận source code slice cho Video/Live và bước migration web liên quan đã có trong repo. Không đánh dấu Phase 8-10 đạt production DoD: playback WHEP trên mobile, test thiết bị thật và quy trình release vẫn là blocker bắt buộc.
 
 ## File/module structure đề xuất
 

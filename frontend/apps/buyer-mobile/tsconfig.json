@@ -6,14 +6,22 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "react": [
+        "./node_modules/@types/react"
+      ],
+      "react/*": [
+        "./node_modules/@types/react/*"
       ]
     },
     "types": [
-      "node"
+      "node",
+      "react"
     ]
   },
   "include": [
-    "App.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     "src/**/*.ts",
     "src/**/*.tsx"
   ]

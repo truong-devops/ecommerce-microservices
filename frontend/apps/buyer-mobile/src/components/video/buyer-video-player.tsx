@@ -1,4 +1,5 @@
 import { VideoView, useVideoPlayer } from 'expo-video';
+import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import type { PlaybackSource } from '@/domain/media-playback';
@@ -7,12 +8,22 @@ import { colors, spacing, typography } from '@/theme/tokens';
 interface BuyerVideoPlayerProps {
   source: PlaybackSource;
   noMediaLabel: string;
+  active?: boolean;
 }
 
-export function BuyerVideoPlayer({ source, noMediaLabel }: BuyerVideoPlayerProps) {
+export function BuyerVideoPlayer({ source, noMediaLabel, active = true }: BuyerVideoPlayerProps) {
   const player = useVideoPlayer(source.url ?? '', (instance) => {
     instance.loop = true;
   });
+
+  useEffect(() => {
+    if (!source.url) return;
+    if (active) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [active, player, source.url]);
 
   if (!source.url) {
     return (
@@ -26,7 +37,7 @@ export function BuyerVideoPlayer({ source, noMediaLabel }: BuyerVideoPlayerProps
     );
   }
 
-  return <VideoView player={player} style={styles.video} contentFit="cover" allowsFullscreen allowsPictureInPicture />;
+  return <VideoView player={player} style={styles.video} contentFit="cover" fullscreenOptions={{ enable: true }} allowsPictureInPicture />;
 }
 
 const styles = StyleSheet.create({

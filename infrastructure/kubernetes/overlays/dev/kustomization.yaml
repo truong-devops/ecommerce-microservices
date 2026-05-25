@@ -9,10 +9,10 @@ resources:
 images:
   - name: api-gateway
     newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-    newTag: live-ws-stable-20260525
+    newTag: buyer-mobile-prod-20260525
   - name: auth-service
     newName: docker.io/vantruong179/ecommerce-microservices-auth-service
-    newTag: dev
+    newTag: buyer-mobile-prod-20260525
   - name: user-service
     newName: docker.io/vantruong179/ecommerce-microservices-user-service
     newTag: dev
@@ -45,10 +45,10 @@ images:
     newTag: dev
   - name: chat-service
     newName: docker.io/vantruong179/ecommerce-microservices-chat-service
-    newTag: dev
+    newTag: buyer-mobile-prod-20260525
   - name: live-service
     newName: docker.io/vantruong179/ecommerce-microservices-live-service
-    newTag: dev
+    newTag: buyer-mobile-prod-20260525
   - name: media-service
     newName: docker.io/vantruong179/ecommerce-microservices-media-service
     newTag: dev

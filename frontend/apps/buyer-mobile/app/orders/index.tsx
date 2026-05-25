@@ -1,17 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { OrderStatus } from '@frontend/buyer-contracts';
+import type { Order, OrderStatus } from '@frontend/buyer-contracts';
+import { fetchProductDetail } from '@/api/buyer';
 import { fetchOrders } from '@/api/commerce';
 import { useAuth } from '@/auth/auth-context';
 import { AppIcon } from '@/components/core/app-icon';
 import { IconButton } from '@/components/core/icon-button';
 import { PrimaryButton } from '@/components/core/primary-button';
 import { ScreenState } from '@/components/core/screen-state';
+import { buyerOrderListStatusLabel } from '@/domain/orders';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
+import { normalizeRemoteAssetUrl } from '@/utils/asset-url';
 
 const filters: Array<{ label: string; value?: OrderStatus }> = [
   { label: 'Tất cả' },
@@ -20,16 +23,6 @@ const filters: Array<{ label: string; value?: OrderStatus }> = [
   { label: 'Chờ giao hàng', value: 'SHIPPED' },
   { label: 'Hoàn thành', value: 'DELIVERED' },
 ];
-
-const statusLabels: Record<OrderStatus, string> = {
-  PENDING: 'Chờ xác nhận',
-  CONFIRMED: 'Đã xác nhận',
-  PROCESSING: 'Đang chuẩn bị',
-  SHIPPED: 'Đang giao',
-  DELIVERED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
-  FAILED: 'Thất bại',
-};
 
 export default function OrdersScreen() {
   const { session } = useAuth();
@@ -58,37 +51,54 @@ export default function OrdersScreen() {
       {orders.isPending ? <ScreenState title="Đang tải đơn hàng..." /> : null}
       {orders.isError ? <ScreenState title="Không tải được đơn hàng" detail={orders.error.message} /> : null}
       <ScrollView contentContainerStyle={styles.list}>
-        {orders.data?.map((order) => (
-          <Pressable key={order.id} onPress={() => router.push(`/orders/${order.id}`)} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.shop}>
-                <View style={styles.mallBadge}><Text style={styles.mallText}>Mall</Text></View>
-                <Text style={styles.number}>DT Commerce Store</Text>
-              </View>
-              <Text style={styles.status}>{statusLabels[order.status]}</Text>
-            </View>
-            {order.items.slice(0, 1).map((item) => (
-              <View key={item.id} style={styles.product}>
-                <View style={styles.placeholder}><AppIcon color={colors.brand} name="cube-outline" size={30} /></View>
-                <View style={styles.productBody}>
-                  <Text numberOfLines={2} style={styles.productName}>{item.productName}</Text>
-                  <Text style={styles.meta}>{item.sku}</Text>
-                </View>
-                <Text style={styles.meta}>x{item.quantity}</Text>
-              </View>
-            ))}
-            <View style={styles.totalRow}>
-              <Text style={styles.meta}>Tổng số tiền ({order.items.length} sản phẩm):</Text>
-              <Text style={styles.amount}>{Math.round(order.totalAmount).toLocaleString('vi-VN')}đ</Text>
-            </View>
-            <View style={styles.buttonLine}>
-              <View />
-              <View style={styles.buyAgain}><Text style={styles.buyAgainText}>{order.status === 'DELIVERED' ? 'Mua lại' : 'Xem đơn'}</Text></View>
-            </View>
-          </Pressable>
-        ))}
+        {orders.data?.map((order) => <OrderCard key={order.id} order={order} onPress={() => router.push(`/orders/${order.id}`)} />)}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
+  const item = order.items[0];
+  const product = useQuery({
+    queryKey: ['order-product-preview', item?.productId],
+    queryFn: () => fetchProductDetail(item!.productId),
+    enabled: Boolean(item?.productId)
+  });
+  const image = product.data?.image;
+  const productName = product.data?.title ?? item?.productName ?? 'Sản phẩm';
+
+  return (
+    <Pressable onPress={onPress} style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.shop}>
+          <View style={styles.mallBadge}><Text style={styles.mallText}>Mall</Text></View>
+          <Text style={styles.number}>Market Mall</Text>
+        </View>
+        <Text style={styles.status}>{buyerOrderListStatusLabel(order.status)}</Text>
+      </View>
+      {item ? (
+        <View style={styles.product}>
+          {image ? (
+            <Image source={{ uri: normalizeRemoteAssetUrl(image, process.env.EXPO_PUBLIC_API_BASE_URL) }} style={styles.productImage} />
+          ) : (
+            <View style={styles.placeholder}><AppIcon color={colors.brand} name="cube-outline" size={30} /></View>
+          )}
+          <View style={styles.productBody}>
+            <Text numberOfLines={2} style={styles.productName}>{productName}</Text>
+            <Text style={styles.meta}>{item.sku}</Text>
+          </View>
+          <Text style={styles.meta}>x{item.quantity}</Text>
+        </View>
+      ) : null}
+      <View style={styles.totalRow}>
+        <Text style={styles.meta}>Tổng số tiền ({order.items.length} sản phẩm):</Text>
+        <Text style={styles.amount}>{Math.round(order.totalAmount).toLocaleString('vi-VN')}đ</Text>
+      </View>
+      <View style={styles.buttonLine}>
+        <View />
+        <View style={styles.buyAgain}><Text style={styles.buyAgainText}>{order.status === 'DELIVERED' ? 'Mua lại' : 'Xem đơn'}</Text></View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -111,6 +121,7 @@ const styles = StyleSheet.create({
   status: { color: colors.brand, fontWeight: '600' },
   product: { flexDirection: 'row', gap: spacing[3] },
   placeholder: { alignItems: 'center', backgroundColor: colors.brandSoft, borderRadius: radius.sm, height: 76, justifyContent: 'center', width: 76 },
+  productImage: { backgroundColor: colors.line, borderRadius: radius.sm, height: 76, width: 76 },
   productBody: { flex: 1, gap: spacing[1] },
   productName: { color: colors.ink, fontSize: 15 },
   meta: { color: colors.muted, fontSize: typography.body },

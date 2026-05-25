@@ -27,7 +27,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   try {
-    const result = await requestUpstream<unknown>(`${serviceBaseUrls.live}/live/sessions/${encodeURIComponent(sessionId)}/events/product-clicked`, {
+    const result = await requestUpstream<unknown>(`${serviceBaseUrls.gateway}/buyer-experience/live/sessions/${encodeURIComponent(sessionId)}/events/product-clicked`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

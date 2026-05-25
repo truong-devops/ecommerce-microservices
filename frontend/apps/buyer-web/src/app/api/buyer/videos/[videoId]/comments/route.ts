@@ -33,7 +33,7 @@ export async function GET(request: Request, context: RouteContext) {
   query.set('pageSize', String(normalizePositiveInt(input.get('pageSize'), 20, 100)));
 
   try {
-    const comments = await requestPaginatedVideoComments(`${serviceBaseUrls.product}/videos/${encodeURIComponent(videoId)}/comments?${query.toString()}`);
+    const comments = await requestPaginatedVideoComments(`${serviceBaseUrls.gateway}/buyer-experience/videos/${encodeURIComponent(videoId)}/comments?${query.toString()}`);
     return ok(comments);
   } catch (error) {
     return toErrorResponse(error);
@@ -63,7 +63,7 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   try {
-    const created = await requestUpstream<unknown>(`${serviceBaseUrls.product}/videos/${encodeURIComponent(videoId)}/comments`, {
+    const created = await requestUpstream<unknown>(`${serviceBaseUrls.gateway}/buyer-experience/videos/${encodeURIComponent(videoId)}/comments`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -44,3 +44,4 @@ build/
 # Quan trọng 
 docs/deployment/personalization-values-checklist.md
 docs/deployment/start-here-end-to-end-runbook.md
+docs/deployment/manual-k8s-build-and-deploy-runbook.md

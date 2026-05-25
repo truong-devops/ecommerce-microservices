@@ -1,10 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Share, StyleSheet, Text, TextInput, View, type ViewToken } from 'react-native';
+import {
+  Alert,
+  AppState,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type LayoutChangeEvent,
+  type ViewToken
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { BuyerVideo, BuyerVideoComment } from '@frontend/buyer-contracts';
@@ -24,16 +41,20 @@ import { colors, radius, spacing, typography } from '@/theme/tokens';
 import { normalizeRemoteAssetUrl } from '@/utils/asset-url';
 
 const LIKES_KEY = 'buyer.video.likes.v1';
-const pageHeight = Dimensions.get('window').height - 92;
 
 export default function VideoScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const params = useLocalSearchParams<{ videoId?: string }>();
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const { dispatch } = useCart();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isAppActive, setAppActive] = useState(AppState.currentState === 'active');
+  const [pageHeight, setPageHeight] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [pausedByUser, setPausedByUser] = useState(false);
   const [likes, setLikes] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState('');
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -41,9 +62,16 @@ export default function VideoScreen() {
   const trackedStarts = useRef(new Set<string>());
   const trackedQualified = useRef(new Set<string>());
   const initialVideoApplied = useRef(false);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 55 }).current;
   const videos = useQuery({ queryKey: ['videos'], queryFn: fetchVideos });
   const activeVideo = videos.data?.[activeIndex];
   const comments = useQuery({ queryKey: ['video-comments', activeVideo?.videoId], queryFn: () => fetchVideoComments(activeVideo!.videoId), enabled: Boolean(activeVideo) });
+  const canPlayVideo = isFocused && isAppActive;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (initialVideoApplied.current || !params.videoId || !videos.data) return;
@@ -110,9 +138,17 @@ export default function VideoScreen() {
 
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<BuyerVideo>[] }) => {
     const index = viewableItems.find((item) => item.isViewable)?.index;
-    if (typeof index === 'number') setActiveIndex(index);
+    if (typeof index === 'number') {
+      setActiveIndex(index);
+      setPausedByUser(false);
+    }
   }).current;
-
+  const handleListLayout = (event: LayoutChangeEvent) => {
+    const height = Math.round(event.nativeEvent.layout.height);
+    if (height > 0 && height !== pageHeight) {
+      setPageHeight(height);
+    }
+  };
   const openComments = () => {
     setCommentsOpen(true);
     setTimeout(() => commentInputRef.current?.focus(), 120);
@@ -134,7 +170,7 @@ export default function VideoScreen() {
   return (
     <View style={styles.safeArea}>
       <View style={[styles.topbar, { top: insets.top + spacing[2] }]}>
-        <AppIcon color={colors.surface} name="person-circle-outline" size={28} />
+        <View style={styles.topbarSpacer} />
         <View style={styles.tabs}>
           <View style={styles.tabTarget}>
             <Text style={styles.activeTab}>Video</Text>
@@ -148,14 +184,40 @@ export default function VideoScreen() {
         </View>
         <CartLink color={colors.surface} />
       </View>
+      <Pressable
+        accessibilityLabel={soundEnabled ? 'Tắt âm thanh video' : 'Bật âm thanh video'}
+        accessibilityRole="button"
+        hitSlop={12}
+        onPress={() => setSoundEnabled((value) => !value)}
+        style={[styles.soundToggle, { top: insets.top + 54 }]}
+      >
+        <AppIcon color={colors.surface} name={soundEnabled ? 'volume-high' : 'volume-mute'} size={20} />
+        <Text style={styles.soundText}>{soundEnabled ? 'Đang bật tiếng' : 'Bật tiếng'}</Text>
+      </Pressable>
+      <Pressable
+        accessibilityLabel={pausedByUser ? 'Phát video' : 'Dừng video'}
+        accessibilityRole="button"
+        hitSlop={14}
+        onPress={() => setPausedByUser((value) => !value)}
+        style={styles.pauseToggle}
+      >
+        <AppIcon color={colors.surface} name={pausedByUser ? 'play' : 'pause'} size={30} />
+      </Pressable>
       <FlatList
+        decelerationRate="fast"
         data={videos.data}
+        initialNumToRender={1}
         keyExtractor={(item) => item.videoId}
+        maxToRenderPerBatch={2}
+        onLayout={handleListLayout}
         onViewableItemsChanged={onViewableItemsChanged}
         pagingEnabled
+        removeClippedSubviews
+        style={styles.videoList}
+        windowSize={3}
         renderItem={({ item, index }) => (
-          <View style={styles.page}>
-            <BuyerVideoPlayer active={index === activeIndex} noMediaLabel="Video chưa sẵn sàng" source={selectVideoPlaybackSource(item)} />
+          <View style={[styles.page, pageHeight > 0 ? { height: pageHeight } : null]}>
+            <BuyerVideoPlayer active={canPlayVideo && !pausedByUser && index === activeIndex} muted={!soundEnabled} noMediaLabel="Video chưa sẵn sàng" source={selectVideoPlaybackSource(item)} />
             <View style={styles.overlay}>
               <View style={styles.creator}>
                 <Text style={styles.shop}>@{item.seller.shopName}</Text>
@@ -173,14 +235,14 @@ export default function VideoScreen() {
                       <View style={styles.productTags}><Text style={styles.tag}>Mall</Text><Text style={styles.tagOutline}>Voucher</Text></View>
                       <Text style={styles.price}>{Math.round(product.price).toLocaleString('vi-VN')}đ</Text>
                     </Pressable>
-                    <Pressable disabled={buyNow.isPending} onPress={() => buyNow.mutate({ video: item, productId: product.productId })} style={styles.add}><Text style={styles.addText}>Mua ngay</Text></Pressable>
+                    <Pressable disabled={buyNow.isPending} hitSlop={8} onPress={() => buyNow.mutate({ video: item, productId: product.productId })} style={styles.add}><Text style={styles.addText}>Mua ngay</Text></Pressable>
                   </View>
                 ))}
               </View>
               <Text numberOfLines={2} style={styles.title}>{item.title}</Text>
             </View>
             <View style={styles.rail}>
-              <Pressable onPress={() => {
+              <Pressable hitSlop={10} onPress={() => {
                 const next = new Set(likes);
                 next.has(item.videoId) ? next.delete(item.videoId) : next.add(item.videoId);
                 setLikes(next);
@@ -189,18 +251,18 @@ export default function VideoScreen() {
                 <AppIcon color={colors.surface} name={likes.has(item.videoId) ? 'heart' : 'heart-outline'} size={34} />
                 <Text style={styles.railLabel}>{likes.has(item.videoId) ? 'Đã thích' : 'Thích'}</Text>
               </Pressable>
-              <Pressable onPress={openComments} style={styles.railAction}>
+              <Pressable hitSlop={10} onPress={openComments} style={styles.railAction}>
                 <AppIcon color={colors.surface} name="chatbubble-outline" size={31} />
                 <Text style={styles.railLabel}>{item.metrics.commentCount ?? 0}</Text>
               </Pressable>
-              <Pressable onPress={() => void Share.share({ message: Linking.createURL('/video', { queryParams: { videoId: item.videoId } }) })} style={styles.railAction}>
+              <Pressable hitSlop={10} onPress={() => void Share.share({ message: Linking.createURL('/video', { queryParams: { videoId: item.videoId } }) })} style={styles.railAction}>
                 <AppIcon color={colors.surface} name="arrow-redo-outline" size={32} />
                 <Text style={styles.railLabel}>Chia sẻ</Text>
               </Pressable>
             </View>
           </View>
         )}
-        snapToInterval={pageHeight}
+        viewabilityConfig={viewabilityConfig}
       />
       <View style={styles.commentPanel}>
         <Text numberOfLines={1} style={styles.commentPreview}>{comments.data?.[0]?.text ?? 'Viết bình luận cho sản phẩm...'}</Text>
@@ -258,12 +320,17 @@ export default function VideoScreen() {
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: colors.media, flex: 1 },
   topbar: { alignItems: 'center', flexDirection: 'row', left: spacing[3], position: 'absolute', right: spacing[3], zIndex: 5 },
+  topbarSpacer: { width: 28 },
+  soundToggle: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.42)', borderRadius: radius.pill, flexDirection: 'row', gap: spacing[1], paddingHorizontal: spacing[3], paddingVertical: spacing[2], position: 'absolute', right: spacing[3], zIndex: 6 },
+  soundText: { color: colors.surface, fontSize: 12, fontWeight: '700' },
+  pauseToggle: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.32)', borderRadius: radius.pill, height: 58, justifyContent: 'center', left: '50%', marginLeft: -29, marginTop: -29, position: 'absolute', top: '48%', width: 58, zIndex: 6 },
+  videoList: { flex: 1 },
   tabs: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: spacing[3], justifyContent: 'center' },
   tabTarget: { alignItems: 'center', justifyContent: 'center', minHeight: 44, paddingHorizontal: spacing[1] },
   tab: { color: '#e5e7eb', fontSize: 16, fontWeight: '600', paddingBottom: spacing[2] },
   activeTab: { borderBottomColor: colors.surface, borderBottomWidth: 2, color: colors.surface, fontSize: 17, fontWeight: '800', paddingBottom: spacing[2] },
-  page: { backgroundColor: colors.media, height: pageHeight, position: 'relative' },
-  overlay: { bottom: 72, gap: spacing[2], left: spacing[3], position: 'absolute', right: 72 },
+  page: { backgroundColor: colors.media, flex: 1, position: 'relative' },
+  overlay: { bottom: 50, gap: spacing[2], left: spacing[3], position: 'absolute', right: 72 },
   creator: { alignItems: 'center', flexDirection: 'row', gap: spacing[2] },
   shop: { color: colors.surface, fontWeight: '800' },
   follow: { backgroundColor: colors.brand, borderRadius: radius.pill, paddingHorizontal: spacing[3], paddingVertical: spacing[1] },
@@ -279,7 +346,7 @@ const styles = StyleSheet.create({
   price: { color: colors.brand, fontSize: 16, fontWeight: '800' },
   add: { backgroundColor: colors.brand, borderRadius: radius.sm, marginLeft: 'auto', paddingHorizontal: spacing[3], paddingVertical: spacing[2] },
   addText: { color: colors.surface, fontWeight: '700' },
-  rail: { bottom: 104, gap: spacing[4], position: 'absolute', right: spacing[3] },
+  rail: { bottom: 156, gap: spacing[4], position: 'absolute', right: spacing[3] },
   railAction: { alignItems: 'center', gap: spacing[1] },
   railLabel: { color: colors.surface, fontSize: typography.label, fontWeight: '700', textAlign: 'center' },
   commentPanel: { alignItems: 'center', backgroundColor: colors.media, flexDirection: 'row', gap: spacing[2], padding: spacing[3] },

@@ -85,7 +85,13 @@ export default function HomeScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
                 {home.data.categories.map((category) => (
                   <Pressable key={category.id} onPress={() => router.push(`/explore?categoryId=${category.id}`)} style={styles.category}>
-                    <View style={styles.categoryIcon}><AppIcon color={colors.brand} name="grid-outline" size={25} /></View>
+                    <View style={styles.categoryIcon}>
+                      {category.icon ? (
+                        <Image source={{ uri: normalizeRemoteAssetUrl(category.icon, process.env.EXPO_PUBLIC_API_BASE_URL) }} style={styles.categoryImage} />
+                      ) : (
+                        <AppIcon color={colors.brand} name="grid-outline" size={25} />
+                      )}
+                    </View>
                     <Text numberOfLines={2} style={styles.categoryLabel}>{category.label}</Text>
                   </Pressable>
                 ))}
@@ -159,7 +165,8 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: '800', marginHorizontal: spacing[4] },
   categoryRow: { gap: spacing[3], paddingHorizontal: spacing[4] },
   category: { alignItems: 'center', gap: spacing[2], width: 68 },
-  categoryIcon: { alignItems: 'center', backgroundColor: colors.brandSoft, borderRadius: radius.pill, height: 54, justifyContent: 'center', width: 54 },
+  categoryIcon: { alignItems: 'center', backgroundColor: colors.brandSoft, borderColor: '#fff1ed', borderRadius: radius.pill, borderWidth: 1, height: 54, justifyContent: 'center', overflow: 'hidden', width: 54 },
+  categoryImage: { height: '100%', width: '100%' },
   categoryLabel: { color: colors.ink, fontSize: typography.label, textAlign: 'center' },
   mediaRow: { flexDirection: 'row', gap: spacing[3], paddingHorizontal: spacing[3] },
   mediaPanel: { backgroundColor: colors.surface, borderRadius: radius.md, flex: 1, gap: spacing[1], padding: spacing[3] },

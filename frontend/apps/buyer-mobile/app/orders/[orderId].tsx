@@ -10,6 +10,7 @@ import { AppIcon } from '@/components/core/app-icon';
 import { IconButton } from '@/components/core/icon-button';
 import { PrimaryButton } from '@/components/core/primary-button';
 import { ScreenState } from '@/components/core/screen-state';
+import { buyerOrderStatusLabel } from '@/domain/orders';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function OrderDetailScreen() {
@@ -40,15 +41,7 @@ export default function OrderDetailScreen() {
   if (order.isError || !order.data) return <ScreenState title="Không tải được đơn hàng" detail={order.error?.message} />;
 
   const data = order.data;
-  const statusLabel = {
-    PENDING: 'Chờ xác nhận',
-    CONFIRMED: 'Đã xác nhận',
-    PROCESSING: 'Đang chuẩn bị',
-    SHIPPED: 'Đang giao hàng',
-    DELIVERED: 'Giao hàng thành công',
-    CANCELLED: 'Đã hủy',
-    FAILED: 'Đặt hàng thất bại',
-  }[data.status];
+  const statusLabel = buyerOrderStatusLabel(data.status, payment.data?.status);
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const payload = await requestPaginatedVideoFeed(`${serviceBaseUrls.product}/videos/feed?${query.toString()}`);
+    const payload = await requestPaginatedVideoFeed(`${serviceBaseUrls.gateway}/buyer-experience/videos/feed?${query.toString()}`);
     return ok(payload);
   } catch (error) {
     return toErrorResponse(error);

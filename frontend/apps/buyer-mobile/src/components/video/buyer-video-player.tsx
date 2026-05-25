@@ -9,21 +9,34 @@ interface BuyerVideoPlayerProps {
   source: PlaybackSource;
   noMediaLabel: string;
   active?: boolean;
+  muted?: boolean;
 }
 
-export function BuyerVideoPlayer({ source, noMediaLabel, active = true }: BuyerVideoPlayerProps) {
+export function BuyerVideoPlayer({ source, noMediaLabel, active = true, muted = true }: BuyerVideoPlayerProps) {
   const player = useVideoPlayer(source.url ?? '', (instance) => {
     instance.loop = true;
+    instance.muted = muted;
   });
 
   useEffect(() => {
-    if (!source.url) return;
-    if (active) {
-      player.play();
-    } else {
-      player.pause();
+    try {
+      player.muted = muted;
+    } catch {
+      return;
     }
-  }, [active, player, source.url]);
+    if (!source.url) return;
+    try {
+      if (active) {
+        player.play();
+      } else {
+        player.pause();
+      }
+    } catch {
+      // FlatList can recycle an expo-video native object before React finishes
+      // running the effect. Ignore stale native handles and let the next mounted
+      // player instance control playback.
+    }
+  }, [active, muted, player, source.url]);
 
   if (!source.url) {
     return (
@@ -37,7 +50,7 @@ export function BuyerVideoPlayer({ source, noMediaLabel, active = true }: BuyerV
     );
   }
 
-  return <VideoView player={player} style={styles.video} contentFit="cover" fullscreenOptions={{ enable: true }} allowsPictureInPicture />;
+  return <VideoView player={player} style={styles.video} contentFit="cover" fullscreenOptions={{ enable: false }} nativeControls={false} allowsPictureInPicture={false} />;
 }
 
 const styles = StyleSheet.create({

@@ -1,12 +1,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { createOrder, createPaymentIntent } from '@/api/commerce';
+import { createOrder } from '@/api/commerce';
 import { fetchProfile } from '@/api/profile';
 import { useAuth } from '@/auth/auth-context';
 import { useCart } from '@/cart/cart-context';
@@ -30,22 +29,10 @@ export default function CheckoutScreen() {
       if (!session) throw new Error('Đăng nhập để thanh toán');
       if (!profile.data) throw new Error('Chưa tải được địa chỉ giao hàng');
       validateProfileInput(profile.data);
-      const order = await createOrder(session.accessToken, toCreateOrderInput(state, note), orderKey.current);
-      try {
-        const payment = await createPaymentIntent(session.accessToken, order, `mobile-payment-${order.id}`);
-        return { order, payment, paymentError: null };
-      } catch (error) {
-        return { order, payment: null, paymentError: error instanceof Error ? error.message : 'Không tạo được thanh toán trực tuyến' };
-      }
+      return createOrder(session.accessToken, toCreateOrderInput(state, note), orderKey.current);
     },
-    onSuccess: async ({ order, payment, paymentError }) => {
+    onSuccess: (order) => {
       dispatch({ type: 'clear-selected' });
-      if (payment?.requiresActionUrl) {
-        await WebBrowser.openBrowserAsync(payment.requiresActionUrl);
-      }
-      if (paymentError) {
-        Alert.alert('Đơn hàng đã được tạo', `Thanh toán trực tuyến chưa sẵn sàng: ${paymentError}`);
-      }
       router.replace(`/orders/${order.id}`);
     },
     onError: (error) => Alert.alert('Không đặt được hàng', error.message)
@@ -86,7 +73,7 @@ export default function CheckoutScreen() {
         </View>
         <View style={styles.card}>
           <View style={styles.sectionLine}><AppIcon color={colors.brand} name="card-outline" /><Text style={styles.section}>Phương thức thanh toán</Text></View>
-          <Text style={styles.meta}>Thanh toán trực tuyến an toàn qua DT Pay.</Text>
+          <Text style={styles.meta}>Thanh toán khi nhận hàng. DT Pay sẽ bật sau khi cổng thanh toán trực tuyến sẵn sàng.</Text>
           <TextInput multiline onChangeText={setNote} placeholder="Lời nhắn cho người bán" style={styles.input} value={note} />
         </View>
       </ScrollView>

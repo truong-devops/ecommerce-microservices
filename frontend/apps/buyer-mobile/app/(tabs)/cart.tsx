@@ -69,7 +69,9 @@ export default function CartScreen() {
                     <Text style={styles.price}>{Math.round(item.price).toLocaleString('vi-VN')}đ</Text>
                     <View style={styles.itemFooter}>
                       <QuantityStepper quantity={item.quantity} onChange={(quantity) => dispatch({ type: 'quantity', key: item.key, quantity })} />
-                      <Pressable onPress={() => dispatch({ type: 'remove', key: item.key })}><Text style={styles.remove}>Xóa</Text></Pressable>
+                      <Pressable hitSlop={8} onPress={() => dispatch({ type: 'remove', key: item.key })} style={styles.removeButton}>
+                        <Text style={styles.remove}>Xóa</Text>
+                      </Pressable>
                     </View>
                   </View>
                 </View>
@@ -117,6 +119,7 @@ const styles = StyleSheet.create({
   meta: { color: colors.muted, fontSize: typography.label },
   price: { color: colors.brand, fontSize: 17, fontWeight: '700' },
   itemFooter: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  removeButton: { alignItems: 'center', borderRadius: radius.sm, justifyContent: 'center', minHeight: 42, minWidth: 56, paddingHorizontal: spacing[3], paddingVertical: spacing[2] },
   remove: { color: colors.muted, fontSize: typography.label },
   voucher: { alignItems: 'center', borderTopColor: colors.line, borderTopWidth: 1, flexDirection: 'row', gap: spacing[2], paddingVertical: spacing[3] },
   voucherText: { color: colors.ink, flex: 1 },

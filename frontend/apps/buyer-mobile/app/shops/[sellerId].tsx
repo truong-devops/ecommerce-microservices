@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fetchShopDetail, searchProducts } from '@/api/buyer';
@@ -13,6 +13,8 @@ import { normalizeRemoteAssetUrl } from '@/utils/asset-url';
 export default function ShopScreen() {
   const { sellerId } = useLocalSearchParams<{ sellerId: string }>();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const productWidth = Math.floor((width - spacing[4] * 2 - spacing[3]) / 2);
   const id = sellerId ?? '';
   const shop = useQuery({ queryKey: ['shop', id], queryFn: () => fetchShopDetail(id), enabled: Boolean(id) });
   const products = useQuery({ queryKey: ['shop-products', id], queryFn: () => searchProducts({ sellerId: id, pageSize: 20 }), enabled: Boolean(id) });
@@ -43,7 +45,7 @@ export default function ShopScreen() {
         <Text style={styles.section}>Sản phẩm của shop</Text>
         {products.isError ? <ScreenState title="Không tải được sản phẩm shop" /> : null}
         <View style={styles.grid}>
-          {products.data?.items.map((product) => <ProductTile key={product.id} product={product} />)}
+          {products.data?.items.map((product) => <ProductTile key={product.id} product={product} width={productWidth} />)}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -64,5 +66,5 @@ const styles = StyleSheet.create({
   nav: { gap: spacing[2], paddingHorizontal: spacing[4] },
   chip: { backgroundColor: colors.surface, borderRadius: radius.sm, color: colors.ink, padding: spacing[2] },
   section: { color: colors.ink, fontSize: 18, fontWeight: '800', paddingHorizontal: spacing[4] },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[3], paddingHorizontal: spacing[4] }
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: spacing[4], rowGap: spacing[3] }
 });

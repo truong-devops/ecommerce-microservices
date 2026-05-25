@@ -11,6 +11,14 @@ import { ProductTile } from '@/components/core/product-tile';
 import { ScreenState } from '@/components/core/screen-state';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
+const mallFeatures = [
+  { icon: 'sparkles-outline', label: 'Premium', tint: '#fff7ed' },
+  { icon: 'flame-outline', label: 'Deal siêu hot', tint: '#fff1f2' },
+  { icon: 'ribbon-outline', label: 'Thương hiệu mới', tint: '#eef2ff' },
+  { icon: 'earth-outline', label: 'Quốc tế', tint: '#ecfeff' },
+  { icon: 'flash-outline', label: 'Flash Sale', tint: '#fef2f2' },
+] as const;
+
 export default function ExploreScreen() {
   const { width } = useWindowDimensions();
   const productTileWidth = Math.floor((width - spacing[3] * 2 - spacing[2]) / 2);
@@ -43,10 +51,12 @@ export default function ExploreScreen() {
           <Text style={styles.bannerCopy}>Trả hàng 15 ngày  |  Miễn phí giao hàng</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.features}>
-          {['Premium', 'Deal siêu hot', 'Thương hiệu mới', 'Quốc tế', 'Flash Sale'].map((label) => (
-            <View key={label} style={styles.feature}>
-              <View style={styles.featureIcon}><AppIcon color={colors.brand} name="diamond-outline" size={24} /></View>
-              <Text style={styles.featureLabel}>{label}</Text>
+          {mallFeatures.map((feature) => (
+            <View key={feature.label} style={styles.feature}>
+              <View style={[styles.featureIcon, { backgroundColor: feature.tint }]}>
+                <AppIcon color={colors.brand} name={feature.icon} size={25} />
+              </View>
+              <Text style={styles.featureLabel}>{feature.label}</Text>
             </View>
           ))}
         </ScrollView>
@@ -85,7 +95,7 @@ const styles = StyleSheet.create({
   bannerCopy: { color: colors.muted },
   features: { gap: spacing[3], paddingHorizontal: spacing[3] },
   feature: { alignItems: 'center', gap: spacing[1], width: 70 },
-  featureIcon: { alignItems: 'center', borderColor: colors.line, borderRadius: radius.md, borderWidth: 1, height: 52, justifyContent: 'center', width: 52 },
+  featureIcon: { alignItems: 'center', borderColor: colors.line, borderRadius: radius.md, borderWidth: 1, height: 52, justifyContent: 'center', shadowColor: '#000', shadowOffset: { height: 1, width: 0 }, shadowOpacity: 0.06, shadowRadius: 4, width: 52 },
   featureLabel: { color: colors.ink, fontSize: 10, textAlign: 'center' },
   list: { paddingHorizontal: spacing[3], paddingVertical: spacing[3], rowGap: spacing[3] },
   row: { justifyContent: 'space-between' }

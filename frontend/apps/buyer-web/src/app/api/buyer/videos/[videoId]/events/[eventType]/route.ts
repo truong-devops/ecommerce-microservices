@@ -23,7 +23,7 @@ export async function POST(request: Request, context: { params: { videoId: strin
   }
 
   try {
-    const result = await requestUpstream<unknown>(`${serviceBaseUrls.product}/videos/${encodeURIComponent(videoId)}/events/${eventType}`, {
+    const result = await requestUpstream<unknown>(`${serviceBaseUrls.gateway}/buyer-experience/videos/${encodeURIComponent(videoId)}/events/${eventType}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

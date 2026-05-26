@@ -35,6 +35,7 @@ type ProductVariantInput struct {
 	Name           string         `json:"name"`
 	Price          float64        `json:"price"`
 	Currency       string         `json:"currency"`
+	InitialStock   *int           `json:"initialStock,omitempty"`
 	CompareAtPrice *float64       `json:"compareAtPrice,omitempty"`
 	IsDefault      *bool          `json:"isDefault,omitempty"`
 	Metadata       map[string]any `json:"metadata,omitempty"`
@@ -551,6 +552,7 @@ func (s *ProductService) ToProductResponse(product domain.Product) domain.Produc
 			Name:           variant.Name,
 			Price:          variant.Price,
 			Currency:       variant.Currency,
+			InitialStock:   variant.InitialStock,
 			CompareAtPrice: variant.CompareAtPrice,
 			IsDefault:      variant.IsDefault,
 			Metadata:       metadata,
@@ -699,6 +701,13 @@ func normalizeVariants(input []ProductVariantInput) ([]domain.ProductVariant, er
 		if !skuRegex.MatchString(sku) || name == "" || len(name) > 255 || !currencyRegex.MatchString(currencyRaw) || variant.Price < 0 {
 			return nil, validationError("variant is invalid")
 		}
+		initialStock := 0
+		if variant.InitialStock != nil {
+			if *variant.InitialStock < 0 {
+				return nil, validationError("variant initialStock must be non-negative")
+			}
+			initialStock = *variant.InitialStock
+		}
 		isDefault := false
 		if variant.IsDefault != nil {
 			isDefault = *variant.IsDefault
@@ -723,6 +732,7 @@ func normalizeVariants(input []ProductVariantInput) ([]domain.ProductVariant, er
 			Name:           name,
 			Price:          roundMoney(variant.Price),
 			Currency:       currency,
+			InitialStock:   initialStock,
 			CompareAtPrice: compareAt,
 			IsDefault:      isDefault,
 			Metadata:       metadata,

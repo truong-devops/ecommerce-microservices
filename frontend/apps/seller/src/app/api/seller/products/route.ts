@@ -12,6 +12,7 @@ interface ProductVariantPayload {
   name: string;
   price: number;
   currency: string;
+  initialStock?: number;
   compareAtPrice?: number;
   isDefault?: boolean;
   metadata?: Record<string, unknown>;
@@ -252,6 +253,14 @@ function sanitizeVariants(input: unknown): ProductVariantPayload[] | null {
       price,
       currency
     };
+
+    if (source.initialStock !== undefined && source.initialStock !== null && source.initialStock !== '') {
+      const initialStock = typeof source.initialStock === 'number' ? source.initialStock : Number(source.initialStock);
+      if (!Number.isInteger(initialStock) || initialStock < 0) {
+        return null;
+      }
+      variant.initialStock = initialStock;
+    }
 
     if (source.compareAtPrice !== undefined && source.compareAtPrice !== null && source.compareAtPrice !== '') {
       const compareAtPrice = typeof source.compareAtPrice === 'number' ? source.compareAtPrice : Number(source.compareAtPrice);

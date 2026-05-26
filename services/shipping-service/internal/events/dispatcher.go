@@ -52,7 +52,7 @@ func (d *Dispatcher) dispatchPending(ctx context.Context) {
 	}
 
 	for _, event := range events {
-		if err := d.publisher.Publish(ctx, event.EventType, event.Payload); err == nil {
+		if err := d.publisher.Publish(ctx, event.ID, event.EventType, event.Payload); err == nil {
 			if markErr := d.repo.MarkOutboxPublished(ctx, event.ID); markErr != nil {
 				d.logger.Error("failed to mark outbox event published", zap.String("event_id", event.ID), zap.Error(markErr))
 			}

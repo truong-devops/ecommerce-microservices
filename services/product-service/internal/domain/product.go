@@ -23,6 +23,7 @@ type ProductVariant struct {
 	Name           string         `bson:"name" json:"name"`
 	Price          float64        `bson:"price" json:"price"`
 	Currency       string         `bson:"currency" json:"currency"`
+	InitialStock   int            `bson:"initialStock" json:"initialStock"`
 	CompareAtPrice *float64       `bson:"compareAtPrice,omitempty" json:"compareAtPrice"`
 	IsDefault      bool           `bson:"isDefault" json:"isDefault"`
 	Metadata       map[string]any `bson:"metadata" json:"metadata"`
@@ -83,6 +84,7 @@ type ProductVariantResponse struct {
 	Name           string         `json:"name"`
 	Price          float64        `json:"price"`
 	Currency       string         `json:"currency"`
+	InitialStock   int            `json:"initialStock"`
 	CompareAtPrice *float64       `json:"compareAtPrice"`
 	IsDefault      bool           `json:"isDefault"`
 	Metadata       map[string]any `json:"metadata"`

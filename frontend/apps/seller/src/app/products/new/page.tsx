@@ -38,6 +38,7 @@ interface VariantFormState {
   sku: string;
   name: string;
   price: string;
+  initialStock: string;
   compareAtPrice: string;
   currency: string;
   isDefault: boolean;
@@ -81,6 +82,7 @@ const INITIAL_VARIANT: VariantFormState = {
   sku: '',
   name: 'Bản Tiêu Chuẩn',
   price: '',
+  initialStock: '0',
   compareAtPrice: '',
   currency: 'VND',
   isDefault: true
@@ -220,6 +222,7 @@ export default function NewProductPage() {
         sku: variant.sku ?? '',
         name: variant.name ?? `Phân loại ${index + 1}`,
         price: String(variant.price ?? ''),
+        initialStock: String(variant.initialStock ?? 0),
         compareAtPrice: variant.compareAtPrice === null || variant.compareAtPrice === undefined ? '' : String(variant.compareAtPrice),
         currency: variant.currency ?? 'VND',
         isDefault: Boolean(variant.isDefault)
@@ -339,6 +342,7 @@ export default function NewProductPage() {
         sku: '',
         name: `Phân loại ${previous.length + 1}`,
         price: '',
+        initialStock: '0',
         compareAtPrice: '',
         currency: previous[0]?.currency || 'VND',
         isDefault: false
@@ -451,6 +455,7 @@ export default function NewProductPage() {
         const variantName = variant.name.trim();
         const currency = variant.currency.trim().toUpperCase();
         const price = Number(variant.price);
+        const initialStock = Number(variant.initialStock);
 
         if (!sku) {
           setSubmitError('Mỗi phân loại phải có SKU.');
@@ -477,6 +482,11 @@ export default function NewProductPage() {
           return;
         }
 
+        if (!Number.isInteger(initialStock) || initialStock < 0) {
+          setSubmitError(`Tồn kho ban đầu của SKU ${sku} phải là số nguyên không âm.`);
+          return;
+        }
+
         const compareAtPrice = variant.compareAtPrice.trim() ? Number(variant.compareAtPrice) : null;
         if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0)) {
           setSubmitError(`Giá so sánh của SKU ${sku} không hợp lệ.`);
@@ -488,6 +498,7 @@ export default function NewProductPage() {
           name: variantName,
           price,
           currency,
+          initialStock,
           compareAtPrice: compareAtPrice ?? undefined,
           isDefault: variant.isDefault,
           metadata: {
@@ -687,7 +698,23 @@ export default function NewProductPage() {
                     />
                   </label>
 
-                  <label className="block text-sm font-medium text-slate-700 md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Tồn kho ban đầu *
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={variant.initialStock}
+                      onChange={(event) => {
+                        updateVariant(variant.id, 'initialStock', event.target.value);
+                      }}
+                      placeholder="0"
+                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Áp dụng khi SKU được tạo lần đầu trong kho.</p>
+                  </label>
+
+                  <label className="block text-sm font-medium text-slate-700">
                     Giá so sánh
                     <input
                       value={variant.compareAtPrice}

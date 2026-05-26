@@ -160,7 +160,7 @@ ALTER TABLE processed_events ADD COLUMN IF NOT EXISTS consumer_name varchar(128)
 ALTER TABLE processed_events DROP CONSTRAINT IF EXISTS processed_events_event_id_key;
 ALTER TABLE processed_events DROP CONSTRAINT IF EXISTS processed_events_topic_partition_offset_value_key;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_processed_events_consumer_event_id ON processed_events(consumer_name, event_id);
-CREATE UNIQUE INDEX IF NOT EXISTS ux_processed_events_consumer_offset ON processed_events(consumer_name, topic, partition, offset_value);
+DROP INDEX IF EXISTS ux_processed_events_consumer_offset;
 CREATE INDEX IF NOT EXISTS idx_processed_events_type ON processed_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_processed_events_processed_at ON processed_events(processed_at);
 

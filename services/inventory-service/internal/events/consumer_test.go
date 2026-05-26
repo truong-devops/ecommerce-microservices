@@ -16,6 +16,10 @@ type fakeInventoryService struct {
 	reservedMeta  service.EventMeta
 	reserveCalls  int
 
+	provisionedEvent service.ProductChangedEvent
+	provisionedMeta  service.EventMeta
+	provisionCalls   int
+
 	releasedOrderID   string
 	releasedRequestID string
 	releaseCalls      int
@@ -29,6 +33,13 @@ func (f *fakeInventoryService) ReserveInventoryFromOrderCreated(ctx context.Cont
 	f.reserveCalls++
 	f.reservedEvent = event
 	f.reservedMeta = meta
+	return map[string]any{"ok": true}, nil
+}
+
+func (f *fakeInventoryService) ProvisionInventoryFromProductChanged(ctx context.Context, event service.ProductChangedEvent, meta service.EventMeta) (map[string]any, error) {
+	f.provisionCalls++
+	f.provisionedEvent = event
+	f.provisionedMeta = meta
 	return map[string]any{"ok": true}, nil
 }
 
@@ -177,6 +188,40 @@ func TestConsumerHandleOrderCancelled(t *testing.T) {
 	}
 	if fake.releasedRequestID != "cancel-req" {
 		t.Fatalf("unexpected request id: %s", fake.releasedRequestID)
+	}
+}
+
+func TestConsumerHandleProductCreated(t *testing.T) {
+	fake := &fakeInventoryService{}
+	consumer := &Consumer{logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{
+		Topic:     "product.events",
+		Partition: 2,
+		Offset:    19,
+		Value: mustJSON(t, map[string]any{
+			"eventType": "product.created",
+			"payload": map[string]any{
+				"id":       "69efa0f08f435d3294741b55",
+				"sellerId": "9f8a2776-a0d3-4013-ac02-6784166eadd6",
+				"variants": []any{map[string]any{"sku": "IMG-SD-005", "initialStock": float64(25)}},
+			},
+			"metadata": map[string]any{"requestId": "req-product-1"},
+		}),
+	}
+
+	consumer.handleProductMessage(context.Background(), msg)
+
+	if fake.provisionCalls != 1 {
+		t.Fatalf("expected provision call, got %d", fake.provisionCalls)
+	}
+	if fake.provisionedEvent.ProductID != "69efa0f08f435d3294741b55" || fake.provisionedEvent.Variants[0].SKU != "IMG-SD-005" {
+		t.Fatalf("unexpected product event: %+v", fake.provisionedEvent)
+	}
+	if fake.provisionedEvent.Variants[0].InitialStock != 25 {
+		t.Fatalf("unexpected initial stock: %+v", fake.provisionedEvent.Variants[0])
+	}
+	if fake.provisionedMeta.Topic != "product.events" || fake.provisionedMeta.RequestID != "req-product-1" {
+		t.Fatalf("unexpected product meta: %+v", fake.provisionedMeta)
 	}
 }
 

@@ -67,6 +67,17 @@ type OrderCreatedEvent struct {
 	Items   []ReserveInventoryItem
 }
 
+type ProductChangedEvent struct {
+	ProductID string
+	SellerID  string
+	Variants  []ProductVariant
+}
+
+type ProductVariant struct {
+	SKU          string
+	InitialStock int
+}
+
 type EventMeta struct {
 	EventID     string
 	EventType   string
@@ -154,8 +165,8 @@ func (s *InventoryService) AdjustStock(
 		if req.ProductID == nil || req.SellerID == nil || strings.TrimSpace(*req.ProductID) == "" || strings.TrimSpace(*req.SellerID) == "" {
 			return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeInventoryInvalidAdjustment, "productId and sellerId are required when creating stock", nil)
 		}
-		if !isUUID(*req.ProductID) || !isUUID(*req.SellerID) {
-			return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "productId and sellerId must be valid UUID", nil)
+		if len(strings.TrimSpace(*req.ProductID)) > 128 || !isUUID(*req.SellerID) {
+			return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "productId is invalid or sellerId is not a valid UUID", nil)
 		}
 
 		item = &domain.InventoryItem{
@@ -180,8 +191,8 @@ func (s *InventoryService) AdjustStock(
 
 		item.OnHand = nextOnHand
 		if req.ProductID != nil && strings.TrimSpace(*req.ProductID) != "" {
-			if !isUUID(*req.ProductID) {
-				return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "productId must be valid UUID", nil)
+			if len(strings.TrimSpace(*req.ProductID)) > 128 {
+				return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "productId is invalid", nil)
 			}
 			item.ProductID = strings.TrimSpace(*req.ProductID)
 		}
@@ -235,6 +246,72 @@ func (s *InventoryService) AdjustStock(
 		return nil, err
 	}
 	return toStockSnapshot(*item), nil
+}
+
+func (s *InventoryService) ProvisionInventoryFromProductChanged(ctx context.Context, event ProductChangedEvent, meta EventMeta) (map[string]any, error) {
+	productID := strings.TrimSpace(event.ProductID)
+	sellerID := strings.TrimSpace(event.SellerID)
+	if productID == "" || len(productID) > 128 || !isUUID(sellerID) {
+		return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "product event has invalid productId or sellerId", nil)
+	}
+
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
+		ConsumerName: "inventory-service-product-events",
+		EventID:      meta.EventID,
+		EventType:    meta.EventType,
+		Topic:        meta.Topic,
+		Partition:    meta.Partition,
+		OffsetValue:  meta.OffsetValue,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if alreadyProcessed {
+		if err := tx.Commit(ctx); err != nil {
+			return nil, err
+		}
+		return map[string]any{"productId": productID, "idempotent": true, "created": 0}, nil
+	}
+
+	created := 0
+	for _, variant := range event.Variants {
+		sku := normalizeSKU(variant.SKU)
+		if sku == "" {
+			continue
+		}
+		item, err := s.repo.FindInventoryBySKUForUpdate(ctx, tx, sku)
+		if err != nil {
+			return nil, err
+		}
+		if item != nil {
+			if item.ProductID != productID || item.SellerID != sellerID {
+				return nil, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Inventory SKU is already linked to another product: "+sku, nil)
+			}
+			continue
+		}
+		item = &domain.InventoryItem{
+			SKU:       sku,
+			ProductID: productID,
+			SellerID:  sellerID,
+			OnHand:    variant.InitialStock,
+			Reserved:  0,
+		}
+		if err := s.repo.InsertInventoryItem(ctx, tx, item); err != nil {
+			return nil, err
+		}
+		created++
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return map[string]any{"productId": productID, "created": created}, nil
 }
 
 func (s *InventoryService) ReserveInventory(

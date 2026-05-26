@@ -231,6 +231,7 @@ export interface SellerProductVariantInput {
   name: string;
   price: number;
   currency: string;
+  initialStock?: number;
   compareAtPrice?: number | null;
   isDefault?: boolean;
   metadata?: Record<string, unknown>;

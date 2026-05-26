@@ -30,13 +30,14 @@ func NewPublisher(cfg config.Config, logger *zap.Logger) *Publisher {
 	}
 }
 
-func (p *Publisher) Publish(ctx context.Context, eventType string, payload map[string]any) error {
+func (p *Publisher) Publish(ctx context.Context, eventID, eventType string, payload map[string]any) error {
 	if !p.enabled {
 		return nil
 	}
 
 	topics := p.resolveTopics()
 	message, err := json.Marshal(map[string]any{
+		"eventId":    eventID,
 		"eventType":  eventType,
 		"payload":    payload,
 		"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),

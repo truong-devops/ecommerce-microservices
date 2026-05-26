@@ -6,36 +6,52 @@ import (
 	"order-service/internal/domain"
 )
 
-func TestCanConfirmCheckout(t *testing.T) {
+func TestCheckoutPrerequisitesSatisfiedForOnlinePayment(t *testing.T) {
 	state := &domain.OrderSagaState{
 		InventoryStatus: domain.SagaInventoryStatusReserved,
 		PaymentStatus:   domain.SagaPaymentStatusCaptured,
 	}
-	if !canConfirmCheckout(domain.Order{PaymentMethod: "ONLINE"}, state) {
-		t.Fatalf("expected checkout to be confirmable")
+	if !checkoutPrerequisitesSatisfied(domain.Order{PaymentMethod: "ONLINE"}, state) {
+		t.Fatalf("expected checkout prerequisites to be satisfied")
 	}
 }
 
-func TestCanConfirmCheckoutRequiresBothInventoryAndPayment(t *testing.T) {
+func TestCheckoutPrerequisitesForOnlineRequireInventoryAndPayment(t *testing.T) {
 	cases := []domain.OrderSagaState{
 		{InventoryStatus: domain.SagaInventoryStatusPending, PaymentStatus: domain.SagaPaymentStatusCaptured},
 		{InventoryStatus: domain.SagaInventoryStatusReserved, PaymentStatus: domain.SagaPaymentStatusPending},
 		{InventoryStatus: domain.SagaInventoryStatusFailed, PaymentStatus: domain.SagaPaymentStatusCaptured},
 	}
 	for _, state := range cases {
-		if canConfirmCheckout(domain.Order{PaymentMethod: "ONLINE"}, &state) {
-			t.Fatalf("did not expect checkout to be confirmable for state %+v", state)
+		if checkoutPrerequisitesSatisfied(domain.Order{PaymentMethod: "ONLINE"}, &state) {
+			t.Fatalf("did not expect checkout prerequisites to be satisfied for state %+v", state)
 		}
 	}
-	if canConfirmCheckout(domain.Order{PaymentMethod: "ONLINE"}, nil) {
-		t.Fatalf("nil state must not be confirmable")
+	if checkoutPrerequisitesSatisfied(domain.Order{PaymentMethod: "ONLINE"}, nil) {
+		t.Fatalf("nil state must not satisfy checkout prerequisites")
 	}
 }
 
-func TestCanConfirmCODCheckoutAfterInventoryReservation(t *testing.T) {
+func TestCheckoutPrerequisitesSatisfiedForCODAfterInventoryReservation(t *testing.T) {
 	state := &domain.OrderSagaState{InventoryStatus: domain.SagaInventoryStatusReserved}
-	if !canConfirmCheckout(domain.Order{PaymentMethod: "COD"}, state) {
-		t.Fatalf("expected COD checkout to be confirmable after inventory reservation")
+	if !checkoutPrerequisitesSatisfied(domain.Order{PaymentMethod: "COD"}, state) {
+		t.Fatalf("expected COD checkout prerequisites after inventory reservation")
+	}
+}
+
+func TestSellerCanOnlyConfirmCompletedCheckout(t *testing.T) {
+	order := domain.Order{PaymentMethod: "COD"}
+	state := &domain.OrderSagaState{
+		SagaStatus:      domain.SagaStatusPending,
+		InventoryStatus: domain.SagaInventoryStatusReserved,
+	}
+	if canSellerConfirmCheckout(order, state) {
+		t.Fatalf("expected pending checkout saga to reject seller confirmation")
+	}
+
+	state.SagaStatus = domain.SagaStatusCompleted
+	if !canSellerConfirmCheckout(order, state) {
+		t.Fatalf("expected completed COD checkout to allow seller confirmation")
 	}
 }
 

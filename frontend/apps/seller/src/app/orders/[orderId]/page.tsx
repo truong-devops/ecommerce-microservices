@@ -20,8 +20,8 @@ import { useAuth } from '@/providers/AppProvider';
 
 const statusTransitionMap: Partial<Record<SellerOrderStatus, SellerOrderStatus[]>> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: ['CANCELLED'],
-  PROCESSING: ['CANCELLED'],
+  CONFIRMED: [],
+  PROCESSING: [],
   SHIPPED: [],
   DELIVERED: [],
   CANCELLED: [],

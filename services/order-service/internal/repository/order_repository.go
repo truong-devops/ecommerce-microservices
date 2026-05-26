@@ -292,11 +292,13 @@ func (r *OrderRepository) FindOrderSagaStateForUpdate(ctx context.Context, tx pg
 
 func (r *OrderRepository) FindStalePendingSagaOrderIDs(ctx context.Context, cutoff time.Time, limit int) ([]string, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT order_id
-		FROM order_saga_states
-		WHERE saga_status = $1
-			AND updated_at < $2
-		ORDER BY updated_at ASC
+		SELECT s.order_id
+		FROM order_saga_states s
+		JOIN orders o ON o.id = s.order_id
+		WHERE s.saga_status = $1
+			AND o.status = 'PENDING'
+			AND s.updated_at < $2
+		ORDER BY s.updated_at ASC
 		LIMIT $3
 	`, domain.SagaStatusPending, cutoff, limit)
 	if err != nil {
@@ -501,7 +503,7 @@ func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, tx pgx.Tx, orde
 	return order, nil
 }
 
-func (r *OrderRepository) ListOrders(ctx context.Context, query ListOrdersQuery, forcedUserID *string) ([]domain.Order, int, error) {
+func (r *OrderRepository) ListOrders(ctx context.Context, query ListOrdersQuery, forcedUserID, forcedSellerID *string) ([]domain.Order, int, error) {
 	where := []string{"1=1"}
 	args := make([]any, 0)
 
@@ -516,6 +518,10 @@ func (r *OrderRepository) ListOrders(ctx context.Context, query ListOrdersQuery,
 	} else if query.UserID != nil {
 		args = append(args, *query.UserID)
 		where = append(where, fmt.Sprintf("user_id = $%d", len(args)))
+	}
+	if forcedSellerID != nil {
+		args = append(args, *forcedSellerID)
+		where = append(where, fmt.Sprintf("seller_id = $%d::uuid", len(args)))
 	}
 
 	if query.Search != nil {

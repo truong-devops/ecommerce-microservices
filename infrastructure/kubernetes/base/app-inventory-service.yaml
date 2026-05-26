@@ -39,6 +39,12 @@ spec:
               value: /migrations/0001_init_inventory_service.sql
             - name: KAFKA_ENABLED
               value: "true"
+            - name: PRODUCT_EVENTS_TOPIC
+              value: product.events
+            - name: PRODUCT_EVENTS_CONSUMER_GROUP
+              value: inventory-service-product-events-group
+            - name: RESERVATION_DEFAULT_TTL_MINUTES
+              value: "1440"
             - name: REDIS_ENABLED
               value: "true"
           readinessProbe:

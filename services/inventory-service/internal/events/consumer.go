@@ -15,14 +15,16 @@ import (
 )
 
 type Consumer struct {
-	enabled bool
-	reader  *kafka.Reader
-	logger  *zap.Logger
-	svc     inventoryService
+	enabled       bool
+	orderReader   *kafka.Reader
+	productReader *kafka.Reader
+	logger        *zap.Logger
+	svc           inventoryService
 }
 
 type inventoryService interface {
 	ReserveInventoryFromOrderCreated(ctx context.Context, event service.OrderCreatedEvent, meta service.EventMeta) (map[string]any, error)
+	ProvisionInventoryFromProductChanged(ctx context.Context, event service.ProductChangedEvent, meta service.EventMeta) (map[string]any, error)
 	ReleaseReservationsFromOrderCancellation(ctx context.Context, orderID, requestID string) (map[string]any, error)
 	ReleaseReservationsFromOrderFailed(ctx context.Context, orderID, requestID string) (map[string]any, error)
 	ConfirmReservationsFromOrderConfirmed(ctx context.Context, orderID, requestID string) (map[string]any, error)
@@ -37,20 +39,30 @@ func NewConsumer(cfg config.Config, logger *zap.Logger, svc *service.InventorySe
 	if !cfg.KafkaEnabled {
 		return c
 	}
-	c.reader = kafka.NewReader(kafka.ReaderConfig{
+	c.orderReader = kafka.NewReader(kafka.ReaderConfig{
 		Brokers: cfg.KafkaBrokers,
 		Topic:   cfg.OrderEventsTopic,
 		GroupID: cfg.OrderEventsConsumerGroup,
+	})
+	c.productReader = kafka.NewReader(kafka.ReaderConfig{
+		Brokers: cfg.KafkaBrokers,
+		Topic:   cfg.ProductEventsTopic,
+		GroupID: cfg.ProductEventsConsumerGroup,
 	})
 	return c
 }
 
 func (c *Consumer) Run(ctx context.Context) {
-	if !c.enabled || c.reader == nil {
+	if !c.enabled || c.orderReader == nil || c.productReader == nil {
 		return
 	}
+	go c.readMessages(ctx, c.productReader, c.handleProductMessage)
+	c.readMessages(ctx, c.orderReader, c.handleMessage)
+}
+
+func (c *Consumer) readMessages(ctx context.Context, reader *kafka.Reader, handler func(context.Context, kafka.Message)) {
 	for {
-		msg, err := c.reader.ReadMessage(ctx)
+		msg, err := reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
@@ -59,13 +71,16 @@ func (c *Consumer) Run(ctx context.Context) {
 			time.Sleep(time.Second)
 			continue
 		}
-		c.handleMessage(ctx, msg)
+		handler(ctx, msg)
 	}
 }
 
 func (c *Consumer) Close() {
-	if c.reader != nil {
-		_ = c.reader.Close()
+	if c.orderReader != nil {
+		_ = c.orderReader.Close()
+	}
+	if c.productReader != nil {
+		_ = c.productReader.Close()
 	}
 }
 
@@ -137,10 +152,36 @@ func (c *Consumer) handleMessage(ctx context.Context, msg kafka.Message) {
 	}
 }
 
+func (c *Consumer) handleProductMessage(ctx context.Context, msg kafka.Message) {
+	envelope, err := decodeEnvelope(msg.Value)
+	if err != nil {
+		c.logger.Warn("skip invalid product kafka payload", zap.Error(err))
+		return
+	}
+	if envelope.EventType != "product.created" && envelope.EventType != "product.updated" {
+		return
+	}
+
+	event, err := parseProductChangedEvent(envelope.Payload)
+	if err != nil {
+		c.logger.Warn("skip product event due to invalid payload", zap.String("eventType", envelope.EventType), zap.Error(err))
+		return
+	}
+	meta := buildEventMeta(envelope, msg)
+	if _, err := c.svc.ProvisionInventoryFromProductChanged(ctx, event, meta); err != nil {
+		c.logger.Error("provision inventory from product event failed",
+			zap.String("eventType", envelope.EventType),
+			zap.String("productId", event.ProductID),
+			zap.Error(err),
+		)
+	}
+}
+
 type envelope struct {
 	EventID   string         `json:"eventId"`
 	EventType string         `json:"eventType"`
 	Payload   map[string]any `json:"payload"`
+	Metadata  map[string]any `json:"metadata"`
 }
 
 func decodeEnvelope(value []byte) (envelope, error) {
@@ -183,6 +224,39 @@ func parseOrderCreatedEvent(payload map[string]any) (service.OrderCreatedEvent, 
 	return service.OrderCreatedEvent{OrderID: orderID, Items: items}, nil
 }
 
+func parseProductChangedEvent(payload map[string]any) (service.ProductChangedEvent, error) {
+	productID := strings.TrimSpace(asString(payload["id"]))
+	sellerID := strings.TrimSpace(asString(payload["sellerId"]))
+	if productID == "" || sellerID == "" {
+		return service.ProductChangedEvent{}, fmt.Errorf("id and sellerId are required")
+	}
+	rawVariants, ok := payload["variants"].([]any)
+	if !ok || len(rawVariants) == 0 {
+		return service.ProductChangedEvent{}, fmt.Errorf("variants must be a non-empty array")
+	}
+	variants := make([]service.ProductVariant, 0, len(rawVariants))
+	for idx, raw := range rawVariants {
+		variant, ok := raw.(map[string]any)
+		if !ok {
+			return service.ProductChangedEvent{}, fmt.Errorf("variants[%d] must be an object", idx)
+		}
+		sku := strings.TrimSpace(asString(variant["sku"]))
+		if sku == "" {
+			return service.ProductChangedEvent{}, fmt.Errorf("variants[%d] has invalid sku", idx)
+		}
+		initialStock := 0
+		if rawStock, exists := variant["initialStock"]; exists {
+			var ok bool
+			initialStock, ok = asInt(rawStock)
+			if !ok || initialStock < 0 {
+				return service.ProductChangedEvent{}, fmt.Errorf("variants[%d] has invalid initialStock", idx)
+			}
+		}
+		variants = append(variants, service.ProductVariant{SKU: sku, InitialStock: initialStock})
+	}
+	return service.ProductChangedEvent{ProductID: productID, SellerID: sellerID, Variants: variants}, nil
+}
+
 func buildEventMeta(env envelope, msg kafka.Message) service.EventMeta {
 	topic := msg.Topic
 	if strings.TrimSpace(topic) == "" {
@@ -200,6 +274,9 @@ func buildEventMeta(env envelope, msg kafka.Message) service.EventMeta {
 		if rid := strings.TrimSpace(asString(payloadMeta["requestId"])); rid != "" {
 			meta.RequestID = rid
 		}
+	}
+	if rid := strings.TrimSpace(asString(env.Metadata["requestId"])); rid != "" {
+		meta.RequestID = rid
 	}
 	return meta
 }

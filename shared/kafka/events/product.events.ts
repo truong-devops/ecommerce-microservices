@@ -19,6 +19,7 @@ export interface ProductEventBase {
     name: string;
     price: number;
     currency: string;
+    initialStock: number;
   }>;
   createdAt: string;
   updatedAt: string;

@@ -76,9 +76,8 @@ func (s *OrderSagaService) HandleInventoryReserved(ctx context.Context, event In
 	return s.withSagaState(ctx, strings.TrimSpace(event.OrderID), meta, func(order domain.Order, state *domain.OrderSagaState) (domain.OrderStatus, *string) {
 		state.InventoryStatus = domain.SagaInventoryStatusReserved
 		state.InventoryEventID = stringPtr(eventIDOrOffset(meta))
-		if canConfirmCheckout(order, state) && order.Status == domain.OrderStatusPending {
+		if checkoutPrerequisitesSatisfied(order, state) {
 			state.SagaStatus = domain.SagaStatusCompleted
-			return domain.OrderStatusConfirmed, stringPtr(checkoutConfirmationReason(order))
 		}
 		return "", nil
 	})
@@ -116,9 +115,8 @@ func (s *OrderSagaService) HandlePaymentCaptured(ctx context.Context, event Paym
 	return s.withSagaState(ctx, strings.TrimSpace(event.OrderID), meta, func(order domain.Order, state *domain.OrderSagaState) (domain.OrderStatus, *string) {
 		state.PaymentStatus = domain.SagaPaymentStatusCaptured
 		state.PaymentEventID = stringPtr(eventIDOrOffset(meta))
-		if canConfirmCheckout(order, state) && order.Status == domain.OrderStatusPending {
+		if checkoutPrerequisitesSatisfied(order, state) {
 			state.SagaStatus = domain.SagaStatusCompleted
-			return domain.OrderStatusConfirmed, stringPtr(checkoutConfirmationReason(order))
 		}
 		return "", nil
 	})
@@ -442,7 +440,7 @@ func stringPtr(value string) *string {
 	return &v
 }
 
-func canConfirmCheckout(order domain.Order, state *domain.OrderSagaState) bool {
+func checkoutPrerequisitesSatisfied(order domain.Order, state *domain.OrderSagaState) bool {
 	if state == nil || state.InventoryStatus != domain.SagaInventoryStatusReserved {
 		return false
 	}
@@ -450,9 +448,8 @@ func canConfirmCheckout(order domain.Order, state *domain.OrderSagaState) bool {
 		state.PaymentStatus == domain.SagaPaymentStatusCaptured
 }
 
-func checkoutConfirmationReason(order domain.Order) string {
-	if strings.EqualFold(order.PaymentMethod, "COD") {
-		return "Inventory reserved for COD order"
-	}
-	return "Inventory reserved and payment captured"
+func canSellerConfirmCheckout(order domain.Order, state *domain.OrderSagaState) bool {
+	return state != nil &&
+		state.SagaStatus == domain.SagaStatusCompleted &&
+		checkoutPrerequisitesSatisfied(order, state)
 }

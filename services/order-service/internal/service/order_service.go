@@ -228,8 +228,12 @@ func (s *OrderService) ListOrders(ctx context.Context, user domain.UserContext, 
 	}
 
 	var forcedUserID *string
+	var forcedSellerID *string
 	if user.Role == domain.RoleCustomer {
 		forcedUserID = &user.UserID
+	}
+	if user.Role == domain.RoleSeller {
+		forcedSellerID = &user.UserID
 	}
 
 	items, totalItems, err := s.repo.ListOrders(ctx, repository.ListOrdersQuery{
@@ -240,7 +244,7 @@ func (s *OrderService) ListOrders(ctx context.Context, user domain.UserContext, 
 		SortOrder: req.SortOrder,
 		UserID:    req.UserID,
 		Search:    req.Search,
-	}, forcedUserID)
+	}, forcedUserID, forcedSellerID)
 	if err != nil {
 		return nil, err
 	}
@@ -510,9 +514,29 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, user domain.UserCo
 	if order == nil {
 		return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeNotFound, "Order not found", nil)
 	}
+	if err := assertCanReadOrder(user, *order); err != nil {
+		return nil, err
+	}
+	if err := assertCanManuallyUpdateOrderStatus(user, order.Status, status); err != nil {
+		return nil, err
+	}
 
 	if err := assertCanTransition(order.Status, status); err != nil {
 		return nil, err
+	}
+	if status == domain.OrderStatusConfirmed {
+		state, err := s.repo.FindOrderSagaStateForUpdate(ctx, tx, order.ID)
+		if err != nil {
+			return nil, err
+		}
+		if !canSellerConfirmCheckout(*order, state) {
+			return nil, httpx.NewAppError(
+				http.StatusUnprocessableEntity,
+				domain.ErrorCodeInvalidOrderStatusTransition,
+				"Order cannot be confirmed until inventory is reserved and payment requirements are satisfied",
+				nil,
+			)
+		}
 	}
 
 	previousStatus := order.Status
@@ -784,15 +808,32 @@ func assertCanReadOrder(user domain.UserContext, order domain.Order) error {
 	if user.Role == domain.RoleCustomer {
 		return assertOrderOwner(user, order)
 	}
+	if user.Role == domain.RoleSeller && order.SellerID != user.UserID {
+		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Access denied for this order", nil)
+	}
 	return nil
 }
 
 func assertCanCancelOrder(user domain.UserContext, order domain.Order) error {
 	if user.Role == domain.RoleCustomer {
-		return assertOrderOwner(user, order)
+		if err := assertOrderOwner(user, order); err != nil {
+			return err
+		}
+		if order.Status != domain.OrderStatusPending {
+			return httpx.NewAppError(
+				http.StatusUnprocessableEntity,
+				domain.ErrorCodeInvalidOrderStatusTransition,
+				"Customer cannot cancel order after fulfillment processing has started",
+				nil,
+			)
+		}
+		return nil
 	}
 	if _, ok := domain.StaffRoles[user.Role]; !ok {
 		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Not allowed to cancel order", nil)
+	}
+	if user.Role == domain.RoleSeller && order.SellerID != user.UserID {
+		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Access denied for this order", nil)
 	}
 	return nil
 }
@@ -815,6 +856,22 @@ func assertCanTransition(current, next domain.OrderStatus) error {
 		)
 	}
 	return nil
+}
+
+func assertCanManuallyUpdateOrderStatus(user domain.UserContext, current, next domain.OrderStatus) error {
+	if user.Role != domain.RoleSeller {
+		return nil
+	}
+	if current == domain.OrderStatusPending &&
+		(next == domain.OrderStatusConfirmed || next == domain.OrderStatusCancelled) {
+		return nil
+	}
+	return httpx.NewAppError(
+		http.StatusUnprocessableEntity,
+		domain.ErrorCodeInvalidOrderStatusTransition,
+		"Seller can only confirm or cancel an order before dispatch starts",
+		nil,
+	)
 }
 
 func validationError(field, msg string) error {

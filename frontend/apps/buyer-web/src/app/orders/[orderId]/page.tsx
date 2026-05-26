@@ -355,7 +355,11 @@ export default function OrderDetailPage() {
             <p>
               {text.orders.paymentLabel}:{' '}
               <span className="font-semibold text-slate-900">
-                {payment ? paymentStatusLabel(payment.status, text) : text.orders.paymentMissing}
+                {order.paymentMethod === 'COD'
+                  ? text.checkout.paymentCod
+                  : payment
+                    ? paymentStatusLabel(payment.status, text)
+                    : text.orders.paymentMissing}
               </span>
             </p>
             <p>

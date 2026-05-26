@@ -19,10 +19,11 @@ func TestCreateProductSellerCreatesDraftAndNormalizesVariant(t *testing.T) {
 		CategoryID: "cat-1",
 		Images:     []string{"http://localhost:12030/ecommerce-media/products/product-1/image.jpg"},
 		Variants: []ProductVariantInput{{
-			SKU:      " sku-1 ",
-			Name:     "Default",
-			Price:    123.456,
-			Currency: "VND",
+			SKU:          " sku-1 ",
+			Name:         "Default",
+			Price:        123.456,
+			Currency:     "VND",
+			InitialStock: intPtr(12),
 		}},
 	})
 	if err != nil {
@@ -36,6 +37,9 @@ func TestCreateProductSellerCreatesDraftAndNormalizesVariant(t *testing.T) {
 	}
 	if result.Variants[0].SKU != "SKU-1" || !result.Variants[0].IsDefault {
 		t.Fatalf("variant was not normalized: %+v", result.Variants[0])
+	}
+	if result.Variants[0].InitialStock != 12 {
+		t.Fatalf("expected initial stock to be preserved, got %d", result.Variants[0].InitialStock)
 	}
 	if repo.created.Images[0] != "products/product-1/image.jpg" {
 		t.Fatalf("expected image object key storage, got %s", repo.created.Images[0])

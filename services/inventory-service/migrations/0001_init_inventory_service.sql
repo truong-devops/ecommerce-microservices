@@ -41,7 +41,7 @@ $$;
 CREATE TABLE IF NOT EXISTS inventory_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   sku varchar(64) NOT NULL UNIQUE,
-  product_id uuid NOT NULL,
+  product_id varchar(128) NOT NULL,
   seller_id uuid NOT NULL,
   on_hand integer NOT NULL,
   reserved integer NOT NULL DEFAULT 0,
@@ -52,6 +52,22 @@ CREATE TABLE IF NOT EXISTS inventory_items (
   CONSTRAINT chk_inventory_items_reserved_non_negative CHECK (reserved >= 0),
   CONSTRAINT chk_inventory_items_available_non_negative CHECK ((on_hand - reserved) >= 0)
 );
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'inventory_items'
+      AND column_name = 'product_id'
+      AND data_type = 'uuid'
+  ) THEN
+    ALTER TABLE inventory_items
+      ALTER COLUMN product_id TYPE varchar(128) USING product_id::text;
+  END IF;
+END
+$$;
 
 CREATE INDEX IF NOT EXISTS idx_inventory_items_product_id ON inventory_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_items_seller_id ON inventory_items(seller_id);
@@ -129,7 +145,7 @@ ALTER TABLE processed_events ADD COLUMN IF NOT EXISTS consumer_name varchar(128)
 ALTER TABLE processed_events DROP CONSTRAINT IF EXISTS processed_events_event_id_key;
 ALTER TABLE processed_events DROP CONSTRAINT IF EXISTS processed_events_topic_partition_offset_value_key;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_processed_events_consumer_event_id ON processed_events(consumer_name, event_id);
-CREATE UNIQUE INDEX IF NOT EXISTS ux_processed_events_consumer_offset ON processed_events(consumer_name, topic, partition, offset_value);
+DROP INDEX IF EXISTS ux_processed_events_consumer_offset;
 CREATE INDEX IF NOT EXISTS idx_processed_events_type ON processed_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_processed_events_processed_at ON processed_events(processed_at);
 

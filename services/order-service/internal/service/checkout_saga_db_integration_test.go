@@ -58,6 +58,21 @@ func TestCheckoutSagaRepositoryIntegration(t *testing.T) {
 		if err := tx.Commit(ctx); err != nil {
 			t.Fatalf("commit: %v", err)
 		}
+
+		tx, err = repo.BeginTx(ctx)
+		if err != nil {
+			t.Fatalf("begin reused-offset tx: %v", err)
+		}
+		defer tx.Rollback(ctx)
+		input.ConsumerName = "order-service"
+		input.EventID = "evt-new-after-topic-recreated"
+		duplicate, err = repo.TryMarkEventProcessed(ctx, tx, input)
+		if err != nil || duplicate {
+			t.Fatalf("new event id at a reused Kafka offset should be processed duplicate=%v err=%v", duplicate, err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatalf("commit reused-offset tx: %v", err)
+		}
 	})
 
 	t.Run("stale pending saga timeout fails order once", func(t *testing.T) {
@@ -111,6 +126,35 @@ func TestCheckoutSagaRepositoryIntegration(t *testing.T) {
 		}
 		if historyCount != 1 || outboxCount != 1 {
 			t.Fatalf("expected one status history and one outbox event, got histories=%d outbox=%d", historyCount, outboxCount)
+		}
+	})
+
+	t.Run("timeout ignores checkout no longer pending", func(t *testing.T) {
+		orderID := createPendingOrderWithSagaState(t, ctx, repo)
+		_, err := pool.Exec(ctx, `
+			UPDATE orders
+			SET status = 'CONFIRMED'
+			WHERE id = $1
+		`, orderID)
+		if err != nil {
+			t.Fatalf("mark order confirmed: %v", err)
+		}
+		_, err = pool.Exec(ctx, `
+			UPDATE order_saga_states
+			SET updated_at = now() - interval '30 minutes'
+			WHERE order_id = $1
+		`, orderID)
+		if err != nil {
+			t.Fatalf("prepare confirmed order with stale saga state: %v", err)
+		}
+
+		svc := NewOrderSagaService(repo, zap.NewNop())
+		count, err := svc.FailStalePendingSagas(ctx, time.Minute, 10)
+		if err != nil {
+			t.Fatalf("scan non-pending order saga: %v", err)
+		}
+		if count != 0 {
+			t.Fatalf("confirmed order must not be reported as checkout timeout, got %d", count)
 		}
 	})
 }

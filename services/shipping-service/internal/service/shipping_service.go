@@ -358,6 +358,9 @@ func (s *ShippingService) UpdateShipmentStatus(ctx context.Context, user domain.
 	if shipment == nil {
 		return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeNotFound, "Shipment not found", nil)
 	}
+	if err := ensureCanRead(user, *shipment); err != nil {
+		return nil, err
+	}
 
 	if shipment.Status == req.Status {
 		if err := tx.Commit(ctx); err != nil {
@@ -474,6 +477,9 @@ func (s *ShippingService) AddTrackingEvent(ctx context.Context, user domain.User
 	}
 	if shipment == nil {
 		return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeNotFound, "Shipment not found", nil)
+	}
+	if err := ensureCanRead(user, *shipment); err != nil {
+		return nil, err
 	}
 
 	updatedShipment := *shipment

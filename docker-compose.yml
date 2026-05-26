@@ -28,6 +28,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
     ports:
       - '9092:9092'
@@ -211,7 +212,7 @@ services:
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
-      KAFKA_ENABLED: 'false'
+      KAFKA_ENABLED: 'true'
       SEARCH_ENABLED: 'false'
       MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://localhost:12030/ecommerce-media}
       VIDEO_REVIEW_REQUIRED: ${VIDEO_REVIEW_REQUIRED:-true}
@@ -408,7 +409,7 @@ services:
       DB_SSL: 'false'
       REDIS_ENABLED: 'false'
       REDIS_URL: redis://redis:6379
-      RESERVATION_DEFAULT_TTL_MINUTES: 10
+      RESERVATION_DEFAULT_TTL_MINUTES: 1440
       RESERVATION_EXPIRE_CHECK_INTERVAL_MS: 15000
       RESERVATION_EXPIRE_BATCH_SIZE: 200
       OUTBOX_DISPATCH_INTERVAL_MS: 3000
@@ -420,6 +421,8 @@ services:
       KAFKA_BROKERS: kafka:29092
       ORDER_EVENTS_TOPIC: order.events
       ORDER_EVENTS_CONSUMER_GROUP: inventory-service-order-events-group
+      PRODUCT_EVENTS_TOPIC: product.events
+      PRODUCT_EVENTS_CONSUMER_GROUP: inventory-service-product-events-group
       INVENTORY_EVENTS_TOPIC: inventory.events
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: migrations/0001_init_inventory_service.sql

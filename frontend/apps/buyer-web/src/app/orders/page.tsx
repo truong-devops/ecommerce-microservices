@@ -270,6 +270,24 @@ function shipmentStatusLabel(status: ShipmentStatus, localeText: ReturnType<type
   return dictionary[status] ?? status;
 }
 
+function effectiveOrderStatus(orderStatus: OrderStatus, shipment: Shipment | null | undefined): OrderStatus {
+  switch (shipment?.status) {
+    case 'DELIVERED':
+      return 'DELIVERED';
+    case 'IN_TRANSIT':
+    case 'OUT_FOR_DELIVERY':
+      return orderStatus === 'DELIVERED' ? orderStatus : 'SHIPPED';
+    case 'AWB_CREATED':
+    case 'PICKED_UP':
+      if (orderStatus === 'PENDING' || orderStatus === 'CONFIRMED') {
+        return 'PROCESSING';
+      }
+      return orderStatus;
+    default:
+      return orderStatus;
+  }
+}
+
 function getBackendStatusForTab(tab: OrdersTabKey): OrderStatus | null {
   if (tab === 'pending') {
     return 'PENDING';
@@ -279,16 +297,18 @@ function getBackendStatusForTab(tab: OrdersTabKey): OrderStatus | null {
 }
 
 function matchesTab(order: Order, payment: Payment | null | undefined, shipment: Shipment | null | undefined, tab: OrdersTabKey): boolean {
+  const status = effectiveOrderStatus(order.status, shipment);
+
   if (tab === 'all') {
     return true;
   }
 
   if (tab === 'pending') {
-    return order.status === 'PENDING';
+    return status === 'PENDING';
   }
 
   if (tab === 'shipping') {
-    if (order.status === 'CONFIRMED' || order.status === 'PROCESSING') {
+    if (status === 'CONFIRMED' || status === 'PROCESSING') {
       return true;
     }
 
@@ -296,7 +316,7 @@ function matchesTab(order: Order, payment: Payment | null | undefined, shipment:
   }
 
   if (tab === 'waiting-delivery') {
-    if (order.status === 'SHIPPED') {
+    if (status === 'SHIPPED') {
       return true;
     }
 
@@ -304,11 +324,11 @@ function matchesTab(order: Order, payment: Payment | null | undefined, shipment:
   }
 
   if (tab === 'completed') {
-    return order.status === 'DELIVERED' || shipment?.status === 'DELIVERED';
+    return status === 'DELIVERED';
   }
 
   if (tab === 'cancelled') {
-    if (order.status === 'CANCELLED' || order.status === 'FAILED') {
+    if (status === 'CANCELLED' || status === 'FAILED') {
       return true;
     }
 
@@ -694,13 +714,16 @@ export default function OrdersPage() {
           {fetchStatus === 'success' && visibleOrders.length > 0 ? (
             <div className="mt-4 space-y-4">
               {visibleOrders.map((order) => {
-                const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
-                const canConfirmReceived = order.status === 'SHIPPED';
-                const canBuyAgain = order.status === 'DELIVERED';
                 const payment = paymentsByOrderId[order.id];
                 const shipment = shipmentsByOrderId[order.id];
+                const displayedStatus = effectiveOrderStatus(order.status, shipment);
+                const canCancel = order.status === 'PENDING' && shipment === null;
+                const canConfirmReceived = displayedStatus === 'SHIPPED';
+                const canBuyAgain = displayedStatus === 'DELIVERED';
                 const paymentLabel =
-                  payment === undefined && isPaymentLoading
+                  order.paymentMethod === 'COD'
+                    ? text.checkout.paymentCod
+                    : payment === undefined && isPaymentLoading
                     ? '...'
                     : payment
                       ? paymentStatusLabel(payment.status, text)
@@ -730,7 +753,7 @@ export default function OrdersPage() {
                         <span className="text-slate-500">
                           {text.orders.shipmentLabel}: <span className="font-medium text-slate-700">{shipmentLabel}</span>
                         </span>
-                        <span className="font-semibold text-brand-600">{statusLabel(order.status, text)}</span>
+                        <span className="font-semibold text-brand-600">{statusLabel(displayedStatus, text)}</span>
                       </div>
                     </div>
 

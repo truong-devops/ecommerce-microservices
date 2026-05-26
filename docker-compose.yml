@@ -450,6 +450,18 @@ services:
       ORDER_SERVICE_BASE_URL: http://order-service:8080/api/v1
       DEPENDENCY_TIMEOUT_MS: 5000
       SHIPPING_WEBHOOK_SIGNING_SECRET: dev-shipping-webhook-signing-secret
+      NEXUS_ENABLED: 'false'
+      NEXUS_WEBHOOK_ENABLED: 'false'
+      NEXUS_BASE_URL: https://ops.nexus-ex.site
+      NEXUS_AUTO_CREATE_PICKUP: 'false'
+      NEXUS_DEFAULT_SERVICE_TYPE: STANDARD
+      NEXUS_DEFAULT_PICKUP_TYPE: PICKUP
+      NEXUS_DEFAULT_PAYER: RECEIVER
+      NEXUS_DEFAULT_WEIGHT_GRAM: 500
+      NEXUS_DEFAULT_LENGTH_CM: 20
+      NEXUS_DEFAULT_WIDTH_CM: 15
+      NEXUS_DEFAULT_HEIGHT_CM: 10
+      NEXUS_REQUEST_TIMEOUT_MS: 10000
       DATABASE_URL: postgresql://eshipping:eshipping@postgres:5432/ecommerce_shipping
       DB_SSL: 'false'
       REDIS_ENABLED: 'true'

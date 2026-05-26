@@ -76,9 +76,9 @@ func (s *OrderSagaService) HandleInventoryReserved(ctx context.Context, event In
 	return s.withSagaState(ctx, strings.TrimSpace(event.OrderID), meta, func(order domain.Order, state *domain.OrderSagaState) (domain.OrderStatus, *string) {
 		state.InventoryStatus = domain.SagaInventoryStatusReserved
 		state.InventoryEventID = stringPtr(eventIDOrOffset(meta))
-		if canConfirmCheckout(state) && order.Status == domain.OrderStatusPending {
+		if canConfirmCheckout(order, state) && order.Status == domain.OrderStatusPending {
 			state.SagaStatus = domain.SagaStatusCompleted
-			return domain.OrderStatusConfirmed, stringPtr("Inventory reserved and mock payment captured")
+			return domain.OrderStatusConfirmed, stringPtr(checkoutConfirmationReason(order))
 		}
 		return "", nil
 	})
@@ -116,9 +116,9 @@ func (s *OrderSagaService) HandlePaymentCaptured(ctx context.Context, event Paym
 	return s.withSagaState(ctx, strings.TrimSpace(event.OrderID), meta, func(order domain.Order, state *domain.OrderSagaState) (domain.OrderStatus, *string) {
 		state.PaymentStatus = domain.SagaPaymentStatusCaptured
 		state.PaymentEventID = stringPtr(eventIDOrOffset(meta))
-		if canConfirmCheckout(state) && order.Status == domain.OrderStatusPending {
+		if canConfirmCheckout(order, state) && order.Status == domain.OrderStatusPending {
 			state.SagaStatus = domain.SagaStatusCompleted
-			return domain.OrderStatusConfirmed, stringPtr("Inventory reserved and mock payment captured")
+			return domain.OrderStatusConfirmed, stringPtr(checkoutConfirmationReason(order))
 		}
 		return "", nil
 	})
@@ -376,18 +376,28 @@ func insertOrderStatusUpdatedEvent(ctx context.Context, repo *repository.OrderRe
 		AggregateID:   order.ID,
 		EventType:     EventOrderStatusUpdated,
 		Payload: map[string]any{
-			"orderId":        order.ID,
-			"orderNumber":    order.OrderNumber,
-			"orderCode":      formatOrderCode(order.OrderNumber, order.ID),
-			"userId":         order.UserID,
-			"userCode":       formatCode(order.UserID, "CUS"),
-			"status":         order.Status,
-			"subtotalAmount": order.SubtotalAmount,
-			"shippingAmount": order.ShippingAmount,
-			"discountAmount": order.DiscountAmount,
-			"totalAmount":    order.TotalAmount,
-			"currency":       order.Currency,
-			"items":          mapOrderItemsForEvent(order.Items),
+			"orderId":           order.ID,
+			"orderNumber":       order.OrderNumber,
+			"orderCode":         formatOrderCode(order.OrderNumber, order.ID),
+			"userId":            order.UserID,
+			"userCode":          formatCode(order.UserID, "CUS"),
+			"sellerId":          order.SellerID,
+			"status":            order.Status,
+			"paymentMethod":     order.PaymentMethod,
+			"recipientName":     order.RecipientName,
+			"recipientPhone":    order.RecipientPhone,
+			"recipientAddress":  order.RecipientAddress,
+			"recipientWard":     order.RecipientWard,
+			"recipientDistrict": order.RecipientDistrict,
+			"recipientProvince": order.RecipientProvince,
+			"subtotalAmount":    order.SubtotalAmount,
+			"shippingAmount":    order.ShippingAmount,
+			"discountAmount":    order.DiscountAmount,
+			"totalAmount":       order.TotalAmount,
+			"currency":          order.Currency,
+			"note":              order.Note,
+			"createdAt":         order.CreatedAt.UTC().Format(time.RFC3339Nano),
+			"items":             mapOrderItemsForEvent(order.Items),
 			"metadata": map[string]any{
 				"requestId":  requestID,
 				"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
@@ -424,8 +434,17 @@ func stringPtr(value string) *string {
 	return &v
 }
 
-func canConfirmCheckout(state *domain.OrderSagaState) bool {
-	return state != nil &&
-		state.InventoryStatus == domain.SagaInventoryStatusReserved &&
+func canConfirmCheckout(order domain.Order, state *domain.OrderSagaState) bool {
+	if state == nil || state.InventoryStatus != domain.SagaInventoryStatusReserved {
+		return false
+	}
+	return strings.EqualFold(order.PaymentMethod, "COD") ||
 		state.PaymentStatus == domain.SagaPaymentStatusCaptured
+}
+
+func checkoutConfirmationReason(order domain.Order) string {
+	if strings.EqualFold(order.PaymentMethod, "COD") {
+		return "Inventory reserved for COD order"
+	}
+	return "Inventory reserved and payment captured"
 }

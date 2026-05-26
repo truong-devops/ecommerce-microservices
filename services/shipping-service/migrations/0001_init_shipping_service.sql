@@ -119,3 +119,22 @@ CREATE TABLE outbox_events (
 CREATE INDEX idx_outbox_events_status ON outbox_events(status);
 CREATE INDEX idx_outbox_events_created_at ON outbox_events(created_at);
 CREATE INDEX idx_outbox_events_next_retry_at ON outbox_events(next_retry_at);
+
+CREATE TABLE shipment_provider_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+  provider varchar(64) NOT NULL,
+  action varchar(64) NOT NULL,
+  idempotency_key varchar(255) NOT NULL UNIQUE,
+  request_payload jsonb NOT NULL,
+  response_payload jsonb,
+  status varchar(32) NOT NULL DEFAULT 'PENDING',
+  retry_count integer NOT NULL DEFAULT 0,
+  next_retry_at timestamptz,
+  last_error varchar(1000),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_shipment_provider_requests_dispatch
+  ON shipment_provider_requests(status, next_retry_at, created_at);

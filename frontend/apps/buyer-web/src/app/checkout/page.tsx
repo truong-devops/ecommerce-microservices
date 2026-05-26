@@ -138,6 +138,12 @@ export default function CheckoutPage() {
       setFeedback(text.checkout.invalidData);
       return;
     }
+    const sellerIds = new Set(items.map((item) => item.sellerId.trim()).filter(Boolean));
+    if (sellerIds.size !== 1) {
+      setFeedback('Mỗi đơn hàng chỉ được chứa sản phẩm của một cửa hàng.');
+      return;
+    }
+    const sellerId = Array.from(sellerIds)[0];
 
     setFeedback('');
     setIsSubmitting(true);
@@ -147,10 +153,15 @@ export default function CheckoutPage() {
         accessToken,
         idempotencyKey: buildIdempotencyKey(),
         payload: {
+          sellerId,
           currency: orderCurrency,
           shippingAmount,
           discountAmount,
           note: note.trim().length > 0 ? note.trim() : undefined,
+          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'ONLINE',
+          recipientName: recipientName.trim(),
+          recipientPhone: recipientPhone.trim(),
+          recipientAddress: recipientAddress.trim(),
           items: orderItems
         }
       });

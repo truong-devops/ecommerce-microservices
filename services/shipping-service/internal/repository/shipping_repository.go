@@ -98,6 +98,14 @@ type CreateWebhookIdempotencyInput struct {
 	ExpiresAt       time.Time
 }
 
+type CreateProviderRequestInput struct {
+	ShipmentID     string
+	Provider       string
+	Action         string
+	IdempotencyKey string
+	RequestPayload map[string]any
+}
+
 func NewShippingRepository(pool *pgxpool.Pool) *ShippingRepository {
 	return &ShippingRepository{pool: pool}
 }
@@ -217,6 +225,27 @@ func (r *ShippingRepository) UpdateShipmentStatus(ctx context.Context, tx pgx.Tx
 		return domain.Shipment{}, queryFailed("update shipment status failed", err)
 	}
 
+	return shipment, nil
+}
+
+func (r *ShippingRepository) UpdateShipmentProviderResult(ctx context.Context, tx pgx.Tx, shipmentID string, awb, trackingNumber string, status domain.ShipmentStatus, metadata map[string]any) (domain.Shipment, error) {
+	metadataJSON, err := toJSONB(metadata)
+	if err != nil {
+		return domain.Shipment{}, queryFailed("marshal provider response metadata failed", err)
+	}
+	row := tx.QueryRow(ctx, `
+		UPDATE shipments
+		SET awb = $2, tracking_number = $3, status = $4, metadata = $5, updated_at = now()
+		WHERE id = $1
+		RETURNING id, order_id, buyer_id, seller_id, provider, awb, tracking_number,
+			status, currency, shipping_fee, cod_amount,
+			recipient_name, recipient_phone, recipient_address, note, metadata,
+			created_at, updated_at
+	`, shipmentID, awb, trackingNumber, status, metadataJSON)
+	shipment, err := scanShipmentRow(row)
+	if err != nil {
+		return domain.Shipment{}, queryFailed("update shipment provider result failed", err)
+	}
 	return shipment, nil
 }
 
@@ -468,6 +497,91 @@ func (r *ShippingRepository) MarkOutboxFailed(ctx context.Context, id string, re
 	return nil
 }
 
+func (r *ShippingRepository) CreateProviderRequest(ctx context.Context, tx pgx.Tx, input CreateProviderRequestInput) error {
+	payloadJSON, err := toJSONB(input.RequestPayload)
+	if err != nil {
+		return queryFailed("marshal provider request payload failed", err)
+	}
+	_, err = tx.Exec(ctx, `
+		INSERT INTO shipment_provider_requests (
+			shipment_id, provider, action, idempotency_key, request_payload
+		)
+		VALUES ($1,$2,$3,$4,$5)
+		ON CONFLICT (idempotency_key) DO NOTHING
+	`, input.ShipmentID, input.Provider, input.Action, input.IdempotencyKey, payloadJSON)
+	if err != nil {
+		return queryFailed("insert provider request failed", err)
+	}
+	return nil
+}
+
+func (r *ShippingRepository) ClaimProviderRequests(ctx context.Context, batchSize int) ([]domain.ProviderRequest, error) {
+	rows, err := r.pool.Query(ctx, `
+		WITH candidates AS (
+			SELECT id
+			FROM shipment_provider_requests
+			WHERE (status = 'PENDING' OR (status = 'FAILED' AND next_retry_at <= now())
+				OR (status = 'PROCESSING' AND updated_at <= now() - interval '5 minutes'))
+			ORDER BY created_at ASC
+			LIMIT $1
+			FOR UPDATE SKIP LOCKED
+		)
+		UPDATE shipment_provider_requests r
+		SET status = 'PROCESSING', updated_at = now()
+		FROM candidates c
+		WHERE r.id = c.id
+		RETURNING r.id, r.shipment_id, r.provider, r.action, r.idempotency_key,
+			r.request_payload, r.status, r.retry_count, r.next_retry_at, r.last_error,
+			r.created_at, r.updated_at
+	`, batchSize)
+	if err != nil {
+		return nil, queryFailed("claim provider requests failed", err)
+	}
+	defer rows.Close()
+	out := make([]domain.ProviderRequest, 0)
+	for rows.Next() {
+		request, scanErr := scanProviderRequestRows(rows)
+		if scanErr != nil {
+			return nil, queryFailed("scan provider request failed", scanErr)
+		}
+		out = append(out, request)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, queryFailed("iterate provider requests failed", err)
+	}
+	return out, nil
+}
+
+func (r *ShippingRepository) MarkProviderRequestSucceeded(ctx context.Context, tx pgx.Tx, id string, responsePayload map[string]any) error {
+	payloadJSON, err := toJSONB(responsePayload)
+	if err != nil {
+		return queryFailed("marshal provider response payload failed", err)
+	}
+	_, err = tx.Exec(ctx, `
+		UPDATE shipment_provider_requests
+		SET status = 'SUCCEEDED', response_payload = $2, next_retry_at = NULL,
+			last_error = NULL, updated_at = now()
+		WHERE id = $1
+	`, id, payloadJSON)
+	if err != nil {
+		return queryFailed("mark provider request succeeded failed", err)
+	}
+	return nil
+}
+
+func (r *ShippingRepository) MarkProviderRequestFailed(ctx context.Context, id string, retryCount int, nextRetryAt *time.Time, lastError string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE shipment_provider_requests
+		SET status = 'FAILED', retry_count = $2, next_retry_at = $3,
+			last_error = $4, updated_at = now()
+		WHERE id = $1
+	`, id, retryCount, nextRetryAt, lastError)
+	if err != nil {
+		return queryFailed("mark provider request failed failed", err)
+	}
+	return nil
+}
+
 func (r *ShippingRepository) FindUnexpiredWebhookRecord(ctx context.Context, provider, providerEventID string) (*domain.WebhookIdempotencyRecord, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, provider, provider_event_id, request_hash, shipment_id,
@@ -657,6 +771,26 @@ func scanWebhookRecordRow(row pgx.Row) (domain.WebhookIdempotencyRecord, error) 
 	}
 	rec.ResponseBody = body
 	return rec, nil
+}
+
+func scanProviderRequestRows(rows pgx.Rows) (domain.ProviderRequest, error) {
+	var request domain.ProviderRequest
+	var payloadRaw []byte
+	var status string
+	if err := rows.Scan(
+		&request.ID, &request.ShipmentID, &request.Provider, &request.Action, &request.IdempotencyKey,
+		&payloadRaw, &status, &request.RetryCount, &request.NextRetryAt, &request.LastError,
+		&request.CreatedAt, &request.UpdatedAt,
+	); err != nil {
+		return domain.ProviderRequest{}, err
+	}
+	payload, err := parseJSONMap(payloadRaw)
+	if err != nil {
+		return domain.ProviderRequest{}, err
+	}
+	request.RequestPayload = payload
+	request.Status = domain.ProviderRequestStatus(status)
+	return request, nil
 }
 
 func toJSONB(value map[string]any) ([]byte, error) {

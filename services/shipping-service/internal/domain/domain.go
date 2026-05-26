@@ -73,6 +73,15 @@ const (
 	OutboxStatusFailed    OutboxStatus = "FAILED"
 )
 
+type ProviderRequestStatus string
+
+const (
+	ProviderRequestPending    ProviderRequestStatus = "PENDING"
+	ProviderRequestProcessing ProviderRequestStatus = "PROCESSING"
+	ProviderRequestSucceeded  ProviderRequestStatus = "SUCCEEDED"
+	ProviderRequestFailed     ProviderRequestStatus = "FAILED"
+)
+
 type UserContext struct {
 	UserID       string
 	Email        string
@@ -160,6 +169,21 @@ type OutboxEvent struct {
 	NextRetryAt   *time.Time
 	CreatedAt     time.Time
 	PublishedAt   *time.Time
+}
+
+type ProviderRequest struct {
+	ID             string
+	ShipmentID     string
+	Provider       string
+	Action         string
+	IdempotencyKey string
+	RequestPayload map[string]any
+	Status         ProviderRequestStatus
+	RetryCount     int
+	NextRetryAt    *time.Time
+	LastError      *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 const (

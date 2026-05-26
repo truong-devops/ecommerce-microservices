@@ -22,15 +22,23 @@ type OrderRepository struct {
 }
 
 type CreateOrderInput struct {
-	OrderNumber    string
-	UserID         string
-	Status         domain.OrderStatus
-	Currency       string
-	SubtotalAmount float64
-	ShippingAmount float64
-	DiscountAmount float64
-	TotalAmount    float64
-	Note           *string
+	OrderNumber       string
+	UserID            string
+	SellerID          string
+	Status            domain.OrderStatus
+	Currency          string
+	SubtotalAmount    float64
+	ShippingAmount    float64
+	DiscountAmount    float64
+	TotalAmount       float64
+	Note              *string
+	PaymentMethod     string
+	RecipientName     string
+	RecipientPhone    string
+	RecipientAddress  string
+	RecipientWard     *string
+	RecipientDistrict *string
+	RecipientProvince *string
 }
 
 type CreateOrderItemInput struct {
@@ -121,16 +129,21 @@ func (r *OrderRepository) BeginTx(ctx context.Context) (pgx.Tx, error) {
 func (r *OrderRepository) CreateOrder(ctx context.Context, tx pgx.Tx, input CreateOrderInput) (domain.Order, error) {
 	row := tx.QueryRow(ctx, `
 		INSERT INTO orders (
-			order_number, user_id, status, currency,
-			subtotal_amount, shipping_amount, discount_amount, total_amount, note
-		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-		RETURNING id, order_number, user_id, status, currency,
+			order_number, user_id, seller_id, status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
+			payment_method, recipient_name, recipient_phone, recipient_address,
+			recipient_ward, recipient_district, recipient_province
+		)
+		VALUES ($1,$2,NULLIF($3, '')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		RETURNING id, order_number, user_id, COALESCE(seller_id::text, ''), status, currency,
+			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
+			COALESCE(payment_method, ''), COALESCE(recipient_name, ''), COALESCE(recipient_phone, ''),
+			COALESCE(recipient_address, ''), recipient_ward, recipient_district, recipient_province,
 			created_at, updated_at
 	`,
 		input.OrderNumber,
 		input.UserID,
+		input.SellerID,
 		input.Status,
 		input.Currency,
 		input.SubtotalAmount,
@@ -138,6 +151,13 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, tx pgx.Tx, input Crea
 		input.DiscountAmount,
 		input.TotalAmount,
 		input.Note,
+		input.PaymentMethod,
+		input.RecipientName,
+		input.RecipientPhone,
+		input.RecipientAddress,
+		input.RecipientWard,
+		input.RecipientDistrict,
+		input.RecipientProvince,
 	)
 
 	order, err := scanOrderRow(row)
@@ -350,8 +370,10 @@ func (r *OrderRepository) TryMarkEventProcessed(ctx context.Context, tx pgx.Tx, 
 
 func (r *OrderRepository) FindOrderByID(ctx context.Context, id string) (*domain.Order, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, order_number, user_id, status, currency,
+		SELECT id, order_number, user_id, COALESCE(seller_id::text, ''), status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
+			COALESCE(payment_method, ''), COALESCE(recipient_name, ''), COALESCE(recipient_phone, ''),
+			COALESCE(recipient_address, ''), recipient_ward, recipient_district, recipient_province,
 			created_at, updated_at
 		FROM orders
 		WHERE id = $1
@@ -375,8 +397,10 @@ func (r *OrderRepository) FindOrderByID(ctx context.Context, id string) (*domain
 
 func (r *OrderRepository) FindOrderByIDForUpdate(ctx context.Context, tx pgx.Tx, id string) (*domain.Order, error) {
 	row := tx.QueryRow(ctx, `
-		SELECT id, order_number, user_id, status, currency,
+		SELECT id, order_number, user_id, COALESCE(seller_id::text, ''), status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
+			COALESCE(payment_method, ''), COALESCE(recipient_name, ''), COALESCE(recipient_phone, ''),
+			COALESCE(recipient_address, ''), recipient_ward, recipient_district, recipient_province,
 			created_at, updated_at
 		FROM orders
 		WHERE id = $1
@@ -457,8 +481,10 @@ func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, tx pgx.Tx, orde
 		UPDATE orders
 		SET status = $2, updated_at = now()
 		WHERE id = $1
-		RETURNING id, order_number, user_id, status, currency,
+		RETURNING id, order_number, user_id, COALESCE(seller_id::text, ''), status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
+			COALESCE(payment_method, ''), COALESCE(recipient_name, ''), COALESCE(recipient_phone, ''),
+			COALESCE(recipient_address, ''), recipient_ward, recipient_district, recipient_province,
 			created_at, updated_at
 	`, orderID, status)
 
@@ -524,8 +550,10 @@ func (r *OrderRepository) ListOrders(ctx context.Context, query ListOrdersQuery,
 	limitPos := len(args)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, order_number, user_id, status, currency,
+		SELECT id, order_number, user_id, COALESCE(seller_id::text, ''), status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
+			COALESCE(payment_method, ''), COALESCE(recipient_name, ''), COALESCE(recipient_phone, ''),
+			COALESCE(recipient_address, ''), recipient_ward, recipient_district, recipient_province,
 			created_at, updated_at
 		FROM orders
 		WHERE `+whereSQL+`
@@ -798,6 +826,7 @@ func scanOrderRow(row interface{ Scan(dest ...any) error }) (domain.Order, error
 		&order.ID,
 		&order.OrderNumber,
 		&order.UserID,
+		&order.SellerID,
 		&status,
 		&order.Currency,
 		&subtotal,
@@ -805,6 +834,13 @@ func scanOrderRow(row interface{ Scan(dest ...any) error }) (domain.Order, error
 		&discount,
 		&total,
 		&note,
+		&order.PaymentMethod,
+		&order.RecipientName,
+		&order.RecipientPhone,
+		&order.RecipientAddress,
+		&order.RecipientWard,
+		&order.RecipientDistrict,
+		&order.RecipientProvince,
 		&order.CreatedAt,
 		&order.UpdatedAt,
 	)

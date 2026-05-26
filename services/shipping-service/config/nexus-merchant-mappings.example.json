@@ -1,0 +1,17 @@
+[
+  {
+    "shopId": "<sellerId UUID do Nexus da mapping>",
+    "shopName": "<ten cua hang>",
+    "merchantId": "<merchantId production Nexus>",
+    "sender": {
+      "name": "<ten nguoi gui/cua hang>",
+      "phone": "<so dien thoai>",
+      "address": "<dia chi lay hang>",
+      "ward": "<phuong/xa>",
+      "district": "<quan/huyen>",
+      "province": "<tinh/thanh pho>",
+      "hubCode": "<senderHubCode Nexus cap>"
+    },
+    "active": true
+  }
+]

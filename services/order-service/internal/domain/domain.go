@@ -124,19 +124,27 @@ const (
 )
 
 type Order struct {
-	ID             string
-	OrderNumber    string
-	UserID         string
-	Status         OrderStatus
-	Currency       string
-	SubtotalAmount float64
-	ShippingAmount float64
-	DiscountAmount float64
-	TotalAmount    float64
-	Note           *string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	Items          []OrderItem
+	ID                string
+	OrderNumber       string
+	UserID            string
+	SellerID          string
+	Status            OrderStatus
+	Currency          string
+	SubtotalAmount    float64
+	ShippingAmount    float64
+	DiscountAmount    float64
+	TotalAmount       float64
+	Note              *string
+	PaymentMethod     string
+	RecipientName     string
+	RecipientPhone    string
+	RecipientAddress  string
+	RecipientWard     *string
+	RecipientDistrict *string
+	RecipientProvince *string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	Items             []OrderItem
 }
 
 type OrderSagaState struct {

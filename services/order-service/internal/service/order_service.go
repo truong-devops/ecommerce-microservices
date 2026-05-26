@@ -16,6 +16,7 @@ import (
 	"order-service/internal/metrics"
 	"order-service/internal/repository"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -38,11 +39,19 @@ type CreateOrderItemRequest struct {
 }
 
 type CreateOrderRequest struct {
-	Currency       string                   `json:"currency"`
-	ShippingAmount *float64                 `json:"shippingAmount,omitempty"`
-	DiscountAmount *float64                 `json:"discountAmount,omitempty"`
-	Note           *string                  `json:"note,omitempty"`
-	Items          []CreateOrderItemRequest `json:"items"`
+	SellerID          string                   `json:"sellerId"`
+	Currency          string                   `json:"currency"`
+	ShippingAmount    *float64                 `json:"shippingAmount,omitempty"`
+	DiscountAmount    *float64                 `json:"discountAmount,omitempty"`
+	Note              *string                  `json:"note,omitempty"`
+	PaymentMethod     string                   `json:"paymentMethod"`
+	RecipientName     string                   `json:"recipientName"`
+	RecipientPhone    string                   `json:"recipientPhone"`
+	RecipientAddress  string                   `json:"recipientAddress"`
+	RecipientWard     *string                  `json:"recipientWard,omitempty"`
+	RecipientDistrict *string                  `json:"recipientDistrict,omitempty"`
+	RecipientProvince *string                  `json:"recipientProvince,omitempty"`
+	Items             []CreateOrderItemRequest `json:"items"`
 }
 
 type CancelOrderRequest struct {
@@ -137,15 +146,23 @@ func (s *OrderService) CreateOrder(ctx context.Context, user domain.UserContext,
 	}
 
 	createdOrder, err := s.repo.CreateOrder(ctx, tx, repository.CreateOrderInput{
-		OrderNumber:    s.generateOrderNumber(),
-		UserID:         user.UserID,
-		Status:         domain.OrderStatusPending,
-		Currency:       strings.TrimSpace(req.Currency),
-		SubtotalAmount: subtotal,
-		ShippingAmount: roundMoney(shippingAmount),
-		DiscountAmount: roundMoney(discountAmount),
-		TotalAmount:    total,
-		Note:           trimAndNilIfEmpty(req.Note),
+		OrderNumber:       s.generateOrderNumber(),
+		UserID:            user.UserID,
+		SellerID:          strings.TrimSpace(req.SellerID),
+		Status:            domain.OrderStatusPending,
+		Currency:          strings.TrimSpace(req.Currency),
+		SubtotalAmount:    subtotal,
+		ShippingAmount:    roundMoney(shippingAmount),
+		DiscountAmount:    roundMoney(discountAmount),
+		TotalAmount:       total,
+		Note:              trimAndNilIfEmpty(req.Note),
+		PaymentMethod:     strings.ToUpper(strings.TrimSpace(req.PaymentMethod)),
+		RecipientName:     strings.TrimSpace(req.RecipientName),
+		RecipientPhone:    strings.TrimSpace(req.RecipientPhone),
+		RecipientAddress:  strings.TrimSpace(req.RecipientAddress),
+		RecipientWard:     trimAndNilIfEmpty(req.RecipientWard),
+		RecipientDistrict: trimAndNilIfEmpty(req.RecipientDistrict),
+		RecipientProvince: trimAndNilIfEmpty(req.RecipientProvince),
 	})
 	if err != nil {
 		return nil, err
@@ -598,18 +615,28 @@ func (s *OrderService) enqueueOrderEvent(ctx context.Context, tx pgx.Tx, eventTy
 		AggregateID:   order.ID,
 		EventType:     eventType,
 		Payload: map[string]any{
-			"orderId":        order.ID,
-			"orderNumber":    order.OrderNumber,
-			"orderCode":      formatOrderCode(order.OrderNumber, order.ID),
-			"userId":         order.UserID,
-			"userCode":       formatCode(order.UserID, "CUS"),
-			"status":         order.Status,
-			"subtotalAmount": order.SubtotalAmount,
-			"shippingAmount": order.ShippingAmount,
-			"discountAmount": order.DiscountAmount,
-			"totalAmount":    order.TotalAmount,
-			"currency":       order.Currency,
-			"items":          mapOrderItemsForEvent(order.Items),
+			"orderId":           order.ID,
+			"orderNumber":       order.OrderNumber,
+			"orderCode":         formatOrderCode(order.OrderNumber, order.ID),
+			"userId":            order.UserID,
+			"userCode":          formatCode(order.UserID, "CUS"),
+			"sellerId":          order.SellerID,
+			"status":            order.Status,
+			"paymentMethod":     order.PaymentMethod,
+			"recipientName":     order.RecipientName,
+			"recipientPhone":    order.RecipientPhone,
+			"recipientAddress":  order.RecipientAddress,
+			"recipientWard":     order.RecipientWard,
+			"recipientDistrict": order.RecipientDistrict,
+			"recipientProvince": order.RecipientProvince,
+			"subtotalAmount":    order.SubtotalAmount,
+			"shippingAmount":    order.ShippingAmount,
+			"discountAmount":    order.DiscountAmount,
+			"totalAmount":       order.TotalAmount,
+			"currency":          order.Currency,
+			"note":              order.Note,
+			"createdAt":         order.CreatedAt.UTC().Format(time.RFC3339Nano),
+			"items":             mapOrderItemsForEvent(order.Items),
 			"metadata": map[string]any{
 				"requestId":  requestID,
 				"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
@@ -635,21 +662,29 @@ func toOrderResponse(order domain.Order) map[string]any {
 	}
 
 	resp := map[string]any{
-		"id":             order.ID,
-		"orderNumber":    order.OrderNumber,
-		"orderCode":      formatOrderCode(order.OrderNumber, order.ID),
-		"userId":         order.UserID,
-		"userCode":       formatCode(order.UserID, "CUS"),
-		"status":         order.Status,
-		"currency":       order.Currency,
-		"subtotalAmount": order.SubtotalAmount,
-		"shippingAmount": order.ShippingAmount,
-		"discountAmount": order.DiscountAmount,
-		"totalAmount":    order.TotalAmount,
-		"note":           nil,
-		"createdAt":      order.CreatedAt.UTC().Format(time.RFC3339Nano),
-		"updatedAt":      order.UpdatedAt.UTC().Format(time.RFC3339Nano),
-		"items":          items,
+		"id":                order.ID,
+		"orderNumber":       order.OrderNumber,
+		"orderCode":         formatOrderCode(order.OrderNumber, order.ID),
+		"userId":            order.UserID,
+		"userCode":          formatCode(order.UserID, "CUS"),
+		"sellerId":          order.SellerID,
+		"status":            order.Status,
+		"paymentMethod":     order.PaymentMethod,
+		"recipientName":     order.RecipientName,
+		"recipientPhone":    order.RecipientPhone,
+		"recipientAddress":  order.RecipientAddress,
+		"recipientWard":     order.RecipientWard,
+		"recipientDistrict": order.RecipientDistrict,
+		"recipientProvince": order.RecipientProvince,
+		"currency":          order.Currency,
+		"subtotalAmount":    order.SubtotalAmount,
+		"shippingAmount":    order.ShippingAmount,
+		"discountAmount":    order.DiscountAmount,
+		"totalAmount":       order.TotalAmount,
+		"note":              nil,
+		"createdAt":         order.CreatedAt.UTC().Format(time.RFC3339Nano),
+		"updatedAt":         order.UpdatedAt.UTC().Format(time.RFC3339Nano),
+		"items":             items,
 	}
 	if order.Note != nil {
 		resp["note"] = *order.Note
@@ -658,8 +693,33 @@ func toOrderResponse(order domain.Order) map[string]any {
 }
 
 func validateCreateOrderRequest(req CreateOrderRequest) error {
+	if _, err := uuid.Parse(strings.TrimSpace(req.SellerID)); err != nil {
+		return validationError("sellerId", "must be a valid UUID")
+	}
 	if !currencyRegex.MatchString(strings.TrimSpace(req.Currency)) {
 		return validationError("currency", "must match ^[A-Z]{3}$")
+	}
+	paymentMethod := strings.ToUpper(strings.TrimSpace(req.PaymentMethod))
+	if paymentMethod != "COD" && paymentMethod != "ONLINE" {
+		return validationError("paymentMethod", "must be one of COD, ONLINE")
+	}
+	if l := len(strings.TrimSpace(req.RecipientName)); l < 1 || l > 255 {
+		return validationError("recipientName", "length must be between 1 and 255")
+	}
+	if l := len(strings.TrimSpace(req.RecipientPhone)); l < 1 || l > 32 {
+		return validationError("recipientPhone", "length must be between 1 and 32")
+	}
+	if l := len(strings.TrimSpace(req.RecipientAddress)); l < 1 || l > 500 {
+		return validationError("recipientAddress", "length must be between 1 and 500")
+	}
+	for field, value := range map[string]*string{
+		"recipientWard":     req.RecipientWard,
+		"recipientDistrict": req.RecipientDistrict,
+		"recipientProvince": req.RecipientProvince,
+	} {
+		if value != nil && len(strings.TrimSpace(*value)) > 128 {
+			return validationError(field, "max length is 128")
+		}
 	}
 
 	if req.ShippingAmount != nil {
@@ -789,6 +849,9 @@ func (s *OrderService) resolveAuthoritativeOrderItems(ctx context.Context, req C
 		}
 		if product.Status != "ACTIVE" {
 			return nil, 0, validationError(prefix+".productId", "product is not active")
+		}
+		if product.SellerID == "" || product.SellerID != strings.TrimSpace(req.SellerID) {
+			return nil, 0, validationError(prefix+".productId", "product seller does not match order seller")
 		}
 
 		variant, found := findCatalogVariantBySKU(product.Variants, strings.TrimSpace(item.SKU))

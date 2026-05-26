@@ -14,6 +14,7 @@ import (
 	"shipping-service/internal/config"
 	"shipping-service/internal/events"
 	"shipping-service/internal/handler"
+	"shipping-service/internal/nexus"
 	"shipping-service/internal/repository"
 	"shipping-service/internal/router"
 	"shipping-service/internal/service"
@@ -51,6 +52,9 @@ func main() {
 		if err := runMigration(ctx, pool, cfg.MigrationFile); err != nil {
 			logger.Fatal("failed to run migration", zap.Error(err))
 		}
+		if err := ensureNexusProviderRequestSchema(ctx, pool); err != nil {
+			logger.Fatal("failed to ensure Nexus provider request schema", zap.Error(err))
+		}
 	}
 
 	redisService, err := service.NewRedisService(cfg.RedisEnabled, cfg.RedisURL)
@@ -65,7 +69,26 @@ func main() {
 
 	repo := repository.NewShippingRepository(pool)
 	orderClient := service.NewOrderClient(cfg.OrderServiceBaseURL, cfg.DependencyTimeout)
-	shippingService := service.NewShippingService(repo, orderClient, cfg.WebhookSigningSecret, cfg.WebhookIdempotencyTTLMinutes)
+	nexusIntegration := service.NexusIntegration{}
+	if cfg.NexusEnabled || cfg.NexusWebhookEnabled {
+		mappings := map[string]nexus.MerchantMapping{}
+		if cfg.NexusEnabled {
+			var mappingErr error
+			mappings, mappingErr = nexus.LoadMerchantMappings(cfg.NexusMerchantMappingFile)
+			if mappingErr != nil {
+				logger.Fatal("failed to load Nexus merchant mapping", zap.Error(mappingErr))
+			}
+		}
+		nexusIntegration = service.NexusIntegration{
+			Enabled: cfg.NexusEnabled, WebhookEnabled: cfg.NexusWebhookEnabled,
+			Client:        nexus.NewClient(cfg.NexusBaseURL, cfg.NexusPartnerCode, cfg.NexusAPIKey, cfg.NexusAPISecret, cfg.NexusRequestTimeout),
+			WebhookSecret: cfg.NexusWebhookSecret, Mappings: mappings, AutoCreatePickup: cfg.NexusAutoCreatePickup,
+			ServiceType: cfg.NexusServiceType, PickupType: cfg.NexusPickupType, PaymentPayer: cfg.NexusPaymentPayer,
+			WeightGram: cfg.NexusDefaultWeightGram, LengthCM: cfg.NexusDefaultLengthCM,
+			WidthCM: cfg.NexusDefaultWidthCM, HeightCM: cfg.NexusDefaultHeightCM,
+		}
+	}
+	shippingService := service.NewShippingService(repo, orderClient, cfg.WebhookSigningSecret, cfg.WebhookIdempotencyTTLMinutes, nexusIntegration)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 
 	shippingHandler := handler.NewShippingHandler(shippingService)
@@ -84,6 +107,7 @@ func main() {
 	defer runCancel()
 	go dispatcher.Run(runCtx)
 	go consumer.Run(runCtx)
+	go runNexusDispatcher(runCtx, shippingService, logger, cfg.DispatchInterval, cfg.DispatchBatch, cfg.DispatchMaxRetry)
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
@@ -175,6 +199,44 @@ func runMigration(ctx context.Context, pool *pgxpool.Pool, migrationFile string)
 	}
 
 	return nil
+}
+
+func ensureNexusProviderRequestSchema(ctx context.Context, pool *pgxpool.Pool) error {
+	_, err := pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS shipment_provider_requests (
+		  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+		  shipment_id uuid NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+		  provider varchar(64) NOT NULL,
+		  action varchar(64) NOT NULL,
+		  idempotency_key varchar(255) NOT NULL UNIQUE,
+		  request_payload jsonb NOT NULL,
+		  response_payload jsonb,
+		  status varchar(32) NOT NULL DEFAULT 'PENDING',
+		  retry_count integer NOT NULL DEFAULT 0,
+		  next_retry_at timestamptz,
+		  last_error varchar(1000),
+		  created_at timestamptz NOT NULL DEFAULT now(),
+		  updated_at timestamptz NOT NULL DEFAULT now()
+		);
+		CREATE INDEX IF NOT EXISTS idx_shipment_provider_requests_dispatch
+		  ON shipment_provider_requests(status, next_retry_at, created_at);
+	`)
+	return err
+}
+
+func runNexusDispatcher(ctx context.Context, shippingService *service.ShippingService, logger *zap.Logger, interval time.Duration, batchSize, maxRetry int) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := shippingService.DispatchNexusProviderRequests(ctx, batchSize, maxRetry); err != nil {
+				logger.Error("Nexus provider request dispatch failed", zap.Error(err))
+			}
+		}
+	}
 }
 
 func newLogger(appEnv string) (*zap.Logger, error) {

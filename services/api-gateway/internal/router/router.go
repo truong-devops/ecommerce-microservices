@@ -122,6 +122,7 @@ func New(
 		public.Method(http.MethodPost, "/api/v1/live/sessions/{sessionId}/events/media-metric", proxies[config.ServiceLive])
 		public.Method(http.MethodGet, "/api/analytics/recommendations/products/{productId}", proxies[config.ServiceAnalytics])
 		public.Method(http.MethodGet, "/api/v1/analytics/recommendations/products/{productId}", proxies[config.ServiceAnalytics])
+		public.Method(http.MethodPost, "/api/v1/shipments/webhooks/nexus", proxies[config.ServiceShipping])
 
 		public.Method(http.MethodGet, "/api/v1/buyer-experience/videos/feed", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))
 		public.Method(http.MethodGet, "/api/v1/buyer-experience/videos/*", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))

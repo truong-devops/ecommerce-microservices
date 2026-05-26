@@ -48,6 +48,16 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS seller_id uuid;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_name varchar(255);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_phone varchar(32);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_address varchar(500);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_ward varchar(128);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_district varchar(128);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_province varchar(128);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method varchar(32);
+CREATE INDEX IF NOT EXISTS idx_orders_seller_id ON orders(seller_id);
+
 CREATE TABLE IF NOT EXISTS order_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,

@@ -113,6 +113,7 @@ function sanitizeOrder(raw: unknown): Order | null {
   const id = typeof record.id === 'string' ? record.id.trim() : '';
   const orderNumber = typeof record.orderNumber === 'string' ? record.orderNumber.trim() : '';
   const userId = typeof record.userId === 'string' ? record.userId.trim() : '';
+  const sellerId = typeof record.sellerId === 'string' ? record.sellerId.trim() : '';
   const status = toOrderStatus(record.status);
   const currency = normalizeCurrency(record.currency);
   const subtotalAmount = typeof record.subtotalAmount === 'number' && Number.isFinite(record.subtotalAmount) ? record.subtotalAmount : 0;
@@ -126,7 +127,7 @@ function sanitizeOrder(raw: unknown): Order | null {
     ? record.items.map((item) => sanitizeItem(item)).filter((item): item is OrderItem => item !== null)
     : [];
 
-  if (!id || !orderNumber || !userId) {
+  if (!id || !orderNumber || !userId || !sellerId) {
     return null;
   }
 
@@ -134,6 +135,7 @@ function sanitizeOrder(raw: unknown): Order | null {
     id,
     orderNumber,
     userId,
+    sellerId,
     status,
     currency,
     subtotalAmount,
@@ -141,6 +143,13 @@ function sanitizeOrder(raw: unknown): Order | null {
     discountAmount,
     totalAmount,
     note,
+    paymentMethod: record.paymentMethod === 'ONLINE' ? 'ONLINE' : 'COD',
+    recipientName: typeof record.recipientName === 'string' ? record.recipientName : '',
+    recipientPhone: typeof record.recipientPhone === 'string' ? record.recipientPhone : '',
+    recipientAddress: typeof record.recipientAddress === 'string' ? record.recipientAddress : '',
+    recipientWard: typeof record.recipientWard === 'string' ? record.recipientWard : null,
+    recipientDistrict: typeof record.recipientDistrict === 'string' ? record.recipientDistrict : null,
+    recipientProvince: typeof record.recipientProvince === 'string' ? record.recipientProvince : null,
     createdAt,
     updatedAt,
     items
@@ -593,6 +602,7 @@ export default function OrdersPage() {
       addToCart(
         {
           productId: item.productId,
+          sellerId: order.sellerId,
           title: item.productName,
           image: productImagesById[item.productId] ?? ORDER_IMAGE_PLACEHOLDER,
           unitPrice: item.unitPrice,

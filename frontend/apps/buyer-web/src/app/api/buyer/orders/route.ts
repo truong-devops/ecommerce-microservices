@@ -184,11 +184,12 @@ function sanitizeOrder(order: unknown): Order | null {
   const id = asString(order.id);
   const orderNumber = asString(order.orderNumber);
   const userId = asString(order.userId);
+  const sellerId = asString(order.sellerId);
   const status = asOrderStatus(order.status);
   const currency = asString(order.currency);
   const createdAt = asString(order.createdAt);
   const updatedAt = asString(order.updatedAt);
-  if (!id || !orderNumber || !userId || !status || !currency || !createdAt || !updatedAt) {
+  if (!id || !orderNumber || !userId || !sellerId || !status || !currency || !createdAt || !updatedAt) {
     return null;
   }
 
@@ -196,6 +197,7 @@ function sanitizeOrder(order: unknown): Order | null {
     id,
     orderNumber,
     userId,
+    sellerId,
     status,
     currency,
     subtotalAmount: asNumber(order.subtotalAmount),
@@ -203,6 +205,13 @@ function sanitizeOrder(order: unknown): Order | null {
     discountAmount: asNumber(order.discountAmount),
     totalAmount: asNumber(order.totalAmount),
     note: asNullableString(order.note),
+    paymentMethod: order.paymentMethod === 'ONLINE' ? 'ONLINE' : 'COD',
+    recipientName: asString(order.recipientName),
+    recipientPhone: asString(order.recipientPhone),
+    recipientAddress: asString(order.recipientAddress),
+    recipientWard: asNullableString(order.recipientWard),
+    recipientDistrict: asNullableString(order.recipientDistrict),
+    recipientProvince: asNullableString(order.recipientProvince),
     createdAt,
     updatedAt,
     items: Array.isArray(order.items)

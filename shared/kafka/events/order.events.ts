@@ -19,7 +19,15 @@ export interface OrderCreatedEvent {
   orderId: string;
   orderNumber: string;
   userId: string;
+  sellerId: string;
   status: string;
+  paymentMethod: 'COD' | 'ONLINE';
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  recipientWard?: string | null;
+  recipientDistrict?: string | null;
+  recipientProvince?: string | null;
   totalAmount: number;
   currency: string;
   items: OrderEventItem[];
@@ -40,9 +48,18 @@ export interface OrderStatusUpdatedEvent {
   orderId: string;
   orderNumber: string;
   userId: string;
+  sellerId: string;
   status: string;
+  paymentMethod: 'COD' | 'ONLINE';
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  recipientWard?: string | null;
+  recipientDistrict?: string | null;
+  recipientProvince?: string | null;
   totalAmount: number;
   currency: string;
+  items: OrderEventItem[];
   metadata: OrderEventMetadata;
 }
 

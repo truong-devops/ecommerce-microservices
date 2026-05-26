@@ -338,6 +338,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
+  sellerId: string;
   status: OrderStatus;
   currency: string;
   subtotalAmount: number;
@@ -345,6 +346,13 @@ export interface Order {
   discountAmount: number;
   totalAmount: number;
   note: string | null;
+  paymentMethod: 'COD' | 'ONLINE';
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  recipientWard: string | null;
+  recipientDistrict: string | null;
+  recipientProvince: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -378,10 +386,18 @@ export interface CreateOrderItemInput {
 }
 
 export interface CreateOrderInput {
+  sellerId: string;
   currency: string;
   shippingAmount?: number;
   discountAmount?: number;
   note?: string;
+  paymentMethod: 'COD' | 'ONLINE';
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  recipientWard?: string;
+  recipientDistrict?: string;
+  recipientProvince?: string;
   items: CreateOrderItemInput[];
 }
 

@@ -544,6 +544,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     const result = addToCart(
       {
         productId: product.id,
+        sellerId: product.sellerId,
         title: selectedVariant ? `${product.title} - ${selectedVariant.name}` : product.title,
         image: selectedImage || product.image,
         unitPrice: displayPrice,
@@ -565,6 +566,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     const result = addToCart(
       {
         productId: product.id,
+        sellerId: product.sellerId,
         title: selectedVariant ? `${product.title} - ${selectedVariant.name}` : product.title,
         image: selectedImage || product.image,
         unitPrice: displayPrice,

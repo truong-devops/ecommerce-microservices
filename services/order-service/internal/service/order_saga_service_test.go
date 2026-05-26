@@ -11,7 +11,7 @@ func TestCanConfirmCheckout(t *testing.T) {
 		InventoryStatus: domain.SagaInventoryStatusReserved,
 		PaymentStatus:   domain.SagaPaymentStatusCaptured,
 	}
-	if !canConfirmCheckout(state) {
+	if !canConfirmCheckout(domain.Order{PaymentMethod: "ONLINE"}, state) {
 		t.Fatalf("expected checkout to be confirmable")
 	}
 }
@@ -23,11 +23,18 @@ func TestCanConfirmCheckoutRequiresBothInventoryAndPayment(t *testing.T) {
 		{InventoryStatus: domain.SagaInventoryStatusFailed, PaymentStatus: domain.SagaPaymentStatusCaptured},
 	}
 	for _, state := range cases {
-		if canConfirmCheckout(&state) {
+		if canConfirmCheckout(domain.Order{PaymentMethod: "ONLINE"}, &state) {
 			t.Fatalf("did not expect checkout to be confirmable for state %+v", state)
 		}
 	}
-	if canConfirmCheckout(nil) {
+	if canConfirmCheckout(domain.Order{PaymentMethod: "ONLINE"}, nil) {
 		t.Fatalf("nil state must not be confirmable")
+	}
+}
+
+func TestCanConfirmCODCheckoutAfterInventoryReservation(t *testing.T) {
+	state := &domain.OrderSagaState{InventoryStatus: domain.SagaInventoryStatusReserved}
+	if !canConfirmCheckout(domain.Order{PaymentMethod: "COD"}, state) {
+		t.Fatalf("expected COD checkout to be confirmable after inventory reservation")
 	}
 }

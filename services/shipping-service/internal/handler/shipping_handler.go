@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -167,6 +168,26 @@ func (h *ShippingHandler) GetTrackingEvents(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *ShippingHandler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) {
+	if strings.EqualFold(strings.TrimSpace(chi.URLParam(r, "provider")), "nexus") {
+		rawBody, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 2<<20))
+		if err != nil {
+			httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeBadRequest, "Invalid webhook body", nil)
+			return
+		}
+		result, err := h.service.HandleNexusWebhook(r.Context(), requestID(r), service.NexusWebhookHeaders{
+			PartnerCode: r.Header.Get("X-Nexus-Partner-Code"),
+			Timestamp:   r.Header.Get("X-Nexus-Timestamp"),
+			Nonce:       r.Header.Get("X-Nexus-Nonce"),
+			EventID:     r.Header.Get("X-Nexus-Event-Id"),
+			Signature:   r.Header.Get("X-Nexus-Signature"),
+		}, rawBody)
+		if err != nil {
+			httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, err.Error(), nil)
+			return
+		}
+		httpx.WriteSuccess(w, r, http.StatusOK, result)
+		return
+	}
 	var req service.ShippingWebhookRequest
 	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
 		writeDecodeValidationError(w, r, err)

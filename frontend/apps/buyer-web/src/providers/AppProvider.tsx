@@ -72,6 +72,7 @@ interface AuthActionResult {
 
 export interface CartItem {
   productId: string;
+  sellerId: string;
   title: string;
   image: string;
   unitPrice: number;
@@ -83,6 +84,7 @@ export interface CartItem {
 
 interface AddToCartPayload {
   productId: string;
+  sellerId: string;
   title: string;
   image: string;
   unitPrice: number;
@@ -92,6 +94,7 @@ interface AddToCartPayload {
 }
 
 interface UpdateCartItemPayload {
+  sellerId?: string;
   title?: string;
   image?: string;
   unitPrice?: number;
@@ -328,6 +331,7 @@ function readCartItems(): CartItem[] {
 
         const record = item as Partial<CartItem>;
         const productId = typeof record.productId === 'string' ? record.productId.trim() : '';
+        const sellerId = typeof record.sellerId === 'string' ? record.sellerId.trim() : '';
         const title = typeof record.title === 'string' ? record.title.trim() : '';
         const image = typeof record.image === 'string' ? record.image : '';
         const unitPrice =
@@ -342,12 +346,13 @@ function readCartItems(): CartItem[] {
             ? record.currency.trim().toUpperCase()
             : 'USD';
 
-        if (!isValidProductId(productId) || !title || !image || unitPrice === null || quantity === null || quantity <= 0) {
+        if (!isValidProductId(productId) || !sellerId || !title || !image || unitPrice === null || quantity === null || quantity <= 0) {
           return null;
         }
 
         return {
           productId,
+          sellerId,
           title,
           image,
           unitPrice,
@@ -761,6 +766,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addToCart = useCallback(
     (payload: AddToCartPayload, quantity = 1): CartActionResult => {
       const productId = payload.productId.trim();
+      const sellerId = payload.sellerId.trim();
       const title = payload.title.trim();
       const unitPrice = payload.unitPrice;
       const stock = payload.stock;
@@ -771,7 +777,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : 'USD';
       const requested = sanitizeNonNegativeInt(quantity);
 
-      if (!isValidProductId(productId) || !title || !payload.image || !Number.isFinite(unitPrice) || unitPrice < 0) {
+      if (!isValidProductId(productId) || !sellerId || !title || !payload.image || !Number.isFinite(unitPrice) || unitPrice < 0) {
         return {
           ok: false,
           message: messages[locale].product.loadError
@@ -808,6 +814,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       const nextItem: CartItem = {
         productId,
+        sellerId,
         title,
         image: payload.image,
         unitPrice,
@@ -906,6 +913,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       const nextTitle = typeof payload.title === 'string' ? payload.title.trim() || current.title : current.title;
+      const nextSellerId = typeof payload.sellerId === 'string' ? payload.sellerId.trim() || current.sellerId : current.sellerId;
       const nextImage = typeof payload.image === 'string' ? payload.image.trim() || current.image : current.image;
       const nextSku = typeof payload.sku === 'string' ? payload.sku.trim() || null : payload.sku === null ? null : current.sku;
       const nextUnitPrice = payload.unitPrice ?? current.unitPrice;
@@ -923,7 +931,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ? current.currency
             : null;
 
-      if (!Number.isFinite(nextUnitPrice) || nextUnitPrice < 0 || !nextTitle || !nextImage || nextCurrency === null) {
+      if (!Number.isFinite(nextUnitPrice) || nextUnitPrice < 0 || !nextSellerId || !nextTitle || !nextImage || nextCurrency === null) {
         return {
           ok: false,
           message: messages[locale].product.loadError
@@ -956,6 +964,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         item.productId === normalizedId
           ? {
               ...item,
+              sellerId: nextSellerId,
               title: nextTitle,
               image: nextImage,
               unitPrice: nextUnitPrice,

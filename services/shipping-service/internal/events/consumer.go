@@ -77,7 +77,7 @@ func (c *OrderEventsConsumer) Run(ctx context.Context) {
 		if eventType == "" {
 			eventType = strings.TrimSpace(string(msg.Key))
 		}
-		if eventType != "order.created" {
+		if eventType != "order.status-updated" || !strings.EqualFold(strings.TrimSpace(fmt.Sprint(envelope.Payload["status"])), "CONFIRMED") {
 			continue
 		}
 
@@ -94,8 +94,8 @@ func (c *OrderEventsConsumer) Run(ctx context.Context) {
 			}
 		}
 
-		if err := c.service.AutoCreateShipmentFromOrderEvent(ctx, requestID, payload, msg.Partition, fmt.Sprintf("%d", msg.Offset)); err != nil {
-			c.logger.Error("auto-create shipment from order.created failed", zap.Error(err))
+		if err := c.service.AutoCreateShipmentFromConfirmedOrderEvent(ctx, requestID, payload, msg.Partition, fmt.Sprintf("%d", msg.Offset)); err != nil {
+			c.logger.Error("auto-create shipment from confirmed order failed", zap.Error(err))
 		}
 	}
 }

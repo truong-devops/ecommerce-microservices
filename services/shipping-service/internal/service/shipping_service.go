@@ -93,6 +93,7 @@ type ShippingService struct {
 	orderClient                 *OrderClient
 	webhookSigningSecret        string
 	webhookIdempotencyTTLMinute int
+	nexus                       NexusIntegration
 }
 
 type NumberLike struct {
@@ -136,13 +137,17 @@ func (n *NumberLike) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func NewShippingService(repo *repository.ShippingRepository, orderClient *OrderClient, webhookSigningSecret string, webhookIdempotencyTTLMinute int) *ShippingService {
-	return &ShippingService{
+func NewShippingService(repo *repository.ShippingRepository, orderClient *OrderClient, webhookSigningSecret string, webhookIdempotencyTTLMinute int, integrations ...NexusIntegration) *ShippingService {
+	svc := &ShippingService{
 		repo:                        repo,
 		orderClient:                 orderClient,
 		webhookSigningSecret:        strings.TrimSpace(webhookSigningSecret),
 		webhookIdempotencyTTLMinute: webhookIdempotencyTTLMinute,
 	}
+	if len(integrations) > 0 {
+		svc.nexus = integrations[0]
+	}
+	return svc
 }
 
 func (s *ShippingService) CreateShipment(ctx context.Context, user domain.UserContext, accessToken, requestID string, req CreateShipmentRequest) (map[string]any, error) {
@@ -714,7 +719,7 @@ func (s *ShippingService) HandleProviderWebhook(ctx context.Context, requestID, 
 	return responseBody, nil
 }
 
-func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, requestID string, payload map[string]any, kafkaPartition int, kafkaOffset string) error {
+func (s *ShippingService) AutoCreateShipmentFromConfirmedOrderEvent(ctx context.Context, requestID string, payload map[string]any, kafkaPartition int, kafkaOffset string) error {
 	orderID := asString(payload["orderId"])
 	buyerID := asString(payload["userId"])
 	sellerID := asString(payload["sellerId"])
@@ -726,6 +731,12 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 	shippingFee := asNonNegativeNumber(payload["shippingAmount"])
 	if shippingFee == nil {
 		shippingFee = ptrFloat(0)
+	}
+	paymentMethod := strings.ToUpper(asString(payload["paymentMethod"]))
+	totalAmount := asNonNegativeNumber(payload["totalAmount"])
+	codAmount := 0.0
+	if paymentMethod == "COD" && totalAmount != nil {
+		codAmount = *totalAmount
 	}
 
 	// Skip auto-create when critical shipment fields are missing to avoid persisting placeholder data.
@@ -749,25 +760,30 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 	if existing != nil {
 		return tx.Commit(ctx)
 	}
+	provider := "order-event-auto"
+	sendToNexus := s.nexusOutboundEnabledForSeller(sellerID)
+	if sendToNexus {
+		provider = "NEXUS"
+	}
 
 	shipment, err := s.repo.CreateShipment(ctx, tx, repository.CreateShipmentInput{
 		OrderID:          orderID,
 		BuyerID:          buyerID,
 		SellerID:         sellerID,
-		Provider:         "order-event-auto",
+		Provider:         provider,
 		AWB:              nil,
 		TrackingNumber:   nil,
 		Status:           domain.ShipmentStatusPending,
 		Currency:         currency,
 		ShippingFee:      roundMoney(*shippingFee),
-		CODAmount:        0,
+		CODAmount:        roundMoney(codAmount),
 		RecipientName:    recipientName,
 		RecipientPhone:   recipientPhone,
 		RecipientAddress: recipientAddress,
-		Note:             strPtr("Auto-created from order event"),
+		Note:             trimStringPtr(strPtr(asString(payload["note"]))),
 		Metadata: map[string]any{
 			"source":      "order.events",
-			"eventType":   "order.created",
+			"eventType":   "order.status-updated",
 			"autoCreated": true,
 			"orderNumber": orderNumber,
 			"requestId":   requestID,
@@ -786,7 +802,7 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 		ToStatus:      domain.ShipmentStatusPending,
 		ChangedBy:     systemActorID,
 		ChangedByRole: domain.RoleSuperAdmin,
-		Reason:        strPtr("Auto-created from order.created event"),
+		Reason:        strPtr("Auto-created from confirmed order event"),
 	}); err != nil {
 		return err
 	}
@@ -808,7 +824,24 @@ func (s *ShippingService) AutoCreateShipmentFromOrderEvent(ctx context.Context, 
 		return err
 	}
 
+	if err := s.enqueueShipmentEvent(ctx, tx, domain.EventShipmentCreated, shipment, domain.UserContext{UserID: systemActorID, Role: domain.RoleSuperAdmin}, requestID); err != nil {
+		return err
+	}
+	if sendToNexus {
+		if err := s.enqueueNexusCreateOrder(ctx, tx, shipment, payload); err != nil {
+			return err
+		}
+	}
+
 	return tx.Commit(ctx)
+}
+
+func (s *ShippingService) nexusOutboundEnabledForSeller(sellerID string) bool {
+	if !s.nexus.Enabled {
+		return false
+	}
+	_, mapped := s.nexus.Mappings[strings.TrimSpace(sellerID)]
+	return mapped
 }
 
 func (s *ShippingService) resolveShipmentForWebhook(ctx context.Context, tx pgx.Tx, req ShippingWebhookRequest) (*domain.Shipment, error) {

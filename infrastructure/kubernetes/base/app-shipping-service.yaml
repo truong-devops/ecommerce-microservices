@@ -45,6 +45,36 @@ spec:
               value: http://order-service:8080/api/v1
             - name: SHIPPING_WEBHOOK_SIGNING_SECRET
               value: dev-shipping-webhook-signing-secret
+            - name: NEXUS_ENABLED
+              value: "false"
+            - name: NEXUS_WEBHOOK_ENABLED
+              value: "false"
+            - name: NEXUS_BASE_URL
+              value: https://ops.nexus-ex.site
+            - name: NEXUS_MERCHANT_MAPPING_FILE
+              value: /etc/nexus/merchant-mappings.json
+            - name: NEXUS_AUTO_CREATE_PICKUP
+              value: "false"
+            - name: NEXUS_DEFAULT_SERVICE_TYPE
+              value: STANDARD
+            - name: NEXUS_DEFAULT_PICKUP_TYPE
+              value: PICKUP
+            - name: NEXUS_DEFAULT_PAYER
+              value: RECEIVER
+            - name: NEXUS_DEFAULT_WEIGHT_GRAM
+              value: "500"
+            - name: NEXUS_DEFAULT_LENGTH_CM
+              value: "20"
+            - name: NEXUS_DEFAULT_WIDTH_CM
+              value: "15"
+            - name: NEXUS_DEFAULT_HEIGHT_CM
+              value: "10"
+            - name: NEXUS_REQUEST_TIMEOUT_MS
+              value: "10000"
+          volumeMounts:
+            - name: nexus-merchant-mappings
+              mountPath: /etc/nexus
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /api/v1/health
@@ -68,6 +98,11 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+      volumes:
+        - name: nexus-merchant-mappings
+          configMap:
+            name: nexus-merchant-mappings
+            optional: true
 ---
 apiVersion: v1
 kind: Service

@@ -19,6 +19,7 @@ type ProductCatalogClient struct {
 
 type CatalogProduct struct {
 	ID       string
+	SellerID string
 	Name     string
 	Status   string
 	Variants []CatalogVariant
@@ -73,6 +74,7 @@ func (c *ProductCatalogClient) GetProductByID(ctx context.Context, productID str
 		Success bool `json:"success"`
 		Data    struct {
 			ID       string `json:"id"`
+			SellerID string `json:"sellerId"`
 			Name     string `json:"name"`
 			Status   string `json:"status"`
 			Variants []struct {
@@ -93,6 +95,7 @@ func (c *ProductCatalogClient) GetProductByID(ctx context.Context, productID str
 
 	product := &CatalogProduct{
 		ID:       strings.TrimSpace(envelope.Data.ID),
+		SellerID: strings.TrimSpace(envelope.Data.SellerID),
 		Name:     strings.TrimSpace(envelope.Data.Name),
 		Status:   strings.ToUpper(strings.TrimSpace(envelope.Data.Status)),
 		Variants: make([]CatalogVariant, 0, len(envelope.Data.Variants)),

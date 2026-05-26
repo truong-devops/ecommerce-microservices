@@ -16,7 +16,7 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   try {
-    const detail = await requestUpstream<unknown>(`${serviceBaseUrls.gateway}/buyer-experience/live/sessions/${encodeURIComponent(sessionId)}`, {
+    const detail = await requestUpstream<unknown>(`${serviceBaseUrls.gateway}/live/sessions/${encodeURIComponent(sessionId)}`, {
       method: 'GET',
       headers: optionalAuthorizationHeader(request)
     });

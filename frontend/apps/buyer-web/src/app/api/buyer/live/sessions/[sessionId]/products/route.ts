@@ -15,7 +15,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
-    const products = await requestUpstream<unknown[]>(`${serviceBaseUrls.gateway}/buyer-experience/live/sessions/${encodeURIComponent(sessionId)}/products`);
+    const products = await requestUpstream<unknown[]>(`${serviceBaseUrls.gateway}/live/sessions/${encodeURIComponent(sessionId)}/products`);
     return ok(products);
   } catch (error) {
     return toErrorResponse(error);

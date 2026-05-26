@@ -460,8 +460,8 @@ export default function AccountPage() {
 
       <main className="mx-auto w-full max-w-[1200px] px-3 pb-10 pt-5 md:px-4 md:pb-12 md:pt-6">
         <section className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="rounded-sm bg-transparent">
-            <div className="flex items-center gap-3 border-b border-slate-200 pb-5">
+          <aside className="rounded-2xl bg-white p-4 shadow-card lg:rounded-sm lg:bg-transparent lg:p-0 lg:shadow-none">
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-4 lg:pb-5">
               <AvatarPreview src={avatarPreviewUrl} letter={avatarLetter} className="h-12 w-12 text-lg" />
               <div>
                 <p className="max-w-[150px] truncate text-sm font-semibold text-slate-900">{displayName}</p>
@@ -469,7 +469,20 @@ export default function AccountPage() {
               </div>
             </div>
 
-            <nav className="space-y-5 py-5 text-[15px]">
+            <nav className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Account shortcuts">
+              <span className="shrink-0 rounded-full bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white">{accountLabels.profile}</span>
+              <Link href="/orders" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                {accountLabels.order}
+              </Link>
+              <button type="button" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                {accountLabels.voucher}
+              </button>
+              <button type="button" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                {accountLabels.xu}
+              </button>
+            </nav>
+
+            <nav className="hidden space-y-5 py-5 text-[15px] lg:block">
               <div className="space-y-2">
                 <button type="button" className="block text-left font-medium text-slate-900">
                   {accountLabels.notification}
@@ -500,8 +513,8 @@ export default function AccountPage() {
             </nav>
           </aside>
 
-          <article className="rounded-sm border border-slate-200 bg-white px-4 py-5 md:px-8 md:py-6">
-            <h1 className="text-[30px] font-semibold text-slate-900">{accountLabels.profileTitle}</h1>
+          <article className="rounded-2xl border border-slate-200 bg-white px-4 py-5 shadow-sm md:px-8 md:py-6 lg:rounded-sm lg:shadow-none">
+            <h1 className="text-3xl font-semibold text-slate-900 md:text-[30px]">{accountLabels.profileTitle}</h1>
             <p className="mt-1 text-sm text-slate-600">{accountLabels.profileSubtitle}</p>
             <div className="mt-5 border-t border-slate-200 pt-5" />
 

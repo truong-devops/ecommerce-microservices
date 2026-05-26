@@ -60,8 +60,8 @@ export function Header({ keywords }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-brand-gradient text-white shadow-sm">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-3 py-3 md:px-4 md:py-4">
-        <div className="flex items-center justify-between text-xs text-white/90">
+      <div className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-3 px-3 py-3 md:px-4 md:py-4">
+        <div className="flex min-w-0 items-center justify-between text-xs text-white/90">
           <nav aria-label="Utility links" className="hidden gap-3 md:flex">
             <a className="rounded-sm hover:text-white focus-visible:outline-white" href="http://localhost:6789/login">
               {text.header.sellerCenter}
@@ -74,8 +74,8 @@ export function Header({ keywords }: HeaderProps) {
             </a>
           </nav>
 
-          <div className="ml-auto flex items-center gap-2 md:gap-4">
-            <div className="flex items-center gap-1 rounded-md border border-white/50 p-0.5">
+          <div className="no-scrollbar -mx-3 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto whitespace-nowrap px-3 md:mx-0 md:ml-auto md:flex-none md:gap-4 md:overflow-visible md:px-0">
+            <div className="flex shrink-0 items-center gap-1 rounded-md border border-white/50 p-0.5">
               <span className="hidden pl-2 text-[11px] font-semibold uppercase tracking-wide md:block">{text.header.language}</span>
               <button
                 type="button"
@@ -99,40 +99,40 @@ export function Header({ keywords }: HeaderProps) {
               </button>
             </div>
 
-            <a className="rounded-sm hover:text-white focus-visible:outline-white" href="#">
+            <a className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="#">
               {text.header.notifications}
             </a>
-            <a className="rounded-sm hover:text-white focus-visible:outline-white" href="#">
+            <a className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="#">
               {text.header.support}
             </a>
-            <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/videos">
+            <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/videos">
               {text.header.video}
             </Link>
-            <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/live">
+            <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/live">
               Live
             </Link>
 
             {ready && user ? (
               <>
-                <button type="button" onClick={handleOpenChatDrawer} className="rounded-sm hover:text-white focus-visible:outline-white">
+                <button type="button" onClick={handleOpenChatDrawer} className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white">
                   Chat
                 </button>
-                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
+                <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
                   {text.header.orders}
                 </Link>
-                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/account">
+                <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/account">
                   {text.header.account}
                 </Link>
-                <button type="button" onClick={handleLogout} className="rounded-sm hover:text-white focus-visible:outline-white">
+                <button type="button" onClick={handleLogout} className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white">
                   {text.header.logout}
                 </button>
               </>
             ) : (
               <>
-                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/login">
+                <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/login">
                   {text.header.login}
                 </Link>
-                <Link className="rounded-sm hover:text-white focus-visible:outline-white" href="/register">
+                <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/register">
                   {text.header.register}
                 </Link>
               </>
@@ -140,15 +140,15 @@ export function Header({ keywords }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 md:gap-5">
-          <Link className="flex items-center gap-2 rounded-md focus-visible:outline-white" href="/" aria-label="Homepage">
-            <span className="grid h-10 w-10 place-items-center rounded-md bg-white text-2xl font-bold text-brand-500">m</span>
-            <span className="text-3xl font-semibold tracking-tight">eMall</span>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:flex md:gap-5">
+          <Link className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-white" href="/" aria-label="Homepage">
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-white text-lg font-bold text-brand-500 sm:h-9 sm:w-9 sm:text-xl md:h-10 md:w-10 md:text-2xl">m</span>
+            <span className="text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl">eMall</span>
           </Link>
 
-          <div className="flex-1">
+          <div className="order-3 col-span-3 min-w-0 md:order-none md:col-span-1 md:flex-1">
             <form
-              className="flex rounded-md border border-white/80 bg-white p-1"
+              className="flex min-w-0 rounded-md border border-white/80 bg-white p-1"
               role="search"
               aria-label="Search products"
               onSubmit={handleSearchSubmit}
@@ -158,11 +158,11 @@ export function Header({ keywords }: HeaderProps) {
                 placeholder={text.header.searchPlaceholder}
                 value={searchValue}
                 onChange={(event) => setSearchValue(event.target.value)}
-                className="h-10 flex-1 border-0 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+                className="h-10 min-w-0 flex-1 border-0 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
               <button
                 type="submit"
-                className="h-10 min-w-12 rounded bg-brand-500 px-4 text-sm font-semibold text-white transition hover:bg-brand-600"
+                className="h-10 shrink-0 rounded bg-brand-500 px-3 text-sm font-semibold leading-tight text-white transition hover:bg-brand-600 md:px-4"
               >
                 {text.header.searchButton}
               </button>
@@ -178,7 +178,7 @@ export function Header({ keywords }: HeaderProps) {
 
           <Link
             href="/cart"
-            className="relative inline-flex h-11 w-11 items-center justify-center rounded-md border border-white/60 text-white transition hover:bg-white/10 focus-visible:outline-white"
+            className="relative ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-white/60 text-white transition hover:bg-white/10 focus-visible:outline-white md:h-11 md:w-11"
             aria-label={text.header.cart}
           >
             <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">

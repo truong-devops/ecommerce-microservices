@@ -731,23 +731,23 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
         {status === 'success' && product ? (
           <section className="space-y-4">
-            <section className="rounded-md bg-white p-4 shadow-card md:p-6">
-              <div className="mb-4 text-sm text-slate-500">
+            <section className="rounded-xl bg-white p-3 shadow-card md:rounded-md md:p-6">
+              <div className="mb-4 line-clamp-2 text-xs text-slate-500 sm:text-sm">
                 <Link href="/" className="font-medium text-brand-600 hover:text-brand-700">
                   {detailText.breadcrumbHome}
                 </Link>{' '}
                 / <span>{prettifyAttributeLabel(product.categoryId, locale)}</span> / <span>{product.title}</span>
               </div>
 
-              <div className="grid gap-6 lg:grid-cols-[420px_minmax(0,1fr)]">
+              <div className="grid gap-5 lg:grid-cols-[420px_minmax(0,1fr)] lg:gap-6">
                 <div className="space-y-3">
                   <img
                     src={selectedImage || product.image}
                     alt={product.title}
-                    className="h-[420px] w-full rounded-md border border-slate-200 object-cover"
+                    className="aspect-square w-full rounded-md border border-slate-200 object-cover"
                   />
 
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                     {product.images.slice(0, 10).map((image, index) => {
                       const selected = (selectedImage || product.image) === image;
                       return (
@@ -760,7 +760,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                             selected ? 'border-brand-500 ring-1 ring-brand-500' : 'border-slate-200 hover:border-brand-300'
                           }`}
                         >
-                          <img src={image} alt={`${product.title} ${index + 1}`} className="h-20 w-full object-cover" />
+                          <img src={image} alt={`${product.title} ${index + 1}`} className="h-14 w-full object-cover sm:h-20" />
                         </button>
                       );
                     })}
@@ -773,7 +773,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
                     <span className="rounded bg-slate-100 px-2 py-1 font-medium text-slate-600">{productStatusLabel}</span>
                   </div>
 
-                  <h1 className="text-2xl font-semibold leading-tight text-slate-900">{product.title}</h1>
+                  <h1 className="text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">{product.title}</h1>
 
                   <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                     {ratingValue !== null ? (
@@ -791,7 +791,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
                   <div className="rounded-md bg-slate-50 p-4">
                     <div className="flex flex-wrap items-center gap-3">
-                      <p className="text-3xl font-bold text-brand-600">{formatPrice(displayPrice, displayCurrency)}</p>
+                      <p className="text-2xl font-bold text-brand-600 sm:text-3xl">{formatPrice(displayPrice, displayCurrency)}</p>
                       {displayDiscountPercent > 0 ? (
                         <span className="rounded bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-700">
                           -{displayDiscountPercent}% {detailText.discount}
@@ -880,7 +880,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
 
                   {notice ? <p className="rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">{notice}</p> : null}
 
-                  <div className="flex flex-wrap gap-3 pt-2">
+                  <div className="grid gap-3 pt-2 sm:flex sm:flex-wrap">
                     <button
                       type="button"
                       onClick={handleAddToCart}

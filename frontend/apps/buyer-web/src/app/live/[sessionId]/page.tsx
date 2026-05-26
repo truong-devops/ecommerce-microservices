@@ -600,7 +600,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     <div className="min-h-screen bg-[#f5f2ec] text-[#171717]">
       <Header keywords={keywords.length > 0 ? keywords : ['livestream', 'live sale', 'deal hot']} />
 
-      <main className="mx-auto w-full max-w-[1360px] px-4 py-6 md:px-6 md:py-8">
+      <main className="mx-auto w-full max-w-[1360px] px-3 py-4 md:px-6 md:py-8">
         {status === 'loading' ? <p className="py-16 text-center text-sm font-medium text-slate-500">{text.home.loading}</p> : null}
 
         {status === 'error' ? (
@@ -615,7 +615,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
         {status === 'success' && session ? (
           <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,900px)_380px] xl:justify-center">
             <article className="space-y-4">
-              <div className="rounded-3xl border border-[#ead8ca] bg-white p-5 shadow-[0_16px_45px_rgba(38,31,26,0.08)]">
+              <div className="rounded-2xl border border-[#ead8ca] bg-white p-4 shadow-[0_16px_45px_rgba(38,31,26,0.08)] md:rounded-3xl md:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -633,14 +633,14 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                   <button
                     type="button"
                     onClick={() => void refreshProducts(session.sessionId)}
-                    className="rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3]"
+                    className="w-full rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3] sm:w-auto"
                   >
                     Làm mới sản phẩm
                   </button>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.10)]">
+              <div className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.10)] md:rounded-3xl">
                 <div className="relative bg-[#090b10]">
                   {!isSessionLive ? (
                     <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/70">
@@ -746,7 +746,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
             </article>
 
             <aside className="grid gap-5 xl:sticky xl:top-24 xl:self-start">
-              <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+              <section className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)] md:rounded-3xl">
                 <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
                   <p className="text-[11px] font-bold uppercase text-[#b54708]">Live cart</p>
                   <h2 className="mt-1 text-xl font-bold">Sản phẩm đang lên sóng</h2>
@@ -791,7 +791,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
               </section>
 
               {recommendationLoading || recommendedProducts.length > 0 ? (
-                <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+                <section className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)] md:rounded-3xl">
                   <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
                     <p className="text-[11px] font-bold uppercase text-[#b54708]">Gợi ý mua kèm</p>
                     <h2 className="mt-1 text-xl font-bold">Mua kèm phổ biến</h2>
@@ -827,14 +827,14 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                 </section>
               ) : null}
 
-              <section className="overflow-hidden rounded-3xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)]">
+              <section className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)] md:rounded-3xl">
                 <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
                   <h2 className="mt-1 text-xl font-bold">Trò chuyện</h2>
                   <p className="mt-1 text-sm text-[#667085]">
                     {user ? 'Trao đổi trực tiếp với shop và người xem khác.' : 'Đăng nhập để tham gia trò chuyện.'}
                   </p>
                 </div>
-                <div className="flex h-[360px] flex-col">
+                <div className="flex h-[320px] flex-col sm:h-[360px]">
                   <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
                     {messages.length === 0 ? <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p> : null}
                     {messages.map((message) => (

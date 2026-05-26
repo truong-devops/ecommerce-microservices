@@ -308,9 +308,9 @@ export default function VideosPage() {
         ) : null}
 
         {status === 'success' && currentVideo ? (
-          <section aria-label="Shoppable video viewer" className="mx-auto min-h-[calc(100vh-184px)] max-w-[1180px] px-4 py-6">
+          <section aria-label="Shoppable video viewer" className="mx-auto min-h-[calc(100vh-184px)] max-w-[1180px] px-3 py-4 md:px-4 md:py-6">
             <div className="grid items-start gap-5 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-              <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-24">
+              <aside className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-4 lg:sticky lg:top-24">
                 <Link
                   href={`/shops/${encodeURIComponent(currentVideo.seller.sellerId)}`}
                   className="flex items-center gap-3 border-b border-slate-100 pb-4 transition hover:border-brand-100"
@@ -440,7 +440,7 @@ export default function VideosPage() {
                     {shareStatus === 'copied' ? <p className="mb-2 px-1 text-xs font-medium text-brand-600">Đã copy link video.</p> : null}
                     {shareStatus === 'error' ? <p className="mb-2 px-1 text-xs font-medium text-red-600">Không thể chia sẻ video lúc này.</p> : null}
 
-                    <div className="relative mx-auto aspect-[9/16] max-h-[640px] overflow-hidden rounded-lg border border-slate-200 bg-white">
+                    <div className="relative mx-auto aspect-[9/16] max-h-[min(640px,72vh)] overflow-hidden rounded-lg border border-slate-200 bg-white">
                       {currentVideo.mediaUrl ? (
                         <video
                           key={currentVideo.videoId}
@@ -458,7 +458,7 @@ export default function VideosPage() {
                         <div className="flex h-full items-center justify-center bg-slate-100 px-6 text-center text-sm text-slate-600">Video chưa có media</div>
                       )}
 
-                      <div className="pointer-events-none absolute left-3 top-3 flex gap-2">
+                      <div className="pointer-events-none absolute left-3 right-3 top-3 flex flex-wrap gap-2">
                         <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">{currentVideo.metrics.qualifiedViewCount} views</span>
                         <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">
                           {currentVideo.metrics.commentCount ?? 0} bình luận

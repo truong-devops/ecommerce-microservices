@@ -34,7 +34,7 @@ export async function GET(request: Request, context: RouteContext) {
   query.set('pageSize', String(normalizePositiveInt(input.get('pageSize'), 50, 100)));
 
   try {
-    const messages = await requestPaginatedLiveMessages(`${serviceBaseUrls.gateway}/buyer-experience/live/sessions/${encodeURIComponent(sessionId)}/messages?${query.toString()}`, request);
+    const messages = await requestPaginatedLiveMessages(`${serviceBaseUrls.gateway}/live/sessions/${encodeURIComponent(sessionId)}/messages?${query.toString()}`, request);
     return ok(messages);
   } catch (error) {
     return toErrorResponse(error);

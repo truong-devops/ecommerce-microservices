@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const sessions = await requestUpstream<unknown[]>(`${serviceBaseUrls.gateway}/buyer-experience/live/sessions?${query.toString()}`);
+    const sessions = await requestUpstream<unknown[]>(`${serviceBaseUrls.gateway}/live/sessions?${query.toString()}`);
     return ok(sessions);
   } catch (error) {
     return toErrorResponse(error);

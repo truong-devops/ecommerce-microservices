@@ -82,7 +82,7 @@ export function VideoHighlightsSection({ products }: VideoHighlightsSectionProps
   const displayCards = videoCards.length > 0 ? videoCards : fallbackVideos;
 
   return (
-    <section aria-labelledby="video-highlights-heading" className="rounded-md bg-white p-3 shadow-card md:p-4">
+    <section aria-labelledby="video-highlights-heading" className="rounded-xl bg-white p-3 shadow-card md:rounded-md md:p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 id="video-highlights-heading" className="text-xl font-bold text-slate-900">
           {text.home.videoHighlightsTitle}
@@ -99,7 +99,7 @@ export function VideoHighlightsSection({ products }: VideoHighlightsSectionProps
             href={item.productId ? `/videos?productId=${encodeURIComponent(item.productId)}` : '/videos'}
             className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-900"
           >
-            <div className="relative h-56 w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(248,81,47,0.45),transparent_42%),linear-gradient(160deg,#111827,#020617)]">
+            <div className="relative h-44 w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(248,81,47,0.45),transparent_42%),linear-gradient(160deg,#111827,#020617)] sm:h-56">
               {item.mediaUrl ? (
                 <video
                   src={item.mediaUrl}

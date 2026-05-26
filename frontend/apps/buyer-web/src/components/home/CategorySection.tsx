@@ -163,20 +163,20 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
   }, [onSelectCategory, selectedCategoryId, visibleCategories]);
 
   return (
-    <section aria-labelledby="category-heading" className="rounded-2xl bg-white/90 p-4 shadow-card md:p-5">
+    <section aria-labelledby="category-heading" className="rounded-2xl bg-white/90 p-3 shadow-card md:p-5">
       <div className="mb-4 border-b border-slate-100 pb-3">
         <h2 id="category-heading" className="text-xl font-bold uppercase tracking-wide text-slate-700">
           {text.home.categoryTitle}
         </h2>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="no-scrollbar -mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 md:flex-wrap md:overflow-visible">
         {typeOptions.map((option) => (
           <button
             key={option.id}
             type="button"
             onClick={() => setSelectedType(option.id)}
-            className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
               selectedType === option.id
                 ? 'border-brand-500 bg-brand-500 text-white shadow-sm'
                 : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:text-brand-600'
@@ -187,7 +187,7 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 md:gap-3 lg:grid-cols-5 xl:grid-cols-6">
         {visibleCategories.map((category) => {
           const isActive = selectedCategoryId === category.id;
           const fallbackText = category.label
@@ -202,14 +202,14 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
               key={category.id}
               type="button"
               onClick={() => onSelectCategory(isActive ? null : category.id)}
-              className={`group rounded-2xl border p-3 text-center transition duration-200 ${
+              className={`group rounded-2xl border p-2.5 text-center transition duration-200 md:p-3 ${
                 isActive
                   ? 'border-brand-300 bg-gradient-to-b from-brand-50 to-white shadow-md'
                   : 'border-slate-100 bg-white hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md'
               }`}
             >
               <div
-                className={`mx-auto h-16 w-16 overflow-hidden rounded-full ${
+                className={`mx-auto h-14 w-14 overflow-hidden rounded-full md:h-16 md:w-16 ${
                   isActive ? 'ring-2 ring-brand-200 ring-offset-2 ring-offset-white' : 'ring-1 ring-slate-100'
                 } bg-slate-100`}
               >
@@ -219,7 +219,7 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
                   <div className="grid h-full w-full place-items-center text-base font-semibold text-slate-700">{fallbackText || 'DM'}</div>
                 )}
               </div>
-              <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm font-medium text-slate-700">{category.label}</p>
+              <p className="mt-2 line-clamp-2 min-h-[2.25rem] text-xs font-medium text-slate-700 md:min-h-[2.5rem] md:text-sm">{category.label}</p>
             </button>
           );
         })}

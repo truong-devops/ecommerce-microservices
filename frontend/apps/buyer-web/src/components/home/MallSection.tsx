@@ -12,7 +12,7 @@ export function MallSection({ deals }: MallSectionProps) {
   const { text } = useLanguage();
 
   return (
-    <section aria-labelledby="mall-heading" className="rounded-md bg-white p-3 shadow-card md:p-4">
+    <section aria-labelledby="mall-heading" className="rounded-xl bg-white p-3 shadow-card md:rounded-md md:p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 id="mall-heading" className="text-xl font-bold uppercase tracking-wide text-brand-600">
           {text.home.mallTitle}
@@ -25,7 +25,7 @@ export function MallSection({ deals }: MallSectionProps) {
       <div className="grid gap-3 lg:grid-cols-[340px_1fr]">
         <div className="relative overflow-hidden rounded-md bg-brand-gradient p-4 text-white">
           <p className="text-sm font-semibold uppercase tracking-wider text-white/90">Featured campaign</p>
-          <h3 className="mt-2 text-4xl font-black leading-tight">{text.home.campaignTitle}</h3>
+          <h3 className="mt-2 text-3xl font-black leading-tight md:text-4xl">{text.home.campaignTitle}</h3>
           <p className="mt-3 max-w-[25ch] text-sm text-white/90">
             {text.home.campaignDescription}
           </p>
@@ -38,7 +38,7 @@ export function MallSection({ deals }: MallSectionProps) {
               href={`/products/${encodeURIComponent(deal.productId)}`}
               className="rounded-md border border-slate-200 p-2 transition hover:shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
             >
-              <img src={deal.image} alt={deal.brand} className="h-24 w-full rounded object-cover" />
+              <img src={deal.image} alt={deal.brand} className="h-24 w-full rounded object-cover sm:h-28 md:h-24" />
               <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{deal.brand}</p>
               <h3 className="text-sm font-semibold text-brand-600">{deal.title}</h3>
             </Link>

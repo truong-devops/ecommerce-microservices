@@ -38,12 +38,12 @@ export default function LiveSessionsPage() {
     <div className="min-h-screen bg-[#fff7f3] text-slate-900">
       <Header keywords={['livestream', 'sale live', 'deal hot']} />
 
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-6">
-        <section className="overflow-hidden rounded-[32px] border border-orange-100 bg-[radial-gradient(circle_at_top_left,#ffefe6,transparent_34%),linear-gradient(135deg,#ffffff,#fff7f2)] p-6 shadow-sm">
+      <main className="mx-auto w-full max-w-[1200px] px-3 py-4 md:px-4 md:py-6">
+        <section className="overflow-hidden rounded-2xl border border-orange-100 bg-[radial-gradient(circle_at_top_left,#ffefe6,transparent_34%),linear-gradient(135deg,#ffffff,#fff7f2)] p-5 shadow-sm md:rounded-[32px] md:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Live shopping</p>
           <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">Đang live trên eMall</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950 md:text-4xl">Đang live trên eMall</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                 Xem shop phát trực tiếp, trò chuyện trong phòng live và mua nhanh các sản phẩm đang được ghim.
               </p>
@@ -51,7 +51,7 @@ export default function LiveSessionsPage() {
             <button
               type="button"
               onClick={() => void loadSessions()}
-              className="rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600"
+              className="w-full rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 sm:w-auto"
             >
               Tải lại
             </button>
@@ -79,7 +79,7 @@ export default function LiveSessionsPage() {
               <Link
                 key={session.sessionId}
                 href={`/live/${encodeURIComponent(session.sessionId)}`}
-                className="group overflow-hidden rounded-[28px] border border-orange-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg"
+                className="group overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg md:rounded-[28px]"
               >
                 <div className="relative aspect-video bg-slate-100">
                   <Image src={session.thumbnailUrl || '/icon.svg'} alt={session.title} fill unoptimized className="object-cover" />

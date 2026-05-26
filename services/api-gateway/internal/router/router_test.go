@@ -27,6 +27,7 @@ func TestPrivateV1RoutesRequireAuth(t *testing.T) {
 		"/api/v1/users/me",
 		"/api/v1/inventory/stocks/SKU-001",
 		"/api/v1/shipping",
+		"/api/v1/shipments/order/order-123",
 		"/api/v1/analytics/overview",
 		"/api/v1/moderation/videos",
 	}

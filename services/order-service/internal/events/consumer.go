@@ -28,6 +28,7 @@ type sagaService interface {
 	HandleInventoryExpired(ctx context.Context, event service.InventoryFailureEvent, meta service.SagaEventMeta) error
 	HandlePaymentCaptured(ctx context.Context, event service.PaymentEvent, meta service.SagaEventMeta) error
 	HandlePaymentFailed(ctx context.Context, event service.PaymentEvent, meta service.SagaEventMeta) error
+	HandleShipmentStatusUpdated(ctx context.Context, event service.ShipmentEvent, meta service.SagaEventMeta) error
 }
 
 func NewInventorySagaConsumer(cfg config.Config, logger *zap.Logger, svc *service.OrderSagaService) *SagaConsumer {
@@ -36,6 +37,10 @@ func NewInventorySagaConsumer(cfg config.Config, logger *zap.Logger, svc *servic
 
 func NewPaymentSagaConsumer(cfg config.Config, logger *zap.Logger, svc *service.OrderSagaService) *SagaConsumer {
 	return newSagaConsumer(cfg.KafkaEnabled, cfg.KafkaBrokers, cfg.PaymentEventsTopic, cfg.PaymentEventsConsumerGroup, logger, svc)
+}
+
+func NewShippingEventsConsumer(cfg config.Config, logger *zap.Logger, svc *service.OrderSagaService) *SagaConsumer {
+	return newSagaConsumer(cfg.KafkaEnabled, cfg.KafkaBrokers, cfg.ShippingEventsTopic, cfg.ShippingEventsConsumerGroup, logger, svc)
 }
 
 func newSagaConsumer(enabled bool, brokers []string, topic string, groupID string, logger *zap.Logger, svc sagaService) *SagaConsumer {
@@ -163,6 +168,25 @@ func (c *SagaConsumer) handleMessage(ctx context.Context, msg kafka.Message) err
 			zap.Int64("offset", meta.OffsetValue),
 		)
 		return c.svc.HandlePaymentFailed(ctx, event, meta)
+	case service.EventShipmentStatusUpdated, service.EventShipmentDelivered:
+		event := service.ShipmentEvent{
+			OrderID:        asString(env.Payload["orderId"]),
+			ShipmentID:     asString(env.Payload["shipmentId"]),
+			Status:         asString(env.Payload["status"]),
+			AWB:            asString(env.Payload["awb"]),
+			TrackingNumber: asString(env.Payload["trackingNumber"]),
+		}
+		c.logger.Info("shipment status event received",
+			zap.String("requestId", meta.RequestID),
+			zap.String("eventId", meta.EventID),
+			zap.String("eventType", meta.EventType),
+			zap.String("orderId", event.OrderID),
+			zap.String("shipmentStatus", event.Status),
+			zap.String("topic", meta.Topic),
+			zap.Int("partition", meta.Partition),
+			zap.Int64("offset", meta.OffsetValue),
+		)
+		return c.svc.HandleShipmentStatusUpdated(ctx, event, meta)
 	default:
 		return nil
 	}

@@ -46,6 +46,8 @@ type Config struct {
 	InventoryEventsConsumerGroup string
 	PaymentEventsTopic           string
 	PaymentEventsConsumerGroup   string
+	ShippingEventsTopic          string
+	ShippingEventsConsumerGroup  string
 	NotificationEventsTopic      string
 	AnalyticsEventsTopic         string
 	AuditEventsTopic             string
@@ -79,6 +81,8 @@ func Load() (Config, error) {
 		InventoryEventsConsumerGroup: getEnv("INVENTORY_EVENTS_CONSUMER_GROUP", "order-service-inventory-events-group"),
 		PaymentEventsTopic:           getEnv("PAYMENT_EVENTS_TOPIC", "payment.events"),
 		PaymentEventsConsumerGroup:   getEnv("PAYMENT_EVENTS_CONSUMER_GROUP", "order-service-payment-events-group"),
+		ShippingEventsTopic:          getEnv("SHIPPING_EVENTS_TOPIC", "shipping.events"),
+		ShippingEventsConsumerGroup:  getEnv("SHIPPING_EVENTS_CONSUMER_GROUP", "order-service-shipping-events-group"),
 		NotificationEventsTopic:      getEnv("NOTIFICATION_EVENTS_TOPIC", "notification.events"),
 		AnalyticsEventsTopic:         getEnv("ANALYTICS_EVENTS_TOPIC", "analytics.events"),
 		AuditEventsTopic:             getEnv("AUDIT_EVENTS_TOPIC", "audit.events"),

@@ -371,10 +371,18 @@ func (s *OrderSagaService) observeSagaDuration(state domain.OrderSagaState) {
 }
 
 func insertOrderStatusUpdatedEvent(ctx context.Context, repo *repository.OrderRepository, tx pgx.Tx, order domain.Order, actor domain.UserContext, requestID string) error {
+	return insertOrderEvent(ctx, repo, tx, EventOrderStatusUpdated, order, actor, requestID)
+}
+
+func insertOrderDeliveredEvent(ctx context.Context, repo *repository.OrderRepository, tx pgx.Tx, order domain.Order, actor domain.UserContext, requestID string) error {
+	return insertOrderEvent(ctx, repo, tx, EventOrderDelivered, order, actor, requestID)
+}
+
+func insertOrderEvent(ctx context.Context, repo *repository.OrderRepository, tx pgx.Tx, eventType string, order domain.Order, actor domain.UserContext, requestID string) error {
 	return repo.InsertOutboxEvent(ctx, tx, repository.CreateOutboxEventInput{
 		AggregateType: "order",
 		AggregateID:   order.ID,
-		EventType:     EventOrderStatusUpdated,
+		EventType:     eventType,
 		Payload: map[string]any{
 			"orderId":           order.ID,
 			"orderNumber":       order.OrderNumber,

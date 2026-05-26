@@ -17,10 +17,12 @@ type fakeSagaService struct {
 	inventoryExpiredCalls  int
 	paymentCapturedCalls   int
 	paymentFailedCalls     int
+	shipmentStatusCalls    int
 
 	lastInventoryReserved service.InventoryReservedEvent
 	lastInventoryFailure  service.InventoryFailureEvent
 	lastPayment           service.PaymentEvent
+	lastShipment          service.ShipmentEvent
 	lastMeta              service.SagaEventMeta
 }
 
@@ -55,6 +57,13 @@ func (f *fakeSagaService) HandlePaymentCaptured(ctx context.Context, event servi
 func (f *fakeSagaService) HandlePaymentFailed(ctx context.Context, event service.PaymentEvent, meta service.SagaEventMeta) error {
 	f.paymentFailedCalls++
 	f.lastPayment = event
+	f.lastMeta = meta
+	return nil
+}
+
+func (f *fakeSagaService) HandleShipmentStatusUpdated(ctx context.Context, event service.ShipmentEvent, meta service.SagaEventMeta) error {
+	f.shipmentStatusCalls++
+	f.lastShipment = event
 	f.lastMeta = meta
 	return nil
 }
@@ -162,6 +171,31 @@ func TestSagaConsumerSkipsUnknownEvent(t *testing.T) {
 	}
 	if fake.inventoryReservedCalls != 0 || fake.paymentCapturedCalls != 0 {
 		t.Fatalf("expected unknown event to be ignored")
+	}
+}
+
+func TestSagaConsumerHandleShipmentDelivered(t *testing.T) {
+	fake := &fakeSagaService{}
+	consumer := &SagaConsumer{topic: "shipping.events", logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{Value: mustJSON(t, map[string]any{
+		"eventType": "shipment.delivered",
+		"payload": map[string]any{
+			"orderId":        "11111111-1111-4111-8111-111111111111",
+			"shipmentId":     "22222222-2222-4222-8222-222222222222",
+			"status":         "DELIVERED",
+			"awb":            "SHP123",
+			"trackingNumber": "SHP123",
+		},
+	})}
+
+	if err := consumer.handleMessage(context.Background(), msg); err != nil {
+		t.Fatalf("handle message: %v", err)
+	}
+	if fake.shipmentStatusCalls != 1 {
+		t.Fatalf("expected shipment status call, got %d", fake.shipmentStatusCalls)
+	}
+	if fake.lastShipment.OrderID != "11111111-1111-4111-8111-111111111111" || fake.lastShipment.Status != "DELIVERED" {
+		t.Fatalf("unexpected shipment event: %+v", fake.lastShipment)
 	}
 }
 

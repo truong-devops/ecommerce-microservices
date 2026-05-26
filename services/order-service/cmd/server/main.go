@@ -83,14 +83,17 @@ func main() {
 	dispatcher := events.NewDispatcher(repo, publisher, logger, cfg.DispatchInterval, cfg.DispatchBatch, cfg.DispatchMaxRetry)
 	inventoryConsumer := events.NewInventorySagaConsumer(cfg, logger, orderSagaService)
 	paymentConsumer := events.NewPaymentSagaConsumer(cfg, logger, orderSagaService)
+	shippingConsumer := events.NewShippingEventsConsumer(cfg, logger, orderSagaService)
 	sagaTimeoutWorker := service.NewSagaTimeoutWorker(orderSagaService, logger, cfg.SagaTimeoutEnabled, cfg.SagaTimeoutInterval, cfg.SagaTimeoutAfter, cfg.SagaTimeoutBatch)
 	defer inventoryConsumer.Close()
 	defer paymentConsumer.Close()
+	defer shippingConsumer.Close()
 	runCtx, runCancel := context.WithCancel(context.Background())
 	defer runCancel()
 	go dispatcher.Run(runCtx)
 	go inventoryConsumer.Run(runCtx)
 	go paymentConsumer.Run(runCtx)
+	go shippingConsumer.Run(runCtx)
 	go sagaTimeoutWorker.Run(runCtx)
 
 	server := &http.Server{

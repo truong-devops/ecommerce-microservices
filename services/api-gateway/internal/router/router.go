@@ -157,6 +157,8 @@ func New(
 		mountPrefix(private, "/api/v1/inventory", proxies[config.ServiceInventory])
 		mountPrefix(private, "/api/shipping", proxies[config.ServiceShipping])
 		mountPrefix(private, "/api/v1/shipping", proxies[config.ServiceShipping])
+		mountPrefix(private, "/api/shipments", proxies[config.ServiceShipping])
+		mountPrefix(private, "/api/v1/shipments", proxies[config.ServiceShipping])
 		mountPrefix(private, "/api/notifications", proxies[config.ServiceNotification])
 		mountPrefix(private, "/api/v1/notifications", proxies[config.ServiceNotification])
 		mountPrefix(private, "/api/analytics", proxies[config.ServiceAnalytics])

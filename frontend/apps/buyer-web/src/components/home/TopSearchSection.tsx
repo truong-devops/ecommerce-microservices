@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { TopSearchItem } from '@/lib/api/types';
 import { useLanguage } from '@/providers/AppProvider';
 
@@ -23,7 +24,11 @@ export function TopSearchSection({ items }: TopSearchSectionProps) {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {items.map((item) => (
-          <article key={item.id} className="rounded-md border border-slate-200 p-2 transition hover:shadow-card">
+          <Link
+            key={item.id}
+            href={`/products/${encodeURIComponent(item.productId)}`}
+            className="rounded-md border border-slate-200 p-2 transition hover:shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+          >
             <div className="relative overflow-hidden rounded-md">
               <img src={item.image} alt={item.name} className="h-32 w-full object-cover" />
               <span className="absolute left-2 top-2 rounded bg-brand-500 px-1.5 py-0.5 text-xs font-semibold text-white">TOP</span>
@@ -32,7 +37,7 @@ export function TopSearchSection({ items }: TopSearchSectionProps) {
             <p className="mt-1 text-sm text-slate-500">
               {text.home.soldLabel} {item.soldPerMonth}
             </p>
-          </article>
+          </Link>
         ))}
       </div>
     </section>

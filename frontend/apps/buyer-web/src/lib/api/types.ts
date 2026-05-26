@@ -1,5 +1,6 @@
 export interface FlashSaleItem {
   id: string;
+  productId: string;
   name: string;
   price: number;
   discountPercent: number;
@@ -9,6 +10,7 @@ export interface FlashSaleItem {
 
 export interface MallDealItem {
   id: string;
+  productId: string;
   brand: string;
   title: string;
   image: string;
@@ -16,6 +18,7 @@ export interface MallDealItem {
 
 export interface TopSearchItem {
   id: string;
+  productId: string;
   name: string;
   soldPerMonth: string;
   image: string;

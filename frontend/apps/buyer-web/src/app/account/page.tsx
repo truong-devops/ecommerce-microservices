@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import type { BuyerGender } from '@/lib/api/types';
 import { Header } from '@/components/layout/Header';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
@@ -229,6 +229,7 @@ export default function AccountPage() {
   const [errors, setErrors] = useState<ProfileFormErrors>({});
   const [notice, setNotice] = useState<NoticeState>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const initializedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!ready) {
@@ -236,7 +237,12 @@ export default function AccountPage() {
     }
 
     if (!user) {
+      initializedUserIdRef.current = null;
       router.replace('/login');
+      return;
+    }
+
+    if (initializedUserIdRef.current === user.id) {
       return;
     }
 
@@ -253,6 +259,7 @@ export default function AccountPage() {
     setInitialValues(nextValues);
     setErrors({});
     setNotice(null);
+    initializedUserIdRef.current = user.id;
   }, [ready, router, user]);
 
   if (!ready) {

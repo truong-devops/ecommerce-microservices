@@ -102,6 +102,7 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
   // We derive sections from GET /api/v1/products until backend exposes domain-specific endpoints.
   const flashSaleItems = normalized.slice(0, 6).map((item, index) => ({
     id: `fs-${item.id}`,
+    productId: item.id,
     name: item.name,
     price: item.price,
     discountPercent: item.discountPercent,
@@ -111,6 +112,7 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
 
   const topSearchItems = normalized.slice(0, 6).map((item, index) => ({
     id: `top-${item.id}`,
+    productId: item.id,
     name: item.name,
     soldPerMonth: `${(index + 3) * 9}k / month`,
     image: item.image
@@ -145,12 +147,17 @@ function buildHomeSections(products: BackendProduct[]): HomeSectionsData {
     )
   );
 
-  const mallDeals = uniqueBrands.slice(0, 8).map((brand, index) => ({
-    id: `mall-${index + 1}`,
-    brand: brand.toUpperCase(),
-    title: mallTitles[index % mallTitles.length],
-    image: normalized[index]?.image ?? `https://picsum.photos/seed/mall-${index + 1}/240/240`
-  }));
+  const mallDeals = uniqueBrands.slice(0, 8).map((brand, index) => {
+    const representativeProduct = normalized.find((item) => item.brand?.trim() === brand) ?? normalized[index] ?? normalized[0];
+
+    return {
+      id: `mall-${representativeProduct.id}`,
+      productId: representativeProduct.id,
+      brand: brand.toUpperCase(),
+      title: mallTitles[index % mallTitles.length],
+      image: representativeProduct.image
+    };
+  });
 
   const keywords = deriveKeywords(normalized.map((item) => item.name));
 

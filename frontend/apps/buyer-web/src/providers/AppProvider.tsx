@@ -524,6 +524,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             return current;
           }
 
+          if (current.email === me.user.email && current.role === me.user.role) {
+            return current;
+          }
+
           return {
             ...current,
             email: me.user.email,

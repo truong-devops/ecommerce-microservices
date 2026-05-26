@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { MallDealItem } from '@/lib/api/types';
 import { useLanguage } from '@/providers/AppProvider';
 
@@ -32,11 +33,15 @@ export function MallSection({ deals }: MallSectionProps) {
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {deals.map((deal) => (
-            <article key={deal.id} className="rounded-md border border-slate-200 p-2 transition hover:shadow-card">
+            <Link
+              key={deal.id}
+              href={`/products/${encodeURIComponent(deal.productId)}`}
+              className="rounded-md border border-slate-200 p-2 transition hover:shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+            >
               <img src={deal.image} alt={deal.brand} className="h-24 w-full rounded object-cover" />
               <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{deal.brand}</p>
               <h3 className="text-sm font-semibold text-brand-600">{deal.title}</h3>
-            </article>
+            </Link>
           ))}
         </div>
       </div>

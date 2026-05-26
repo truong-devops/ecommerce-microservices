@@ -9,7 +9,7 @@ resources:
 images:
   - name: api-gateway
     newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-    newTag: buyer-mobile-prod-20260525
+    newTag: c38a94da929f
   - name: auth-service
     newName: docker.io/vantruong179/ecommerce-microservices-auth-service
     newTag: 3e9f709e765a
@@ -24,7 +24,7 @@ images:
     newTag: dev
   - name: order-service
     newName: docker.io/vantruong179/ecommerce-microservices-order-service
-    newTag: dev
+    newTag: c38a94da929f
   - name: payment-service
     newName: docker.io/vantruong179/ecommerce-microservices-payment-service
     newTag: dev
@@ -33,7 +33,7 @@ images:
     newTag: dev
   - name: shipping-service
     newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
-    newTag: dev
+    newTag: c38a94da929f
   - name: notification-service
     newName: docker.io/vantruong179/ecommerce-microservices-notification-service
     newTag: dev
@@ -54,7 +54,7 @@ images:
     newTag: dev
   - name: buyer-web
     newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-    newTag: 3e9f709e765a
+    newTag: c38a94da929f
   - name: seller-web
     newName: docker.io/vantruong179/ecommerce-microservices-seller-web
     newTag: oauth-public-origin-20260525

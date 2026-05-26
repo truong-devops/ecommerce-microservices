@@ -92,6 +92,7 @@ func TestNexusShipmentStatusMapping(t *testing.T) {
 		"CREATED":          domain.ShipmentStatusAWBCreated,
 		"PICKUP_COMPLETED": domain.ShipmentStatusPickedUp,
 		"IN_TRANSIT":       domain.ShipmentStatusInTransit,
+		"OUT_FOR_DELIVERY": domain.ShipmentStatusOutForDelivery,
 		"DELIVERED":        domain.ShipmentStatusDelivered,
 		"DELIVERY_FAILED":  domain.ShipmentStatusFailed,
 		"RETURN_COMPLETED": domain.ShipmentStatusReturned,

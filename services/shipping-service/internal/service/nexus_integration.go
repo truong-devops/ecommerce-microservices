@@ -243,6 +243,8 @@ func nexusShipmentStatus(value string) (domain.ShipmentStatus, bool) {
 		return domain.ShipmentStatusPickedUp, true
 	case "MANIFEST_SEALED", "SEND_GOODS", "IN_TRANSIT", "MANIFEST_RECEIVED", "MANIFEST_UNSEALED", "SCAN_INBOUND", "SCAN_OUTBOUND", "INVENTORY_CHECK":
 		return domain.ShipmentStatusInTransit, true
+	case "OUT_FOR_DELIVERY":
+		return domain.ShipmentStatusOutForDelivery, true
 	case "DELIVERED":
 		return domain.ShipmentStatusDelivered, true
 	case "DELIVERY_FAILED", "NDR_CREATED", "EXCEPTION":

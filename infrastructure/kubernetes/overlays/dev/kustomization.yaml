@@ -12,7 +12,7 @@ images:
     newTag: buyer-mobile-prod-20260525
   - name: auth-service
     newName: docker.io/vantruong179/ecommerce-microservices-auth-service
-    newTag: buyer-mobile-prod-20260525
+    newTag: 1c93781c98ac
   - name: user-service
     newName: docker.io/vantruong179/ecommerce-microservices-user-service
     newTag: dev
@@ -60,4 +60,4 @@ images:
     newTag: oauth-public-origin-20260525
   - name: moderator-web
     newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
-    newTag: dev
+    newTag: 1c93781c98ac

@@ -30,7 +30,7 @@ export const envValidationSchema = Joi.object({
   BUYER_MOBILE_OAUTH_CALLBACK_URL: Joi.string().uri({ allowRelative: false, allowQuerySquareBrackets: true }).default('dtcommercebuyer://auth/google/callback'),
 
   EMAIL_VERIFY_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(60),
-  AUTH_REQUIRE_EMAIL_VERIFICATION: Joi.boolean().default(true),
+  AUTH_REQUIRE_EMAIL_VERIFICATION: Joi.boolean().default(false),
   RESET_PASSWORD_TOKEN_TTL_MINUTES: Joi.number().integer().min(5).default(30),
 
   REFRESH_TOKEN_PEPPER: Joi.string().min(16).required(),

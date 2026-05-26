@@ -46,7 +46,7 @@ export default () => ({
     refreshTokenPepper: process.env.REFRESH_TOKEN_PEPPER,
     bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS ?? 12),
     passwordMinLength: Number(process.env.PASSWORD_MIN_LENGTH ?? 10),
-    requireEmailVerification: process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== 'false',
+    requireEmailVerification: process.env.AUTH_REQUIRE_EMAIL_VERIFICATION === 'true',
     emailVerifyTokenTtlMinutes: Number(process.env.EMAIL_VERIFY_TOKEN_TTL_MINUTES ?? 60),
     resetPasswordTokenTtlMinutes: Number(process.env.RESET_PASSWORD_TOKEN_TTL_MINUTES ?? 30)
   },

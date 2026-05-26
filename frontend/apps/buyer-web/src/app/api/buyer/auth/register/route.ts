@@ -58,7 +58,7 @@ export async function POST(request: Request) {
           })
         });
       } catch {
-        // Keep register response successful even when auto-verify fails.
+        // Keep registration successful; new auth-service versions no longer require this fallback.
       }
     }
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
         userId: registered.userId,
         email: registered.email,
         role: registered.role,
-        emailVerificationRequired: registered.emailVerificationRequired
+        emailVerificationRequired: false
       },
       'backend'
     );

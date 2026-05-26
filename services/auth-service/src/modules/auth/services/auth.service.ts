@@ -119,13 +119,13 @@ export class AuthService {
       passwordHash: await this.passwordService.hashPassword(dto.password),
       role,
       isActive: true,
-      isEmailVerified: false,
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
       mfaEnabled: ADMIN_ROLES.includes(role),
       mfaSecret: null
     });
 
     const createdUser = await this.userRepository.save(user);
-    const verifyToken = await this.issueEmailVerificationToken(createdUser);
 
     await this.auditService.log({
       userId: createdUser.id,
@@ -144,19 +144,12 @@ export class AuthService {
       role: createdUser.role
     });
 
-    await this.eventsPublisherService.publishNotificationEvent('auth.email.verification.requested', {
-      userId: createdUser.id,
-      email: createdUser.email,
-      token: verifyToken
-    });
-
     return {
       userId: createdUser.id,
       userCode: formatRoleCode(createdUser.id, createdUser.role),
       email: createdUser.email,
       role: createdUser.role,
-      emailVerificationRequired: true,
-      ...(this.isDevelopment() ? { verifyToken } : {})
+      emailVerificationRequired: false
     };
   }
 

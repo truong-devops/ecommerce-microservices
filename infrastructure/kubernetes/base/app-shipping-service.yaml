@@ -46,7 +46,7 @@ spec:
             - name: SHIPPING_WEBHOOK_SIGNING_SECRET
               value: dev-shipping-webhook-signing-secret
             - name: NEXUS_ENABLED
-              value: "false"
+              value: "true"
             - name: NEXUS_WEBHOOK_ENABLED
               value: "true"
             - name: NEXUS_BASE_URL
@@ -54,7 +54,7 @@ spec:
             - name: NEXUS_MERCHANT_MAPPING_FILE
               value: /etc/nexus/merchant-mappings.json
             - name: NEXUS_AUTO_CREATE_PICKUP
-              value: "false"
+              value: "true"
             - name: NEXUS_DEFAULT_SERVICE_TYPE
               value: STANDARD
             - name: NEXUS_DEFAULT_PICKUP_TYPE

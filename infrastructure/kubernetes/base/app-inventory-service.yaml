@@ -34,7 +34,7 @@ spec:
             - name: DATABASE_URL
               value: postgresql://einventory:einventory@postgres:5432/ecommerce_inventory?sslmode=disable
             - name: DB_MIGRATIONS_RUN
-              value: "true"
+              value: "false"
             - name: MIGRATION_FILE
               value: /migrations/0001_init_inventory_service.sql
             - name: KAFKA_ENABLED

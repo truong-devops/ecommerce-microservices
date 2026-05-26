@@ -4,60 +4,60 @@ kind: Kustomization
 namespace: ecommerce-dev
 
 resources:
-  - ../../base
+- ../../base
 
 images:
-  - name: api-gateway
-    newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-    newTag: c38a94da929f
-  - name: auth-service
-    newName: docker.io/vantruong179/ecommerce-microservices-auth-service
-    newTag: 3e9f709e765a
-  - name: user-service
-    newName: docker.io/vantruong179/ecommerce-microservices-user-service
-    newTag: dev
-  - name: product-service
-    newName: docker.io/vantruong179/ecommerce-microservices-product-service
-    newTag: dev
-  - name: cart-service
-    newName: docker.io/vantruong179/ecommerce-microservices-cart-service
-    newTag: dev
-  - name: order-service
-    newName: docker.io/vantruong179/ecommerce-microservices-order-service
-    newTag: c38a94da929f
-  - name: payment-service
-    newName: docker.io/vantruong179/ecommerce-microservices-payment-service
-    newTag: dev
-  - name: inventory-service
-    newName: docker.io/vantruong179/ecommerce-microservices-inventory-service
-    newTag: dev
-  - name: shipping-service
-    newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
-    newTag: c38a94da929f
-  - name: notification-service
-    newName: docker.io/vantruong179/ecommerce-microservices-notification-service
-    newTag: dev
-  - name: analytics-service
-    newName: docker.io/vantruong179/ecommerce-microservices-analytics-service
-    newTag: dev
-  - name: review-service
-    newName: docker.io/vantruong179/ecommerce-microservices-review-service
-    newTag: dev
-  - name: chat-service
-    newName: docker.io/vantruong179/ecommerce-microservices-chat-service
-    newTag: buyer-mobile-prod-20260525
-  - name: live-service
-    newName: docker.io/vantruong179/ecommerce-microservices-live-service
-    newTag: buyer-mobile-prod-20260525
-  - name: media-service
-    newName: docker.io/vantruong179/ecommerce-microservices-media-service
-    newTag: dev
-  - name: buyer-web
-    newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-    newTag: c38a94da929f
-  - name: seller-web
-    newName: docker.io/vantruong179/ecommerce-microservices-seller-web
-    newTag: oauth-public-origin-20260525
-  - name: moderator-web
-    newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
-    newTag: 1c93781c98ac
+- name: analytics-service
+  newName: docker.io/vantruong179/ecommerce-microservices-analytics-service
+  newTag: dev
+- name: api-gateway
+  newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
+  newTag: c38a94da929f
+- name: auth-service
+  newName: docker.io/vantruong179/ecommerce-microservices-auth-service
+  newTag: 3e9f709e765a
+- name: buyer-web
+  newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
+  newTag: c38a94da929f
+- name: cart-service
+  newName: docker.io/vantruong179/ecommerce-microservices-cart-service
+  newTag: dev
+- name: chat-service
+  newName: docker.io/vantruong179/ecommerce-microservices-chat-service
+  newTag: buyer-mobile-prod-20260525
+- name: inventory-service
+  newName: docker.io/vantruong179/ecommerce-microservices-inventory-service
+  newTag: dev
+- name: live-service
+  newName: docker.io/vantruong179/ecommerce-microservices-live-service
+  newTag: buyer-mobile-prod-20260525
+- name: media-service
+  newName: docker.io/vantruong179/ecommerce-microservices-media-service
+  newTag: dev
+- name: moderator-web
+  newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
+  newTag: 1c93781c98ac
+- name: notification-service
+  newName: docker.io/vantruong179/ecommerce-microservices-notification-service
+  newTag: dev
+- name: order-service
+  newName: docker.io/vantruong179/ecommerce-microservices-order-service
+  newTag: c38a94da929f
+- name: payment-service
+  newName: docker.io/vantruong179/ecommerce-microservices-payment-service
+  newTag: dev
+- name: product-service
+  newName: docker.io/vantruong179/ecommerce-microservices-product-service
+  newTag: dev
+- name: review-service
+  newName: docker.io/vantruong179/ecommerce-microservices-review-service
+  newTag: dev
+- name: seller-web
+  newName: docker.io/vantruong179/ecommerce-microservices-seller-web
+  newTag: oauth-public-origin-20260525
+- name: shipping-service
+  newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
+  newTag: 759892d59e9f
+- name: user-service
+  newName: docker.io/vantruong179/ecommerce-microservices-user-service
+  newTag: dev

@@ -38,7 +38,7 @@ spec:
             - name: MIGRATION_FILE
               value: /migrations/0001_init_order_service.sql
             - name: KAFKA_ENABLED
-              value: "false"
+              value: "true"
             - name: REDIS_ENABLED
               value: "true"
             - name: PRODUCT_SERVICE_BASE_URL

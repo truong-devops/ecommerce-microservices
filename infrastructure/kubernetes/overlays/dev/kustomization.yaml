@@ -12,7 +12,7 @@ images:
   newTag: dev
 - name: api-gateway
   newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-  newTag: c38a94da929f
+  newTag: 0c9adb302e9a
 - name: auth-service
   newName: docker.io/vantruong179/ecommerce-microservices-auth-service
   newTag: 3e9f709e765a
@@ -42,7 +42,7 @@ images:
   newTag: dev
 - name: order-service
   newName: docker.io/vantruong179/ecommerce-microservices-order-service
-  newTag: c38a94da929f
+  newTag: 0c9adb302e9a
 - name: payment-service
   newName: docker.io/vantruong179/ecommerce-microservices-payment-service
   newTag: dev

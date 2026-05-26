@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, Length } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -11,4 +11,8 @@ export class LoginDto {
   @IsString()
   @Length(6, 6)
   mfaCode?: string;
+
+  @IsOptional()
+  @IsIn(['buyer-web', 'buyer-mobile', 'seller', 'moderator'])
+  app?: string;
 }

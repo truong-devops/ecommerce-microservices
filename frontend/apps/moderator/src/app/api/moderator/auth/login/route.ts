@@ -7,7 +7,6 @@ const MODERATOR_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
 interface LoginRequestBody {
   email?: unknown;
   password?: unknown;
-  mfaCode?: unknown;
 }
 
 interface UpstreamLoginOutput {
@@ -36,7 +35,6 @@ export async function POST(request: Request) {
 
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';
-  const mfaCode = typeof body.mfaCode === 'string' ? body.mfaCode : undefined;
 
   if (!email || !password) {
     return fail(400, 'BAD_REQUEST', 'Email and password are required');
@@ -51,7 +49,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         email,
         password,
-        mfaCode
+        app: 'moderator'
       })
     });
 

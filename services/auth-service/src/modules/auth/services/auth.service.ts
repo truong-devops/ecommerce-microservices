@@ -187,7 +187,7 @@ export class AuthService {
       });
     }
 
-    if (ADMIN_ROLES.includes(user.role)) {
+    if (this.isMfaRequiredForPasswordLogin(user.role, dto.app)) {
       const isDevMfaBypass = this.isDevelopment() && dto.mfaCode === '123456';
 
       if (!isDevMfaBypass) {
@@ -1038,10 +1038,22 @@ export class AuthService {
       case 'seller':
         return ['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role);
       case 'moderator':
-        return ['MODERATOR', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+        return [Role.MODERATOR, Role.ADMIN, Role.SUPER_ADMIN].includes(role as Role);
       default:
         return false;
     }
+  }
+
+  private isMfaRequiredForPasswordLogin(role: Role, app?: string): boolean {
+    if (role === Role.MODERATOR) {
+      return false;
+    }
+
+    if (app === 'moderator' && this.isRoleAllowedForApp('moderator', role)) {
+      return false;
+    }
+
+    return ADMIN_ROLES.includes(role);
   }
 
   private oauthStateKey(state: string): string {

@@ -1,6 +1,7 @@
 CREATE TYPE role_enum AS ENUM (
   'CUSTOMER',
   'ADMIN',
+  'MODERATOR',
   'SUPPORT',
   'WAREHOUSE',
   'SELLER',

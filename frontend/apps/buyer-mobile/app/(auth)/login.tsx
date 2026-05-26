@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Link, router } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { resolveRuntimeConfig } from '@/api/config';
@@ -13,12 +13,38 @@ import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 WebBrowser.maybeCompleteAuthSession();
 
+interface GoogleAuthRequest {
+  url: string;
+  verifier: string;
+}
+
 export default function LoginScreen() {
   const { completeGoogleLogin, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState<'password' | 'google' | null>(null);
   const [error, setError] = useState('');
+  const [googleAuthRequest, setGoogleAuthRequest] = useState<GoogleAuthRequest | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    void WebBrowser.warmUpAsync().catch(() => undefined);
+    void buildGoogleAuthRequest().then((request) => {
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setGoogleAuthRequest(request);
+      void prepareAndroidCustomTab(request.url);
+    });
+
+    return () => {
+      isMountedRef.current = false;
+      void WebBrowser.coolDownAsync().catch(() => undefined);
+    };
+  }, []);
 
   const submitPassword = async () => {
     setLoading('password');
@@ -37,18 +63,29 @@ export default function LoginScreen() {
     setLoading('google');
     setError('');
     try {
-      const pkce = await createPkcePair();
-      const url = buildMobileGoogleAuthorizeUrl(resolveRuntimeConfig().apiBaseUrl, pkce.challenge);
-      const result = await WebBrowser.openAuthSessionAsync(url, MOBILE_OAUTH_CALLBACK_URL);
+      const request = googleAuthRequest ?? (await buildGoogleAuthRequest());
+      setGoogleAuthRequest(null);
+
+      const result = await WebBrowser.openAuthSessionAsync(request.url, MOBILE_OAUTH_CALLBACK_URL);
       if (result.type !== 'success') {
         return;
       }
-      await completeGoogleLogin(extractOauthTicket(result.url), pkce.verifier);
+      await completeGoogleLogin(extractOauthTicket(result.url), request.verifier);
       router.replace('/account');
     } catch (caught) {
       setError(messageOf(caught));
     } finally {
-      setLoading(null);
+      void buildGoogleAuthRequest().then((nextRequest) => {
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        setGoogleAuthRequest(nextRequest);
+        void prepareAndroidCustomTab(nextRequest.url);
+      });
+      if (isMountedRef.current) {
+        setLoading(null);
+      }
     }
   };
 
@@ -88,6 +125,22 @@ export default function LoginScreen() {
 
 function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : 'Không thể đăng nhập lúc này.';
+}
+
+async function buildGoogleAuthRequest(): Promise<GoogleAuthRequest> {
+  const pkce = await createPkcePair();
+  return {
+    url: buildMobileGoogleAuthorizeUrl(resolveRuntimeConfig().apiBaseUrl, pkce.challenge),
+    verifier: pkce.verifier
+  };
+}
+
+async function prepareAndroidCustomTab(url: string): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+
+  await WebBrowser.mayInitWithUrlAsync(url).catch(() => undefined);
 }
 
 const styles = StyleSheet.create({

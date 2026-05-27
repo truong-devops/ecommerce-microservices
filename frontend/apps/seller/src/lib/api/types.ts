@@ -276,6 +276,26 @@ export interface SellerProduct {
   deletedAt: string | null;
 }
 
+export interface SellerInventoryStock {
+  id: string;
+  sku: string;
+  productId: string;
+  sellerId: string;
+  onHand: number;
+  reserved: number;
+  available: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SetSellerInventoryStockInput {
+  productId: string;
+  sellerId: string;
+  onHand: number;
+  reason?: string;
+}
+
 export interface SellerProductListOutput {
   items: SellerProduct[];
   page: number;

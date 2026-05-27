@@ -68,13 +68,14 @@ func (s *ShippingService) enqueueNexusCreateOrder(ctx context.Context, tx pgx.Tx
 		orderCreatedAt = shipment.CreatedAt.UTC().Format(time.RFC3339)
 	}
 	paymentMethod := strings.ToUpper(asString(orderPayload["paymentMethod"]))
+	externalOrderCode := nexusExternalOrderCode(orderPayload)
 
 	input := nexus.CreateOrderRequest{
 		External: nexus.ExternalOrder{
 			Platform:          s.nexus.Client.PartnerCode(),
 			ShopID:            shipment.SellerID,
 			ExternalOrderID:   shipment.OrderID,
-			ExternalOrderCode: asString(orderPayload["orderNumber"]),
+			ExternalOrderCode: externalOrderCode,
 			OrderCreatedAt:    orderCreatedAt,
 			OrderStatus:       "READY_TO_SHIP",
 		},
@@ -117,6 +118,13 @@ func (s *ShippingService) enqueueNexusCreateOrder(ctx context.Context, tx pgx.Tx
 		IdempotencyKey: s.nexus.Client.PartnerCode() + ":" + shipment.SellerID + ":" + shipment.OrderID,
 		RequestPayload: payload,
 	})
+}
+
+func nexusExternalOrderCode(orderPayload map[string]any) string {
+	if orderCode := asString(orderPayload["orderCode"]); orderCode != "" {
+		return orderCode
+	}
+	return asString(orderPayload["orderNumber"])
 }
 
 func nexusItemsFromOrderEvent(raw any) ([]nexus.ParcelItem, float64, error) {

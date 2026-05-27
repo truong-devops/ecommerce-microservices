@@ -225,6 +225,54 @@ func TestConsumerHandleProductCreated(t *testing.T) {
 	}
 }
 
+func TestConsumerHandleProductActivatedProvisionsInventory(t *testing.T) {
+	fake := &fakeInventoryService{}
+	consumer := &Consumer{logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{
+		Topic: "product.events",
+		Value: mustJSON(t, map[string]any{
+			"eventType": "product.status-changed",
+			"payload": map[string]any{
+				"id":       "69efa0f08f435d3294741b55",
+				"sellerId": "9f8a2776-a0d3-4013-ac02-6784166eadd6",
+				"status":   "ACTIVE",
+				"variants": []any{map[string]any{"sku": "IMG-SD-008", "initialStock": float64(20)}},
+			},
+		}),
+	}
+
+	consumer.handleProductMessage(context.Background(), msg)
+
+	if fake.provisionCalls != 1 {
+		t.Fatalf("expected active product status event to provision inventory, got %d call(s)", fake.provisionCalls)
+	}
+	if fake.provisionedEvent.Variants[0].SKU != "IMG-SD-008" || fake.provisionedEvent.Variants[0].InitialStock != 20 {
+		t.Fatalf("unexpected product activation event: %+v", fake.provisionedEvent)
+	}
+}
+
+func TestConsumerIgnoresProductStatusChangeUntilActivated(t *testing.T) {
+	fake := &fakeInventoryService{}
+	consumer := &Consumer{logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{
+		Value: mustJSON(t, map[string]any{
+			"eventType": "product.status-changed",
+			"payload": map[string]any{
+				"id":       "69efa0f08f435d3294741b55",
+				"sellerId": "9f8a2776-a0d3-4013-ac02-6784166eadd6",
+				"status":   "HIDDEN",
+				"variants": []any{map[string]any{"sku": "IMG-SD-008", "initialStock": float64(20)}},
+			},
+		}),
+	}
+
+	consumer.handleProductMessage(context.Background(), msg)
+
+	if fake.provisionCalls != 0 {
+		t.Fatalf("expected non-active status event to be ignored")
+	}
+}
+
 func TestConsumerSkipsInvalidOrderCreated(t *testing.T) {
 	fake := &fakeInventoryService{}
 	consumer := &Consumer{logger: zap.NewNop(), svc: fake}

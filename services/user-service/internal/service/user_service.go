@@ -21,31 +21,39 @@ import (
 var phoneRegex = regexp.MustCompile(`^\+?[1-9]\d{7,14}$`)
 
 type CreateUserRequest struct {
-	Email         string             `json:"email"`
-	FirstName     string             `json:"firstName"`
-	LastName      string             `json:"lastName"`
-	Phone         *string            `json:"phone,omitempty"`
-	Address       *string            `json:"address,omitempty"`
-	Gender        *domain.UserGender `json:"gender,omitempty"`
-	DateOfBirth   *string            `json:"dateOfBirth,omitempty"`
-	AvatarURL     *string            `json:"avatarUrl,omitempty"`
-	Role          *domain.UserRole   `json:"role,omitempty"`
-	Status        *domain.UserStatus `json:"status,omitempty"`
-	EmailVerified *bool              `json:"emailVerified,omitempty"`
+	Email               string             `json:"email"`
+	FirstName           string             `json:"firstName"`
+	LastName            string             `json:"lastName"`
+	Phone               *string            `json:"phone,omitempty"`
+	Address             *string            `json:"address,omitempty"`
+	AddressProvince     *string            `json:"addressProvince,omitempty"`
+	AddressProvinceCode *string            `json:"addressProvinceCode,omitempty"`
+	AddressWard         *string            `json:"addressWard,omitempty"`
+	AddressWardCode     *string            `json:"addressWardCode,omitempty"`
+	Gender              *domain.UserGender `json:"gender,omitempty"`
+	DateOfBirth         *string            `json:"dateOfBirth,omitempty"`
+	AvatarURL           *string            `json:"avatarUrl,omitempty"`
+	Role                *domain.UserRole   `json:"role,omitempty"`
+	Status              *domain.UserStatus `json:"status,omitempty"`
+	EmailVerified       *bool              `json:"emailVerified,omitempty"`
 }
 
 type UpdateUserRequest struct {
-	Email         *string                `json:"email,omitempty"`
-	FirstName     *string                `json:"firstName,omitempty"`
-	LastName      *string                `json:"lastName,omitempty"`
-	Phone         *string                `json:"phone,omitempty"`
-	Address       *string                `json:"address,omitempty"`
-	Gender        *domain.UserGender     `json:"gender,omitempty"`
-	DateOfBirth   OptionalNullableString `json:"dateOfBirth,omitempty"`
-	AvatarURL     OptionalNullableString `json:"avatarUrl,omitempty"`
-	Role          *domain.UserRole       `json:"role,omitempty"`
-	Status        *domain.UserStatus     `json:"status,omitempty"`
-	EmailVerified *bool                  `json:"emailVerified,omitempty"`
+	Email               *string                `json:"email,omitempty"`
+	FirstName           *string                `json:"firstName,omitempty"`
+	LastName            *string                `json:"lastName,omitempty"`
+	Phone               *string                `json:"phone,omitempty"`
+	Address             *string                `json:"address,omitempty"`
+	AddressProvince     *string                `json:"addressProvince,omitempty"`
+	AddressProvinceCode *string                `json:"addressProvinceCode,omitempty"`
+	AddressWard         *string                `json:"addressWard,omitempty"`
+	AddressWardCode     *string                `json:"addressWardCode,omitempty"`
+	Gender              *domain.UserGender     `json:"gender,omitempty"`
+	DateOfBirth         OptionalNullableString `json:"dateOfBirth,omitempty"`
+	AvatarURL           OptionalNullableString `json:"avatarUrl,omitempty"`
+	Role                *domain.UserRole       `json:"role,omitempty"`
+	Status              *domain.UserStatus     `json:"status,omitempty"`
+	EmailVerified       *bool                  `json:"emailVerified,omitempty"`
 }
 
 type UpdateUserStatusRequest struct {
@@ -182,17 +190,21 @@ func (s *UserService) ResolveSelf(ctx context.Context, subjectID, email, role st
 
 	firstName, lastName := splitNameFromEmail(email)
 	created, err := s.repo.Create(ctx, repository.CreateUserInput{
-		Email:         email,
-		FirstName:     firstName,
-		LastName:      lastName,
-		Phone:         nil,
-		Address:       nil,
-		Gender:        domain.UserGenderUnspecified,
-		DateOfBirth:   nil,
-		AvatarURL:     nil,
-		Role:          mapTokenRoleToDomainRole(role),
-		Status:        domain.UserStatusActive,
-		EmailVerified: true,
+		Email:               email,
+		FirstName:           firstName,
+		LastName:            lastName,
+		Phone:               nil,
+		Address:             nil,
+		AddressProvince:     nil,
+		AddressProvinceCode: nil,
+		AddressWard:         nil,
+		AddressWardCode:     nil,
+		Gender:              domain.UserGenderUnspecified,
+		DateOfBirth:         nil,
+		AvatarURL:           nil,
+		Role:                mapTokenRoleToDomainRole(role),
+		Status:              domain.UserStatusActive,
+		EmailVerified:       true,
 	})
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -306,6 +318,22 @@ func (s *UserService) normalizeCreate(req CreateUserRequest) (repository.CreateU
 	if err != nil {
 		return repository.CreateUserInput{}, err
 	}
+	addressProvince, err := validateOptionalTrimmed(req.AddressProvince, "addressProvince", 128)
+	if err != nil {
+		return repository.CreateUserInput{}, err
+	}
+	addressProvinceCode, err := validateOptionalTrimmed(req.AddressProvinceCode, "addressProvinceCode", 32)
+	if err != nil {
+		return repository.CreateUserInput{}, err
+	}
+	addressWard, err := validateOptionalTrimmed(req.AddressWard, "addressWard", 128)
+	if err != nil {
+		return repository.CreateUserInput{}, err
+	}
+	addressWardCode, err := validateOptionalTrimmed(req.AddressWardCode, "addressWardCode", 32)
+	if err != nil {
+		return repository.CreateUserInput{}, err
+	}
 	avatarURL, err := validateOptionalTrimmed(req.AvatarURL, "avatarUrl", 500)
 	if err != nil {
 		return repository.CreateUserInput{}, err
@@ -345,17 +373,21 @@ func (s *UserService) normalizeCreate(req CreateUserRequest) (repository.CreateU
 	}
 
 	return repository.CreateUserInput{
-		Email:         email,
-		FirstName:     firstName,
-		LastName:      lastName,
-		Phone:         phone,
-		Address:       address,
-		Gender:        gender,
-		DateOfBirth:   dob,
-		AvatarURL:     avatarURL,
-		Role:          role,
-		Status:        status,
-		EmailVerified: emailVerified,
+		Email:               email,
+		FirstName:           firstName,
+		LastName:            lastName,
+		Phone:               phone,
+		Address:             address,
+		AddressProvince:     addressProvince,
+		AddressProvinceCode: addressProvinceCode,
+		AddressWard:         addressWard,
+		AddressWardCode:     addressWardCode,
+		Gender:              gender,
+		DateOfBirth:         dob,
+		AvatarURL:           avatarURL,
+		Role:                role,
+		Status:              status,
+		EmailVerified:       emailVerified,
 	}, nil
 }
 
@@ -395,6 +427,34 @@ func (s *UserService) normalizeUpdate(req UpdateUserRequest) (repository.UpdateU
 			return out, err
 		}
 		out.Address = v
+	}
+	if req.AddressProvince != nil {
+		v, err := validateOptionalTrimmed(req.AddressProvince, "addressProvince", 128)
+		if err != nil {
+			return out, err
+		}
+		out.AddressProvince = v
+	}
+	if req.AddressProvinceCode != nil {
+		v, err := validateOptionalTrimmed(req.AddressProvinceCode, "addressProvinceCode", 32)
+		if err != nil {
+			return out, err
+		}
+		out.AddressProvinceCode = v
+	}
+	if req.AddressWard != nil {
+		v, err := validateOptionalTrimmed(req.AddressWard, "addressWard", 128)
+		if err != nil {
+			return out, err
+		}
+		out.AddressWard = v
+	}
+	if req.AddressWardCode != nil {
+		v, err := validateOptionalTrimmed(req.AddressWardCode, "addressWardCode", 32)
+		if err != nil {
+			return out, err
+		}
+		out.AddressWardCode = v
 	}
 	if req.Gender != nil {
 		if !domain.IsValidGender(*req.Gender) {

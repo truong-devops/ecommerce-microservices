@@ -11,6 +11,10 @@ interface UpstreamUser {
   lastName: string;
   phone: string | null;
   address: string | null;
+  addressProvince: string | null;
+  addressProvinceCode: string | null;
+  addressWard: string | null;
+  addressWardCode: string | null;
   gender: BuyerGender | null;
   dateOfBirth: string | null;
   avatarUrl: string | null;
@@ -22,6 +26,10 @@ interface UpdateProfileBody {
   name?: unknown;
   phone?: unknown;
   address?: unknown;
+  addressProvince?: unknown;
+  addressProvinceCode?: unknown;
+  addressWard?: unknown;
+  addressWardCode?: unknown;
   gender?: unknown;
   dateOfBirth?: unknown;
   avatarUrl?: unknown;
@@ -31,6 +39,8 @@ const PHONE_PATTERN = /^\+?[1-9]\d{7,14}$/;
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_FULL_NAME_LENGTH = 200;
 const MAX_ADDRESS_LENGTH = 255;
+const MAX_LOCATION_NAME_LENGTH = 128;
+const MAX_LOCATION_CODE_LENGTH = 32;
 const MAX_AVATAR_URL_LENGTH = 500;
 const VALID_GENDERS: BuyerGender[] = ['male', 'female', 'other', 'unspecified'];
 
@@ -120,11 +130,26 @@ function toUpstreamUpdatePayload(body: UpdateProfileBody): UpdatePayloadBuildRes
   const hasName = Object.prototype.hasOwnProperty.call(body, 'name');
   const hasPhone = Object.prototype.hasOwnProperty.call(body, 'phone');
   const hasAddress = Object.prototype.hasOwnProperty.call(body, 'address');
+  const hasAddressProvince = Object.prototype.hasOwnProperty.call(body, 'addressProvince');
+  const hasAddressProvinceCode = Object.prototype.hasOwnProperty.call(body, 'addressProvinceCode');
+  const hasAddressWard = Object.prototype.hasOwnProperty.call(body, 'addressWard');
+  const hasAddressWardCode = Object.prototype.hasOwnProperty.call(body, 'addressWardCode');
   const hasGender = Object.prototype.hasOwnProperty.call(body, 'gender');
   const hasDateOfBirth = Object.prototype.hasOwnProperty.call(body, 'dateOfBirth');
   const hasAvatarUrl = Object.prototype.hasOwnProperty.call(body, 'avatarUrl');
 
-  if (!hasName && !hasPhone && !hasAddress && !hasGender && !hasDateOfBirth && !hasAvatarUrl) {
+  if (
+    !hasName &&
+    !hasPhone &&
+    !hasAddress &&
+    !hasAddressProvince &&
+    !hasAddressProvinceCode &&
+    !hasAddressWard &&
+    !hasAddressWardCode &&
+    !hasGender &&
+    !hasDateOfBirth &&
+    !hasAvatarUrl
+  ) {
     return {
       ok: false,
       code: 'BAD_REQUEST',
@@ -203,6 +228,40 @@ function toUpstreamUpdatePayload(body: UpdateProfileBody): UpdatePayloadBuildRes
     }
 
     payload.address = address;
+  }
+
+  const locationFields: Array<{
+    present: boolean;
+    key: 'addressProvince' | 'addressProvinceCode' | 'addressWard' | 'addressWardCode';
+    value: unknown;
+    maxLength: number;
+  }> = [
+    { present: hasAddressProvince, key: 'addressProvince', value: body.addressProvince, maxLength: MAX_LOCATION_NAME_LENGTH },
+    { present: hasAddressProvinceCode, key: 'addressProvinceCode', value: body.addressProvinceCode, maxLength: MAX_LOCATION_CODE_LENGTH },
+    { present: hasAddressWard, key: 'addressWard', value: body.addressWard, maxLength: MAX_LOCATION_NAME_LENGTH },
+    { present: hasAddressWardCode, key: 'addressWardCode', value: body.addressWardCode, maxLength: MAX_LOCATION_CODE_LENGTH }
+  ];
+
+  for (const field of locationFields) {
+    if (!field.present) {
+      continue;
+    }
+    if (typeof field.value !== 'string') {
+      return {
+        ok: false,
+        code: 'INVALID_PROFILE_ADDRESS',
+        message: `${field.key} must be a string`
+      };
+    }
+    const value = field.value.trim();
+    if (value.length > field.maxLength) {
+      return {
+        ok: false,
+        code: 'INVALID_PROFILE_ADDRESS',
+        message: `${field.key} is too long`
+      };
+    }
+    payload[field.key] = value;
   }
 
   if (hasGender) {
@@ -317,10 +376,7 @@ function splitFullName(name: string): { firstName: string; lastName: string } {
     };
   }
 
-  const firstName = parts
-    .slice(0, -1)
-    .join(' ')
-    .slice(0, 100);
+  const firstName = parts.slice(0, -1).join(' ').slice(0, 100);
   const lastName = parts[parts.length - 1].slice(0, 100);
 
   return {
@@ -332,10 +388,7 @@ function splitFullName(name: string): { firstName: string; lastName: string } {
 function toBuyerProfile(user: UpstreamUser, fallbackEmail: string): BuyerProfileOutput {
   const firstName = typeof user.firstName === 'string' ? user.firstName.trim() : '';
   const lastName = typeof user.lastName === 'string' ? user.lastName.trim() : '';
-  const fullName =
-    firstName && lastName && firstName.toLowerCase() === lastName.toLowerCase()
-      ? firstName
-      : `${firstName} ${lastName}`.trim();
+  const fullName = firstName && lastName && firstName.toLowerCase() === lastName.toLowerCase() ? firstName : `${firstName} ${lastName}`.trim();
   const gender = normalizeGender(user.gender);
 
   return {
@@ -346,6 +399,10 @@ function toBuyerProfile(user: UpstreamUser, fallbackEmail: string): BuyerProfile
     name: fullName || fallbackNameFromEmail(fallbackEmail),
     phone: typeof user.phone === 'string' ? user.phone : '',
     address: typeof user.address === 'string' ? user.address : '',
+    addressProvince: typeof user.addressProvince === 'string' ? user.addressProvince : '',
+    addressProvinceCode: typeof user.addressProvinceCode === 'string' ? user.addressProvinceCode : '',
+    addressWard: typeof user.addressWard === 'string' ? user.addressWard : '',
+    addressWardCode: typeof user.addressWardCode === 'string' ? user.addressWardCode : '',
     gender,
     dateOfBirth: typeof user.dateOfBirth === 'string' ? user.dateOfBirth : null,
     avatarUrl: typeof user.avatarUrl === 'string' ? user.avatarUrl : null,

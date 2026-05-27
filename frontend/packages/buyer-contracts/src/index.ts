@@ -161,6 +161,10 @@ export interface BuyerProfile {
   name: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   gender: BuyerGender;
   dateOfBirth: string | null;
   avatarUrl: string | null;
@@ -172,6 +176,10 @@ export interface UpdateBuyerProfileInput {
   name?: string;
   phone?: string;
   address?: string;
+  addressProvince?: string;
+  addressProvinceCode?: string;
+  addressWard?: string;
+  addressWardCode?: string;
   gender?: BuyerGender;
   dateOfBirth?: string | null;
   avatarUrl?: string | null;

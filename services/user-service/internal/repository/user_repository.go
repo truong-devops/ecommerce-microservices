@@ -15,6 +15,7 @@ import (
 
 const userColumns = `
 	id, email, first_name, last_name, phone, address,
+	address_province, address_province_code, address_ward, address_ward_code,
 	gender, date_of_birth, avatar_url, role, status,
 	email_verified, created_at, updated_at
 `
@@ -24,31 +25,39 @@ type UserRepository struct {
 }
 
 type CreateUserInput struct {
-	Email         string
-	FirstName     string
-	LastName      string
-	Phone         *string
-	Address       *string
-	Gender        domain.UserGender
-	DateOfBirth   *string
-	AvatarURL     *string
-	Role          domain.UserRole
-	Status        domain.UserStatus
-	EmailVerified bool
+	Email               string
+	FirstName           string
+	LastName            string
+	Phone               *string
+	Address             *string
+	AddressProvince     *string
+	AddressProvinceCode *string
+	AddressWard         *string
+	AddressWardCode     *string
+	Gender              domain.UserGender
+	DateOfBirth         *string
+	AvatarURL           *string
+	Role                domain.UserRole
+	Status              domain.UserStatus
+	EmailVerified       bool
 }
 
 type UpdateUserInput struct {
-	Email         *string
-	FirstName     *string
-	LastName      *string
-	Phone         *string
-	Address       *string
-	Gender        *domain.UserGender
-	DateOfBirth   OptionalNullableString
-	AvatarURL     OptionalNullableString
-	Role          *domain.UserRole
-	Status        *domain.UserStatus
-	EmailVerified *bool
+	Email               *string
+	FirstName           *string
+	LastName            *string
+	Phone               *string
+	Address             *string
+	AddressProvince     *string
+	AddressProvinceCode *string
+	AddressWard         *string
+	AddressWardCode     *string
+	Gender              *domain.UserGender
+	DateOfBirth         OptionalNullableString
+	AvatarURL           OptionalNullableString
+	Role                *domain.UserRole
+	Status              *domain.UserStatus
+	EmailVerified       *bool
 }
 
 type OptionalNullableString struct {
@@ -126,9 +135,10 @@ func (r *UserRepository) FindByEmailAnyStatus(ctx context.Context, email string)
 func (r *UserRepository) Create(ctx context.Context, input CreateUserInput) (*domain.User, error) {
 	query := `
 		INSERT INTO users (
-			email, first_name, last_name, phone, address, gender,
-			date_of_birth, avatar_url, role, status, email_verified
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			email, first_name, last_name, phone, address,
+			address_province, address_province_code, address_ward, address_ward_code,
+			gender, date_of_birth, avatar_url, role, status, email_verified
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		RETURNING ` + userColumns
 
 	row := r.pool.QueryRow(
@@ -139,6 +149,10 @@ func (r *UserRepository) Create(ctx context.Context, input CreateUserInput) (*do
 		input.LastName,
 		input.Phone,
 		input.Address,
+		input.AddressProvince,
+		input.AddressProvinceCode,
+		input.AddressWard,
+		input.AddressWardCode,
 		input.Gender,
 		input.DateOfBirth,
 		input.AvatarURL,
@@ -163,15 +177,19 @@ func (r *UserRepository) ReviveDeletedUser(ctx context.Context, id string, input
 			last_name = $4,
 			phone = $5,
 			address = $6,
-			gender = $7,
-			date_of_birth = $8,
-			avatar_url = $9,
-			role = $10,
-			status = $11,
-			email_verified = $12,
+			address_province = $7,
+			address_province_code = $8,
+			address_ward = $9,
+			address_ward_code = $10,
+			gender = $11,
+			date_of_birth = $12,
+			avatar_url = $13,
+			role = $14,
+			status = $15,
+			email_verified = $16,
 			deleted_at = NULL,
 			updated_at = now()
-		WHERE id = $1 AND status = $13
+		WHERE id = $1 AND status = $17
 		RETURNING ` + userColumns
 
 	row := r.pool.QueryRow(
@@ -183,6 +201,10 @@ func (r *UserRepository) ReviveDeletedUser(ctx context.Context, id string, input
 		input.LastName,
 		input.Phone,
 		input.Address,
+		input.AddressProvince,
+		input.AddressProvinceCode,
+		input.AddressWard,
+		input.AddressWardCode,
 		input.Gender,
 		input.DateOfBirth,
 		input.AvatarURL,
@@ -292,6 +314,18 @@ func (r *UserRepository) Update(ctx context.Context, id string, input UpdateUser
 	if input.Address != nil {
 		appendSet("address", *input.Address)
 	}
+	if input.AddressProvince != nil {
+		appendSet("address_province", *input.AddressProvince)
+	}
+	if input.AddressProvinceCode != nil {
+		appendSet("address_province_code", *input.AddressProvinceCode)
+	}
+	if input.AddressWard != nil {
+		appendSet("address_ward", *input.AddressWard)
+	}
+	if input.AddressWardCode != nil {
+		appendSet("address_ward_code", *input.AddressWardCode)
+	}
 	if input.Gender != nil {
 		appendSet("gender", *input.Gender)
 	}
@@ -400,13 +434,17 @@ type scannable interface {
 
 func scanUser(row scannable) (domain.User, error) {
 	var (
-		user      domain.User
-		phone     sql.NullString
-		address   sql.NullString
-		dob       sql.NullTime
-		avatarURL sql.NullString
-		createdAt time.Time
-		updatedAt time.Time
+		user                domain.User
+		phone               sql.NullString
+		address             sql.NullString
+		addressProvince     sql.NullString
+		addressProvinceCode sql.NullString
+		addressWard         sql.NullString
+		addressWardCode     sql.NullString
+		dob                 sql.NullTime
+		avatarURL           sql.NullString
+		createdAt           time.Time
+		updatedAt           time.Time
 	)
 
 	err := row.Scan(
@@ -416,6 +454,10 @@ func scanUser(row scannable) (domain.User, error) {
 		&user.LastName,
 		&phone,
 		&address,
+		&addressProvince,
+		&addressProvinceCode,
+		&addressWard,
+		&addressWardCode,
 		&user.Gender,
 		&dob,
 		&avatarURL,
@@ -438,6 +480,22 @@ func scanUser(row scannable) (domain.User, error) {
 	if address.Valid {
 		v := address.String
 		user.Address = &v
+	}
+	if addressProvince.Valid {
+		v := addressProvince.String
+		user.AddressProvince = &v
+	}
+	if addressProvinceCode.Valid {
+		v := addressProvinceCode.String
+		user.AddressProvinceCode = &v
+	}
+	if addressWard.Valid {
+		v := addressWard.String
+		user.AddressWard = &v
+	}
+	if addressWardCode.Valid {
+		v := addressWardCode.String
+		user.AddressWardCode = &v
 	}
 	if dob.Valid {
 		v := dob.Time.UTC().Format("2006-01-02")

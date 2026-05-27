@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS users (
   last_name VARCHAR(100) NOT NULL,
   phone VARCHAR(30),
   address VARCHAR(255),
+  address_province VARCHAR(128),
+  address_province_code VARCHAR(32),
+  address_ward VARCHAR(128),
+  address_ward_code VARCHAR(32),
   gender VARCHAR(20) NOT NULL DEFAULT 'unspecified',
   date_of_birth DATE,
   avatar_url VARCHAR(500),
@@ -29,6 +33,11 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   deleted_at TIMESTAMPTZ
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS address_province VARCHAR(128);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS address_province_code VARCHAR(32);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS address_ward VARCHAR(128);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS address_ward_code VARCHAR(32);
 
 CREATE INDEX IF NOT EXISTS idx_users_email_unique ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);

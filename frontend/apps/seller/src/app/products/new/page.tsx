@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { SellerApiClientError } from '@/lib/api/client';
+import { getSellerInventoryStock, setSellerInventoryStock } from '@/lib/api/inventory';
 import {
   createSellerProduct,
   getSellerProductById,
@@ -17,6 +18,7 @@ import type {
   CreateSellerProductInput,
   SellerProduct,
   SellerCategoryOption,
+  SellerInventoryStock,
   UploadSellerProductImageOutput
 } from '@/lib/api/types';
 import { useAuth } from '@/providers/AppProvider';
@@ -39,6 +41,9 @@ interface VariantFormState {
   name: string;
   price: string;
   initialStock: string;
+  inventoryOnHand: string;
+  stockSnapshot: SellerInventoryStock | null;
+  stockNotFound: boolean;
   compareAtPrice: string;
   currency: string;
   isDefault: boolean;
@@ -83,6 +88,9 @@ const INITIAL_VARIANT: VariantFormState = {
   name: 'Bản Tiêu Chuẩn',
   price: '',
   initialStock: '0',
+  inventoryOnHand: '0',
+  stockSnapshot: null,
+  stockNotFound: false,
   compareAtPrice: '',
   currency: 'VND',
   isDefault: true
@@ -111,6 +119,8 @@ export default function NewProductPage() {
   const [uploadError, setUploadError] = useState('');
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
   const [loadProductError, setLoadProductError] = useState('');
+  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
+  const [loadInventoryError, setLoadInventoryError] = useState('');
   const [isSoftDeleting, setIsSoftDeleting] = useState(false);
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
 
@@ -185,7 +195,7 @@ export default function NewProductPage() {
           return;
         }
 
-        hydrateFormFromProduct(product);
+        await hydrateFormFromProduct(product);
       } catch (error) {
         if (cancelled) {
           return;
@@ -203,7 +213,7 @@ export default function NewProductPage() {
       }
     };
 
-    const hydrateFormFromProduct = (product: SellerProduct) => {
+    const hydrateFormFromProduct = async (product: SellerProduct) => {
       const normalizedName = (product.name ?? '').trim();
       const normalizedSlug = (product.slug ?? '').trim();
 
@@ -223,12 +233,15 @@ export default function NewProductPage() {
         name: variant.name ?? `Phân loại ${index + 1}`,
         price: String(variant.price ?? ''),
         initialStock: String(variant.initialStock ?? 0),
+        inventoryOnHand: String(variant.initialStock ?? 0),
+        stockSnapshot: null,
+        stockNotFound: false,
         compareAtPrice: variant.compareAtPrice === null || variant.compareAtPrice === undefined ? '' : String(variant.compareAtPrice),
         currency: variant.currency ?? 'VND',
         isDefault: Boolean(variant.isDefault)
       }));
 
-      setVariants(
+      const hydratedVariants =
         nextVariants.length > 0
           ? nextVariants
           : [
@@ -236,8 +249,8 @@ export default function NewProductPage() {
                 ...INITIAL_VARIANT,
                 id: createLocalId()
               }
-            ]
-      );
+            ];
+      setVariants(hydratedVariants);
 
       if (!(product.variants ?? []).some((variant) => variant.isDefault) && (product.variants ?? []).length > 0) {
         setVariants((previous) => previous.map((variant, index) => ({ ...variant, isDefault: index === 0 })));
@@ -259,6 +272,56 @@ export default function NewProductPage() {
           relativePath: extractRelativePath(imageValue, product.categoryId ?? '')
         }))
       );
+
+      setIsLoadingInventory(true);
+      setLoadInventoryError('');
+      try {
+        const snapshots = await Promise.all(
+          hydratedVariants.map(async (variant) => {
+            try {
+              return {
+                id: variant.id,
+                stock: await getSellerInventoryStock(accessToken, variant.sku)
+              };
+            } catch (error) {
+              if (error instanceof SellerApiClientError && error.code === 'INVENTORY_SKU_NOT_FOUND') {
+                return {
+                  id: variant.id,
+                  stock: null
+                };
+              }
+              throw error;
+            }
+          })
+        );
+        if (!cancelled) {
+          const stockByVariant = new Map(snapshots.map((snapshot) => [snapshot.id, snapshot.stock]));
+          setVariants((previous) =>
+            previous.map((variant) => {
+              const stock = stockByVariant.get(variant.id);
+              if (stock === undefined) {
+                return variant;
+              }
+              return {
+                ...variant,
+                inventoryOnHand: String(stock?.onHand ?? variant.initialStock),
+                stockSnapshot: stock,
+                stockNotFound: stock === null
+              };
+            })
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setLoadInventoryError(
+            error instanceof SellerApiClientError ? error.message : 'Không tải được tồn kho hiện tại. Vui lòng tải lại trang.'
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingInventory(false);
+        }
+      }
     };
 
     void loadProductDetail();
@@ -334,7 +397,7 @@ export default function NewProductPage() {
     );
   };
 
-  const addVariant = () => {
+  const addVariant = useCallback(() => {
     setVariants((previous) => [
       ...previous,
       {
@@ -343,12 +406,15 @@ export default function NewProductPage() {
         name: `Phân loại ${previous.length + 1}`,
         price: '',
         initialStock: '0',
+        inventoryOnHand: '0',
+        stockSnapshot: null,
+        stockNotFound: isEditMode,
         compareAtPrice: '',
         currency: previous[0]?.currency || 'VND',
         isDefault: false
       }
     ]);
-  };
+  }, [isEditMode]);
 
   const removeVariant = (variantId: string) => {
     setVariants((previous) => {
@@ -441,6 +507,10 @@ export default function NewProductPage() {
         setSubmitError('Cần ít nhất 1 phân loại.');
         return;
       }
+      if (isEditMode && (isLoadingInventory || loadInventoryError)) {
+        setSubmitError('Chưa tải được tồn kho hiện tại. Vui lòng tải lại trang trước khi lưu.');
+        return;
+      }
 
       const duplicatedSkus = findDuplicateSkus(variants.map((variant) => variant.sku));
       if (duplicatedSkus.length > 0) {
@@ -455,7 +525,7 @@ export default function NewProductPage() {
         const variantName = variant.name.trim();
         const currency = variant.currency.trim().toUpperCase();
         const price = Number(variant.price);
-        const initialStock = Number(variant.initialStock);
+        const initialStock = Number(isEditMode ? variant.inventoryOnHand : variant.initialStock);
 
         if (!sku) {
           setSubmitError('Mỗi phân loại phải có SKU.');
@@ -483,7 +553,7 @@ export default function NewProductPage() {
         }
 
         if (!Number.isInteger(initialStock) || initialStock < 0) {
-          setSubmitError(`Tồn kho ban đầu của SKU ${sku} phải là số nguyên không âm.`);
+          setSubmitError(`${isEditMode ? 'Số lượng trong kho' : 'Tồn kho ban đầu'} của SKU ${sku} phải là số nguyên không âm.`);
           return;
         }
 
@@ -532,7 +602,31 @@ export default function NewProductPage() {
       setIsSubmitting(true);
       try {
         if (isEditMode) {
-          await updateSellerProduct(accessToken, editingProductId, payload);
+          const updatedProduct = await updateSellerProduct(accessToken, editingProductId, payload);
+          const stockUpdates = validatedVariants.filter((variant) => {
+            const formVariant = variants.find((item) => item.sku.trim().toUpperCase() === variant.sku);
+            return !formVariant?.stockSnapshot || formVariant.stockSnapshot.onHand !== variant.initialStock;
+          });
+
+          try {
+            await Promise.all(
+              stockUpdates.map((variant) =>
+                setSellerInventoryStock(accessToken, variant.sku, {
+                  productId: updatedProduct.id,
+                  sellerId: updatedProduct.sellerId,
+                  onHand: variant.initialStock ?? 0,
+                  reason: 'Seller updated stock from product editor'
+                })
+              )
+            );
+          } catch (error) {
+            if (error instanceof SellerApiClientError) {
+              setSubmitError(`Sản phẩm đã lưu nhưng cập nhật tồn kho thất bại: ${error.message}`);
+            } else {
+              setSubmitError('Sản phẩm đã lưu nhưng cập nhật tồn kho thất bại. Vui lòng thử lưu lại.');
+            }
+            return;
+          }
         } else {
           await createSellerProduct(accessToken, payload);
         }
@@ -548,7 +642,7 @@ export default function NewProductPage() {
         setIsSubmitting(false);
       }
     },
-    [accessToken, editingProductId, form, isEditMode, router, selectedRatio, uploadedImages, user, variants, withoutGtin]
+    [accessToken, editingProductId, form, isEditMode, isLoadingInventory, loadInventoryError, router, selectedRatio, uploadedImages, user, variants, withoutGtin]
   );
 
   const handleSoftDelete = useCallback(async () => {
@@ -699,19 +793,30 @@ export default function NewProductPage() {
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700">
-                    Tồn kho ban đầu *
+                    {isEditMode ? 'Số lượng trong kho *' : 'Tồn kho ban đầu *'}
                     <input
                       type="number"
                       min="0"
                       step="1"
-                      value={variant.initialStock}
+                      value={isEditMode ? variant.inventoryOnHand : variant.initialStock}
                       onChange={(event) => {
-                        updateVariant(variant.id, 'initialStock', event.target.value);
+                        updateVariant(variant.id, isEditMode ? 'inventoryOnHand' : 'initialStock', event.target.value);
                       }}
+                      disabled={isEditMode && isLoadingInventory}
                       placeholder="0"
-                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50"
                     />
-                    <p className="mt-1 text-xs text-slate-500">Áp dụng khi SKU được tạo lần đầu trong kho.</p>
+                    {isEditMode ? (
+                      <p className="mt-1 text-xs text-slate-500">
+                        {isLoadingInventory
+                          ? 'Đang tải tồn kho hiện tại...'
+                          : variant.stockNotFound
+                            ? 'SKU chưa có trong kho. Lưu thay đổi sẽ khởi tạo tồn kho.'
+                            : `Đang giữ cho đơn: ${variant.stockSnapshot?.reserved ?? 0} | Có thể bán: ${variant.stockSnapshot?.available ?? 0}.`}
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-500">Áp dụng khi SKU được tạo lần đầu trong kho.</p>
+                    )}
                   </label>
 
                   <label className="block text-sm font-medium text-slate-700">
@@ -902,11 +1007,14 @@ export default function NewProductPage() {
     );
   }, [
     activeTab,
+    addVariant,
     categoryError,
     categoryOptions,
     form,
     handleImageFilesSelected,
     isLoadingCategories,
+    isLoadingInventory,
+    isEditMode,
     isUploadingImages,
     selectedRatio,
     suggestedSkuPrefix,
@@ -981,6 +1089,10 @@ export default function NewProductPage() {
 
             {loadProductError ? (
               <section className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{loadProductError}</section>
+            ) : null}
+
+            {loadInventoryError ? (
+              <section className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{loadInventoryError}</section>
             ) : null}
 
             <section className="rounded-md border border-slate-200 bg-white px-4 pb-0 pt-3 text-sm">
@@ -1073,7 +1185,7 @@ export default function NewProductPage() {
           </button>
           <button
             type="button"
-            disabled={isSubmitting || isUploadingImages || isLoadingProduct || isSoftDeleting}
+            disabled={isSubmitting || isUploadingImages || isLoadingProduct || isLoadingInventory || Boolean(loadInventoryError) || isSoftDeleting}
             onClick={() => {
               void submitProduct('draft');
             }}
@@ -1083,7 +1195,7 @@ export default function NewProductPage() {
           </button>
           <button
             type="button"
-            disabled={isSubmitting || isUploadingImages || isLoadingProduct || isSoftDeleting}
+            disabled={isSubmitting || isUploadingImages || isLoadingProduct || isLoadingInventory || Boolean(loadInventoryError) || isSoftDeleting}
             onClick={() => {
               void submitProduct('publish');
             }}

@@ -158,7 +158,13 @@ func (c *Consumer) handleProductMessage(ctx context.Context, msg kafka.Message) 
 		c.logger.Warn("skip invalid product kafka payload", zap.Error(err))
 		return
 	}
-	if envelope.EventType != "product.created" && envelope.EventType != "product.updated" {
+	switch envelope.EventType {
+	case "product.created", "product.updated":
+	case "product.status-changed":
+		if strings.ToUpper(strings.TrimSpace(asString(envelope.Payload["status"]))) != "ACTIVE" {
+			return
+		}
+	default:
 		return
 	}
 

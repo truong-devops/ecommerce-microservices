@@ -120,3 +120,12 @@ func TestNexusOutboundOnlyForMappedSeller(t *testing.T) {
 		t.Fatal("expected unmapped seller not to be sent to Nexus")
 	}
 }
+
+func TestNexusExternalOrderCodeUsesBuyerFacingCode(t *testing.T) {
+	if got := nexusExternalOrderCode(map[string]any{"orderCode": "EMX9000004", "orderNumber": "ORD-20260527-000004"}); got != "EMX9000004" {
+		t.Fatalf("expected buyer-facing order code, got %q", got)
+	}
+	if got := nexusExternalOrderCode(map[string]any{"orderNumber": "ORD-20260527-000004"}); got != "ORD-20260527-000004" {
+		t.Fatalf("expected fallback order number, got %q", got)
+	}
+}

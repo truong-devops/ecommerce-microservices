@@ -137,6 +137,11 @@ export interface AppMessages {
     recipientName: string;
     recipientPhone: string;
     recipientAddress: string;
+    recipientWard: string;
+    recipientDistrict: string;
+    recipientProvince: string;
+    savedAddressHint: string;
+    editSavedAddress: string;
     paymentMethod: string;
     paymentCod: string;
     paymentOnline: string;
@@ -371,6 +376,11 @@ export const messages: Record<Locale, AppMessages> = {
       recipientName: 'Recipient name',
       recipientPhone: 'Phone number',
       recipientAddress: 'Address',
+      recipientWard: 'Ward / commune',
+      recipientDistrict: 'District',
+      recipientProvince: 'Province / city',
+      savedAddressHint: 'Delivery address saved in your account',
+      editSavedAddress: 'Edit address in my account',
       paymentMethod: 'Payment method',
       paymentCod: 'Cash on delivery (COD)',
       paymentOnline: 'Online payment',
@@ -382,7 +392,7 @@ export const messages: Record<Locale, AppMessages> = {
       placeOrder: 'Confirm order',
       placingOrder: 'Processing...',
       invalidData: 'Order data is invalid.',
-      addressRequired: 'Please fill recipient name, phone, and address.',
+      addressRequired: 'Please fill recipient name, phone, and full delivery address.',
       loginRequired: 'Please login before checkout.',
       empty: 'No items available for checkout.',
       goCart: 'Go to cart',
@@ -603,6 +613,11 @@ export const messages: Record<Locale, AppMessages> = {
       recipientName: 'Người nhận',
       recipientPhone: 'Số điện thoại',
       recipientAddress: 'Địa chỉ',
+      recipientWard: 'Phường / xã',
+      recipientDistrict: 'Quận / huyện',
+      recipientProvince: 'Tỉnh / thành phố',
+      savedAddressHint: 'Địa chỉ giao hàng đã lưu trong tài khoản',
+      editSavedAddress: 'Sửa địa chỉ trong tài khoản',
       paymentMethod: 'Phương thức thanh toán',
       paymentCod: 'Thanh toán khi nhận hàng (COD)',
       paymentOnline: 'Thanh toán online',
@@ -614,7 +629,7 @@ export const messages: Record<Locale, AppMessages> = {
       placeOrder: 'Xác nhận đặt hàng',
       placingOrder: 'Đang xử lý...',
       invalidData: 'Dữ liệu đơn hàng không hợp lệ.',
-      addressRequired: 'Vui lòng nhập người nhận, số điện thoại và địa chỉ.',
+      addressRequired: 'Vui lòng nhập người nhận, số điện thoại và đầy đủ địa chỉ giao hàng.',
       loginRequired: 'Vui lòng đăng nhập trước khi thanh toán.',
       empty: 'Không có sản phẩm để thanh toán.',
       goCart: 'Về giỏ hàng',

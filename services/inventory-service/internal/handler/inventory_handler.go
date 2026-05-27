@@ -42,7 +42,13 @@ func (h *InventoryHandler) ValidateStock(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *InventoryHandler) GetStockBySKU(w http.ResponseWriter, r *http.Request) {
-	result, err := h.svc.GetStockBySKU(r.Context(), chi.URLParam(r, "sku"))
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	result, err := h.svc.GetStockBySKU(r.Context(), user, chi.URLParam(r, "sku"))
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
 		return
@@ -61,11 +67,16 @@ func (h *InventoryHandler) AdjustStock(w http.ResponseWriter, r *http.Request) {
 		ProductID       *string `json:"productId"`
 		SellerID        *string `json:"sellerId"`
 		DeltaOnHand     *int    `json:"deltaOnHand"`
+		OnHand          *int    `json:"onHand"`
 		Reason          *string `json:"reason"`
 		ExpectedVersion *int    `json:"expectedVersion"`
 	}
 	var req payload
-	if err := httpx.DecodeJSONStrict(r, &req); err != nil || req.DeltaOnHand == nil {
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil || (req.DeltaOnHand == nil) == (req.OnHand == nil) {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeBadRequest, "Validation failed", nil)
+		return
+	}
+	if req.OnHand != nil && *req.OnHand < 0 {
 		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeBadRequest, "Validation failed", nil)
 		return
 	}
@@ -77,7 +88,8 @@ func (h *InventoryHandler) AdjustStock(w http.ResponseWriter, r *http.Request) {
 	result, svcErr := h.svc.AdjustStock(r.Context(), user, requestID(r), chi.URLParam(r, "sku"), service.AdjustStockRequest{
 		ProductID:       req.ProductID,
 		SellerID:        req.SellerID,
-		DeltaOnHand:     *req.DeltaOnHand,
+		DeltaOnHand:     req.DeltaOnHand,
+		OnHand:          req.OnHand,
 		Reason:          req.Reason,
 		ExpectedVersion: req.ExpectedVersion,
 	})

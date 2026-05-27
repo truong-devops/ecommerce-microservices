@@ -29,20 +29,24 @@ const (
 )
 
 type User struct {
-	ID            string     `json:"id"`
-	Email         string     `json:"email"`
-	FirstName     string     `json:"firstName"`
-	LastName      string     `json:"lastName"`
-	Phone         *string    `json:"phone"`
-	Address       *string    `json:"address"`
-	Gender        UserGender `json:"gender"`
-	DateOfBirth   *string    `json:"dateOfBirth"`
-	AvatarURL     *string    `json:"avatarUrl"`
-	Role          UserRole   `json:"role"`
-	Status        UserStatus `json:"status"`
-	EmailVerified bool       `json:"emailVerified"`
-	CreatedAt     time.Time  `json:"createdAt"`
-	UpdatedAt     time.Time  `json:"updatedAt"`
+	ID                  string     `json:"id"`
+	Email               string     `json:"email"`
+	FirstName           string     `json:"firstName"`
+	LastName            string     `json:"lastName"`
+	Phone               *string    `json:"phone"`
+	Address             *string    `json:"address"`
+	AddressProvince     *string    `json:"addressProvince"`
+	AddressProvinceCode *string    `json:"addressProvinceCode"`
+	AddressWard         *string    `json:"addressWard"`
+	AddressWardCode     *string    `json:"addressWardCode"`
+	Gender              UserGender `json:"gender"`
+	DateOfBirth         *string    `json:"dateOfBirth"`
+	AvatarURL           *string    `json:"avatarUrl"`
+	Role                UserRole   `json:"role"`
+	Status              UserStatus `json:"status"`
+	EmailVerified       bool       `json:"emailVerified"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
 }
 
 type ListUsersQuery struct {

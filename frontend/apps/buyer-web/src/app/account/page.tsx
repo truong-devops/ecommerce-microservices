@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import type { BuyerGender } from '@/lib/api/types';
+import { getVietnamProvinces, getVietnamWards, type VietnamLocationOption } from '@/lib/api/locations';
 import { Header } from '@/components/layout/Header';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
@@ -28,6 +29,10 @@ interface ProfileFormValues {
   name: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   gender: BuyerGender;
   dateOfBirth: string;
   avatarUrl: string;
@@ -35,19 +40,20 @@ interface ProfileFormValues {
 
 type ProfileFormErrors = Partial<Record<keyof ProfileFormValues, string>>;
 
-type NoticeState =
-  | {
-      type: 'success' | 'error';
-      message: string;
-    }
-  | null;
+type NoticeState = {
+  type: 'success' | 'error';
+  message: string;
+} | null;
 
 interface ValidationMessages {
   nameRequired: string;
   nameTooLong: string;
   phoneRequired: string;
   phoneInvalid: string;
+  addressRequired: string;
   addressTooLong: string;
+  addressProvinceRequired: string;
+  addressWardRequired: string;
   genderInvalid: string;
   dateOfBirthInvalid: string;
   dateOfBirthFuture: string;
@@ -103,6 +109,10 @@ function normalizeFormValues(values: ProfileFormValues): ProfileFormValues {
     name: collapseRepeatedName(values.name),
     phone: values.phone.trim(),
     address: values.address.trim(),
+    addressProvince: values.addressProvince.trim(),
+    addressProvinceCode: values.addressProvinceCode.trim(),
+    addressWard: values.addressWard.trim(),
+    addressWardCode: values.addressWardCode.trim(),
     gender: normalizeGender(values.gender),
     dateOfBirth: normalizeDateOfBirth(values.dateOfBirth),
     avatarUrl: values.avatarUrl.trim()
@@ -174,8 +184,17 @@ function validateProfileForm(values: ProfileFormValues, messages: ValidationMess
     errors.phone = messages.phoneInvalid;
   }
 
-  if (values.address.length > MAX_ADDRESS_LENGTH) {
+  const hasDeliveryAddress = Boolean(values.address || values.addressProvince || values.addressWard);
+  if (hasDeliveryAddress && !values.address) {
+    errors.address = messages.addressRequired;
+  } else if (values.address.length > MAX_ADDRESS_LENGTH) {
     errors.address = messages.addressTooLong;
+  }
+  if (hasDeliveryAddress && (!values.addressProvince || !values.addressProvinceCode)) {
+    errors.addressProvince = messages.addressProvinceRequired;
+  }
+  if (hasDeliveryAddress && (!values.addressWard || !values.addressWardCode)) {
+    errors.addressWard = messages.addressWardRequired;
   }
 
   if (!VALID_GENDERS.includes(values.gender)) {
@@ -214,6 +233,10 @@ export default function AccountPage() {
     name: '',
     phone: '',
     address: '',
+    addressProvince: '',
+    addressProvinceCode: '',
+    addressWard: '',
+    addressWardCode: '',
     gender: 'unspecified',
     dateOfBirth: '',
     avatarUrl: ''
@@ -222,6 +245,10 @@ export default function AccountPage() {
     name: '',
     phone: '',
     address: '',
+    addressProvince: '',
+    addressProvinceCode: '',
+    addressWard: '',
+    addressWardCode: '',
     gender: 'unspecified',
     dateOfBirth: '',
     avatarUrl: ''
@@ -229,6 +256,11 @@ export default function AccountPage() {
   const [errors, setErrors] = useState<ProfileFormErrors>({});
   const [notice, setNotice] = useState<NoticeState>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [provinces, setProvinces] = useState<VietnamLocationOption[]>([]);
+  const [wards, setWards] = useState<VietnamLocationOption[]>([]);
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const initializedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -250,6 +282,10 @@ export default function AccountPage() {
       name: collapseRepeatedName(user.name),
       phone: user.phone,
       address: user.address,
+      addressProvince: user.addressProvince,
+      addressProvinceCode: user.addressProvinceCode,
+      addressWard: user.addressWard,
+      addressWardCode: user.addressWardCode,
       gender: normalizeGender(user.gender),
       dateOfBirth: normalizeDateOfBirth(user.dateOfBirth),
       avatarUrl: user.avatarUrl ?? ''
@@ -262,16 +298,76 @@ export default function AccountPage() {
     initializedUserIdRef.current = user.id;
   }, [ready, router, user]);
 
+  useEffect(() => {
+    if (!ready || !user) {
+      return;
+    }
+
+    let active = true;
+    setIsLoadingProvinces(true);
+    setLocationError('');
+    void getVietnamProvinces()
+      .then((data) => {
+        if (active) {
+          setProvinces(data);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setLocationError(locale === 'vi' ? 'Không thể tải danh sách tỉnh/thành phố.' : 'Cannot load provinces.');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingProvinces(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [locale, ready, user]);
+
+  useEffect(() => {
+    const provinceCode = formValues.addressProvinceCode;
+    if (!provinceCode) {
+      setWards([]);
+      setIsLoadingWards(false);
+      return;
+    }
+
+    let active = true;
+    setIsLoadingWards(true);
+    setLocationError('');
+    void getVietnamWards(provinceCode)
+      .then((data) => {
+        if (active) {
+          setWards(data);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setWards([]);
+          setLocationError(locale === 'vi' ? 'Không thể tải danh sách phường/xã.' : 'Cannot load wards.');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLoadingWards(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [formValues.addressProvinceCode, locale]);
+
   if (!ready) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-app-bg text-slate-700">{text.account.loading}</div>
-    );
+    return <div className="min-h-screen grid place-items-center bg-app-bg text-slate-700">{text.account.loading}</div>;
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-app-bg text-slate-700">{text.account.protectedHint}</div>
-    );
+    return <div className="min-h-screen grid place-items-center bg-app-bg text-slate-700">{text.account.protectedHint}</div>;
   }
 
   const accountLabels =
@@ -296,7 +392,12 @@ export default function AccountPage() {
           email: 'Email',
           emailReadonly: 'Chỉ đọc',
           phone: 'Số điện thoại',
-          address: 'Địa chỉ',
+          address: 'Số nhà, tên đường',
+          addressProvince: 'Tỉnh / thành phố',
+          addressWard: 'Phường / xã',
+          selectProvince: 'Chọn tỉnh / thành phố',
+          selectWard: 'Chọn phường / xã',
+          loadingLocations: 'Đang tải...',
           gender: 'Giới tính',
           genderMale: 'Nam',
           genderFemale: 'Nữ',
@@ -314,7 +415,10 @@ export default function AccountPage() {
           validationNameTooLong: 'Tên không được vượt quá 200 ký tự.',
           validationPhoneRequired: 'Vui lòng nhập số điện thoại.',
           validationPhoneInvalid: 'Số điện thoại không đúng định dạng quốc tế.',
+          validationAddressRequired: 'Vui lòng nhập số nhà, tên đường.',
           validationAddressTooLong: 'Địa chỉ không được vượt quá 255 ký tự.',
+          validationAddressProvinceRequired: 'Vui lòng chọn tỉnh/thành phố.',
+          validationAddressWardRequired: 'Vui lòng chọn phường/xã.',
           validationGenderInvalid: 'Giới tính không hợp lệ.',
           validationDateOfBirthInvalid: 'Ngày sinh phải theo định dạng YYYY-MM-DD.',
           validationDateOfBirthFuture: 'Ngày sinh không được ở tương lai.',
@@ -342,7 +446,12 @@ export default function AccountPage() {
           email: 'Email',
           emailReadonly: 'Read only',
           phone: 'Phone',
-          address: 'Address',
+          address: 'Street address',
+          addressProvince: 'Province / city',
+          addressWard: 'Ward / commune',
+          selectProvince: 'Select province / city',
+          selectWard: 'Select ward / commune',
+          loadingLocations: 'Loading...',
           gender: 'Gender',
           genderMale: 'Male',
           genderFemale: 'Female',
@@ -360,7 +469,10 @@ export default function AccountPage() {
           validationNameTooLong: 'Name must be at most 200 characters.',
           validationPhoneRequired: 'Please enter your phone number.',
           validationPhoneInvalid: 'Phone number must be in international format.',
+          validationAddressRequired: 'Please enter your street address.',
           validationAddressTooLong: 'Address must be at most 255 characters.',
+          validationAddressProvinceRequired: 'Please select a province or city.',
+          validationAddressWardRequired: 'Please select a ward or commune.',
           validationGenderInvalid: 'Gender is invalid.',
           validationDateOfBirthInvalid: 'Date of birth must be in YYYY-MM-DD format.',
           validationDateOfBirthFuture: 'Date of birth cannot be in the future.',
@@ -375,14 +487,17 @@ export default function AccountPage() {
     normalizedCurrent.name !== normalizedInitial.name ||
     normalizedCurrent.phone !== normalizedInitial.phone ||
     normalizedCurrent.address !== normalizedInitial.address ||
+    normalizedCurrent.addressProvince !== normalizedInitial.addressProvince ||
+    normalizedCurrent.addressProvinceCode !== normalizedInitial.addressProvinceCode ||
+    normalizedCurrent.addressWard !== normalizedInitial.addressWard ||
+    normalizedCurrent.addressWardCode !== normalizedInitial.addressWardCode ||
     normalizedCurrent.gender !== normalizedInitial.gender ||
     normalizedCurrent.dateOfBirth !== normalizedInitial.dateOfBirth ||
     normalizedCurrent.avatarUrl !== normalizedInitial.avatarUrl;
 
   const isSaveDisabled = isSaving || !hasChanges;
 
-  const avatarPreviewUrl =
-    normalizedCurrent.avatarUrl && isValidHttpUrl(normalizedCurrent.avatarUrl) ? normalizedCurrent.avatarUrl : null;
+  const avatarPreviewUrl = normalizedCurrent.avatarUrl && isValidHttpUrl(normalizedCurrent.avatarUrl) ? normalizedCurrent.avatarUrl : null;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -393,7 +508,10 @@ export default function AccountPage() {
       nameTooLong: accountLabels.validationNameTooLong,
       phoneRequired: accountLabels.validationPhoneRequired,
       phoneInvalid: accountLabels.validationPhoneInvalid,
+      addressRequired: accountLabels.validationAddressRequired,
       addressTooLong: accountLabels.validationAddressTooLong,
+      addressProvinceRequired: accountLabels.validationAddressProvinceRequired,
+      addressWardRequired: accountLabels.validationAddressWardRequired,
       genderInvalid: accountLabels.validationGenderInvalid,
       dateOfBirthInvalid: accountLabels.validationDateOfBirthInvalid,
       dateOfBirthFuture: accountLabels.validationDateOfBirthFuture,
@@ -590,6 +708,69 @@ export default function AccountPage() {
                   </div>
                 </label>
 
+                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
+                  <span className="pt-2 text-sm text-slate-500">{accountLabels.addressProvince}</span>
+                  <div>
+                    <select
+                      value={formValues.addressProvinceCode}
+                      disabled={isLoadingProvinces}
+                      onChange={(event) => {
+                        const code = event.target.value;
+                        const selected = provinces.find((province) => province.code === code);
+                        setFormValues((previous) => ({
+                          ...previous,
+                          addressProvinceCode: code,
+                          addressProvince: selected?.name ?? '',
+                          addressWardCode: '',
+                          addressWard: ''
+                        }));
+                        setErrors((previous) => ({ ...previous, addressProvince: undefined, addressWard: undefined }));
+                        setNotice(null);
+                      }}
+                      className="h-11 w-full rounded-sm border border-slate-300 bg-white px-3 text-sm focus:border-brand-500 focus:outline-none disabled:bg-slate-100"
+                    >
+                      <option value="">{isLoadingProvinces ? accountLabels.loadingLocations : accountLabels.selectProvince}</option>
+                      {provinces.map((province) => (
+                        <option key={province.code} value={province.code}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.addressProvince ? <p className="mt-1 text-xs text-red-600">{errors.addressProvince}</p> : null}
+                  </div>
+                </label>
+
+                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
+                  <span className="pt-2 text-sm text-slate-500">{accountLabels.addressWard}</span>
+                  <div>
+                    <select
+                      value={formValues.addressWardCode}
+                      disabled={!formValues.addressProvinceCode || isLoadingWards}
+                      onChange={(event) => {
+                        const code = event.target.value;
+                        const selected = wards.find((ward) => ward.code === code);
+                        setFormValues((previous) => ({
+                          ...previous,
+                          addressWardCode: code,
+                          addressWard: selected?.name ?? ''
+                        }));
+                        setErrors((previous) => ({ ...previous, addressWard: undefined }));
+                        setNotice(null);
+                      }}
+                      className="h-11 w-full rounded-sm border border-slate-300 bg-white px-3 text-sm focus:border-brand-500 focus:outline-none disabled:bg-slate-100"
+                    >
+                      <option value="">{isLoadingWards ? accountLabels.loadingLocations : accountLabels.selectWard}</option>
+                      {wards.map((ward) => (
+                        <option key={ward.code} value={ward.code}>
+                          {ward.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.addressWard ? <p className="mt-1 text-xs text-red-600">{errors.addressWard}</p> : null}
+                    {locationError ? <p className="mt-1 text-xs text-red-600">{locationError}</p> : null}
+                  </div>
+                </label>
+
                 <fieldset className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
                   <legend className="pt-2 text-sm text-slate-500">{accountLabels.gender}</legend>
                   <div className="space-y-1">
@@ -685,9 +866,7 @@ export default function AccountPage() {
 
                 {notice ? (
                   <p
-                    className={`rounded-sm px-3 py-2 text-sm ${
-                      notice.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                    }`}
+                    className={`rounded-sm px-3 py-2 text-sm ${notice.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
                   >
                     {notice.message}
                   </p>

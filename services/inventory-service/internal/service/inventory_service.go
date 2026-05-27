@@ -45,7 +45,8 @@ type ValidateInventoryQuery struct {
 type AdjustStockRequest struct {
 	ProductID       *string
 	SellerID        *string
-	DeltaOnHand     int
+	DeltaOnHand     *int
+	OnHand          *int
 	Reason          *string
 	ExpectedVersion *int
 }
@@ -126,7 +127,7 @@ func (s *InventoryService) ValidateStock(ctx context.Context, q ValidateInventor
 	}, nil
 }
 
-func (s *InventoryService) GetStockBySKU(ctx context.Context, sku string) (map[string]any, error) {
+func (s *InventoryService) GetStockBySKU(ctx context.Context, actor domain.UserContext, sku string) (map[string]any, error) {
 	normalized := normalizeSKU(sku)
 	item, err := s.repo.FindInventoryBySKU(ctx, normalized)
 	if err != nil {
@@ -134,6 +135,9 @@ func (s *InventoryService) GetStockBySKU(ctx context.Context, sku string) (map[s
 	}
 	if item == nil {
 		return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeInventorySkuNotFound, "Inventory SKU not found: "+normalized, nil)
+	}
+	if err := assertSellerInventoryOwnership(actor, item, nil); err != nil {
+		return nil, err
 	}
 	return toStockSnapshot(*item), nil
 }
@@ -158,8 +162,17 @@ func (s *InventoryService) AdjustStock(
 		return nil, err
 	}
 
+	if err := assertSellerInventoryOwnership(actor, item, req.SellerID); err != nil {
+		return nil, err
+	}
+
+	deltaOnHand := 0
 	if item == nil {
-		if req.DeltaOnHand <= 0 {
+		initialOnHand, adjustmentDelta, err := calculateStockAdjustment(0, req)
+		if err != nil {
+			return nil, err
+		}
+		if req.OnHand == nil && initialOnHand <= 0 {
 			return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeInventorySkuNotFound, "Inventory SKU not found: "+normalized, nil)
 		}
 		if req.ProductID == nil || req.SellerID == nil || strings.TrimSpace(*req.ProductID) == "" || strings.TrimSpace(*req.SellerID) == "" {
@@ -173,46 +186,57 @@ func (s *InventoryService) AdjustStock(
 			SKU:       normalized,
 			ProductID: strings.TrimSpace(*req.ProductID),
 			SellerID:  strings.TrimSpace(*req.SellerID),
-			OnHand:    req.DeltaOnHand,
+			OnHand:    initialOnHand,
 			Reserved:  0,
 		}
 		if err := s.repo.InsertInventoryItem(ctx, tx, item); err != nil {
 			return nil, err
 		}
+		deltaOnHand = adjustmentDelta
 	} else {
 		if req.ExpectedVersion != nil && *req.ExpectedVersion != item.Version {
 			return nil, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Version conflict for SKU "+normalized, nil)
 		}
 
-		nextOnHand := item.OnHand + req.DeltaOnHand
+		nextOnHand, adjustmentDelta, err := calculateStockAdjustment(item.OnHand, req)
+		if err != nil {
+			return nil, err
+		}
 		if nextOnHand < 0 || nextOnHand-item.Reserved < 0 {
 			return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeInventoryNegativeStock, "Stock adjustment causes negative available quantity for SKU "+normalized, nil)
 		}
 
 		item.OnHand = nextOnHand
 		if req.ProductID != nil && strings.TrimSpace(*req.ProductID) != "" {
-			if len(strings.TrimSpace(*req.ProductID)) > 128 {
+			requestedProductID := strings.TrimSpace(*req.ProductID)
+			if len(requestedProductID) > 128 {
 				return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "productId is invalid", nil)
 			}
-			item.ProductID = strings.TrimSpace(*req.ProductID)
+			if requestedProductID != item.ProductID {
+				return nil, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Inventory SKU is already linked to another product: "+normalized, nil)
+			}
 		}
 		if req.SellerID != nil && strings.TrimSpace(*req.SellerID) != "" {
-			if !isUUID(*req.SellerID) {
+			requestedSellerID := strings.TrimSpace(*req.SellerID)
+			if !isUUID(requestedSellerID) {
 				return nil, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "sellerId must be valid UUID", nil)
 			}
-			item.SellerID = strings.TrimSpace(*req.SellerID)
+			if requestedSellerID != item.SellerID {
+				return nil, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Inventory SKU is already linked to another seller: "+normalized, nil)
+			}
 		}
 
 		if err := s.repo.UpdateInventoryItem(ctx, tx, item); err != nil {
 			return nil, err
 		}
+		deltaOnHand = adjustmentDelta
 	}
 
 	movement := domain.InventoryMovement{
 		SKU:           item.SKU,
 		OrderID:       nil,
 		MovementType:  domain.InventoryMovementTypeAdjust,
-		DeltaOnHand:   req.DeltaOnHand,
+		DeltaOnHand:   deltaOnHand,
 		DeltaReserved: 0,
 		Reason:        req.Reason,
 		ActorID:       actor.UserID,
@@ -231,7 +255,7 @@ func (s *InventoryService) AdjustStock(
 			"sku":         item.SKU,
 			"productId":   item.ProductID,
 			"sellerId":    item.SellerID,
-			"deltaOnHand": req.DeltaOnHand,
+			"deltaOnHand": deltaOnHand,
 			"onHand":      item.OnHand,
 			"reserved":    item.Reserved,
 			"available":   item.OnHand - item.Reserved,
@@ -246,6 +270,35 @@ func (s *InventoryService) AdjustStock(
 		return nil, err
 	}
 	return toStockSnapshot(*item), nil
+}
+
+func calculateStockAdjustment(currentOnHand int, req AdjustStockRequest) (int, int, error) {
+	if (req.DeltaOnHand == nil) == (req.OnHand == nil) {
+		return 0, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "Exactly one stock adjustment value is required", nil)
+	}
+	if req.OnHand != nil {
+		if *req.OnHand < 0 {
+			return 0, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "onHand cannot be negative", nil)
+		}
+		return *req.OnHand, *req.OnHand - currentOnHand, nil
+	}
+
+	return currentOnHand + *req.DeltaOnHand, *req.DeltaOnHand, nil
+}
+
+func assertSellerInventoryOwnership(actor domain.UserContext, item *domain.InventoryItem, requestedSellerID *string) error {
+	if actor.Role != domain.RoleSeller {
+		return nil
+	}
+
+	if item != nil && item.SellerID != actor.UserID {
+		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Seller cannot access inventory owned by another seller", nil)
+	}
+	if requestedSellerID != nil && strings.TrimSpace(*requestedSellerID) != "" && strings.TrimSpace(*requestedSellerID) != actor.UserID {
+		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Seller cannot access inventory owned by another seller", nil)
+	}
+
+	return nil
 }
 
 func (s *InventoryService) ProvisionInventoryFromProductChanged(ctx context.Context, event ProductChangedEvent, meta EventMeta) (map[string]any, error) {

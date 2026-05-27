@@ -77,6 +77,8 @@ export default function CheckoutPage() {
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
+  const [recipientWard, setRecipientWard] = useState('');
+  const [recipientProvince, setRecipientProvince] = useState('');
   const [note, setNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [feedback, setFeedback] = useState('');
@@ -96,6 +98,8 @@ export default function CheckoutPage() {
     setRecipientName(user.name);
     setRecipientPhone(user.phone);
     setRecipientAddress(user.address);
+    setRecipientWard(user.addressWard);
+    setRecipientProvince(user.addressProvince);
   }, [user]);
 
   useEffect(() => {
@@ -109,8 +113,15 @@ export default function CheckoutPage() {
   }, [accessToken, ready, router, user]);
 
   const canSubmit = useMemo(
-    () => !isSubmitting && items.length > 0 && recipientName.trim().length > 0 && recipientPhone.trim().length > 0 && recipientAddress.trim().length > 0,
-    [isSubmitting, items.length, recipientAddress, recipientName, recipientPhone]
+    () =>
+      !isSubmitting &&
+      items.length > 0 &&
+      recipientName.trim().length > 0 &&
+      recipientPhone.trim().length > 0 &&
+      recipientAddress.trim().length > 0 &&
+      recipientWard.trim().length > 0 &&
+      recipientProvince.trim().length > 0,
+    [isSubmitting, items.length, recipientAddress, recipientName, recipientPhone, recipientProvince, recipientWard]
   );
 
   const handlePlaceOrder = async () => {
@@ -162,6 +173,8 @@ export default function CheckoutPage() {
           recipientName: recipientName.trim(),
           recipientPhone: recipientPhone.trim(),
           recipientAddress: recipientAddress.trim(),
+          recipientWard: recipientWard.trim(),
+          recipientProvince: recipientProvince.trim(),
           items: orderItems
         }
       });
@@ -208,9 +221,7 @@ export default function CheckoutPage() {
   };
 
   if (!ready) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-app-bg text-slate-700">{text.product.loading}</div>
-    );
+    return <div className="min-h-screen grid place-items-center bg-app-bg text-slate-700">{text.product.loading}</div>;
   }
 
   if (!user || !accessToken) {
@@ -267,15 +278,19 @@ export default function CheckoutPage() {
                   </label>
                 </div>
 
-                <label className="mt-3 flex flex-col gap-1">
-                  <span className="text-xs font-medium text-slate-500">{text.checkout.recipientAddress}</span>
-                  <textarea
-                    rows={3}
-                    value={recipientAddress}
-                    onChange={(event) => setRecipientAddress(event.target.value)}
-                    className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                  />
-                </label>
+                <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+                  <p className="text-xs font-medium text-slate-500">{text.checkout.savedAddressHint}</p>
+                  {recipientAddress && recipientWard && recipientProvince ? (
+                    <p className="mt-2">
+                      {recipientAddress}, {recipientWard}, {recipientProvince}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-red-600">{text.checkout.addressRequired}</p>
+                  )}
+                  <Link href="/account" className="mt-2 inline-flex text-sm font-semibold text-brand-600 hover:underline">
+                    {text.checkout.editSavedAddress}
+                  </Link>
+                </div>
               </article>
 
               <article className="rounded-md border border-slate-200 p-4">

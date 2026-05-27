@@ -20,6 +20,10 @@ interface BuyerProfile {
   name: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   gender: BuyerGender;
   dateOfBirth: string | null;
   avatarUrl: string | null;
@@ -33,6 +37,10 @@ export interface BuyerUser {
   role: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   gender: BuyerGender;
   dateOfBirth: string | null;
   avatarUrl: string | null;
@@ -60,6 +68,10 @@ interface UpdateProfilePayload {
   name: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   gender: BuyerGender;
   dateOfBirth: string | null;
   avatarUrl: string | null;
@@ -143,6 +155,10 @@ function profileFromEmail(email: string): BuyerProfile {
     name: email.split('@')[0] ?? 'Buyer',
     phone: '',
     address: '',
+    addressProvince: '',
+    addressProvinceCode: '',
+    addressWard: '',
+    addressWardCode: '',
     gender: 'unspecified',
     dateOfBirth: null,
     avatarUrl: null,
@@ -175,6 +191,10 @@ function toBuyerUser(authUser: BuyerAuthUser, profile: BuyerProfile): BuyerUser 
     name: profile.name,
     phone: profile.phone,
     address: profile.address,
+    addressProvince: profile.addressProvince,
+    addressProvinceCode: profile.addressProvinceCode,
+    addressWard: profile.addressWard,
+    addressWardCode: profile.addressWardCode,
     gender: profile.gender,
     dateOfBirth: profile.dateOfBirth,
     avatarUrl: profile.avatarUrl,
@@ -205,6 +225,10 @@ function profileFromApi(apiProfile: BuyerProfileOutput, fallbackEmail: string, f
     name: shouldKeepLocalName ? fallbackProfileName : nextName || fallbackProfileName || profileFromEmail(fallbackEmail).name,
     phone: apiProfile.phone,
     address: apiProfile.address,
+    addressProvince: apiProfile.addressProvince,
+    addressProvinceCode: apiProfile.addressProvinceCode,
+    addressWard: apiProfile.addressWard,
+    addressWardCode: apiProfile.addressWardCode,
     gender: normalizeGender(apiProfile.gender, fallbackProfile.gender),
     dateOfBirth: apiProfile.dateOfBirth,
     avatarUrl: apiProfile.avatarUrl,
@@ -229,24 +253,27 @@ function readProfiles(): Record<string, BuyerProfile> {
         return accumulator;
       }
 
-      const normalizedName =
-        typeof profile.name === 'string' && profile.name.trim().length > 0 ? collapseRepeatedName(profile.name) : 'Buyer';
+      const normalizedName = typeof profile.name === 'string' && profile.name.trim().length > 0 ? collapseRepeatedName(profile.name) : 'Buyer';
       const normalizedPhone = typeof profile.phone === 'string' ? profile.phone : '';
       const normalizedAddress = typeof profile.address === 'string' ? profile.address : '';
+      const normalizedAddressProvince = typeof profile.addressProvince === 'string' ? profile.addressProvince : '';
+      const normalizedAddressProvinceCode = typeof profile.addressProvinceCode === 'string' ? profile.addressProvinceCode : '';
+      const normalizedAddressWard = typeof profile.addressWard === 'string' ? profile.addressWard : '';
+      const normalizedAddressWardCode = typeof profile.addressWardCode === 'string' ? profile.addressWardCode : '';
       const normalizedGender = normalizeGender(profile.gender, 'unspecified');
-      const normalizedDateOfBirth =
-        typeof profile.dateOfBirth === 'string' && profile.dateOfBirth.trim().length > 0 ? profile.dateOfBirth : null;
-      const normalizedAvatarUrl =
-        typeof profile.avatarUrl === 'string' && profile.avatarUrl.trim().length > 0 ? profile.avatarUrl : null;
+      const normalizedDateOfBirth = typeof profile.dateOfBirth === 'string' && profile.dateOfBirth.trim().length > 0 ? profile.dateOfBirth : null;
+      const normalizedAvatarUrl = typeof profile.avatarUrl === 'string' && profile.avatarUrl.trim().length > 0 ? profile.avatarUrl : null;
       const normalizedCreatedAt =
-        typeof profile.createdAt === 'string' && profile.createdAt.trim().length > 0
-          ? profile.createdAt
-          : new Date().toISOString();
+        typeof profile.createdAt === 'string' && profile.createdAt.trim().length > 0 ? profile.createdAt : new Date().toISOString();
 
       accumulator[userId] = {
         name: normalizedName,
         phone: normalizedPhone,
         address: normalizedAddress,
+        addressProvince: normalizedAddressProvince,
+        addressProvinceCode: normalizedAddressProvinceCode,
+        addressWard: normalizedAddressWard,
+        addressWardCode: normalizedAddressWardCode,
         gender: normalizedGender,
         dateOfBirth: normalizedDateOfBirth,
         avatarUrl: normalizedAvatarUrl,
@@ -335,9 +362,7 @@ function readCartItems(): CartItem[] {
         const title = typeof record.title === 'string' ? record.title.trim() : '';
         const image = typeof record.image === 'string' ? record.image : '';
         const unitPrice =
-          typeof record.unitPrice === 'number' && Number.isFinite(record.unitPrice) && record.unitPrice >= 0
-            ? record.unitPrice
-            : null;
+          typeof record.unitPrice === 'number' && Number.isFinite(record.unitPrice) && record.unitPrice >= 0 ? record.unitPrice : null;
         const quantity = sanitizeNonNegativeInt(record.quantity);
         const stock = record.stock === null ? null : sanitizeNonNegativeInt(record.stock);
         const sku = typeof record.sku === 'string' && record.sku.trim().length > 0 ? record.sku.trim() : null;
@@ -638,6 +663,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: name.trim() || profileFromEmail(normalizedEmail).name,
           phone: '',
           address: '',
+          addressProvince: '',
+          addressProvinceCode: '',
+          addressWard: '',
+          addressWardCode: '',
           gender: 'unspecified',
           dateOfBirth: null,
           avatarUrl: null,
@@ -695,7 +724,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const updateProfile = useCallback(
-    async ({ name, phone, address, gender, dateOfBirth, avatarUrl }: UpdateProfilePayload): Promise<AuthActionResult> => {
+    async ({
+      name,
+      phone,
+      address,
+      addressProvince,
+      addressProvinceCode,
+      addressWard,
+      addressWardCode,
+      gender,
+      dateOfBirth,
+      avatarUrl
+    }: UpdateProfilePayload): Promise<AuthActionResult> => {
       if (!user || !session?.accessToken) {
         return { ok: false };
       }
@@ -703,6 +743,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const normalizedName = name.trim();
       const normalizedPhone = phone.trim();
       const normalizedAddress = address.trim();
+      const normalizedAddressProvince = addressProvince.trim();
+      const normalizedAddressProvinceCode = addressProvinceCode.trim();
+      const normalizedAddressWard = addressWard.trim();
+      const normalizedAddressWardCode = addressWardCode.trim();
       const normalizedGender = normalizeGender(gender, 'unspecified');
       const normalizedDateOfBirth = typeof dateOfBirth === 'string' && dateOfBirth.trim() ? dateOfBirth.trim() : null;
       const normalizedAvatarUrl = typeof avatarUrl === 'string' && avatarUrl.trim() ? avatarUrl.trim() : null;
@@ -721,6 +765,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             name: normalizedName,
             phone: normalizedPhone,
             address: normalizedAddress,
+            addressProvince: normalizedAddressProvince,
+            addressProvinceCode: normalizedAddressProvinceCode,
+            addressWard: normalizedAddressWard,
+            addressWardCode: normalizedAddressWardCode,
             gender: normalizedGender,
             dateOfBirth: normalizedDateOfBirth,
             avatarUrl: normalizedAvatarUrl
@@ -753,15 +801,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [locale, profiles, session?.accessToken, user]
   );
 
-  const cartCount = useMemo(
-    () => cartItems.reduce((total, item) => total + item.quantity, 0),
-    [cartItems]
-  );
+  const cartCount = useMemo(() => cartItems.reduce((total, item) => total + item.quantity, 0), [cartItems]);
 
-  const cartTotal = useMemo(
-    () => cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0),
-    [cartItems]
-  );
+  const cartTotal = useMemo(() => cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0), [cartItems]);
 
   const addToCart = useCallback(
     (payload: AddToCartPayload, quantity = 1): CartActionResult => {
@@ -802,8 +844,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const existing = cartItems.find((item) => item.productId === productId);
       const baseQuantity = existing?.quantity ?? 0;
       const targetQuantity = baseQuantity + requested;
-      const finalQuantity =
-        normalizedStock !== null ? Math.min(targetQuantity, normalizedStock) : targetQuantity;
+      const finalQuantity = normalizedStock !== null ? Math.min(targetQuantity, normalizedStock) : targetQuantity;
 
       if (finalQuantity <= 0) {
         return {
@@ -824,9 +865,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currency
       };
 
-      const nextItems = existing
-        ? cartItems.map((item) => (item.productId === productId ? nextItem : item))
-        : [...cartItems, nextItem];
+      const nextItems = existing ? cartItems.map((item) => (item.productId === productId ? nextItem : item)) : [...cartItems, nextItem];
       persistCartItems(nextItems);
 
       if (normalizedStock !== null && finalQuantity < targetQuantity) {
@@ -1040,17 +1079,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       removeFromCart,
       clearCart
     }),
-    [
-      addToCart,
-      cartCount,
-      cartItems,
-      cartReady,
-      cartTotal,
-      clearCart,
-      removeFromCart,
-      setItemQuantity,
-      updateCartItem
-    ]
+    [addToCart, cartCount, cartItems, cartReady, cartTotal, clearCart, removeFromCart, setItemQuantity, updateCartItem]
   );
 
   return (

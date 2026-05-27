@@ -34,7 +34,7 @@ export default function HomeScreen() {
       >
         <View style={styles.hero}>
           <View style={styles.actionRow}>
-            <Pressable onPress={() => router.push('/explore')} style={styles.search}>
+            <Pressable accessibilityRole="search" onPress={() => router.push('/search')} style={styles.search}>
               <AppIcon color={colors.muted} name="search-outline" size={20} />
               <Text style={styles.searchText}>Tìm sản phẩm, thương hiệu...</Text>
               <AppIcon color={colors.muted} name="camera-outline" size={20} />

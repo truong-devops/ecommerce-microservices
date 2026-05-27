@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Order, OrderStatus } from '@frontend/buyer-contracts';
@@ -41,18 +41,25 @@ export default function OrdersScreen() {
         <Text style={styles.title}>Đơn đã mua</Text>
         <IconButton accessibilityLabel="Tìm kiếm đơn" color={colors.brand} name="search-outline" onPress={() => setStatus(undefined)} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters} style={styles.filterBar}>
         {filters.map((filter) => (
           <Pressable key={filter.label} onPress={() => setStatus(filter.value)} style={[styles.filter, filter.value === status ? styles.selected : null]}>
             <Text style={[styles.filterText, filter.value === status ? styles.selectedText : null]}>{filter.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
-      {orders.isPending ? <ScreenState title="Đang tải đơn hàng..." /> : null}
-      {orders.isError ? <ScreenState title="Không tải được đơn hàng" detail={orders.error.message} /> : null}
-      <ScrollView contentContainerStyle={styles.list}>
-        {orders.data?.map((order) => <OrderCard key={order.id} order={order} onPress={() => router.push(`/orders/${order.id}`)} />)}
-      </ScrollView>
+      {orders.isPending ? <View style={styles.feedback}><ScreenState title="Đang tải đơn hàng..." /></View> : null}
+      {orders.isError ? <View style={styles.feedback}><ScreenState title="Không tải được đơn hàng" detail={orders.error.message} /></View> : null}
+      {orders.data ? (
+        <FlatList
+          contentContainerStyle={[styles.list, orders.data.length === 0 && styles.emptyList]}
+          data={orders.data}
+          keyExtractor={(order) => order.id}
+          ListEmptyComponent={<ScreenState title="Chưa có đơn hàng trong trạng thái này" />}
+          renderItem={({ item: order }) => <OrderCard order={order} onPress={() => router.push(`/orders/${order.id}`)} />}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -74,7 +81,7 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
           <View style={styles.mallBadge}><Text style={styles.mallText}>Mall</Text></View>
           <Text style={styles.number}>Market Mall</Text>
         </View>
-        <Text style={styles.status}>{buyerOrderListStatusLabel(order.status)}</Text>
+        <Text numberOfLines={1} style={styles.status}>{buyerOrderListStatusLabel(order.status)}</Text>
       </View>
       {item ? (
         <View style={styles.product}>
@@ -85,9 +92,9 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
           )}
           <View style={styles.productBody}>
             <Text numberOfLines={2} style={styles.productName}>{productName}</Text>
-            <Text style={styles.meta}>{item.sku}</Text>
+            <Text numberOfLines={1} style={styles.meta}>{item.sku}</Text>
           </View>
-          <Text style={styles.meta}>x{item.quantity}</Text>
+          <Text style={styles.quantity}>x{item.quantity}</Text>
         </View>
       ) : null}
       <View style={styles.totalRow}>
@@ -95,7 +102,7 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
         <Text style={styles.amount}>{Math.round(order.totalAmount).toLocaleString('vi-VN')}đ</Text>
       </View>
       <View style={styles.buttonLine}>
-        <View />
+        <Text style={styles.orderNumber}>{order.orderNumber}</Text>
         <View style={styles.buyAgain}><Text style={styles.buyAgainText}>{order.status === 'DELIVERED' ? 'Mua lại' : 'Xem đơn'}</Text></View>
       </View>
     </Pressable>
@@ -104,30 +111,35 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
 
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: colors.background, flex: 1 },
-  header: { alignItems: 'center', backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', padding: spacing[2] },
-  title: { color: colors.ink, fontSize: typography.title, fontWeight: '700' },
-  filters: { backgroundColor: colors.surface, borderBottomColor: colors.line, borderBottomWidth: 1, paddingHorizontal: spacing[3] },
-  filter: { marginHorizontal: spacing[2], paddingVertical: spacing[3] },
+  header: { alignItems: 'center', backgroundColor: colors.surface, borderBottomColor: colors.line, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing[2], paddingVertical: spacing[2] },
+  title: { color: colors.ink, fontSize: 20, fontWeight: '800' },
+  filterBar: { backgroundColor: colors.surface, flexGrow: 0, height: 52 },
+  filters: { alignItems: 'stretch', borderBottomColor: colors.line, borderBottomWidth: 1, paddingHorizontal: spacing[2] },
+  filter: { justifyContent: 'center', marginHorizontal: spacing[2], paddingHorizontal: spacing[1] },
   selected: { borderBottomColor: colors.brand, borderBottomWidth: 2 },
-  filterText: { color: colors.ink, fontSize: 14 },
+  filterText: { color: colors.ink, fontSize: typography.body },
   selectedText: { color: colors.brand, fontWeight: '700' },
-  list: { gap: spacing[3], padding: spacing[3] },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, gap: spacing[3], padding: spacing[3] },
-  cardHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  feedback: { flex: 1, justifyContent: 'center' },
+  list: { gap: spacing[3], padding: spacing[3], paddingBottom: spacing[5] },
+  emptyList: { flexGrow: 1, justifyContent: 'center' },
+  card: { backgroundColor: colors.surface, borderRadius: radius.sm, gap: spacing[3], padding: spacing[3] },
+  cardHeader: { alignItems: 'center', borderBottomColor: colors.line, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing[2] },
   shop: { alignItems: 'center', flexDirection: 'row', gap: spacing[2] },
   mallBadge: { backgroundColor: colors.brand, borderRadius: 3, paddingHorizontal: spacing[1] },
   mallText: { color: colors.surface, fontSize: 11, fontWeight: '800' },
-  number: { color: colors.ink, fontSize: 16, fontWeight: '700' },
-  status: { color: colors.brand, fontWeight: '600' },
-  product: { flexDirection: 'row', gap: spacing[3] },
-  placeholder: { alignItems: 'center', backgroundColor: colors.brandSoft, borderRadius: radius.sm, height: 76, justifyContent: 'center', width: 76 },
-  productImage: { backgroundColor: colors.line, borderRadius: radius.sm, height: 76, width: 76 },
+  number: { color: colors.ink, fontSize: 15, fontWeight: '700' },
+  status: { color: colors.brand, flexShrink: 1, fontSize: typography.body, fontWeight: '600', marginLeft: spacing[2] },
+  product: { alignItems: 'flex-start', flexDirection: 'row', gap: spacing[3] },
+  placeholder: { alignItems: 'center', backgroundColor: colors.brandSoft, borderRadius: radius.sm, height: 68, justifyContent: 'center', width: 68 },
+  productImage: { backgroundColor: colors.line, borderRadius: radius.sm, height: 68, width: 68 },
   productBody: { flex: 1, gap: spacing[1] },
   productName: { color: colors.ink, fontSize: 15 },
   meta: { color: colors.muted, fontSize: typography.body },
-  totalRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'flex-end', gap: spacing[1] },
+  quantity: { color: colors.muted, fontSize: typography.body, minWidth: 28, textAlign: 'right' },
+  totalRow: { alignItems: 'center', borderTopColor: colors.line, borderTopWidth: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing[1], paddingTop: spacing[3] },
   amount: { color: colors.ink, fontSize: 17, fontWeight: '700' },
   buttonLine: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  buyAgain: { borderColor: colors.brand, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: spacing[5], paddingVertical: spacing[2] },
+  orderNumber: { color: colors.muted, flex: 1, fontSize: typography.label, marginRight: spacing[2] },
+  buyAgain: { borderColor: colors.brand, borderRadius: radius.sm, borderWidth: 1, paddingHorizontal: spacing[5], paddingVertical: 10 },
   buyAgainText: { color: colors.brand, fontWeight: '600' },
 });

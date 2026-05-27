@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - configmap.yaml
+  - configmap-nexus-merchant-mappings.yaml
   - data-postgres.yaml
   - data-mongo.yaml
   - data-redis.yaml

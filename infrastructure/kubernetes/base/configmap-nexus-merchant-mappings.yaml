@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexus-merchant-mappings
+data:
+  merchant-mappings.json: |
+    {
+      "shopName": "DT Commerce Marketplace",
+      "merchantId": "41100000",
+      "activeSellerIds": [
+        "9f8a2776-a0d3-4013-ac02-6784166eadd6",
+        "15d15e9c-ff34-4b84-8e5a-e4e8903f3c5e"
+      ],
+      "provinceHubMappings": {
+        "79": "HCM-001",
+        "01": "HN-001"
+      },
+      "active": true
+    }

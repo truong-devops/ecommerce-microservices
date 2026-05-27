@@ -34,7 +34,7 @@ spec:
             - name: DATABASE_URL
               value: postgresql://euser:euser@postgres:5432/ecommerce_user?sslmode=disable
             - name: DB_MIGRATIONS_RUN
-              value: "true"
+              value: "false"
             - name: MIGRATION_FILE
               value: /migrations/0001_init_user_service_go.sql
             - name: KAFKA_CLIENT_ID

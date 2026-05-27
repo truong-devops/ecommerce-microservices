@@ -85,6 +85,34 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     void loadDetail();
   }, [loadDetail]);
 
+  const refreshProducts = useCallback(async () => {
+    if (!sessionId) {
+      return;
+    }
+
+    try {
+      const nextProducts = await listLiveProducts(sessionId);
+      setProducts(nextProducts.filter((product) => product.pinStatus === 'PINNED'));
+    } catch {
+      // Keep the most recent realtime state if the fallback request is unavailable.
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId || (detail?.session.status !== 'LIVE' && detail?.session.status !== 'PAUSED')) {
+      return;
+    }
+
+    void refreshProducts();
+    const intervalId = window.setInterval(() => {
+      void refreshProducts();
+    }, 5000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [detail?.session.status, refreshProducts, sessionId]);
+
   const loadMessageHistory = useCallback(async () => {
     if (!sessionId) {
       return;
@@ -632,7 +660,7 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => void refreshProducts(session.sessionId)}
+                    onClick={() => void refreshProducts()}
                     className="w-full rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3] sm:w-auto"
                   >
                     Làm mới sản phẩm
@@ -899,14 +927,6 @@ export default function LiveDetailPage({ params }: LiveDetailPageProps) {
     </div>
   );
 
-  async function refreshProducts(currentSessionId: string) {
-    try {
-      const nextProducts = await listLiveProducts(currentSessionId);
-      setProducts(nextProducts.filter((product) => product.pinStatus === 'PINNED'));
-    } catch {
-      // REST refresh is a convenience; realtime state remains usable if it fails.
-    }
-  }
 }
 
 function MetricPill({ icon, label, value }: { icon: string; label: string; value: number }) {

@@ -9,11 +9,15 @@ import { TopSearchSection } from '@/components/home/TopSearchSection';
 import { VideoHighlightsSection } from '@/components/home/VideoHighlightsSection';
 import { Header } from '@/components/layout/Header';
 import { fetchHomeSections } from '@/lib/api/home';
+import { fetchBuyerProducts } from '@/lib/api/products';
 import { BuyerApiClientError } from '@/lib/api/client';
-import type { HomeSectionsData } from '@/lib/api/types';
+import type { HomeSectionsData, ProductItem, ProductSearchItem } from '@/lib/api/types';
 import { useLanguage } from '@/providers/AppProvider';
 
 type HomeStatus = 'loading' | 'error' | 'success';
+type CategoryProductsStatus = 'idle' | 'loading' | 'error' | 'success';
+
+const CATEGORY_PRODUCTS_PAGE_SIZE = 100;
 
 const emptyHomeSections: HomeSectionsData = {
   keywords: [],
@@ -30,6 +34,8 @@ export default function HomePage() {
   const [error, setError] = useState('');
   const [sections, setSections] = useState<HomeSectionsData>(emptyHomeSections);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [categoryProductsStatus, setCategoryProductsStatus] = useState<CategoryProductsStatus>('idle');
+  const [categoryProducts, setCategoryProducts] = useState<ProductItem[]>([]);
 
   const loadHomeData = useCallback(async () => {
     setStatus('loading');
@@ -78,13 +84,44 @@ export default function HomePage() {
     () => sections.categories.find((category) => category.id === selectedCategoryId) ?? null,
     [sections.categories, selectedCategoryId]
   );
-  const filteredRecommendationProducts = useMemo(() => {
+
+  useEffect(() => {
     if (!selectedCategoryId) {
-      return sections.recommendationProducts;
+      setCategoryProducts([]);
+      setCategoryProductsStatus('idle');
+      return;
     }
 
-    return sections.recommendationProducts.filter((product) => product.categoryId === selectedCategoryId);
-  }, [sections.recommendationProducts, selectedCategoryId]);
+    let cancelled = false;
+    setCategoryProducts([]);
+    setCategoryProductsStatus('loading');
+
+    void fetchAllCategoryProducts(selectedCategoryId)
+      .then((products) => {
+        if (!cancelled) {
+          setCategoryProducts(products);
+          setCategoryProductsStatus('success');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCategoryProducts([]);
+          setCategoryProductsStatus('error');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCategoryId]);
+
+  const displayedRecommendationProducts = selectedCategory ? categoryProducts : sections.recommendationProducts;
+  const recommendationEmptyMessage =
+    selectedCategory && categoryProductsStatus === 'loading'
+      ? text.home.loading
+      : selectedCategory && categoryProductsStatus === 'error'
+        ? text.home.loadError
+        : text.home.noProductsInCategory;
 
   const recommendationTitle = useMemo(() => {
     if (!selectedCategory) {
@@ -139,8 +176,8 @@ export default function HomePage() {
             <TopSearchSection items={sections.topSearchItems} />
             <RecommendationSection
               title={recommendationTitle}
-              emptyMessage={text.home.noProductsInCategory}
-              products={filteredRecommendationProducts}
+              emptyMessage={recommendationEmptyMessage}
+              products={displayedRecommendationProducts}
             />
           </>
         ) : null}
@@ -148,4 +185,42 @@ export default function HomePage() {
 
     </div>
   );
+}
+
+async function fetchAllCategoryProducts(categoryId: string): Promise<ProductItem[]> {
+  const firstPage = await fetchBuyerProducts({
+    categoryId,
+    page: 1,
+    pageSize: CATEGORY_PRODUCTS_PAGE_SIZE,
+    sortBy: 'createdAt',
+    sortOrder: 'DESC'
+  });
+  const additionalPages =
+    firstPage.pagination.totalPages > 1
+      ? await Promise.all(
+          Array.from({ length: firstPage.pagination.totalPages - 1 }, (_, index) =>
+            fetchBuyerProducts({
+              categoryId,
+              page: index + 2,
+              pageSize: CATEGORY_PRODUCTS_PAGE_SIZE,
+              sortBy: 'createdAt',
+              sortOrder: 'DESC'
+            })
+          )
+        )
+      : [];
+
+  return [firstPage, ...additionalPages].flatMap((page) => page.items.map(toCategoryProductItem));
+}
+
+function toCategoryProductItem(product: ProductSearchItem): ProductItem {
+  return {
+    id: product.id,
+    title: product.title,
+    categoryId: product.categoryId,
+    price: product.price,
+    sold: '0',
+    discountPercent: product.discountPercent,
+    image: product.image
+  };
 }

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,11 +21,17 @@ const mallFeatures = [
 ] as const;
 
 export default function ExploreScreen() {
+  const { categoryId, categoryLabel } = useLocalSearchParams<{ categoryId?: string; categoryLabel?: string }>();
   const { width } = useWindowDimensions();
   const productTileWidth = Math.floor((width - spacing[3] * 2 - spacing[2]) / 2);
   const [draft, setDraft] = useState('');
   const [search, setSearch] = useState('');
-  const products = useQuery({ queryKey: ['products', search], queryFn: () => searchProducts({ page: 1, pageSize: 20, search }) });
+  const selectedCategoryId = categoryId?.trim() || undefined;
+  const selectedCategoryLabel = categoryLabel?.trim() || undefined;
+  const products = useQuery({
+    queryKey: ['products', search, selectedCategoryId],
+    queryFn: () => searchProducts({ page: 1, pageSize: 100, search, categoryId: selectedCategoryId })
+  });
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -62,6 +69,7 @@ export default function ExploreScreen() {
         </ScrollView>
         <PrimaryButton onPress={() => setSearch(draft.trim())}>Tìm sản phẩm</PrimaryButton>
       </View>
+      {selectedCategoryLabel ? <Text style={styles.resultTitle}>Sản phẩm thuộc {selectedCategoryLabel}</Text> : null}
       {products.isPending ? <ScreenState title="Đang tải sản phẩm..." /> : null}
       {products.isError ? <ScreenState title="Không tải được sản phẩm" detail={products.error.message} /> : null}
       {products.data ? (
@@ -97,6 +105,7 @@ const styles = StyleSheet.create({
   feature: { alignItems: 'center', gap: spacing[1], width: 70 },
   featureIcon: { alignItems: 'center', borderColor: colors.line, borderRadius: radius.md, borderWidth: 1, height: 52, justifyContent: 'center', shadowColor: '#000', shadowOffset: { height: 1, width: 0 }, shadowOpacity: 0.06, shadowRadius: 4, width: 52 },
   featureLabel: { color: colors.ink, fontSize: 10, textAlign: 'center' },
+  resultTitle: { color: colors.ink, fontSize: typography.body, fontWeight: '800', paddingHorizontal: spacing[3], paddingTop: spacing[3] },
   list: { paddingHorizontal: spacing[3], paddingVertical: spacing[3], rowGap: spacing[3] },
   row: { justifyContent: 'space-between' }
 });

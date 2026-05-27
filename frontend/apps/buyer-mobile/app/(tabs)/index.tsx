@@ -84,7 +84,13 @@ export default function HomeScreen() {
               <Text style={styles.sectionTitle}>Danh mục</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
                 {home.data.categories.map((category) => (
-                  <Pressable key={category.id} onPress={() => router.push(`/explore?categoryId=${category.id}`)} style={styles.category}>
+                  <Pressable
+                    key={category.id}
+                    onPress={() =>
+                      router.push(`/explore?categoryId=${encodeURIComponent(category.id)}&categoryLabel=${encodeURIComponent(category.label)}`)
+                    }
+                    style={styles.category}
+                  >
                     <View style={styles.categoryIcon}>
                       {category.icon ? (
                         <Image source={{ uri: normalizeRemoteAssetUrl(category.icon, process.env.EXPO_PUBLIC_API_BASE_URL) }} style={styles.categoryImage} />

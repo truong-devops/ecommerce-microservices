@@ -69,6 +69,7 @@ func main() {
 
 	repo := repository.NewShippingRepository(pool)
 	orderClient := service.NewOrderClient(cfg.OrderServiceBaseURL, cfg.DependencyTimeout)
+	sellerClient := service.NewSellerClient(cfg.UserServiceBaseURL, cfg.InternalServiceToken, cfg.DependencyTimeout)
 	nexusIntegration := service.NexusIntegration{}
 	if cfg.NexusEnabled || cfg.NexusWebhookEnabled {
 		mappings := map[string]nexus.MerchantMapping{}
@@ -83,7 +84,8 @@ func main() {
 			Enabled: cfg.NexusEnabled, WebhookEnabled: cfg.NexusWebhookEnabled,
 			Client:        nexus.NewClient(cfg.NexusBaseURL, cfg.NexusPartnerCode, cfg.NexusAPIKey, cfg.NexusAPISecret, cfg.NexusRequestTimeout),
 			WebhookSecret: cfg.NexusWebhookSecret, Mappings: mappings, AutoCreatePickup: cfg.NexusAutoCreatePickup,
-			ServiceType: cfg.NexusServiceType, PickupType: cfg.NexusPickupType, PaymentPayer: cfg.NexusPaymentPayer,
+			SellerClient: sellerClient,
+			ServiceType:  cfg.NexusServiceType, PickupType: cfg.NexusPickupType, PaymentPayer: cfg.NexusPaymentPayer,
 			WeightGram: cfg.NexusDefaultWeightGram, LengthCM: cfg.NexusDefaultLengthCM,
 			WidthCM: cfg.NexusDefaultWidthCM, HeightCM: cfg.NexusDefaultHeightCM,
 		}

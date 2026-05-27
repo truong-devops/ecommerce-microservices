@@ -219,10 +219,18 @@ export interface OrderListOutput {
 }
 
 export interface CreateOrderInput {
+  sellerId?: string;
   currency: string;
   shippingAmount?: number;
   discountAmount?: number;
   note?: string;
+  paymentMethod?: 'COD' | 'ONLINE';
+  recipientName?: string;
+  recipientPhone?: string;
+  recipientAddress?: string;
+  recipientWard?: string;
+  recipientDistrict?: string;
+  recipientProvince?: string;
   items: Array<{
     productId: string;
     sku: string;

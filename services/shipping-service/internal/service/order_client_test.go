@@ -7,6 +7,9 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -128,4 +131,86 @@ func TestNexusExternalOrderCodeUsesBuyerFacingCode(t *testing.T) {
 	if got := nexusExternalOrderCode(map[string]any{"orderNumber": "ORD-20260527-000004"}); got != "ORD-20260527-000004" {
 		t.Fatalf("expected fallback order number, got %q", got)
 	}
+}
+
+func TestSellerClientGetPickupAddressSuccess(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Internal-Service-Token") != "service-token" {
+			t.Fatalf("missing internal token: %s", r.Header.Get("X-Internal-Service-Token"))
+		}
+		if r.URL.Path != "/api/v1/internal/users/seller-1/pickup-address" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"success":true,"data":{"sellerId":"seller-1","shopName":"Shop A","senderName":"Shop A","phone":"0901","address":"1 Nguyen Hue","province":"Ho Chi Minh","provinceCode":"79","ward":"Phuong Ben Nghe","wardCode":"26734"}}`))
+	}))
+	defer srv.Close()
+
+	client := NewSellerClient(srv.URL+"/api/v1", "service-token", time.Second)
+	pickup, err := client.GetPickupAddress(context.Background(), "seller-1")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if pickup == nil || pickup.ProvinceCode != "79" || pickup.Ward != "Phuong Ben Nghe" {
+		t.Fatalf("unexpected pickup profile: %+v", pickup)
+	}
+}
+
+func TestNexusPlatformMerchantMapping(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "nexus-mapping.json")
+	err := os.WriteFile(path, []byte(`{
+		"shopName": "DT Commerce Marketplace",
+		"merchantId": "41100000",
+		"activeSellerIds": ["9f8a2776-a0d3-4013-ac02-6784166eadd6"],
+		"provinceHubMappings": {"79": "HCM-001"},
+		"active": true
+	}`), 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mappings, err := nexus.LoadMerchantMappings(path)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	mapping, ok := mappings["9f8a2776-a0d3-4013-ac02-6784166eadd6"]
+	if !ok {
+		t.Fatal("expected seller mapping")
+	}
+	if mapping.MerchantID != "41100000" || mapping.ShopName != "DT Commerce Marketplace" || mapping.ProvinceHubMappings["79"] != "HCM-001" {
+		t.Fatalf("unexpected mapping: %+v", mapping)
+	}
+}
+
+func TestNexusDynamicSenderUsesSellerPickupAddress(t *testing.T) {
+	t.Parallel()
+
+	svc := NewShippingService(nil, nil, "dev-shipping-webhook-signing-secret", 1440, NexusIntegration{})
+	pickup := &SellerPickupAddress{
+		ShopName:     "Shop A",
+		Phone:        "0901",
+		Address:      "1 Nguyen Hue",
+		Province:     "Ho Chi Minh",
+		ProvinceCode: "79",
+		Ward:         "Phuong Ben Nghe",
+	}
+	sender := nexus.AddressContact{
+		Name:     firstNonEmpty(pickup.SenderName, pickup.ShopName),
+		Phone:    pickup.Phone,
+		Address:  pickup.Address,
+		Ward:     pickup.Ward,
+		Province: pickup.Province,
+		HubCode:  nexusHubCodeForPickup(map[string]string{"79": "HCM-001"}, pickup),
+	}
+	if !nexusSenderIsComplete(sender) || strings.TrimSpace(sender.Ward) == "" {
+		t.Fatalf("expected complete sender: %+v", sender)
+	}
+	if sender.HubCode != "HCM-001" {
+		t.Fatalf("expected mapped hub code, got %q", sender.HubCode)
+	}
+	_ = svc
 }

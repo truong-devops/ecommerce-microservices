@@ -12,6 +12,10 @@ interface UpstreamUserProfile {
   lastName: string;
   phone: string | null;
   address: string | null;
+  addressProvince: string | null;
+  addressProvinceCode: string | null;
+  addressWard: string | null;
+  addressWardCode: string | null;
   avatarUrl: string | null;
 }
 
@@ -23,6 +27,10 @@ interface ShopProfileOutput {
   email: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   avatarUrl: string;
 }
 
@@ -33,6 +41,10 @@ interface ShopProfilePatchBody {
   email?: unknown;
   phone?: unknown;
   address?: unknown;
+  addressProvince?: unknown;
+  addressProvinceCode?: unknown;
+  addressWard?: unknown;
+  addressWardCode?: unknown;
   avatarUrl?: unknown;
 }
 
@@ -42,6 +54,10 @@ interface UserServiceUpdatePayload {
   email?: string;
   phone?: string;
   address?: string;
+  addressProvince?: string;
+  addressProvinceCode?: string;
+  addressWard?: string;
+  addressWardCode?: string;
   avatarUrl?: string | null;
 }
 
@@ -148,6 +164,10 @@ function toShopProfileOutput(user: UpstreamUserProfile): ShopProfileOutput {
     email,
     phone: toSafeText(user.phone),
     address: toSafeText(user.address),
+    addressProvince: toSafeText(user.addressProvince),
+    addressProvinceCode: toSafeText(user.addressProvinceCode),
+    addressWard: toSafeText(user.addressWard),
+    addressWardCode: toSafeText(user.addressWardCode),
     avatarUrl: toSafeText(user.avatarUrl)
   };
 }
@@ -189,6 +209,22 @@ function sanitizeUpdatePayload(input: ShopProfilePatchBody): UserServiceUpdatePa
 
   if (typeof input.address === 'string') {
     payload.address = input.address.trim();
+  }
+
+  if (typeof input.addressProvince === 'string') {
+    payload.addressProvince = input.addressProvince.trim();
+  }
+
+  if (typeof input.addressProvinceCode === 'string') {
+    payload.addressProvinceCode = input.addressProvinceCode.trim();
+  }
+
+  if (typeof input.addressWard === 'string') {
+    payload.addressWard = input.addressWard.trim();
+  }
+
+  if (typeof input.addressWardCode === 'string') {
+    payload.addressWardCode = input.addressWardCode.trim();
   }
 
   if (typeof input.avatarUrl === 'string') {

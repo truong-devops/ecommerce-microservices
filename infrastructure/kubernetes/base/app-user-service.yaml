@@ -41,6 +41,8 @@ spec:
               value: user-service
             - name: KAFKA_USER_TOPIC
               value: user.registered
+            - name: INTERNAL_SERVICE_TOKEN
+              value: dev-internal-service-token
           readinessProbe:
             httpGet:
               path: /api/v1/health

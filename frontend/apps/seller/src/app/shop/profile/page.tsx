@@ -6,27 +6,32 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { SellerApiClientError } from '@/lib/api/client';
+import { getVietnamProvinces, getVietnamWards, type VietnamLocationOption } from '@/lib/api/locations';
 import { getSellerShopProfile, updateSellerShopProfile } from '@/lib/api/shop-profile';
 import { useAuth } from '@/providers/AppProvider';
 
 interface ShopProfileFormState {
-  shopName: string;
   contactFirstName: string;
   contactLastName: string;
   email: string;
   phone: string;
   address: string;
-  avatarUrl: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
 }
 
 const initialFormState: ShopProfileFormState = {
-  shopName: '',
   contactFirstName: '',
   contactLastName: '',
   email: '',
   phone: '',
   address: '',
-  avatarUrl: ''
+  addressProvince: '',
+  addressProvinceCode: '',
+  addressWard: '',
+  addressWardCode: ''
 };
 
 export default function ShopProfilePage() {
@@ -37,6 +42,9 @@ export default function ShopProfilePage() {
   const [savedForm, setSavedForm] = useState<ShopProfileFormState>(initialFormState);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [provinces, setProvinces] = useState<VietnamLocationOption[]>([]);
+  const [wards, setWards] = useState<VietnamLocationOption[]>([]);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -57,13 +65,15 @@ export default function ShopProfilePage() {
     try {
       const profile = await getSellerShopProfile(accessToken);
       const nextForm: ShopProfileFormState = {
-        shopName: profile.shopName ?? '',
         contactFirstName: profile.contactFirstName ?? '',
         contactLastName: profile.contactLastName ?? '',
         email: profile.email ?? '',
         phone: profile.phone ?? '',
         address: profile.address ?? '',
-        avatarUrl: profile.avatarUrl ?? ''
+        addressProvince: profile.addressProvince ?? '',
+        addressProvinceCode: profile.addressProvinceCode ?? '',
+        addressWard: profile.addressWard ?? '',
+        addressWardCode: profile.addressWardCode ?? ''
       };
 
       setForm(nextForm);
@@ -87,6 +97,66 @@ export default function ShopProfilePage() {
     void loadProfile();
   }, [ready, accessToken, loadProfile]);
 
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    let active = true;
+    setIsLocationLoading(true);
+    getVietnamProvinces()
+      .then((items) => {
+        if (active) {
+          setProvinces(items);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setErrorMessage((current) => current || 'Không tải được danh sách tỉnh/thành phố.');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLocationLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    if (!form.addressProvinceCode) {
+      setWards([]);
+      return;
+    }
+
+    let active = true;
+    setIsLocationLoading(true);
+    getVietnamWards(form.addressProvinceCode)
+      .then((items) => {
+        if (active) {
+          setWards(items);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setWards([]);
+          setErrorMessage((current) => current || 'Không tải được danh sách phường/xã.');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setIsLocationLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [form.addressProvinceCode]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -101,21 +171,25 @@ export default function ShopProfilePage() {
 
     try {
       const updated = await updateSellerShopProfile(accessToken, {
-        shopName: form.shopName,
         contactFirstName: form.contactFirstName,
         contactLastName: form.contactLastName,
         phone: form.phone,
         address: form.address,
-        avatarUrl: form.avatarUrl
+        addressProvince: form.addressProvince,
+        addressProvinceCode: form.addressProvinceCode,
+        addressWard: form.addressWard,
+        addressWardCode: form.addressWardCode
       });
       const nextForm: ShopProfileFormState = {
-        shopName: updated.shopName ?? '',
         contactFirstName: updated.contactFirstName ?? '',
         contactLastName: updated.contactLastName ?? '',
         email: updated.email ?? '',
         phone: updated.phone ?? '',
         address: updated.address ?? '',
-        avatarUrl: updated.avatarUrl ?? ''
+        addressProvince: updated.addressProvince ?? '',
+        addressProvinceCode: updated.addressProvinceCode ?? '',
+        addressWard: updated.addressWard ?? '',
+        addressWardCode: updated.addressWardCode ?? ''
       };
 
       setForm(nextForm);
@@ -178,28 +252,6 @@ export default function ShopProfilePage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 lg:grid-cols-2">
                 <label className="block text-sm text-slate-700">
-                  Tên shop
-                  <input
-                    value={form.shopName}
-                    onChange={(event) => setForm((previous) => ({ ...previous, shopName: event.target.value }))}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#ee4d2d]"
-                    required
-                  />
-                </label>
-
-                <label className="block text-sm text-slate-700">
-                  Ảnh đại diện (URL)
-                  <input
-                    value={form.avatarUrl}
-                    onChange={(event) => setForm((previous) => ({ ...previous, avatarUrl: event.target.value }))}
-                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#ee4d2d]"
-                    placeholder="https://..."
-                  />
-                </label>
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-2">
-                <label className="block text-sm text-slate-700">
                   Tên người liên hệ
                   <input
                     value={form.contactFirstName}
@@ -242,15 +294,73 @@ export default function ShopProfilePage() {
                 </label>
 
                 <label className="block text-sm text-slate-700">
-                  Địa chỉ
+                  Địa chỉ lấy hàng
                   <input
                     value={form.address}
                     onChange={(event) => setForm((previous) => ({ ...previous, address: event.target.value }))}
                     className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#ee4d2d]"
+                    placeholder="Số nhà, tên đường"
                     required
                   />
                 </label>
               </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <label className="block text-sm text-slate-700">
+                  Tỉnh / thành phố lấy hàng
+                  <select
+                    value={form.addressProvinceCode}
+                    onChange={(event) => {
+                      const option = provinces.find((item) => item.code === event.target.value);
+                      setForm((previous) => ({
+                        ...previous,
+                        addressProvinceCode: option?.code ?? '',
+                        addressProvince: option?.name ?? '',
+                        addressWardCode: '',
+                        addressWard: ''
+                      }));
+                    }}
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#ee4d2d]"
+                    required
+                  >
+                    <option value="">Chọn tỉnh / thành phố</option>
+                    {provinces.map((province) => (
+                      <option key={province.code} value={province.code}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block text-sm text-slate-700">
+                  Phường / xã lấy hàng
+                  <select
+                    value={form.addressWardCode}
+                    onChange={(event) => {
+                      const option = wards.find((item) => item.code === event.target.value);
+                      setForm((previous) => ({
+                        ...previous,
+                        addressWardCode: option?.code ?? '',
+                        addressWard: option?.name ?? ''
+                      }));
+                    }}
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#ee4d2d]"
+                    disabled={!form.addressProvinceCode}
+                    required
+                  >
+                    <option value="">{form.addressProvinceCode ? 'Chọn phường / xã' : 'Chọn tỉnh trước'}</option>
+                    {wards.map((ward) => (
+                      <option key={ward.code} value={ward.code}>
+                        {ward.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {/* <p className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                {isLocationLoading ? ' Đang tải dữ liệu địa chỉ...' : null}
+              </p> */}
 
               {saveMessage ? <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{saveMessage}</p> : null}
 

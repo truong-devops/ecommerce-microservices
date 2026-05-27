@@ -33,6 +33,14 @@ func New(
 	r.Get("/api/v1/ready", healthHandler.Ready)
 
 	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, revocationChecker, logger)
+	if cfg.InternalServiceToken != "" {
+		r.Group(func(internal chi.Router) {
+			internal.Use(requireInternalServiceToken(cfg.InternalServiceToken))
+			mountInternalUsersRoutes(internal, "/api/internal/users", userHandler)
+			mountInternalUsersRoutes(internal, "/api/v1/internal/users", userHandler)
+		})
+	}
+
 	r.Group(func(private chi.Router) {
 		private.Use(requireJWT)
 		mountUsersRoutes(private, "/api/users", userHandler)
@@ -59,4 +67,20 @@ func mountUsersRoutes(r chi.Router, base string, h *handler.UserHandler) {
 	r.With(auth.RequireSelfOrRoles("id", auth.RoleAdmin, auth.RoleSuperAdmin)).Patch(base+"/{id}", h.UpdateUser)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSupport, auth.RoleSuperAdmin)).Patch(base+"/{id}/status", h.UpdateUserStatus)
 	r.With(auth.RequireRoles(auth.RoleAdmin, auth.RoleSuperAdmin)).Delete(base+"/{id}", h.DeleteUser)
+}
+
+func mountInternalUsersRoutes(r chi.Router, base string, h *handler.UserHandler) {
+	r.Get(base+"/{id}/pickup-address", h.GetInternalSellerPickupAddress)
+}
+
+func requireInternalServiceToken(expected string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if req.Header.Get("X-Internal-Service-Token") != expected {
+				httpx.WriteError(w, req, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+				return
+			}
+			next.ServeHTTP(w, req)
+		})
+	}
 }

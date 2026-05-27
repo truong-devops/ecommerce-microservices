@@ -1,17 +1,12 @@
-[
-  {
-    "shopId": "<sellerId UUID do Nexus da mapping>",
-    "shopName": "<ten cua hang>",
-    "merchantId": "<merchantId production Nexus>",
-    "sender": {
-      "name": "<ten nguoi gui/cua hang>",
-      "phone": "<so dien thoai>",
-      "address": "<dia chi lay hang>",
-      "ward": "<phuong/xa>",
-      "district": "<quan/huyen>",
-      "province": "<tinh/thanh pho>",
-      "hubCode": "<senderHubCode Nexus cap>"
-    },
-    "active": true
-  }
-]
+{
+  "shopName": "DT Commerce Marketplace",
+  "merchantId": "41100000",
+  "activeSellerIds": [
+    "<sellerId UUID duoc phep gui Nexus>"
+  ],
+  "provinceHubMappings": {
+    "79": "HCM-001",
+    "01": "HN-001"
+  },
+  "active": true
+}

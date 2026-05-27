@@ -66,6 +66,10 @@ export interface SellerShopProfile {
   email: string;
   phone: string;
   address: string;
+  addressProvince: string;
+  addressProvinceCode: string;
+  addressWard: string;
+  addressWardCode: string;
   avatarUrl: string;
 }
 
@@ -76,6 +80,10 @@ export interface UpdateSellerShopProfileInput {
   email?: string;
   phone?: string;
   address?: string;
+  addressProvince?: string;
+  addressProvinceCode?: string;
+  addressWard?: string;
+  addressWardCode?: string;
   avatarUrl?: string;
 }
 

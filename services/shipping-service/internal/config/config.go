@@ -23,6 +23,8 @@ type Config struct {
 	JWTAccessSecret string
 
 	OrderServiceBaseURL  string
+	UserServiceBaseURL   string
+	InternalServiceToken string
 	DependencyTimeout    time.Duration
 	WebhookSigningSecret string
 
@@ -77,6 +79,11 @@ func Load() (Config, error) {
 			strings.TrimSpace(getEnv("ORDER_SERVICE_BASE_URL", "http://order-service:8080/api/v1")),
 			"/",
 		),
+		UserServiceBaseURL: strings.TrimRight(
+			strings.TrimSpace(getEnv("USER_SERVICE_BASE_URL", "http://user-service:8080/api/v1")),
+			"/",
+		),
+		InternalServiceToken:     strings.TrimSpace(os.Getenv("INTERNAL_SERVICE_TOKEN")),
 		WebhookSigningSecret:     strings.TrimSpace(getEnv("SHIPPING_WEBHOOK_SIGNING_SECRET", "dev-shipping-webhook-signing-secret")),
 		NexusEnabled:             parseBool(getEnv("NEXUS_ENABLED", "false")),
 		NexusWebhookEnabled:      parseBool(getEnv("NEXUS_WEBHOOK_ENABLED", "false")),

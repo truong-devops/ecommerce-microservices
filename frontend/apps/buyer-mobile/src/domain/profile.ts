@@ -10,6 +10,10 @@ interface UpstreamProfile {
   lastName?: string;
   phone?: string | null;
   address?: string | null;
+  addressProvince?: string | null;
+  addressProvinceCode?: string | null;
+  addressWard?: string | null;
+  addressWardCode?: string | null;
   gender?: BuyerProfile['gender'] | null;
   dateOfBirth?: string | null;
   avatarUrl?: string | null;
@@ -28,6 +32,10 @@ export function normalizeProfile(profile: UpstreamProfile): BuyerProfile {
     name: [firstName, lastName].filter(Boolean).join(' '),
     phone: profile.phone?.trim() ?? '',
     address: profile.address?.trim() ?? '',
+    addressProvince: profile.addressProvince?.trim() ?? '',
+    addressProvinceCode: profile.addressProvinceCode?.trim() ?? '',
+    addressWard: profile.addressWard?.trim() ?? '',
+    addressWardCode: profile.addressWardCode?.trim() ?? '',
     gender: profile.gender ?? 'unspecified',
     dateOfBirth: profile.dateOfBirth ?? null,
     avatarUrl: profile.avatarUrl ?? null,
@@ -49,6 +57,16 @@ export function validateProfileInput(input: UpdateBuyerProfileInput): Record<str
   if (!address || address.length > 255) {
     throw new Error('Địa chỉ phải có từ 1 đến 255 ký tự');
   }
+  const addressProvince = input.addressProvince?.trim() ?? '';
+  const addressProvinceCode = input.addressProvinceCode?.trim() ?? '';
+  const addressWard = input.addressWard?.trim() ?? '';
+  const addressWardCode = input.addressWardCode?.trim() ?? '';
+  if (!addressProvince || !addressProvinceCode) {
+    throw new Error('Vui lòng chọn tỉnh/thành phố giao hàng');
+  }
+  if (!addressWard || !addressWardCode) {
+    throw new Error('Vui lòng chọn phường/xã giao hàng');
+  }
   const dateOfBirth = input.dateOfBirth?.trim() || null;
   if (dateOfBirth && (!datePattern.test(dateOfBirth) || Number.isNaN(Date.parse(dateOfBirth)))) {
     throw new Error('Ngày sinh phải theo định dạng YYYY-MM-DD');
@@ -59,6 +77,10 @@ export function validateProfileInput(input: UpdateBuyerProfileInput): Record<str
     lastName: parts.slice(1).join(' ') || parts[0],
     phone,
     address,
+    addressProvince,
+    addressProvinceCode,
+    addressWard,
+    addressWardCode,
     gender: input.gender ?? 'unspecified',
     dateOfBirth,
     avatarUrl: input.avatarUrl?.trim() || null

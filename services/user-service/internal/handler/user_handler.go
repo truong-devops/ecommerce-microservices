@@ -96,6 +96,36 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, r, http.StatusOK, withUserCodes(user))
 }
 
+func (h *UserHandler) GetInternalSellerPickupAddress(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSpace(chi.URLParam(r, "id"))
+	user, err := h.userService.FindOne(r.Context(), id)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalError)
+		return
+	}
+	if user.Role != domain.UserRoleSeller {
+		httpx.WriteError(w, r, http.StatusUnprocessableEntity, domain.ErrorCodeValidationError, "User is not a seller", nil)
+		return
+	}
+
+	shopName := strings.TrimSpace(strings.Join([]string{user.LastName, user.FirstName}, " "))
+	if shopName == "" {
+		shopName = strings.TrimSpace(user.Email)
+	}
+
+	httpx.WriteSuccess(w, r, http.StatusOK, map[string]any{
+		"sellerId":     user.ID,
+		"shopName":     shopName,
+		"senderName":   shopName,
+		"phone":        user.Phone,
+		"address":      user.Address,
+		"province":     user.AddressProvince,
+		"provinceCode": user.AddressProvinceCode,
+		"ward":         user.AddressWard,
+		"wardCode":     user.AddressWardCode,
+	})
+}
+
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	session, ok := auth.UserFromContext(r.Context())
 	if !ok || strings.TrimSpace(session.UserID) == "" {

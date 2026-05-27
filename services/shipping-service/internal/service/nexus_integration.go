@@ -24,6 +24,7 @@ type NexusIntegration struct {
 	Enabled          bool
 	WebhookEnabled   bool
 	Client           *nexus.Client
+	SellerClient     *SellerClient
 	WebhookSecret    string
 	Mappings         map[string]nexus.MerchantMapping
 	AutoCreatePickup bool
@@ -51,6 +52,10 @@ func (s *ShippingService) enqueueNexusCreateOrder(ctx context.Context, tx pgx.Tx
 	mapping, ok := s.nexus.Mappings[shipment.SellerID]
 	if !ok {
 		return fmt.Errorf("Nexus merchant mapping is missing for seller %s", shipment.SellerID)
+	}
+	sender, err := s.nexusSenderForShipment(ctx, mapping, shipment.SellerID)
+	if err != nil {
+		return err
 	}
 
 	items, declaredValue, err := nexusItemsFromOrderEvent(orderPayload["items"])
@@ -80,7 +85,7 @@ func (s *ShippingService) enqueueNexusCreateOrder(ctx context.Context, tx pgx.Tx
 			OrderStatus:       "READY_TO_SHIP",
 		},
 		Merchant: nexus.Merchant{MerchantID: mapping.MerchantID, ShopName: mapping.ShopName},
-		Sender:   mapping.Sender,
+		Sender:   sender,
 		Receiver: nexus.Receiver{
 			Name:     shipment.RecipientName,
 			Phone:    shipment.RecipientPhone,
@@ -125,6 +130,60 @@ func nexusExternalOrderCode(orderPayload map[string]any) string {
 		return orderCode
 	}
 	return asString(orderPayload["orderNumber"])
+}
+
+func (s *ShippingService) nexusSenderForShipment(ctx context.Context, mapping nexus.MerchantMapping, sellerID string) (nexus.AddressContact, error) {
+	if nexusSenderIsComplete(mapping.Sender) {
+		return mapping.Sender, nil
+	}
+	if s.nexus.SellerClient == nil {
+		return nexus.AddressContact{}, fmt.Errorf("seller pickup address client is not configured")
+	}
+
+	pickup, err := s.nexus.SellerClient.GetPickupAddress(ctx, sellerID)
+	if err != nil {
+		return nexus.AddressContact{}, err
+	}
+	sender := nexus.AddressContact{
+		Name:     firstNonEmpty(pickup.SenderName, pickup.ShopName),
+		Phone:    pickup.Phone,
+		Address:  pickup.Address,
+		Ward:     pickup.Ward,
+		Province: pickup.Province,
+		HubCode:  nexusHubCodeForPickup(mapping.ProvinceHubMappings, pickup),
+	}
+	if !nexusSenderIsComplete(sender) || strings.TrimSpace(sender.Ward) == "" {
+		return nexus.AddressContact{}, fmt.Errorf("seller pickup address is incomplete for seller %s", sellerID)
+	}
+	return sender, nil
+}
+
+func nexusSenderIsComplete(sender nexus.AddressContact) bool {
+	return strings.TrimSpace(sender.Name) != "" &&
+		strings.TrimSpace(sender.Phone) != "" &&
+		strings.TrimSpace(sender.Address) != "" &&
+		strings.TrimSpace(sender.Province) != ""
+}
+
+func nexusHubCodeForPickup(mappings map[string]string, pickup *SellerPickupAddress) string {
+	if pickup == nil || len(mappings) == 0 {
+		return ""
+	}
+	for _, key := range []string{pickup.ProvinceCode, pickup.Province} {
+		if value := strings.TrimSpace(mappings[strings.TrimSpace(key)]); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func nexusItemsFromOrderEvent(raw any) ([]nexus.ParcelItem, float64, error) {

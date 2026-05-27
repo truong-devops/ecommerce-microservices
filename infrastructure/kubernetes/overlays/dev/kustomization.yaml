@@ -53,7 +53,7 @@ images:
   newName: docker.io/vantruong179/ecommerce-microservices-review-service
   newTag: dev
 - name: seller-web
-  newName: docker.io/vantruong179/ecommerce-microservices-seller
+  newName: docker.io/vantruong179/ecommerce-microservices-seller-web
   newTag: c54ed3b7a073
 - name: shipping-service
   newName: docker.io/vantruong179/ecommerce-microservices-shipping-service

@@ -106,12 +106,12 @@ export function cartTotals(state: CartState): { count: number; amount: number; c
   };
 }
 
-export function toCreateOrderInput(
+export function toCreateOrderInputs(
   state: CartState,
   note?: string,
   profile?: BuyerProfile,
   paymentMethod: CreateOrderInput['paymentMethod'] = 'COD'
-): CreateOrderInput {
+): CreateOrderInput[] {
   const items = selectedCartItems(state);
   if (items.length === 0) {
     throw new Error('Vui lòng chọn ít nhất một sản phẩm');
@@ -120,28 +120,37 @@ export function toCreateOrderInput(
   if (items.some((item) => item.currency !== currency)) {
     throw new Error('Giỏ hàng có nhiều loại tiền tệ');
   }
-  const sellerId = items[0].sellerId.trim();
-  if (!sellerId || items.some((item) => item.sellerId.trim() !== sellerId)) {
-    throw new Error('Mỗi đơn hàng chỉ được chứa sản phẩm của một cửa hàng');
-  }
-  return {
-    sellerId,
-    currency,
-    note: note?.trim() || undefined,
-    paymentMethod,
-    recipientName: profile?.name.trim() || undefined,
-    recipientPhone: profile?.phone.trim() || undefined,
-    recipientAddress: profile?.address.trim() || undefined,
-    recipientWard: profile?.addressWard.trim() || undefined,
-    recipientProvince: profile?.addressProvince.trim() || undefined,
-    items: items.map((item) => ({
-      productId: item.productId,
-      sku: item.sku,
-      productName: item.title,
-      quantity: item.quantity,
-      unitPrice: item.price
-    }))
-  };
+  const trimmedNote = note?.trim();
+  const recipientName = profile?.name.trim();
+  const recipientPhone = profile?.phone.trim();
+  const recipientAddress = profile?.address.trim();
+  const recipientWard = profile?.addressWard.trim();
+  const recipientProvince = profile?.addressProvince.trim();
+
+  return items.map((item): CreateOrderInput => {
+    const sellerId = item.sellerId.trim();
+    if (!sellerId) {
+      throw new Error('Sản phẩm chưa có thông tin cửa hàng');
+    }
+    return {
+      sellerId,
+      currency: item.currency,
+      ...(trimmedNote ? { note: trimmedNote } : {}),
+      paymentMethod,
+      ...(recipientName ? { recipientName } : {}),
+      ...(recipientPhone ? { recipientPhone } : {}),
+      ...(recipientAddress ? { recipientAddress } : {}),
+      ...(recipientWard ? { recipientWard } : {}),
+      ...(recipientProvince ? { recipientProvince } : {}),
+      items: [{
+        productId: item.productId,
+        sku: item.sku,
+        productName: item.title,
+        quantity: item.quantity,
+        unitPrice: item.price
+      }]
+    };
+  });
 }
 
 export function serializeCart(state: CartState): string {

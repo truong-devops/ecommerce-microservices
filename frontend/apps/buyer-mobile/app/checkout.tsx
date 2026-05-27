@@ -13,7 +13,7 @@ import { AppIcon } from '@/components/core/app-icon';
 import { IconButton } from '@/components/core/icon-button';
 import { PrimaryButton } from '@/components/core/primary-button';
 import { ScreenState } from '@/components/core/screen-state';
-import { toCreateOrderInput } from '@/domain/cart';
+import { selectedCartItems, toCreateOrderInputs } from '@/domain/cart';
 import { validateProfileInput } from '@/domain/profile';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
@@ -25,23 +25,35 @@ export default function CheckoutScreen() {
   const { state, totals, dispatch } = useCart();
   const [note, setNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('COD');
-  const orderKey = useRef(`mobile-order-${Crypto.randomUUID()}`);
-  const paymentKey = useRef(`mobile-payment-${Crypto.randomUUID()}`);
+  const orderKeys = useRef(new Map<string, string>());
+  const paymentKeys = useRef(new Map<string, string>());
   const profile = useQuery({ queryKey: ['profile'], queryFn: () => fetchProfile(session!.accessToken), enabled: Boolean(session) });
   const submit = useMutation({
     mutationFn: async () => {
       if (!session) throw new Error('Đăng nhập để thanh toán');
       if (!profile.data) throw new Error('Chưa tải được địa chỉ giao hàng');
       validateProfileInput(profile.data);
-      const order = await createOrder(session.accessToken, toCreateOrderInput(state, note, profile.data, paymentMethod), orderKey.current);
-      if (paymentMethod === 'ONLINE' && order.totalAmount > 0) {
-        await createPaymentIntent(session.accessToken, order, paymentKey.current);
+      const selectedItems = selectedCartItems(state);
+      const inputs = toCreateOrderInputs(state, note, profile.data, paymentMethod);
+      const orders = [];
+      for (const [index, input] of inputs.entries()) {
+        const itemKey = selectedItems[index].key;
+        const order = await createOrder(session.accessToken, input, getLineIdempotencyKey(orderKeys.current, itemKey, 'mobile-order'));
+        if (paymentMethod === 'ONLINE' && order.totalAmount > 0) {
+          await createPaymentIntent(session.accessToken, order, getLineIdempotencyKey(paymentKeys.current, itemKey, 'mobile-payment'));
+        }
+        orders.push(order);
       }
-      return order;
+      return orders;
     },
-    onSuccess: (order) => {
+    onSuccess: (orders) => {
       dispatch({ type: 'clear-selected' });
-      router.replace(`/orders/${order.id}`);
+      if (orders.length === 1) {
+        router.replace(`/orders/${orders[0].id}`);
+        return;
+      }
+      Alert.alert('Đã đặt hàng', `Đã tạo ${orders.length} đơn hàng riêng.`);
+      router.replace('/orders');
     },
     onError: (error) => Alert.alert('Không đặt được hàng', error.message)
   });
@@ -112,6 +124,16 @@ export default function CheckoutScreen() {
 function formatDeliveryAddress(profile: { address: string; addressWard: string; addressProvince: string }): string {
   const parts = [profile.address, profile.addressWard, profile.addressProvince].map((item) => item.trim()).filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : 'Chưa có địa chỉ';
+}
+
+function getLineIdempotencyKey(keys: Map<string, string>, itemKey: string, prefix: string): string {
+  const existing = keys.get(itemKey);
+  if (existing) {
+    return existing;
+  }
+  const key = `${prefix}-${Crypto.randomUUID()}`;
+  keys.set(itemKey, key);
+  return key;
 }
 
 const styles = StyleSheet.create({

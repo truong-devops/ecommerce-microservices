@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { cartReducer, cartTotals, emptyCart, parseCart, serializeCart, toCreateOrderInput, type CartItem } from './cart';
+import { cartReducer, cartTotals, emptyCart, parseCart, serializeCart, toCreateOrderInputs, type CartItem } from './cart';
 
 const phone: CartItem = {
   key: 'product-1:sku-1',
@@ -24,18 +24,18 @@ describe('cart domain', () => {
     assert.deepEqual(cartTotals(twice), { count: 3, amount: 360, currency: 'USD' });
   });
 
-  it('only includes selected items in checkout input', () => {
+  it('only includes selected items in checkout inputs', () => {
     const state = {
       version: 1 as const,
       items: [phone, { ...phone, key: 'product-2:sku-2', productId: 'product-2', selected: false }]
     };
-    assert.deepEqual(toCreateOrderInput(state, ' Giao giờ hành chính '), {
+    assert.deepEqual(toCreateOrderInputs(state, ' Giao giờ hành chính '), [{
       sellerId: 'seller-1',
       currency: 'USD',
       paymentMethod: 'COD',
       note: 'Giao giờ hành chính',
       items: [{ productId: 'product-1', sku: 'sku-1', productName: 'Phone', quantity: 1, unitPrice: 120 }]
-    });
+    }]);
   });
 
   it('keeps the selected payment method in checkout input', () => {
@@ -44,7 +44,7 @@ describe('cart domain', () => {
       items: [phone]
     };
 
-    assert.equal(toCreateOrderInput(state, undefined, undefined, 'ONLINE').paymentMethod, 'ONLINE');
+    assert.equal(toCreateOrderInputs(state, undefined, undefined, 'ONLINE')[0].paymentMethod, 'ONLINE');
   });
 
   it('selects only the buy-now item for checkout without changing unrelated cart items', () => {
@@ -61,16 +61,27 @@ describe('cart domain', () => {
         { key: 'product-2:sku-2', quantity: 4, selected: false }
       ]
     );
-    assert.deepEqual(toCreateOrderInput(next).items, [{ productId: 'product-1', sku: 'sku-1', productName: 'Phone', quantity: 1, unitPrice: 120 }]);
+    assert.deepEqual(toCreateOrderInputs(next)[0].items, [{ productId: 'product-1', sku: 'sku-1', productName: 'Phone', quantity: 1, unitPrice: 120 }]);
   });
 
-  it('rejects checkout with selected items from multiple sellers', () => {
+  it('creates one order per selected SKU from the same seller', () => {
     const state = {
       version: 1 as const,
-      items: [phone, { ...phone, key: 'product-2:sku-2', productId: 'product-2', sellerId: 'seller-2', selected: true }]
+      items: [phone, { ...phone, key: 'product-2:sku-2', productId: 'product-2', sku: 'sku-2', selected: true }]
     };
 
-    assert.throws(() => toCreateOrderInput(state), /một cửa hàng/);
+    const orders = toCreateOrderInputs(state);
+    assert.equal(orders.length, 2);
+    assert.deepEqual(orders.map((order) => order.items[0].sku), ['sku-1', 'sku-2']);
+  });
+
+  it('creates separate orders for selected SKUs from different sellers', () => {
+    const state = {
+      version: 1 as const,
+      items: [phone, { ...phone, key: 'product-2:sku-2', productId: 'product-2', sku: 'sku-2', sellerId: 'seller-2', selected: true }]
+    };
+
+    assert.deepEqual(toCreateOrderInputs(state).map((order) => order.sellerId), ['seller-1', 'seller-2']);
   });
 
   it('restores only valid versioned persisted items', () => {

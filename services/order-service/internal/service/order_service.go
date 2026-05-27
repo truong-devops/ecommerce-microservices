@@ -763,6 +763,9 @@ func validateCreateOrderRequest(req CreateOrderRequest) error {
 	if len(req.Items) < 1 {
 		return validationError("items", "must contain at least 1 item")
 	}
+	if len(req.Items) > 1 {
+		return validationError("items", "must contain exactly 1 product line; submit separate orders for separate products")
+	}
 
 	for i, item := range req.Items {
 		prefix := "items[" + strconv.Itoa(i) + "]"

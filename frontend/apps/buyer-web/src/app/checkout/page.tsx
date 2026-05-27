@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { createBuyerOrder } from '@/lib/api/orders';
 import { createBuyerPaymentIntent } from '@/lib/api/payments';
@@ -68,6 +68,20 @@ function buildIdempotencyKey(): string {
   return `payment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function lineItemKey(item: CartItem, index: number): string {
+  return `${item.productId}:${item.sku ?? ''}:${index}`;
+}
+
+function getLineIdempotencyKey(keys: Map<string, string>, itemKey: string): string {
+  const existing = keys.get(itemKey);
+  if (existing) {
+    return existing;
+  }
+  const key = buildIdempotencyKey();
+  keys.set(itemKey, key);
+  return key;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { text } = useLanguage();
@@ -83,6 +97,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const orderKeys = useRef(new Map<string, string>());
+  const paymentKeys = useRef(new Map<string, string>());
 
   const ready = authReady && cartReady;
   const orderCurrency = items[0]?.currency ? normalizeCurrency(items[0].currency) : 'USD';
@@ -149,55 +165,63 @@ export default function CheckoutPage() {
       setFeedback(text.checkout.invalidData);
       return;
     }
-    const sellerIds = new Set(items.map((item) => item.sellerId.trim()).filter(Boolean));
-    if (sellerIds.size !== 1) {
-      setFeedback('Mỗi đơn hàng chỉ được chứa sản phẩm của một cửa hàng.');
+    if (items.some((item) => item.sellerId.trim().length === 0)) {
+      setFeedback(text.checkout.invalidData);
       return;
     }
-    const sellerId = Array.from(sellerIds)[0];
 
     setFeedback('');
     setIsSubmitting(true);
 
     try {
-      const createdOrder = await createBuyerOrder({
-        accessToken,
-        idempotencyKey: buildIdempotencyKey(),
-        payload: {
-          sellerId,
-          currency: orderCurrency,
-          shippingAmount,
-          discountAmount,
-          note: note.trim().length > 0 ? note.trim() : undefined,
-          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'ONLINE',
-          recipientName: recipientName.trim(),
-          recipientPhone: recipientPhone.trim(),
-          recipientAddress: recipientAddress.trim(),
-          recipientWard: recipientWard.trim(),
-          recipientProvince: recipientProvince.trim(),
-          items: orderItems
-        }
-      });
-
       let nextFeedback = text.checkout.orderSuccess;
+      let paymentIntentFailed = false;
+      for (const [index, orderItem] of orderItems.entries()) {
+        const item = items[index];
+        const itemKey = lineItemKey(item, index);
+        const createdOrder = await createBuyerOrder({
+          accessToken,
+          idempotencyKey: getLineIdempotencyKey(orderKeys.current, itemKey),
+          payload: {
+            sellerId: item.sellerId.trim(),
+            currency: normalizeCurrency(item.currency),
+            shippingAmount,
+            discountAmount,
+            note: note.trim().length > 0 ? note.trim() : undefined,
+            paymentMethod: paymentMethod === 'cod' ? 'COD' : 'ONLINE',
+            recipientName: recipientName.trim(),
+            recipientPhone: recipientPhone.trim(),
+            recipientAddress: recipientAddress.trim(),
+            recipientWard: recipientWard.trim(),
+            recipientProvince: recipientProvince.trim(),
+            items: [orderItem]
+          }
+        });
 
-      if (paymentMethod === 'online' && createdOrder.totalAmount > 0) {
-        try {
-          await createBuyerPaymentIntent({
-            accessToken,
-            idempotencyKey: buildIdempotencyKey(),
-            payload: {
-              orderId: createdOrder.id,
-              currency: createdOrder.currency,
-              amount: createdOrder.totalAmount,
-              description: `Payment for order ${createdOrder.orderNumber}`
-            }
-          });
-
-          nextFeedback = `${text.checkout.orderSuccess} ${text.checkout.paymentIntentSuccess}`;
-        } catch {
-          nextFeedback = text.checkout.paymentIntentFailed;
+        if (paymentMethod === 'online' && createdOrder.totalAmount > 0) {
+          try {
+            await createBuyerPaymentIntent({
+              accessToken,
+              idempotencyKey: getLineIdempotencyKey(paymentKeys.current, itemKey),
+              payload: {
+                orderId: createdOrder.id,
+                currency: createdOrder.currency,
+                amount: createdOrder.totalAmount,
+                description: `Payment for order ${createdOrder.orderNumber}`
+              }
+            });
+          } catch {
+            paymentIntentFailed = true;
+          }
         }
+      }
+      if (items.length > 1) {
+        nextFeedback = `${text.checkout.orderSuccess} Đã tách thành ${items.length} đơn hàng.`;
+      }
+      if (paymentMethod === 'online' && !paymentIntentFailed) {
+        nextFeedback = `${nextFeedback} ${text.checkout.paymentIntentSuccess}`;
+      } else if (paymentIntentFailed) {
+        nextFeedback = text.checkout.paymentIntentFailed;
       }
 
       clearCart();

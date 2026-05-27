@@ -406,7 +406,7 @@ export interface CreateOrderInput {
   recipientWard?: string;
   recipientDistrict?: string;
   recipientProvince?: string;
-  items: CreateOrderItemInput[];
+  items: [CreateOrderItemInput];
 }
 
 export interface CancelOrderInput {

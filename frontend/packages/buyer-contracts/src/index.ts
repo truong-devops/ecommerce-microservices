@@ -231,13 +231,13 @@ export interface CreateOrderInput {
   recipientWard?: string;
   recipientDistrict?: string;
   recipientProvince?: string;
-  items: Array<{
+  items: [{
     productId: string;
     sku: string;
     productName: string;
     quantity: number;
     unitPrice: number;
-  }>;
+  }];
 }
 
 export type PaymentStatus =

@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { BuyerChatMessage } from '@frontend/buyer-contracts';
 import { fetchMessages, markConversationRead, sendMessage } from '@/api/chat';
@@ -19,6 +19,7 @@ import { colors, radius, spacing, typography } from '@/theme/tokens';
 type SocketStatus = 'connecting' | 'connected' | 'reconnecting';
 
 export default function ChatConversationScreen() {
+  const insets = useSafeAreaInsets();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const router = useRouter();
   const client = useQueryClient();
@@ -103,14 +104,14 @@ export default function ChatConversationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <View style={styles.header}>
           <IconButton accessibilityLabel="Quay lại" color={colors.brand} name="arrow-back-outline" onPress={() => router.back()} />
           <View style={styles.identity}><View style={styles.avatar}><AppIcon color={colors.brand} name="storefront-outline" size={21} /></View><Text style={styles.title}>Cửa hàng</Text></View>
           <Text style={styles.status}>{status === 'connected' ? '' : 'Đang nối...'}</Text>
         </View>
         {messages.isPending ? <ScreenState title="Đang tải tin nhắn..." /> : null}
-        <ScrollView contentContainerStyle={styles.messages}>
+        <ScrollView contentContainerStyle={styles.messages} keyboardShouldPersistTaps="handled">
           {messages.data?.map((message) => {
             const mine = message.senderId === session.user.id;
             return (
@@ -120,7 +121,7 @@ export default function ChatConversationScreen() {
             );
           })}
         </ScrollView>
-        <View style={styles.composer}>
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
           <AppIcon color={colors.muted} name="add-circle-outline" size={27} />
           <TextInput maxLength={2000} onChangeText={setDraft} placeholder="Nhập tin nhắn" style={styles.input} value={draft} />
           <PrimaryButton disabled={!draft.trim()} loading={send.isPending} onPress={submitMessage}>Gửi</PrimaryButton>

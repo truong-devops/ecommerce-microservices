@@ -14,14 +14,22 @@
         {
           "experimentalLauncherActivity": true
         }
-      ]
+      ],
+      "expo-font"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "site.dtcommerce.buyermobile"
     },
     "android": {
-      "package": "site.dtcommerce.buyermobile"
+      "package": "site.dtcommerce.buyermobile",
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2194ea20-f23f-4d1b-93d4-2b070572ee51"
+      }
     }
   }
 }

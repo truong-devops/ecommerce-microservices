@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Dimensions, Image, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchProductDetail } from '@/api/buyer';
 import { openConversation } from '@/api/chat';
@@ -23,6 +23,7 @@ import { normalizeRemoteAssetUrl } from '@/utils/asset-url';
 const heroWidth = Dimensions.get('window').width;
 
 export default function ProductDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { productId } = useLocalSearchParams<{ productId: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -76,7 +77,7 @@ export default function ProductDetailScreen() {
           <CartLink color={colors.ink} />
         </View>
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 74 + Math.max(insets.bottom, spacing[3]) }]}>
         <View>
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
             {detail.images.map((image) => (
@@ -140,7 +141,7 @@ export default function ProductDetailScreen() {
           )) : <Text style={styles.secondary}>Chưa có đánh giá.</Text>}
         </View>
       </ScrollView>
-      <View style={styles.sticky}>
+      <View style={[styles.sticky, { paddingBottom: Math.max(insets.bottom, spacing[2]) }]}>
         <Pressable onPress={() => chat.mutate()} style={styles.actionIcon}><AppIcon color={colors.brand} name="chatbubble-ellipses-outline" /><Text style={styles.actionText}>Chat</Text></Pressable>
         <Pressable disabled={!selectedVariant || outOfStock} onPress={addToCart} style={styles.actionIcon}><AppIcon color={colors.brand} name="cart-outline" /><Text style={styles.actionText}>Thêm giỏ</Text></Pressable>
         <View style={styles.buy}><PrimaryButton disabled={!selectedVariant || outOfStock} onPress={() => { addToCart(); router.push('/cart'); }}>Mua ngay  {Math.round(shownPrice).toLocaleString('vi-VN')}đ</PrimaryButton></View>
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing[2], paddingVertical: spacing[1] },
   headerActions: { flexDirection: 'row', gap: spacing[1] },
   content: { gap: spacing[2], paddingBottom: 74 },
-  hero: { aspectRatio: 1, backgroundColor: colors.line, width: heroWidth },
+  hero: { aspectRatio: 1, backgroundColor: colors.surface, resizeMode: 'contain', width: heroWidth },
   counter: { backgroundColor: colors.overlay, borderRadius: radius.pill, bottom: spacing[3], paddingHorizontal: spacing[3], paddingVertical: spacing[1], position: 'absolute', right: spacing[3] },
   counterText: { color: colors.surface },
   card: { backgroundColor: colors.surface, gap: spacing[2], padding: spacing[3] },

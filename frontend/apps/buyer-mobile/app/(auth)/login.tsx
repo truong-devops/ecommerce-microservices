@@ -1,7 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { Link, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { resolveRuntimeConfig } from '@/api/config';
@@ -91,34 +91,38 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Đăng nhập</Text>
-        <Text style={styles.subtitle}>Mua sắm và theo dõi đơn hàng trên DT Commerce</Text>
-      </View>
-      <View style={styles.form}>
-        <TextInput
-          autoCapitalize="none"
-          keyboardType="email-address"
-          onChangeText={setEmail}
-          placeholder="Email"
-          style={styles.input}
-          value={email}
-        />
-        <TextInput onChangeText={setPassword} placeholder="Mật khẩu" secureTextEntry style={styles.input} value={password} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <PrimaryButton disabled={!email.trim() || !password} loading={loading === 'password'} onPress={() => void submitPassword()}>
-          Đăng nhập
-        </PrimaryButton>
-        <PrimaryButton loading={loading === 'google'} onPress={() => void submitGoogle()} variant="outline">
-          Tiếp tục với Google
-        </PrimaryButton>
-        <Link href="/register" style={styles.link}>
-          Chưa có tài khoản? Đăng ký
-        </Link>
-        <Link href="/" style={styles.secondaryLink}>
-          Trở lại trang chủ
-        </Link>
-      </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.header}>
+            <Text style={styles.title}>Đăng nhập</Text>
+            <Text style={styles.subtitle}>Mua sắm và theo dõi đơn hàng trên DT Commerce</Text>
+          </View>
+          <View style={styles.form}>
+            <TextInput
+              autoCapitalize="none"
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email"
+              style={styles.input}
+              value={email}
+            />
+            <TextInput onChangeText={setPassword} placeholder="Mật khẩu" secureTextEntry style={styles.input} value={password} />
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <PrimaryButton disabled={!email.trim() || !password} loading={loading === 'password'} onPress={() => void submitPassword()}>
+              Đăng nhập
+            </PrimaryButton>
+            <PrimaryButton loading={loading === 'google'} onPress={() => void submitGoogle()} variant="outline">
+              Tiếp tục với Google
+            </PrimaryButton>
+            <Link href="/register" style={styles.link}>
+              Chưa có tài khoản? Đăng ký
+            </Link>
+            <Link href="/" style={styles.secondaryLink}>
+              Trở lại trang chủ
+            </Link>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -144,7 +148,9 @@ async function prepareAndroidCustomTab(url: string): Promise<void> {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background, flex: 1, padding: spacing[4] },
+  safeArea: { backgroundColor: colors.background, flex: 1 },
+  flex: { flex: 1 },
+  content: { flexGrow: 1, padding: spacing[4] },
   header: { gap: spacing[2], marginBottom: spacing[6], marginTop: spacing[6] },
   title: { color: colors.ink, fontSize: 28, fontWeight: '900' },
   subtitle: { color: colors.muted, fontSize: typography.body },

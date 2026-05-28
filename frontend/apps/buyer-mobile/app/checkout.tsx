@@ -2,8 +2,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { createOrder, createPaymentIntent } from '@/api/commerce';
 import { fetchProfile } from '@/api/profile';
@@ -20,6 +20,7 @@ import { colors, radius, spacing, typography } from '@/theme/tokens';
 type PaymentMethod = 'COD' | 'ONLINE';
 
 export default function CheckoutScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session } = useAuth();
   const { state, totals, dispatch } = useCart();
@@ -64,59 +65,64 @@ export default function CheckoutScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <IconButton accessibilityLabel="Quay lại" color={colors.brand} name="arrow-back-outline" onPress={() => router.back()} />
-        <Text style={styles.title}>Thanh toán</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.sectionLine}><AppIcon color={colors.brand} name="location-outline" /><Text style={styles.section}>Địa chỉ nhận hàng</Text></View>
-          {profile.isPending ? <Text style={styles.meta}>Đang tải hồ sơ...</Text> : null}
-          {profile.data ? (
-            <>
-              <Text>{profile.data.name || session.user.email}</Text>
-              <Text>{profile.data.phone || 'Chưa có số điện thoại'}</Text>
-              <Text>{formatDeliveryAddress(profile.data)}</Text>
-              <PrimaryButton variant="outline" onPress={() => router.push('/profile')}>Cập nhật địa chỉ</PrimaryButton>
-            </>
-          ) : null}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+        <View style={styles.header}>
+          <IconButton accessibilityLabel="Quay lại" color={colors.brand} name="arrow-back-outline" onPress={() => router.back()} />
+          <Text style={styles.title}>Thanh toán</Text>
+          <View style={styles.headerSpacer} />
         </View>
-        <View style={styles.card}>
-          <View style={styles.sectionLine}><AppIcon color={colors.brand} name="bag-handle-outline" /><Text style={styles.section}>Sản phẩm ({totals.count})</Text></View>
-          {state.items.filter((item) => item.selected).map((item) => (
-            <View key={item.key} style={styles.row}>
-              <Text style={styles.itemName}>{item.title} x{item.quantity}</Text>
-              <Text>{Math.round(item.price * item.quantity).toLocaleString('vi-VN')} {item.currency}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.card}>
-          <View style={styles.sectionLine}><AppIcon color={colors.brand} name="card-outline" /><Text style={styles.section}>Phương thức thanh toán</Text></View>
-          <View style={styles.paymentOptions}>
-            <Pressable
-              onPress={() => setPaymentMethod('COD')}
-              style={[styles.paymentOption, paymentMethod === 'COD' && styles.paymentOptionSelected]}
-            >
-              <Text style={[styles.paymentText, paymentMethod === 'COD' && styles.paymentTextSelected]}>Thanh toán khi nhận hàng (COD)</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setPaymentMethod('ONLINE')}
-              style={[styles.paymentOption, paymentMethod === 'ONLINE' && styles.paymentOptionSelected]}
-            >
-              <Text style={[styles.paymentText, paymentMethod === 'ONLINE' && styles.paymentTextSelected]}>Thanh toán online</Text>
-            </Pressable>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 92 + Math.max(insets.bottom, spacing[3]) }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.card}>
+            <View style={styles.sectionLine}><AppIcon color={colors.brand} name="location-outline" /><Text style={styles.section}>Địa chỉ nhận hàng</Text></View>
+            {profile.isPending ? <Text style={styles.meta}>Đang tải hồ sơ...</Text> : null}
+            {profile.data ? (
+              <>
+                <Text>{profile.data.name || session.user.email}</Text>
+                <Text>{profile.data.phone || 'Chưa có số điện thoại'}</Text>
+                <Text>{formatDeliveryAddress(profile.data)}</Text>
+                <PrimaryButton variant="outline" onPress={() => router.push('/profile')}>Cập nhật địa chỉ</PrimaryButton>
+              </>
+            ) : null}
           </View>
-          <TextInput multiline onChangeText={setNote} placeholder="Lời nhắn cho người bán" style={styles.input} value={note} />
+          <View style={styles.card}>
+            <View style={styles.sectionLine}><AppIcon color={colors.brand} name="bag-handle-outline" /><Text style={styles.section}>Sản phẩm ({totals.count})</Text></View>
+            {state.items.filter((item) => item.selected).map((item) => (
+              <View key={item.key} style={styles.row}>
+                <Text style={styles.itemName}>{item.title} x{item.quantity}</Text>
+                <Text>{Math.round(item.price * item.quantity).toLocaleString('vi-VN')} {item.currency}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={styles.card}>
+            <View style={styles.sectionLine}><AppIcon color={colors.brand} name="card-outline" /><Text style={styles.section}>Phương thức thanh toán</Text></View>
+            <View style={styles.paymentOptions}>
+              <Pressable
+                onPress={() => setPaymentMethod('COD')}
+                style={[styles.paymentOption, paymentMethod === 'COD' && styles.paymentOptionSelected]}
+              >
+                <Text style={[styles.paymentText, paymentMethod === 'COD' && styles.paymentTextSelected]}>Thanh toán khi nhận hàng (COD)</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setPaymentMethod('ONLINE')}
+                style={[styles.paymentOption, paymentMethod === 'ONLINE' && styles.paymentOptionSelected]}
+              >
+                <Text style={[styles.paymentText, paymentMethod === 'ONLINE' && styles.paymentTextSelected]}>Thanh toán online</Text>
+              </Pressable>
+            </View>
+            <TextInput multiline onChangeText={setNote} placeholder="Lời nhắn cho người bán" style={styles.input} value={note} />
+          </View>
+        </ScrollView>
+        <View style={[styles.sticky, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
+          <View>
+            <Text style={styles.meta}>Tổng thanh toán</Text>
+            <Text style={styles.total}>{Math.round(totals.amount).toLocaleString('vi-VN')} {totals.currency}</Text>
+          </View>
+          <PrimaryButton disabled={totals.count === 0 || !profile.data} loading={submit.isPending} onPress={() => submit.mutate()}>Đặt hàng</PrimaryButton>
         </View>
-      </ScrollView>
-      <View style={styles.sticky}>
-        <View>
-          <Text style={styles.meta}>Tổng thanh toán</Text>
-          <Text style={styles.total}>{Math.round(totals.amount).toLocaleString('vi-VN')} {totals.currency}</Text>
-        </View>
-        <PrimaryButton disabled={totals.count === 0 || !profile.data} loading={submit.isPending} onPress={() => submit.mutate()}>Đặt hàng</PrimaryButton>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -138,6 +144,7 @@ function getLineIdempotencyKey(keys: Map<string, string>, itemKey: string, prefi
 
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: colors.background, flex: 1 },
+  flex: { flex: 1 },
   header: { alignItems: 'center', backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing[2], paddingVertical: spacing[2] },
   headerSpacer: { width: 38 },
   content: { gap: spacing[3], paddingBottom: 92 },

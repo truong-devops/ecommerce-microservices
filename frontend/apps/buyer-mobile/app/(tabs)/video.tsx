@@ -264,7 +264,7 @@ export default function VideoScreen() {
         )}
         viewabilityConfig={viewabilityConfig}
       />
-      <View style={styles.commentPanel}>
+      <View style={[styles.commentPanel, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
         <Text numberOfLines={1} style={styles.commentPreview}>{comments.data?.[0]?.text ?? 'Viết bình luận cho sản phẩm...'}</Text>
         <View style={styles.composer}>
           <TextInput ref={commentInputRef} maxLength={1000} onChangeText={setDraft} placeholder="Bạn đang nghĩ gì..." placeholderTextColor="#d1d5db" style={styles.input} value={draft} />
@@ -278,7 +278,7 @@ export default function VideoScreen() {
         </View>
       </View>
       <Modal animationType="slide" onRequestClose={() => setCommentsOpen(false)} transparent visible={commentsOpen}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.commentModalRoot}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.commentModalRoot}>
           <Pressable onPress={() => setCommentsOpen(false)} style={styles.commentBackdrop} />
           <View style={[styles.commentSheet, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
             <View style={styles.commentSheetHeader}>

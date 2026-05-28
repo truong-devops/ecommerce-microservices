@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchVietnamProvinces, fetchVietnamWards, type VietnamLocationOption } from '@/api/locations';
 import { fetchProfile, updateProfile } from '@/api/profile';
@@ -33,6 +33,7 @@ function matchingLocations(options: VietnamLocationOption[], query: string): Vie
 }
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const client = useQueryClient();
   const { session } = useAuth();
@@ -131,7 +132,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardArea}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: spacing[4] + Math.max(insets.bottom, spacing[3]) }]}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={Keyboard.dismiss}

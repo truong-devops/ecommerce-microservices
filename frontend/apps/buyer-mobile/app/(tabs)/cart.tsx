@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCart } from '@/cart/cart-context';
 import { AppIcon } from '@/components/core/app-icon';
@@ -13,6 +13,7 @@ import { colors, radius, spacing, typography } from '@/theme/tokens';
 import { normalizeRemoteAssetUrl } from '@/utils/asset-url';
 
 export default function CartScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isReady, state, totals, dispatch } = useCart();
   const groups = useMemo(() => {
@@ -38,7 +39,7 @@ export default function CartScreen() {
         </View>
       ) : null}
       {groups.length > 0 ? (
-        <ScrollView contentContainerStyle={styles.items}>
+        <ScrollView contentContainerStyle={[styles.items, { paddingBottom: 100 + Math.max(insets.bottom, spacing[3]) }]}>
           {groups.map(([sellerId, items]) => (
             <View key={sellerId} style={styles.shopCard}>
               <View style={styles.shopHeader}>
@@ -83,7 +84,7 @@ export default function CartScreen() {
         </ScrollView>
       ) : null}
       {state.items.length > 0 ? (
-        <View style={styles.sticky}>
+        <View style={[styles.sticky, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
           <Pressable onPress={() => dispatch({ type: 'toggle-all', selected: !allSelected })} style={styles.all}>
             <View style={[styles.checkbox, allSelected ? styles.checked : null]}>{allSelected ? <AppIcon color={colors.surface} name="checkmark" size={15} /> : null}</View>
             <Text>Tất cả</Text>

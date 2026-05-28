@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { LiveMessage } from '@frontend/buyer-contracts';
 import { resolveRuntimeConfig } from '@/api/config';
@@ -20,6 +20,7 @@ import { colors, radius, spacing, typography } from '@/theme/tokens';
 type SocketStatus = 'connecting' | 'connected' | 'reconnecting';
 
 export default function LiveRoomScreen() {
+  const insets = useSafeAreaInsets();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const id = sessionId ?? '';
   const router = useRouter();
@@ -148,13 +149,13 @@ export default function LiveRoomScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <View style={styles.header}>
           <IconButton accessibilityLabel="Quay lại" color={colors.surface} name="arrow-back-outline" onPress={() => router.back()} />
           <Text numberOfLines={1} style={styles.title}>{detail.data.session.title}</Text>
           <View style={styles.liveBadge}><AppIcon color={colors.surface} name="radio" size={12} /><Text style={styles.connection}>{status === 'connected' ? 'LIVE' : 'Đang nối...'}</Text></View>
         </View>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: spacing[4] + Math.max(insets.bottom, spacing[3]) }]} keyboardShouldPersistTaps="handled">
           <BuyerLivePlayer
             immersive
             source={playback.source}
@@ -193,7 +194,7 @@ export default function LiveRoomScreen() {
             </Text>
           ))}
         </ScrollView>
-        <View style={styles.composer}>
+        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
           <TextInput maxLength={1000} onChangeText={setDraft} placeholder="Bạn đang nghĩ gì..." placeholderTextColor="#9ca3af" style={styles.input} value={draft} />
           <PrimaryButton disabled={!draft.trim()} onPress={submitMessage}>Gửi</PrimaryButton>
         </View>

@@ -5,7 +5,14 @@ export interface PublicRuntimeConfig {
   liveHlsBaseUrl: string;
 }
 
-export function resolveRuntimeConfig(env: Record<string, string | undefined> = process.env): PublicRuntimeConfig {
+const embeddedPublicEnv: Record<string, string | undefined> = {
+  EXPO_PUBLIC_API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL,
+  EXPO_PUBLIC_CHAT_WS_BASE_URL: process.env.EXPO_PUBLIC_CHAT_WS_BASE_URL,
+  EXPO_PUBLIC_LIVE_WS_BASE_URL: process.env.EXPO_PUBLIC_LIVE_WS_BASE_URL,
+  EXPO_PUBLIC_LIVE_HLS_BASE_URL: process.env.EXPO_PUBLIC_LIVE_HLS_BASE_URL
+};
+
+export function resolveRuntimeConfig(env: Record<string, string | undefined> = embeddedPublicEnv): PublicRuntimeConfig {
   return {
     apiBaseUrl: requiredUrl(env.EXPO_PUBLIC_API_BASE_URL, 'EXPO_PUBLIC_API_BASE_URL', ['http:', 'https:']),
     chatWsBaseUrl: requiredUrl(env.EXPO_PUBLIC_CHAT_WS_BASE_URL, 'EXPO_PUBLIC_CHAT_WS_BASE_URL', ['ws:', 'wss:']),

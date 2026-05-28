@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fetchProductDetail } from '@/api/buyer';
@@ -35,22 +35,28 @@ export default function NewReviewScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Text onPress={() => router.back()} style={styles.back}>Quay lại</Text>
-      <Text style={styles.title}>Đánh giá sản phẩm</Text>
-      <Text style={styles.name}>{product.data.title}</Text>
-      <View style={styles.stars}>
-        {[1, 2, 3, 4, 5].map((value) => (
-          <Text key={value} onPress={() => setRating(value)} style={[styles.star, value <= rating ? styles.active : null]}>{value} sao</Text>
-        ))}
-      </View>
-      <TextInput multiline onChangeText={setContent} placeholder="Chia sẻ trải nghiệm của bạn" style={styles.input} value={content} />
-      <PrimaryButton disabled={!content.trim()} loading={submit.isPending} onPress={() => submit.mutate()}>Gửi đánh giá</PrimaryButton>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text onPress={() => router.back()} style={styles.back}>Quay lại</Text>
+          <Text style={styles.title}>Đánh giá sản phẩm</Text>
+          <Text style={styles.name}>{product.data.title}</Text>
+          <View style={styles.stars}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <Text key={value} onPress={() => setRating(value)} style={[styles.star, value <= rating ? styles.active : null]}>{value} sao</Text>
+            ))}
+          </View>
+          <TextInput multiline onChangeText={setContent} placeholder="Chia sẻ trải nghiệm của bạn" style={styles.input} value={content} />
+          <PrimaryButton disabled={!content.trim()} loading={submit.isPending} onPress={() => submit.mutate()}>Gửi đánh giá</PrimaryButton>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background, flex: 1, gap: spacing[3], padding: spacing[4] },
+  safeArea: { backgroundColor: colors.background, flex: 1 },
+  flex: { flex: 1 },
+  content: { gap: spacing[3], padding: spacing[4] },
   back: { color: colors.brand, fontWeight: '700' },
   title: { color: colors.ink, fontSize: typography.title, fontWeight: '900' },
   name: { color: colors.ink, fontWeight: '700' },

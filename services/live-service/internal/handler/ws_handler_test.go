@@ -21,11 +21,17 @@ import (
 )
 
 func TestWebSocketOriginAllowsNativeClientAndRejectsUnknownBrowser(t *testing.T) {
-	handler := NewWSHandler(nil, nil, livews.NewHub(), []string{"https://buyer.dt-commerce.site"})
+	handler := NewWSHandler(nil, nil, livews.NewHub(), []string{"https://buyer.dt-commerce.site", "http://localhost"})
 
 	nativeRequest := httptest.NewRequest(http.MethodGet, "https://api.dt-commerce.site/api/v1/live/ws", nil)
 	if !handler.isAllowedOrigin(nativeRequest) {
 		t.Fatal("expected native websocket request without browser Origin to be accepted")
+	}
+
+	androidNativeRequest := httptest.NewRequest(http.MethodGet, "https://api.dt-commerce.site/api/v1/live/ws", nil)
+	androidNativeRequest.Header.Set("Origin", "http://localhost")
+	if !handler.isAllowedOrigin(androidNativeRequest) {
+		t.Fatal("expected Android native WebSocket localhost Origin to be accepted")
 	}
 
 	browserRequest := httptest.NewRequest(http.MethodGet, "https://api.dt-commerce.site/api/v1/live/ws", nil)

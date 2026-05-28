@@ -6,11 +6,17 @@ import (
 )
 
 func TestIsAllowedOriginAllowsAuthenticatedNativeSocketHandshake(t *testing.T) {
-	handler := NewChatHandler(nil, nil, []string{"https://buyer.dt-commerce.site"})
+	handler := NewChatHandler(nil, nil, []string{"https://buyer.dt-commerce.site", "http://localhost"})
 	request := httptest.NewRequest("GET", "http://chat/api/v1/chat/ws", nil)
 
 	if !handler.isAllowedOrigin(request) {
 		t.Fatal("expected native WebSocket handshake without Origin to be allowed after JWT middleware")
+	}
+
+	androidNativeRequest := httptest.NewRequest("GET", "http://chat/api/v1/chat/ws", nil)
+	androidNativeRequest.Header.Set("Origin", "http://localhost")
+	if !handler.isAllowedOrigin(androidNativeRequest) {
+		t.Fatal("expected Android native WebSocket localhost Origin to be accepted")
 	}
 }
 

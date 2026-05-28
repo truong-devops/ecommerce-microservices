@@ -30,7 +30,7 @@ images:
   newTag: c54ed3b7a073
 - name: live-service
   newName: docker.io/vantruong179/ecommerce-microservices-live-service
-  newTag: buyer-mobile-prod-20260525
+  newTag: 2ec5cb283720
 - name: media-service
   newName: docker.io/vantruong179/ecommerce-microservices-media-service
   newTag: dev

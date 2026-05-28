@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import type { LiveMessage } from '@frontend/buyer-contracts';
 import { resolveRuntimeConfig } from '@/api/config';
-import { fetchLiveMessages, fetchLiveSession, trackLiveMetric, trackLiveProductClick } from '@/api/live';
+import { createLiveMessage, fetchLiveMessages, fetchLiveSession, trackLiveMetric, trackLiveProductClick } from '@/api/live';
 import { useAuth } from '@/auth/auth-context';
 import { AppIcon } from '@/components/core/app-icon';
 import { IconButton } from '@/components/core/icon-button';
@@ -42,6 +42,17 @@ export default function LiveRoomScreen() {
     queryKey: messageKey,
     queryFn: () => fetchLiveMessages(id, authSession?.accessToken),
     enabled: Boolean(id),
+  });
+  const sendMessage = useMutation({
+    mutationFn: ({ text, clientMessageId }: { text: string; clientMessageId: string }) =>
+      createLiveMessage(authSession!.accessToken, id, text, clientMessageId),
+    onSuccess: (saved) => {
+      client.setQueryData<LiveMessage[]>(messageKey, (current) => mergeLiveMessages(current ?? [], saved));
+    },
+    onError: (error, variables) => {
+      client.setQueryData<LiveMessage[]>(messageKey, (current) => (current ?? []).filter((message) => message.clientMessageId !== variables.clientMessageId));
+      Alert.alert('Không gửi được live chat', error.message);
+    }
   });
   const playback = detail.data ? resolveLivePlayback(detail.data.session, runtimeConfig.apiBaseUrl, runtimeConfig.liveHlsBaseUrl) : null;
 
@@ -78,6 +89,9 @@ export default function LiveRoomScreen() {
         socket.send(JSON.stringify({ type: 'live:join' }));
         void messages.refetch();
       };
+      socket.onerror = () => {
+        socket.close();
+      };
       socket.onmessage = (event) => {
         try {
           const payload = JSON.parse(String(event.data)) as { type?: string; message?: LiveMessage; count?: number };
@@ -95,8 +109,12 @@ export default function LiveRoomScreen() {
         }
       };
       socket.onclose = () => {
+        if (socketRef.current === socket) {
+          socketRef.current = null;
+        }
         if (!stopped) {
           attempts += 1;
+          setStatus('reconnecting');
           retryTimer = setTimeout(connect, liveReconnectDelay(attempts));
         }
       };
@@ -114,10 +132,6 @@ export default function LiveRoomScreen() {
       router.push('/login');
       return;
     }
-    if (!socketRef.current || status !== 'connected') {
-      Alert.alert('Chưa kết nối được live chat');
-      return;
-    }
     const text = normalizeLiveMessage(draft);
     const clientMessageId = `mobile-${Crypto.randomUUID()}`;
     const optimistic: LiveMessage = {
@@ -130,8 +144,12 @@ export default function LiveRoomScreen() {
       createdAt: new Date().toISOString(),
     };
     client.setQueryData<LiveMessage[]>(messageKey, (current) => mergeLiveMessages(current ?? [], optimistic));
-    socketRef.current.send(JSON.stringify({ type: 'live:message:create', text, clientMessageId }));
     setDraft('');
+    if (socketRef.current?.readyState === WebSocket.OPEN && status === 'connected') {
+      socketRef.current.send(JSON.stringify({ type: 'live:message:create', text, clientMessageId, language: 'vi' }));
+      return;
+    }
+    sendMessage.mutate({ text, clientMessageId });
   };
 
   if (detail.isPending) return <ScreenState title="Đang tải phòng live..." />;
@@ -196,7 +214,7 @@ export default function LiveRoomScreen() {
         </ScrollView>
         <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
           <TextInput maxLength={1000} onChangeText={setDraft} placeholder="Bạn đang nghĩ gì..." placeholderTextColor="#9ca3af" style={styles.input} value={draft} />
-          <PrimaryButton disabled={!draft.trim()} onPress={submitMessage}>Gửi</PrimaryButton>
+          <PrimaryButton disabled={!draft.trim()} loading={sendMessage.isPending} onPress={submitMessage}>Gửi</PrimaryButton>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

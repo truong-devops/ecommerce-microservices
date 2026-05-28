@@ -15,6 +15,7 @@ import (
 	"live-service/internal/service"
 	livews "live-service/internal/websocket"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -26,6 +27,12 @@ func TestWebSocketOriginAllowsNativeClientAndRejectsUnknownBrowser(t *testing.T)
 	nativeRequest := httptest.NewRequest(http.MethodGet, "https://api.dt-commerce.site/api/v1/live/ws", nil)
 	if !handler.isAllowedOrigin(nativeRequest) {
 		t.Fatal("expected native websocket request without browser Origin to be accepted")
+	}
+
+	nullOriginRequest := httptest.NewRequest(http.MethodGet, "https://api.dt-commerce.site/api/v1/live/ws", nil)
+	nullOriginRequest.Header.Set("Origin", "null")
+	if !handler.isAllowedOrigin(nullOriginRequest) {
+		t.Fatal("expected native websocket request with null Origin to be accepted")
 	}
 
 	androidNativeRequest := httptest.NewRequest(http.MethodGet, "https://api.dt-commerce.site/api/v1/live/ws", nil)
@@ -96,6 +103,42 @@ func TestWebSocketSendsLiveMessageAck(t *testing.T) {
 		}
 	}
 	t.Fatal("expected live message ack")
+}
+
+func TestLiveHandlerSendsLiveMessageOverHTTP(t *testing.T) {
+	repo := newHandlerMemoryRepo()
+	session := domain.LiveSession{
+		SessionID:       "live-1",
+		SellerID:        "seller-1",
+		Title:           "Live demo",
+		PlaybackURL:     "https://example.com/live.m3u8",
+		SourceType:      domain.LiveSourceTypeExternalURL,
+		Status:          domain.LiveSessionStatusLive,
+		DefaultLanguage: "en",
+		CreatedAt:       time.Now().UTC(),
+		UpdatedAt:       time.Now().UTC(),
+	}
+	repo.sessions[session.SessionID] = session
+
+	hub := livews.NewHub()
+	liveService := service.NewLiveService(repo, handlerFakeProductVerifier{}, &handlerFakePublisher{}, hub, nil)
+	liveHandler := NewLiveHandler(liveService)
+
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/live/sessions/live-1/messages", strings.NewReader(`{"text":"hello shop","clientMessageId":"client-1","language":"vi"}`))
+	request = request.WithContext(auth.WithUser(request.Context(), domain.UserContext{UserID: "buyer-1", Role: domain.RoleBuyer}))
+	routeContext := chi.NewRouteContext()
+	routeContext.URLParams.Add("sessionId", "live-1")
+	request = request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, routeContext))
+	recorder := httptest.NewRecorder()
+
+	liveHandler.SendMessage(recorder, request)
+
+	if recorder.Code != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+	if len(repo.messages) != 1 {
+		t.Fatalf("expected one persisted message, got %d", len(repo.messages))
+	}
 }
 
 func TestWebSocketRelaysWebRTCSignal(t *testing.T) {

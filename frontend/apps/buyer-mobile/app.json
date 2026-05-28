@@ -1,10 +1,11 @@
 {
   "expo": {
-    "name": "DT Commerce Buyer",
+    "name": "Emall",
     "slug": "dt-commerce-buyer",
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "dtcommercebuyer",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-router",
@@ -23,6 +24,10 @@
     },
     "android": {
       "package": "site.dtcommerce.buyermobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#f45132"
+      },
       "softwareKeyboardLayoutMode": "resize"
     },
     "extra": {

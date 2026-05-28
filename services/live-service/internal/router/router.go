@@ -54,6 +54,7 @@ func New(
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/pause", liveHandler.PauseSession)
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/end", liveHandler.EndSession)
 		private.With(sellerRoles).Patch(liveBase+"/sessions/{sessionId}/cancel", liveHandler.CancelSession)
+		private.Post(liveBase+"/sessions/{sessionId}/messages", liveHandler.SendMessage)
 		private.With(sellerRoles).Post(liveBase+"/sessions/{sessionId}/products", liveHandler.PinProduct)
 		private.With(sellerRoles).Delete(liveBase+"/sessions/{sessionId}/products/{productId}", liveHandler.UnpinProduct)
 	})

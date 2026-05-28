@@ -269,8 +269,8 @@ func webSocketErrorPayload(err error) map[string]any {
 
 func (h *WSHandler) isAllowedOrigin(r *http.Request) bool {
 	origin := strings.TrimSpace(r.Header.Get("Origin"))
-	if origin == "" {
-		// Native WebSocket clients do not send a browser Origin header.
+	if origin == "" || strings.EqualFold(origin, "null") {
+		// Native WebSocket clients may omit Origin or send the literal null origin.
 		return true
 	}
 	parsed, err := url.Parse(origin)

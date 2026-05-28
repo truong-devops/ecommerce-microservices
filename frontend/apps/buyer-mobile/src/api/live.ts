@@ -2,6 +2,10 @@ import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail } from '@
 
 import { requestBuyerApi } from './client';
 
+interface LiveMessagesResponse {
+  items?: LiveMessage[];
+}
+
 export function fetchLiveSessions(): Promise<LiveSession[]> {
   return requestBuyerApi<LiveSession[]>('/live/sessions?page=1&pageSize=24&status=LIVE');
 }
@@ -15,7 +19,19 @@ export function fetchLiveProducts(sessionId: string): Promise<LiveProduct[]> {
 }
 
 export function fetchLiveMessages(sessionId: string, accessToken?: string): Promise<LiveMessage[]> {
-  return requestBuyerApi<LiveMessage[]>(`/live/sessions/${encodeURIComponent(sessionId)}/messages?page=1&pageSize=50`, { method: 'GET' }, accessToken);
+  return requestBuyerApi<LiveMessage[] | LiveMessagesResponse>(
+    `/live/sessions/${encodeURIComponent(sessionId)}/messages?page=1&pageSize=50`,
+    { method: 'GET' },
+    accessToken
+  ).then(normalizeLiveMessagesResponse);
+}
+
+export function createLiveMessage(accessToken: string, sessionId: string, text: string, clientMessageId: string): Promise<LiveMessage> {
+  return requestBuyerApi<LiveMessage>(
+    `/live/sessions/${encodeURIComponent(sessionId)}/messages`,
+    { method: 'POST', body: JSON.stringify({ text, clientMessageId, language: 'vi' }) },
+    accessToken
+  );
 }
 
 export function trackLiveProductClick(sessionId: string, productId: string, accessToken?: string): Promise<unknown> {
@@ -24,6 +40,16 @@ export function trackLiveProductClick(sessionId: string, productId: string, acce
     { method: 'POST', body: JSON.stringify({ productId }) },
     accessToken
   );
+}
+
+function normalizeLiveMessagesResponse(payload: LiveMessage[] | LiveMessagesResponse): LiveMessage[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload.items)) {
+    return payload.items;
+  }
+  return [];
 }
 
 export function trackLiveMetric(

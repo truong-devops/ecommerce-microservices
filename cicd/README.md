@@ -8,14 +8,24 @@ This directory contains Jenkins-based pipeline definitions and deployment script
 Primary automated flow:
 
 ```txt
-GitHub push main
+Developer feature branch
+-> GitHub PR into protected main
 -> ecommerce-dev-ci-build
+-> detect impacted services/apps
+-> test + filesystem scan
+-> no Docker push, no CD
+
+PR approved + merged into main
+-> ecommerce-dev-ci-build
+-> detect impacted services/apps
 -> Docker Hub image:<git-short-sha>
 -> ecommerce-dev-cd-gitops
 -> infrastructure/kubernetes/overlays/dev/kustomization.yaml
 -> Argo CD ecommerce-dev sync
 -> Kubernetes ecommerce-dev rollout
 ```
+
+Docs-only, CI-only, and GitOps tag commits are skipped by the CI service detector so they do not rebuild runtime images.
 
 The detailed design is documented in:
 

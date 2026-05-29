@@ -36,7 +36,7 @@ images:
   newTag: d446e72c5a3c
 - name: moderator-web
   newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
-  newTag: 1c93781c98ac
+  newTag: d7b9dda4157c
 - name: notification-service
   newName: docker.io/vantruong179/ecommerce-microservices-notification-service
   newTag: 849fc1786fb5
@@ -54,7 +54,7 @@ images:
   newTag: d446e72c5a3c
 - name: seller-web
   newName: docker.io/vantruong179/ecommerce-microservices-seller-web
-  newTag: c54ed3b7a073
+  newTag: d7b9dda4157c
 - name: shipping-service
   newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
   newTag: 849fc1786fb5

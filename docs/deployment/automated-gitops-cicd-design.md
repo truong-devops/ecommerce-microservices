@@ -550,3 +550,5 @@ Với đồ án hoặc demo cá nhân, có thể trình bày `ecommerce-dev` là
 [ ] CI guard `SKIP_CI=true` hoạt động với commit `chore(gitops): ...`
 [ ] PR build không push Docker image và không trigger CD
 ```
+
+Flow test: 2026-05-29T19:31:25Z

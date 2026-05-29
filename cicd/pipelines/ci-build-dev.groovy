@@ -50,7 +50,7 @@ pipeline {
           echo "DEPLOY_ALLOWED=${DEPLOY_ALLOWED}"
           echo "AUTO_DETECT_SERVICES=${AUTO_DETECT_SERVICES_VALUE}"
           echo "CHANGED_FILE_COUNT=${CHANGED_FILE_COUNT}"
-          echo "SELECTED_SERVICES=${SELECTED_SERVICES}"
+          echo "SELECTED_SERVICES=${SELECTED_SERVICES:-}"
           echo "SKIP_CI=${SKIP_CI}"
         '''
       }

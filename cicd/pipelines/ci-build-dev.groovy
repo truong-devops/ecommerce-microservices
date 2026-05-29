@@ -8,7 +8,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services to build')
+    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services/apps to build')
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins username/password credential for Docker Hub')
@@ -42,9 +42,8 @@ pipeline {
     stage('Unit Test') {
       steps {
         script {
-          def goServices = ['api-gateway', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
           selectedServices().each { svc ->
-            if (goServices.contains(svc)) {
+            if (goServices().contains(svc)) {
               sh """
                 set -eu
                 docker run --rm \
@@ -62,6 +61,16 @@ pipeline {
                   node:20-alpine \
                   sh -lc 'npm ci --no-audit --no-fund && npm test'
               '''
+            } else if (frontendApps().containsKey(svc)) {
+              def workspace = frontendWorkspaceFor(svc)
+              sh """
+                set -eu
+                docker run --rm \
+                  --volumes-from "\$(hostname)" \
+                  -w "\$PWD" \
+                  node:20-alpine \
+                  sh -lc 'npm ci --workspace ${workspace} --no-audit --no-fund && npm --workspace ${workspace} run build'
+              """
             } else {
               error "Unknown service for test stage: ${svc}"
             }
@@ -74,6 +83,7 @@ pipeline {
       steps {
         script {
           selectedServices().each { svc ->
+            def sourcePath = sourcePathFor(svc)
             sh """
               set -eu
               trivy fs \
@@ -81,7 +91,7 @@ pipeline {
                 --exit-code 1 \
                 --format table \
                 --output reports/trivy/fs-${svc}.txt \
-                services/${svc}
+                ${sourcePath}
             """
           }
         }
@@ -147,13 +157,25 @@ pipeline {
         script {
           selectedServices().each { svc ->
             def image = dockerImageFor(svc)
-            sh """
-              set -eu
-              docker build \
-                -t ${image}:${env.IMAGE_TAG} \
-                -t ${image}:dev \
-                services/${svc}
-            """
+            if (frontendApps().containsKey(svc)) {
+              def appPath = sourcePathFor(svc)
+              sh """
+                set -eu
+                docker build \
+                  -f ${appPath}/Dockerfile \
+                  -t ${image}:${env.IMAGE_TAG} \
+                  -t ${image}:dev \
+                  .
+              """
+            } else {
+              sh """
+                set -eu
+                docker build \
+                  -t ${image}:${env.IMAGE_TAG} \
+                  -t ${image}:dev \
+                  services/${svc}
+              """
+            }
           }
         }
       }
@@ -223,7 +245,7 @@ pipeline {
 }
 
 def selectedServices() {
-  def allowedServices = ['api-gateway', 'auth-service', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
+  def allowedServices = goServices() + ['auth-service'] + frontendApps().keySet().toList()
   def selected = env.SELECTED_SERVICES?.split(',')?.collect { it.trim() }?.findAll { it } ?: allowedServices
   def unknown = selected.findAll { !allowedServices.contains(it) }
   if (unknown) {
@@ -234,4 +256,36 @@ def selectedServices() {
 
 def dockerImageFor(String serviceName) {
   return "${params.REGISTRY}/${params.IMAGE_REPO_PREFIX}${serviceName}"
+}
+
+def goServices() {
+  return ['api-gateway', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
+}
+
+def frontendApps() {
+  return [
+    'buyer-web': 'buyer-web',
+    'seller-web': 'seller',
+    'moderator-web': 'moderator'
+  ]
+}
+
+def frontendWorkspaceFor(String serviceName) {
+  if (serviceName == 'buyer-web') {
+    return '@frontend/buyer-web'
+  }
+  if (serviceName == 'seller-web') {
+    return '@frontend/seller'
+  }
+  if (serviceName == 'moderator-web') {
+    return '@frontend/moderator'
+  }
+  error "Unknown frontend app: ${serviceName}"
+}
+
+def sourcePathFor(String serviceName) {
+  if (frontendApps().containsKey(serviceName)) {
+    return "frontend/apps/${frontendApps()[serviceName]}"
+  }
+  return "services/${serviceName}"
 }

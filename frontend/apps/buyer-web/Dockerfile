@@ -46,7 +46,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs && \
+  rm -rf \
+    /usr/local/lib/node_modules/npm \
+    /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx \
+    /usr/local/bin/corepack \
+    /usr/local/bin/yarn \
+    /usr/local/bin/yarnpkg \
+    /opt/yarn*
 
 COPY --from=builder --chown=nextjs:nodejs /repo/frontend/apps/buyer-web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /repo/frontend/apps/buyer-web/.next/static ./frontend/apps/buyer-web/.next/static

@@ -8,7 +8,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services to update in Kustomize')
+    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services/apps to update in Kustomize')
     string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag produced by the CI build job, normally git short SHA')
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace used by Kubernetes')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
@@ -88,23 +88,43 @@ pipeline {
 
     stage('Smoke Test') {
       steps {
-        sh '''
-          set -eu
-          for i in $(seq 1 30); do
-            if curl -fsS "${API_BASE_URL}/health" && curl -fsS "${API_BASE_URL}/api/v1/products" >/dev/null; then
-              exit 0
-            fi
-            sleep 10
-          done
-          exit 1
-        '''
+        script {
+          def selected = selectedServices()
+          def backendSelected = selected.any { !frontendApps().containsKey(it) }
+          if (backendSelected) {
+            sh '''
+              set -eu
+              for i in $(seq 1 30); do
+                if curl -fsS "${API_BASE_URL}/health" && curl -fsS "${API_BASE_URL}/api/v1/products" >/dev/null; then
+                  exit 0
+                fi
+                sleep 10
+              done
+              exit 1
+            '''
+          }
+
+          selected.findAll { frontendApps().containsKey(it) }.each { svc ->
+            def url = frontendSmokeUrlFor(svc)
+            sh """
+              set -eu
+              for i in \$(seq 1 30); do
+                if curl -fsS "${url}" >/dev/null; then
+                  exit 0
+                fi
+                sleep 10
+              done
+              exit 1
+            """
+          }
+        }
       }
     }
   }
 }
 
 def selectedServices() {
-  def allowedServices = ['api-gateway', 'auth-service', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
+  def allowedServices = backendServices() + frontendApps().keySet().toList()
   def selected = env.SELECTED_SERVICES?.split(',')?.collect { it.trim() }?.findAll { it } ?: allowedServices
   def unknown = selected.findAll { !allowedServices.contains(it) }
   if (unknown) {
@@ -115,4 +135,29 @@ def selectedServices() {
 
 def dockerImageFor(String serviceName) {
   return "${params.REGISTRY}/${params.IMAGE_REPO_PREFIX}${serviceName}"
+}
+
+def backendServices() {
+  return ['api-gateway', 'auth-service', 'user-service', 'product-service', 'cart-service', 'order-service', 'payment-service', 'inventory-service', 'shipping-service', 'notification-service', 'analytics-service', 'review-service', 'chat-service', 'live-service', 'media-service']
+}
+
+def frontendApps() {
+  return [
+    'buyer-web': 'buyer-web',
+    'seller-web': 'seller',
+    'moderator-web': 'moderator'
+  ]
+}
+
+def frontendSmokeUrlFor(String serviceName) {
+  if (serviceName == 'buyer-web') {
+    return 'https://buyer.dt-commerce.site'
+  }
+  if (serviceName == 'seller-web') {
+    return 'https://seller.dt-commerce.site'
+  }
+  if (serviceName == 'moderator-web') {
+    return 'https://moderator.dt-commerce.site'
+  }
+  error "Unknown frontend app: ${serviceName}"
 }

@@ -9,7 +9,7 @@ resources:
 images:
 - name: analytics-service
   newName: docker.io/vantruong179/ecommerce-microservices-analytics-service
-  newTag: dev
+  newTag: 849fc1786fb5
 - name: api-gateway
   newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
   newTag: c6479c444309
@@ -27,7 +27,7 @@ images:
   newTag: buyer-mobile-prod-20260525
 - name: inventory-service
   newName: docker.io/vantruong179/ecommerce-microservices-inventory-service
-  newTag: c54ed3b7a073
+  newTag: 849fc1786fb5
 - name: live-service
   newName: docker.io/vantruong179/ecommerce-microservices-live-service
   newTag: 2ec5cb283720
@@ -39,13 +39,13 @@ images:
   newTag: 1c93781c98ac
 - name: notification-service
   newName: docker.io/vantruong179/ecommerce-microservices-notification-service
-  newTag: dev
+  newTag: 849fc1786fb5
 - name: order-service
   newName: docker.io/vantruong179/ecommerce-microservices-order-service
-  newTag: c6c07becf0dd
+  newTag: 849fc1786fb5
 - name: payment-service
   newName: docker.io/vantruong179/ecommerce-microservices-payment-service
-  newTag: f65b66d7517a
+  newTag: 849fc1786fb5
 - name: product-service
   newName: docker.io/vantruong179/ecommerce-microservices-product-service
   newTag: c6479c444309
@@ -57,7 +57,7 @@ images:
   newTag: c54ed3b7a073
 - name: shipping-service
   newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
-  newTag: c54ed3b7a073
+  newTag: 849fc1786fb5
 - name: user-service
   newName: docker.io/vantruong179/ecommerce-microservices-user-service
   newTag: c6479c444309

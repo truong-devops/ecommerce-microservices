@@ -4,9 +4,9 @@ import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     orderId: string;
-  };
+  }>;
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -15,7 +15,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
   }
 
-  const orderId = normalizeOrderId(context.params.orderId);
+  const orderId = normalizeOrderId((await context.params).orderId);
   if (!orderId) {
     return fail(400, 'BAD_REQUEST', 'Invalid order id');
   }

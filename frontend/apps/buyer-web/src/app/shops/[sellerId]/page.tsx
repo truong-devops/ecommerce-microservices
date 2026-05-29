@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
@@ -10,14 +11,9 @@ import { formatPrice } from '@/lib/price';
 
 type ShopPageStatus = 'loading' | 'success' | 'error';
 
-interface ShopPageProps {
-  params: {
-    sellerId: string;
-  };
-}
-
-export default function BuyerShopPage({ params }: ShopPageProps) {
-  const rawSellerId = params.sellerId ?? '';
+export default function BuyerShopPage() {
+  const params = useParams<{ sellerId: string }>();
+  const rawSellerId = typeof params?.sellerId === 'string' ? params.sellerId : '';
   const sellerId = useMemo(() => decodeSellerId(rawSellerId), [rawSellerId]);
 
   const [status, setStatus] = useState<ShopPageStatus>('loading');

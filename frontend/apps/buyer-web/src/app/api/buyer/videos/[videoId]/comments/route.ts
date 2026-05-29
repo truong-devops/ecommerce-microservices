@@ -4,9 +4,9 @@ import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     videoId: string;
-  };
+  }>;
 }
 
 interface UpstreamPaginatedResponse<T> {
@@ -22,7 +22,7 @@ interface UpstreamPaginatedResponse<T> {
 }
 
 export async function GET(request: Request, context: RouteContext) {
-  const videoId = context.params.videoId?.trim();
+  const videoId = (await context.params).videoId?.trim();
   if (!videoId) {
     return fail(400, 'BAD_REQUEST', 'Missing video id');
   }
@@ -41,7 +41,7 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const videoId = context.params.videoId?.trim();
+  const videoId = (await context.params).videoId?.trim();
   if (!videoId) {
     return fail(400, 'BAD_REQUEST', 'Missing video id');
   }

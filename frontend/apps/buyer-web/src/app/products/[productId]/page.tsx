@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RecommendationSection } from '@/components/home/RecommendationSection';
 import { Header } from '@/components/layout/Header';
@@ -18,12 +18,6 @@ import type { BuyerShopDetail, Order, ProductDetail, ProductItem, ReviewItem, Re
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
 
 type ProductPageStatus = 'loading' | 'error' | 'invalid-id' | 'not-found' | 'success';
-
-interface ProductDetailPageProps {
-  params: {
-    productId: string;
-  };
-}
 
 const CUSTOMER_HIDDEN_ATTRIBUTE_KEYS = new Set([
   'availableQuantity',
@@ -48,13 +42,14 @@ const CUSTOMER_HIDDEN_ATTRIBUTE_KEYS = new Set([
   'updatedAt'
 ].map((item) => item.toLowerCase()));
 
-export default function ProductDetailPage({ params }: ProductDetailPageProps) {
+export default function ProductDetailPage() {
   const router = useRouter();
+  const params = useParams<{ productId: string }>();
   const { text, locale } = useLanguage();
   const { user, accessToken } = useAuth();
   const { addToCart } = useCart();
 
-  const rawProductId = params.productId ?? '';
+  const rawProductId = typeof params?.productId === 'string' ? params.productId : '';
   const productId = useMemo(() => {
     try {
       return decodeURIComponent(rawProductId).trim();

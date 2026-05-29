@@ -12,7 +12,7 @@ interface ProductItem {
   id: string;
 }
 
-export async function GET(request: Request, context: { params: { productId: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ productId: string }> }) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) {
     return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
@@ -27,7 +27,7 @@ export async function GET(request: Request, context: { params: { productId: stri
     return fail(403, 'FORBIDDEN', 'Role is not allowed to get product detail');
   }
 
-  const productId = context.params.productId?.trim();
+  const productId = (await context.params).productId?.trim();
   if (!productId) {
     return fail(400, 'BAD_REQUEST', 'Missing product id');
   }
@@ -44,7 +44,7 @@ export async function GET(request: Request, context: { params: { productId: stri
   }
 }
 
-export async function PATCH(request: Request, context: { params: { productId: string } }) {
+export async function PATCH(request: Request, context: { params: Promise<{ productId: string }> }) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) {
     return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
@@ -59,7 +59,7 @@ export async function PATCH(request: Request, context: { params: { productId: st
     return fail(403, 'FORBIDDEN', 'Role is not allowed to update product');
   }
 
-  const productId = context.params.productId?.trim();
+  const productId = (await context.params).productId?.trim();
   if (!productId) {
     return fail(400, 'BAD_REQUEST', 'Missing product id');
   }
@@ -91,7 +91,7 @@ export async function PATCH(request: Request, context: { params: { productId: st
   }
 }
 
-export async function DELETE(request: Request, context: { params: { productId: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ productId: string }> }) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) {
     return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
@@ -106,7 +106,7 @@ export async function DELETE(request: Request, context: { params: { productId: s
     return fail(403, 'FORBIDDEN', 'Role is not allowed to delete product');
   }
 
-  const productId = context.params.productId?.trim();
+  const productId = (await context.params).productId?.trim();
   if (!productId) {
     return fail(400, 'BAD_REQUEST', 'Missing product id');
   }

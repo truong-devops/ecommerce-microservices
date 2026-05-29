@@ -5,13 +5,13 @@ import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     sellerId: string;
-  };
+  }>;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const sellerId = decodeSellerId(context.params.sellerId);
+  const sellerId = decodeSellerId((await context.params).sellerId);
   if (!sellerId) {
     return fail(400, 'BAD_REQUEST', 'Invalid seller id');
   }

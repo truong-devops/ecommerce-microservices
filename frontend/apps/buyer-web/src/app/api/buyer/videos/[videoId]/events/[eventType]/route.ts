@@ -4,9 +4,9 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const ALLOWED_EVENTS = new Set(['view-started', 'view-qualified', 'product-clicked', 'add-to-cart']);
 
-export async function POST(request: Request, context: { params: { videoId: string; eventType: string } }) {
-  const videoId = context.params.videoId?.trim();
-  const eventType = context.params.eventType?.trim();
+export async function POST(request: Request, context: { params: Promise<{ videoId: string; eventType: string }> }) {
+  const videoId = (await context.params).videoId?.trim();
+  const eventType = (await context.params).eventType?.trim();
 
   if (!videoId || !ALLOWED_EVENTS.has(eventType)) {
     return Response.json(

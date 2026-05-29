@@ -8,9 +8,9 @@ const ORDER_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT']);
 const VALID_STATUSES: Set<SellerOrderStatus> = new Set(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'FAILED']);
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     orderId: string;
-  };
+  }>;
 }
 
 interface UpdateOrderStatusBody {
@@ -33,7 +33,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return fail(403, 'FORBIDDEN', 'Role is not allowed to update order status');
   }
 
-  const orderId = normalizeOrderId(context.params.orderId);
+  const orderId = normalizeOrderId((await context.params).orderId);
   if (!orderId) {
     return fail(400, 'BAD_REQUEST', 'Invalid order id');
   }

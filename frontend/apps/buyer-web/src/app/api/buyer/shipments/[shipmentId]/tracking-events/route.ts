@@ -5,9 +5,9 @@ import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     shipmentId: string;
-  };
+  }>;
 }
 
 const SHIPMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -18,7 +18,7 @@ export async function GET(request: Request, context: RouteContext) {
     return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
   }
 
-  const shipmentId = normalizeShipmentId(context.params.shipmentId);
+  const shipmentId = normalizeShipmentId((await context.params).shipmentId);
   if (!SHIPMENT_ID_PATTERN.test(shipmentId)) {
     return fail(400, 'BAD_REQUEST', 'Invalid shipment id');
   }

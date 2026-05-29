@@ -5,13 +5,13 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const INVENTORY_EDIT_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN']);
 
-export async function GET(request: Request, context: { params: { sku: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ sku: string }> }) {
   const auth = authorize(request);
   if (auth.response) {
     return auth.response;
   }
 
-  const sku = context.params.sku?.trim();
+  const sku = (await context.params).sku?.trim();
   if (!sku) {
     return fail(400, 'BAD_REQUEST', 'Missing SKU');
   }
@@ -30,13 +30,13 @@ export async function GET(request: Request, context: { params: { sku: string } }
   }
 }
 
-export async function PATCH(request: Request, context: { params: { sku: string } }) {
+export async function PATCH(request: Request, context: { params: Promise<{ sku: string }> }) {
   const auth = authorize(request);
   if (auth.response) {
     return auth.response;
   }
 
-  const sku = context.params.sku?.trim();
+  const sku = (await context.params).sku?.trim();
   if (!sku) {
     return fail(400, 'BAD_REQUEST', 'Missing SKU');
   }

@@ -4,10 +4,10 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 import { authorizeLiveSeller } from '../../../../_utils';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     sessionId: string;
     productId: string;
-  };
+  }>;
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
@@ -16,8 +16,8 @@ export async function DELETE(request: Request, context: RouteContext) {
     return authorized;
   }
 
-  const sessionId = context.params.sessionId?.trim();
-  const productId = context.params.productId?.trim();
+  const sessionId = (await context.params).sessionId?.trim();
+  const productId = (await context.params).productId?.trim();
   if (!sessionId || !productId) {
     return fail(400, 'BAD_REQUEST', 'Missing session id or product id');
   }

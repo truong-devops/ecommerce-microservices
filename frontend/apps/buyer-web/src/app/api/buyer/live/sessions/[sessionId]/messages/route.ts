@@ -5,9 +5,9 @@ import { serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client
 import { optionalAuthorizationHeader } from '../../../_utils';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     sessionId: string;
-  };
+  }>;
 }
 
 interface UpstreamPaginatedResponse<T> {
@@ -23,7 +23,7 @@ interface UpstreamPaginatedResponse<T> {
 }
 
 export async function GET(request: Request, context: RouteContext) {
-  const sessionId = context.params.sessionId?.trim();
+  const sessionId = (await context.params).sessionId?.trim();
   if (!sessionId) {
     return fail(400, 'BAD_REQUEST', 'Missing session id');
   }

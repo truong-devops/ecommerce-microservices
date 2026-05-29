@@ -8,9 +8,9 @@ const SHIPMENT_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT']);
 const SHIPMENT_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     shipmentId: string;
-  };
+  }>;
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -28,7 +28,7 @@ export async function GET(request: Request, context: RouteContext) {
     return fail(403, 'FORBIDDEN', 'Role is not allowed to get tracking events');
   }
 
-  const shipmentId = normalizeShipmentId(context.params.shipmentId);
+  const shipmentId = normalizeShipmentId((await context.params).shipmentId);
   if (!SHIPMENT_ID_PATTERN.test(shipmentId)) {
     return fail(400, 'BAD_REQUEST', 'Invalid shipment id');
   }

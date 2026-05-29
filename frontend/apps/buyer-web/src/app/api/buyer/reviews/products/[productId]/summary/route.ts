@@ -5,15 +5,15 @@ import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     productId: string;
-  };
+  }>;
 }
 
 export async function GET(_request: Request, context: RouteContext) {
   let productId = '';
   try {
-    productId = decodeURIComponent(context.params.productId ?? '').trim();
+    productId = decodeURIComponent((await context.params).productId ?? '').trim();
   } catch {
     return fail(400, 'INVALID_PRODUCT_ID', 'Invalid product identifier');
   }

@@ -34,9 +34,9 @@ interface BackendProduct {
 }
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     productId: string;
-  };
+  }>;
 }
 
 const FALLBACK_IMAGE = 'https://picsum.photos/seed/product-fallback/800/800';
@@ -44,7 +44,7 @@ const FALLBACK_IMAGE = 'https://picsum.photos/seed/product-fallback/800/800';
 export async function GET(_request: Request, context: RouteContext) {
   let productId = '';
   try {
-    productId = decodeURIComponent(context.params.productId ?? '').trim();
+    productId = decodeURIComponent((await context.params).productId ?? '').trim();
   } catch {
     return fail(400, 'INVALID_PRODUCT_ID', 'Invalid product identifier');
   }

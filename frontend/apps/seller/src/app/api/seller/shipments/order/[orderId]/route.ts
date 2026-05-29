@@ -8,9 +8,9 @@ const SHIPMENT_ROLES = new Set(['SELLER', 'ADMIN', 'SUPER_ADMIN', 'SUPPORT']);
 const ORDER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     orderId: string;
-  };
+  }>;
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -28,7 +28,7 @@ export async function GET(request: Request, context: RouteContext) {
     return fail(403, 'FORBIDDEN', 'Role is not allowed to get shipment');
   }
 
-  const orderId = normalizeOrderId(context.params.orderId);
+  const orderId = normalizeOrderId((await context.params).orderId);
   if (!ORDER_ID_PATTERN.test(orderId)) {
     return fail(400, 'BAD_REQUEST', 'Invalid order id');
   }

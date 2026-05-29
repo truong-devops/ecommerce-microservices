@@ -4,9 +4,9 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 import { authorizeLiveSeller, parseObjectBody } from '../../_utils';
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     sessionId: string;
-  };
+  }>;
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -15,7 +15,7 @@ export async function GET(request: Request, context: RouteContext) {
     return authorized;
   }
 
-  const sessionId = context.params.sessionId?.trim();
+  const sessionId = (await context.params).sessionId?.trim();
   if (!sessionId) {
     return fail(400, 'BAD_REQUEST', 'Missing session id');
   }
@@ -37,7 +37,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return authorized;
   }
 
-  const sessionId = context.params.sessionId?.trim();
+  const sessionId = (await context.params).sessionId?.trim();
   if (!sessionId) {
     return fail(400, 'BAD_REQUEST', 'Missing session id');
   }

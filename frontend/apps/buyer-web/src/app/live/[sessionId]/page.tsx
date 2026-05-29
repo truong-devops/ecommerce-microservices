@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
@@ -17,17 +17,13 @@ type LiveDetailStatus = 'loading' | 'error' | 'success';
 type SocketStatus = 'idle' | 'connecting' | 'connected' | 'closed' | 'error';
 const BUYER_PROFILES_STORAGE_KEY = 'buyer_profiles';
 
-interface LiveDetailPageProps {
-  params: {
-    sessionId: string;
-  };
-}
-
-export default function LiveDetailPage({ params }: LiveDetailPageProps) {
+export default function LiveDetailPage() {
   const router = useRouter();
+  const params = useParams<{ sessionId: string }>();
   const { text } = useLanguage();
   const { user, accessToken } = useAuth();
-  const sessionId = useMemo(() => safeDecode(params.sessionId), [params.sessionId]);
+  const rawSessionId = typeof params?.sessionId === 'string' ? params.sessionId : '';
+  const sessionId = useMemo(() => safeDecode(rawSessionId), [rawSessionId]);
   const socketRef = useRef<WebSocket | null>(null);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const mediaPlaybackPeerRef = useRef<RTCPeerConnection | null>(null);

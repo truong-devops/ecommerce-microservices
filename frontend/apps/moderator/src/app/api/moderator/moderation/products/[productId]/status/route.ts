@@ -12,7 +12,7 @@ interface UpdateStatusBody {
   reason?: unknown;
 }
 
-export async function PATCH(request: Request, context: { params: { productId: string } }) {
+export async function PATCH(request: Request, context: { params: Promise<{ productId: string }> }) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) {
     return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
@@ -27,7 +27,7 @@ export async function PATCH(request: Request, context: { params: { productId: st
     return fail(403, 'FORBIDDEN', 'Role is not allowed to update product status');
   }
 
-  const productId = context.params.productId;
+  const productId = (await context.params).productId;
   if (!productId) {
     return fail(400, 'BAD_REQUEST', 'Missing product id');
   }

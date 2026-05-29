@@ -52,7 +52,7 @@ pipeline {
                 docker run --rm \
                   --volumes-from "\$(hostname)" \
                   -w "\$PWD/services/${svc}" \
-                  golang:1.24-alpine \
+                  golang:1.26.3 \
                   sh -lc '/usr/local/go/bin/go test ./...'
               """
             } else if (svc == 'auth-service') {

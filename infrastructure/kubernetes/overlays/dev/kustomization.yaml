@@ -12,7 +12,7 @@ images:
   newTag: dev
 - name: api-gateway
   newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-  newTag: 0c9adb302e9a
+  newTag: c6479c444309
 - name: auth-service
   newName: docker.io/vantruong179/ecommerce-microservices-auth-service
   newTag: 9e1574ea0dd1
@@ -21,7 +21,7 @@ images:
   newTag: c6c07becf0dd
 - name: cart-service
   newName: docker.io/vantruong179/ecommerce-microservices-cart-service
-  newTag: dev
+  newTag: c6479c444309
 - name: chat-service
   newName: docker.io/vantruong179/ecommerce-microservices-chat-service
   newTag: buyer-mobile-prod-20260525
@@ -48,7 +48,7 @@ images:
   newTag: f65b66d7517a
 - name: product-service
   newName: docker.io/vantruong179/ecommerce-microservices-product-service
-  newTag: 1a28b4f0faa1
+  newTag: c6479c444309
 - name: review-service
   newName: docker.io/vantruong179/ecommerce-microservices-review-service
   newTag: dev
@@ -60,4 +60,4 @@ images:
   newTag: c54ed3b7a073
 - name: user-service
   newName: docker.io/vantruong179/ecommerce-microservices-user-service
-  newTag: c54ed3b7a073
+  newTag: c6479c444309

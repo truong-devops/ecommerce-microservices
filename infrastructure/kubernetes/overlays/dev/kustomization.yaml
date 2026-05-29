@@ -15,7 +15,7 @@ images:
   newTag: 0c9adb302e9a
 - name: auth-service
   newName: docker.io/vantruong179/ecommerce-microservices-auth-service
-  newTag: 3e9f709e765a
+  newTag: 9e1574ea0dd1
 - name: buyer-web
   newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
   newTag: c6c07becf0dd

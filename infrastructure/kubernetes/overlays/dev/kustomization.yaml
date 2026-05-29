@@ -24,16 +24,16 @@ images:
   newTag: c6479c444309
 - name: chat-service
   newName: docker.io/vantruong179/ecommerce-microservices-chat-service
-  newTag: buyer-mobile-prod-20260525
+  newTag: d446e72c5a3c
 - name: inventory-service
   newName: docker.io/vantruong179/ecommerce-microservices-inventory-service
   newTag: 849fc1786fb5
 - name: live-service
   newName: docker.io/vantruong179/ecommerce-microservices-live-service
-  newTag: 2ec5cb283720
+  newTag: d446e72c5a3c
 - name: media-service
   newName: docker.io/vantruong179/ecommerce-microservices-media-service
-  newTag: dev
+  newTag: d446e72c5a3c
 - name: moderator-web
   newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
   newTag: 1c93781c98ac
@@ -51,7 +51,7 @@ images:
   newTag: c6479c444309
 - name: review-service
   newName: docker.io/vantruong179/ecommerce-microservices-review-service
-  newTag: dev
+  newTag: d446e72c5a3c
 - name: seller-web
   newName: docker.io/vantruong179/ecommerce-microservices-seller-web
   newTag: c54ed3b7a073

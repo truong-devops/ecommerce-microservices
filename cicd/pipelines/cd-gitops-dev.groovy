@@ -8,7 +8,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services/apps to update in Kustomize')
+    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service,buyer-web,seller-web,moderator-web', description: 'Comma-separated services/apps to update in Kustomize')
     string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag produced by the CI build job, normally git short SHA')
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace used by Kubernetes')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')

@@ -8,7 +8,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service', description: 'Comma-separated services/apps to build')
+    string(name: 'SERVICES', defaultValue: 'api-gateway,auth-service,user-service,product-service,cart-service,order-service,payment-service,inventory-service,shipping-service,notification-service,analytics-service,review-service,chat-service,live-service,media-service,buyer-web,seller-web,moderator-web', description: 'Comma-separated services/apps to build')
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins username/password credential for Docker Hub')
@@ -25,6 +25,7 @@ pipeline {
       steps {
         script {
           env.IMAGE_TAG = sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()
+          env.SKIP_CI = isGitOpsOnlyCommit() ? 'true' : 'false'
           env.SELECTED_SERVICES = params.SERVICES.split(',')
             .collect { it.trim() }
             .findAll { it }
@@ -35,11 +36,15 @@ pipeline {
           mkdir -p reports/trivy reports/dependency-check reports/sonar
           echo "IMAGE_TAG=${IMAGE_TAG}"
           echo "SELECTED_SERVICES=${SELECTED_SERVICES}"
+          echo "SKIP_CI=${SKIP_CI}"
         '''
       }
     }
 
     stage('Unit Test') {
+      when {
+        expression { return env.SKIP_CI != 'true' }
+      }
       steps {
         script {
           selectedServices().each { svc ->
@@ -80,6 +85,9 @@ pipeline {
     }
 
     stage('Trivy Filesystem Scan') {
+      when {
+        expression { return env.SKIP_CI != 'true' }
+      }
       steps {
         script {
           selectedServices().each { svc ->
@@ -100,7 +108,7 @@ pipeline {
 
     stage('OWASP Dependency Check') {
       when {
-        expression { return params.RUN_OWASP_DEPENDENCY_CHECK }
+        expression { return env.SKIP_CI != 'true' && params.RUN_OWASP_DEPENDENCY_CHECK }
       }
       steps {
         sh '''
@@ -119,7 +127,7 @@ pipeline {
 
     stage('SonarQube Analysis') {
       when {
-        expression { return params.RUN_SONARQUBE }
+        expression { return env.SKIP_CI != 'true' && params.RUN_SONARQUBE }
       }
       steps {
         withCredentials([string(credentialsId: params.SONAR_CREDENTIAL_ID, variable: 'SONAR_TOKEN')]) {
@@ -142,6 +150,9 @@ pipeline {
     }
 
     stage('Docker Hub Login') {
+      when {
+        expression { return env.SKIP_CI != 'true' }
+      }
       steps {
         withCredentials([usernamePassword(credentialsId: params.DOCKERHUB_CREDENTIAL_ID, usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_TOKEN')]) {
           sh '''
@@ -153,6 +164,9 @@ pipeline {
     }
 
     stage('Docker Build') {
+      when {
+        expression { return env.SKIP_CI != 'true' }
+      }
       steps {
         script {
           selectedServices().each { svc ->
@@ -182,6 +196,9 @@ pipeline {
     }
 
     stage('Trivy Image Scan') {
+      when {
+        expression { return env.SKIP_CI != 'true' }
+      }
       steps {
         script {
           selectedServices().each { svc ->
@@ -201,6 +218,9 @@ pipeline {
     }
 
     stage('Docker Push') {
+      when {
+        expression { return env.SKIP_CI != 'true' }
+      }
       steps {
         script {
           selectedServices().each { svc ->
@@ -217,7 +237,7 @@ pipeline {
 
     stage('Trigger CD GitOps Job') {
       when {
-        expression { return params.TRIGGER_CD_JOB }
+        expression { return env.SKIP_CI != 'true' && params.TRIGGER_CD_JOB }
       }
       steps {
         build job: params.CD_JOB_NAME,
@@ -239,9 +259,30 @@ pipeline {
       archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
     }
     success {
-      echo "Built image tag: ${env.IMAGE_TAG}. Run the CD GitOps job with this tag."
+      script {
+        if (env.SKIP_CI == 'true') {
+          echo "Skipped GitOps-only commit. No images were built."
+        } else {
+          echo "Built image tag: ${env.IMAGE_TAG}. Run the CD GitOps job with this tag."
+        }
+      }
     }
   }
+}
+
+def isGitOpsOnlyCommit() {
+  def subject = sh(script: 'git log -1 --pretty=%s', returnStdout: true).trim()
+  if (subject.startsWith('chore(gitops):')) {
+    return true
+  }
+
+  def changedOutput = sh(script: 'git diff-tree --no-commit-id --name-only -r HEAD', returnStdout: true).trim()
+  if (!changedOutput) {
+    return false
+  }
+
+  def changed = changedOutput.split('\\n').collect { it.trim() }.findAll { it }
+  return changed && changed.every { it == 'infrastructure/kubernetes/overlays/dev/kustomization.yaml' }
 }
 
 def selectedServices() {

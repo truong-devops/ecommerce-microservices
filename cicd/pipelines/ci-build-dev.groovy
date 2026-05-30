@@ -127,13 +127,24 @@ pipeline {
       }
       steps {
         script {
-          def scanArgs = selectedServices()
-            .collect { svc -> "--scan \"\$PWD/${sourcePathFor(svc)}\"" }
+          def scanTargets = selectedServices()
+            .collectMany { svc -> dependencyCheckScanTargets(svc) }
+            .unique()
+            .findAll { target -> fileExists(target) }
+
+          if (scanTargets.isEmpty()) {
+            echo "No dependency manifest was found for OWASP Dependency Check."
+            return
+          }
+
+          def scanArgs = scanTargets
+            .collect { target -> "--scan \"\$PWD/${target}\"" }
             .join(' ')
           sh """
             set -eu
             docker run --rm \
               --volumes-from "\$(hostname)" \
+              -v owasp-dependency-check-data:/usr/share/dependency-check/data \
               owasp/dependency-check:latest \
               --project ecommerce-microservices \
               ${scanArgs} \
@@ -476,4 +487,27 @@ def sourcePathFor(String serviceName) {
     return "frontend/apps/${frontendApps()[serviceName]}"
   }
   return "services/${serviceName}"
+}
+
+def dependencyCheckScanTargets(String serviceName) {
+  if (frontendApps().containsKey(serviceName)) {
+    return [
+      'package.json',
+      'package-lock.json',
+      "${sourcePathFor(serviceName)}/package.json"
+    ]
+  }
+
+  if (serviceName == 'auth-service') {
+    return [
+      'services/auth-service/package.json',
+      'services/auth-service/package-lock.json'
+    ]
+  }
+
+  def basePath = sourcePathFor(serviceName)
+  return [
+    "${basePath}/go.mod",
+    "${basePath}/go.sum"
+  ]
 }

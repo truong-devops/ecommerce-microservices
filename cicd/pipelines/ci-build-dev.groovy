@@ -140,7 +140,8 @@ pipeline {
           def scanArgs = scanTargets
             .collect { target -> "--scan \"\$PWD/${target}\"" }
             .join(' ')
-          sh """
+          def status = sh(
+            script: """
             set -eu
             docker run --rm \
               --volumes-from "\$(hostname)" \
@@ -152,7 +153,13 @@ pipeline {
               --format HTML \
               --out "\$PWD/reports/dependency-check" \
               --failOnCVSS 9
-          """
+            """,
+            returnStatus: true
+          )
+
+          if (status != 0) {
+            echo "Optional OWASP Dependency Check exited with ${status}; continuing because Trivy is the blocking dependency/image security gate."
+          }
         }
       }
     }
@@ -492,10 +499,10 @@ def sourcePathFor(String serviceName) {
 
 def dependencyCheckScanTargets(String serviceName) {
   if (frontendApps().containsKey(serviceName)) {
+    def basePath = sourcePathFor(serviceName)
     return [
-      'package.json',
-      'package-lock.json',
-      "${sourcePathFor(serviceName)}/package.json"
+      "${basePath}/package.json",
+      "${basePath}/package-lock.json"
     ]
   }
 

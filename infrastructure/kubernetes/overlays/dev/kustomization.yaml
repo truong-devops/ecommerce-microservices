@@ -15,7 +15,7 @@ images:
   newTag: c6479c444309
 - name: auth-service
   newName: docker.io/vantruong179/ecommerce-microservices-auth-service
-  newTag: 9e1574ea0dd1
+  newTag: 6b398ae54c7c
 - name: buyer-web
   newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
   newTag: 7428a3387e36
@@ -51,7 +51,7 @@ images:
   newTag: c6479c444309
 - name: review-service
   newName: docker.io/vantruong179/ecommerce-microservices-review-service
-  newTag: 866b25d00f87
+  newTag: 6b398ae54c7c
 - name: seller-web
   newName: docker.io/vantruong179/ecommerce-microservices-seller-web
   newTag: d7b9dda4157c
@@ -60,4 +60,4 @@ images:
   newTag: 849fc1786fb5
 - name: user-service
   newName: docker.io/vantruong179/ecommerce-microservices-user-service
-  newTag: c6479c444309
+  newTag: 6b398ae54c7c

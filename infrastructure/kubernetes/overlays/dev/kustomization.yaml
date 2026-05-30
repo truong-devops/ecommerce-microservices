@@ -18,7 +18,7 @@ images:
   newTag: 6b398ae54c7c
 - name: buyer-web
   newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-  newTag: 7428a3387e36
+  newTag: 3bede0449462
 - name: cart-service
   newName: docker.io/vantruong179/ecommerce-microservices-cart-service
   newTag: c6479c444309
@@ -36,7 +36,7 @@ images:
   newTag: d446e72c5a3c
 - name: moderator-web
   newName: docker.io/vantruong179/ecommerce-microservices-moderator-web
-  newTag: d7b9dda4157c
+  newTag: 3bede0449462
 - name: notification-service
   newName: docker.io/vantruong179/ecommerce-microservices-notification-service
   newTag: 849fc1786fb5
@@ -54,7 +54,7 @@ images:
   newTag: 6b398ae54c7c
 - name: seller-web
   newName: docker.io/vantruong179/ecommerce-microservices-seller-web
-  newTag: d7b9dda4157c
+  newTag: 3bede0449462
 - name: shipping-service
   newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
   newTag: 849fc1786fb5

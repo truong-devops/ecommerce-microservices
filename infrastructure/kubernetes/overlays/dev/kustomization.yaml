@@ -51,7 +51,7 @@ images:
   newTag: c6479c444309
 - name: review-service
   newName: docker.io/vantruong179/ecommerce-microservices-review-service
-  newTag: d446e72c5a3c
+  newTag: 866b25d00f87
 - name: seller-web
   newName: docker.io/vantruong179/ecommerce-microservices-seller-web
   newTag: d7b9dda4157c

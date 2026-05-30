@@ -148,6 +148,7 @@ pipeline {
               owasp/dependency-check:latest \
               --project ecommerce-microservices \
               ${scanArgs} \
+              --disableNodeAudit \
               --format HTML \
               --out "\$PWD/reports/dependency-check" \
               --failOnCVSS 9

@@ -1,4 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <rect x="0" y="0" width="256" height="256" rx="50" fill="#f05d23"/>
-  <text x="128" y="175" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="140" fill="#ffffff" text-anchor="middle">m</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="eMall app icon">
+  <defs>
+    <linearGradient id="emall-bg" x1="160" y1="96" x2="864" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#f8f6f2"/>
+      <stop offset="1" stop-color="#e7e4df"/>
+    </linearGradient>
+    <linearGradient id="emall-bag" x1="278" y1="216" x2="742" y2="845" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff6a32"/>
+      <stop offset="0.48" stop-color="#ff4628"/>
+      <stop offset="1" stop-color="#e9321d"/>
+    </linearGradient>
+    <linearGradient id="emall-fold" x1="631" y1="706" x2="781" y2="851" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd66d"/>
+      <stop offset="0.68" stop-color="#ffad43"/>
+      <stop offset="1" stop-color="#f37b26"/>
+    </linearGradient>
+    <filter id="bag-shadow" x="160" y="86" width="704" height="814" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="28" stdDeviation="28" flood-color="#7d4636" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#emall-bg)"/>
+  <ellipse cx="512" cy="849" rx="278" ry="42" fill="#8f8178" opacity="0.14"/>
+  <g filter="url(#bag-shadow)">
+    <path d="M376 322C384 192 444 126 512 126C580 126 640 192 648 322" fill="none" stroke="#ff4e27" stroke-linecap="round" stroke-width="54"/>
+    <path d="M263 336C263 301 291 273 326 273H698C733 273 761 301 761 336V757C761 795 730 826 692 826H332C294 826 263 795 263 757V336Z" fill="url(#emall-bag)"/>
+    <path d="M326 273H698C733 273 761 301 761 336V382H263V336C263 301 291 273 326 273Z" fill="#ff5a30"/>
+    <circle cx="376" cy="323" r="29" fill="#17384a"/>
+    <circle cx="648" cy="323" r="29" fill="#17384a"/>
+    <text x="512" y="679" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="352" font-weight="900" letter-spacing="-12" text-anchor="middle">m</text>
+    <path d="M629 759C681 763 727 732 761 675V757C761 795 730 826 692 826H650C650 801 642 780 629 759Z" fill="url(#emall-fold)"/>
+    <path d="M629 759C681 763 727 732 761 675C748 741 707 804 650 826C650 801 642 780 629 759Z" fill="#ffc35b" opacity="0.92"/>
+    <path d="M632 759C687 759 731 727 761 675" fill="none" stroke="#e66a22" stroke-linecap="round" stroke-width="5" opacity="0.36"/>
+  </g>
 </svg>

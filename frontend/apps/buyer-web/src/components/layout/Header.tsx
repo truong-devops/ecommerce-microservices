@@ -51,6 +51,8 @@ export function Header({ keywords }: HeaderProps) {
     return `/search?${query.toString()}`;
   };
 
+  const uniqueKeywords = Array.from(new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean)));
+
   const handleOpenChatDrawer = () => {
     if (typeof window === 'undefined') {
       return;
@@ -142,7 +144,11 @@ export function Header({ keywords }: HeaderProps) {
 
         <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:flex md:gap-5">
           <Link className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-white" href="/" aria-label="Homepage">
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-white text-lg font-bold text-brand-500 sm:h-9 sm:w-9 sm:text-xl md:h-10 md:w-10 md:text-2xl">m</span>
+            <span
+              aria-hidden="true"
+              className="block h-8 w-8 shrink-0 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-white/60 sm:h-9 sm:w-9 md:h-10 md:w-10"
+              style={{ backgroundImage: "url('/icon.svg')" }}
+            />
             <span className="text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl">eMall</span>
           </Link>
 
@@ -168,7 +174,7 @@ export function Header({ keywords }: HeaderProps) {
               </button>
             </form>
             <div className="mt-1 hidden flex-wrap gap-3 text-xs text-white/90 md:flex" aria-label="Trending keywords">
-              {keywords.map((keyword) => (
+              {uniqueKeywords.map((keyword) => (
                 <Link key={keyword} href={buildSearchHref(keyword)} className="rounded-sm hover:text-white focus-visible:outline-white">
                   {keyword}
                 </Link>

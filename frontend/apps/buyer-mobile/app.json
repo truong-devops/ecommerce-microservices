@@ -26,7 +26,7 @@
       "package": "site.dtcommerce.buyermobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#f45132"
+        "backgroundColor": "#f8f6f2"
       },
       "softwareKeyboardLayoutMode": "resize"
     },

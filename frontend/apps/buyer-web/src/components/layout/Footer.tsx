@@ -171,7 +171,11 @@ export function Footer() {
         <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-500 text-lg font-black text-white">m</span>
+              <span
+                aria-hidden="true"
+                className="block h-10 w-10 shrink-0 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-slate-200"
+                style={{ backgroundImage: "url('/icon.svg')" }}
+              />
               <span className="text-xl font-black tracking-tight text-slate-950">{copy.brandLine}</span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-600">{copy.supportLine}</p>

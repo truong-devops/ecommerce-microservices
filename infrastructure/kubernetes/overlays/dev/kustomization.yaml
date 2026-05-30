@@ -18,7 +18,7 @@ images:
   newTag: 9e1574ea0dd1
 - name: buyer-web
   newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-  newTag: ed197884a018
+  newTag: 72fb41a9a139
 - name: cart-service
   newName: docker.io/vantruong179/ecommerce-microservices-cart-service
   newTag: c6479c444309

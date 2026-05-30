@@ -13,7 +13,7 @@ pipeline {
     string(name: 'REGISTRY', defaultValue: 'docker.io/vantruong179', description: 'Docker Hub namespace')
     string(name: 'IMAGE_REPO_PREFIX', defaultValue: 'ecommerce-microservices-', description: 'Docker Hub repository prefix before service name')
     string(name: 'DOCKERHUB_CREDENTIAL_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins username/password credential for Docker Hub')
-    booleanParam(name: 'RUN_OWASP_DEPENDENCY_CHECK', defaultValue: true, description: 'Run OWASP Dependency Check when dependency-check.sh is installed')
+    booleanParam(name: 'RUN_OWASP_DEPENDENCY_CHECK', defaultValue: false, description: 'Run optional OWASP Dependency Check report. Trivy remains the blocking dependency scan.')
     booleanParam(name: 'RUN_SONARQUBE', defaultValue: false, description: 'Run SonarQube analysis when scanner/credentials are configured')
     string(name: 'SONAR_HOST_URL', defaultValue: 'https://sonar.dt-commerce.site', description: 'SonarQube URL')
     string(name: 'SONAR_CREDENTIAL_ID', defaultValue: 'sonar-token', description: 'Jenkins Secret text credential containing the SonarQube token')
@@ -127,20 +127,39 @@ pipeline {
       }
       steps {
         script {
-          def scanArgs = selectedServices()
-            .collect { svc -> "--scan \"\$PWD/${sourcePathFor(svc)}\"" }
+          def scanTargets = selectedServices()
+            .collectMany { svc -> dependencyCheckScanTargets(svc) }
+            .unique()
+            .findAll { target -> fileExists(target) }
+
+          if (scanTargets.isEmpty()) {
+            echo "No dependency manifest was found for OWASP Dependency Check."
+            return
+          }
+
+          def scanArgs = scanTargets
+            .collect { target -> "--scan \"\$PWD/${target}\"" }
             .join(' ')
-          sh """
+          def status = sh(
+            script: """
             set -eu
             docker run --rm \
               --volumes-from "\$(hostname)" \
+              -v owasp-dependency-check-data:/usr/share/dependency-check/data \
               owasp/dependency-check:latest \
               --project ecommerce-microservices \
               ${scanArgs} \
+              --disableNodeAudit \
               --format HTML \
               --out "\$PWD/reports/dependency-check" \
               --failOnCVSS 9
-          """
+            """,
+            returnStatus: true
+          )
+
+          if (status != 0) {
+            echo "Optional OWASP Dependency Check exited with ${status}; continuing because Trivy is the blocking dependency/image security gate."
+          }
         }
       }
     }
@@ -476,4 +495,27 @@ def sourcePathFor(String serviceName) {
     return "frontend/apps/${frontendApps()[serviceName]}"
   }
   return "services/${serviceName}"
+}
+
+def dependencyCheckScanTargets(String serviceName) {
+  if (frontendApps().containsKey(serviceName)) {
+    def basePath = sourcePathFor(serviceName)
+    return [
+      "${basePath}/package.json",
+      "${basePath}/package-lock.json"
+    ]
+  }
+
+  if (serviceName == 'auth-service') {
+    return [
+      'services/auth-service/package.json',
+      'services/auth-service/package-lock.json'
+    ]
+  }
+
+  def basePath = sourcePathFor(serviceName)
+  return [
+    "${basePath}/go.mod",
+    "${basePath}/go.sum"
+  ]
 }

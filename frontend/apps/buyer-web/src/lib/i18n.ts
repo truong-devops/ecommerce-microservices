@@ -495,7 +495,7 @@ export const messages: Record<Locale, AppMessages> = {
       video: 'Video'
     },
     home: {
-      categoryTitle: 'Văn Trường',
+      categoryTitle: 'DANH MỤC',
       allCategories: 'Tất cả',
       categoryProductsTitle: 'Sản phẩm thuộc {category}',
       noProductsInCategory: 'Chưa có sản phẩm trong danh mục này.',

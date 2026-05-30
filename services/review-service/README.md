@@ -2,6 +2,8 @@
 
 Go prototype of review-service with clean architecture (`handler -> service -> repository`) and MongoDB.
 
+This service is included in the automated CI/CD validation flow.
+
 ## Endpoints
 
 - `GET /health`

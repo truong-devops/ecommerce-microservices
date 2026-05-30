@@ -76,7 +76,11 @@ export default function SellerLoginPage() {
         <div className="mx-auto flex h-20 w-full max-w-[1200px] items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-2 text-[20px] font-semibold leading-none text-brand-500">
-              <span className="grid h-7 w-7 place-items-center rounded-md border-2 border-brand-500 text-[18px] font-medium">m</span>
+              <span
+                aria-hidden="true"
+                className="block h-9 w-9 shrink-0 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-orange-100"
+                style={{ backgroundImage: "url('/icon.svg')" }}
+              />
               <span className="text-[22px]">eMall</span>
             </span>
             <span className="text-[22px] font-medium text-slate-800">Kênh Người Bán</span>

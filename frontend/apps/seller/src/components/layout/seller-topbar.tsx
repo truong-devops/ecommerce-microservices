@@ -12,7 +12,11 @@ export function SellerTopbar({ email, role, onLogout }: SellerTopbarProps) {
     <header className="sticky top-0 z-30 h-14 border-b border-slate-200 bg-white">
       <div className="flex h-full items-center justify-between px-3 lg:px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-[#ee4d2d] text-xs font-semibold text-white">m</div>
+          <div
+            aria-hidden="true"
+            className="h-8 w-8 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-orange-100"
+            style={{ backgroundImage: "url('/icon.svg')" }}
+          />
           <p className="text-base font-semibold leading-none text-[#ee4d2d] md:text-lg">eMall</p>
         </div>
 

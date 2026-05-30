@@ -12,7 +12,11 @@ export function ModeratorTopbar({ email, role, onLogout }: ModeratorTopbarProps)
     <header className="sticky top-0 z-40 h-14 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="flex h-full items-center justify-between px-3 lg:px-4">
         <div className="flex items-center gap-2">
-          <div className="grid h-7 w-7 place-items-center rounded-md bg-brand-600 text-xs font-semibold text-white">m</div>
+          <div
+            aria-hidden="true"
+            className="h-8 w-8 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-slate-200"
+            style={{ backgroundImage: "url('/icon.svg')" }}
+          />
           <div>
             <p className="text-sm font-semibold leading-none text-slate-900 md:text-base">eMall Trust & Safety</p>
             <p className="hidden text-[11px] text-slate-500 md:block">Moderation Operations Console</p>

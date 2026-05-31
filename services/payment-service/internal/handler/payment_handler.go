@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -156,6 +157,21 @@ func (h *PaymentHandler) ListRefunds(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PaymentHandler) HandleProviderWebhook(w http.ResponseWriter, r *http.Request) {
+	if strings.EqualFold(strings.TrimSpace(chi.URLParam(r, "provider")), "sepay") {
+		rawBody, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+		if err != nil {
+			httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Invalid webhook body", nil)
+			return
+		}
+		result, status, err := h.paymentService.HandleSePayWebhook(r.Context(), requestID(r), r.Header, rawBody, r.RemoteAddr)
+		if err != nil {
+			httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+			return
+		}
+		writeSePaySuccess(w, status, result)
+		return
+	}
+
 	var req service.PaymentWebhookRequest
 	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
 		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{"body": err.Error()})
@@ -173,6 +189,19 @@ func (h *PaymentHandler) HandleProviderWebhook(w http.ResponseWriter, r *http.Re
 	}
 
 	httpx.WriteSuccess(w, r, status, result)
+}
+
+func writeSePaySuccess(w http.ResponseWriter, status int, payload map[string]any) {
+	if status == 0 {
+		status = http.StatusOK
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if payload == nil {
+		_, _ = w.Write([]byte(`{"success":true}`))
+		return
+	}
+	_, _ = w.Write([]byte(`{"success":true}`))
 }
 
 func validateCreatePaymentIntent(req service.CreatePaymentIntentRequest) error {

@@ -31,6 +31,8 @@ spec:
           env:
             - name: APP_NAME
               value: payment-service
+            - name: APP_ENV
+              value: production
             - name: DATABASE_URL
               value: postgresql://epayment:epayment@postgres:5432/ecommerce_payment?sslmode=disable
             - name: DB_MIGRATIONS_RUN
@@ -38,13 +40,81 @@ spec:
             - name: MIGRATION_FILE
               value: /migrations/0001_init_payment_service.sql
             - name: KAFKA_ENABLED
-              value: "false"
+              value: "true"
             - name: REDIS_ENABLED
               value: "true"
             - name: ORDER_SERVICE_BASE_URL
               value: http://order-service:8080/api/v1
             - name: PAYMENT_GATEWAY
-              value: mock
+              value: sepay
+            - name: SEPAY_BANK_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: bank-code
+            - name: SEPAY_BANK_ACCOUNT_NUMBER
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: bank-account-number
+            - name: SEPAY_BANK_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: bank-account-name
+            - name: SEPAY_ALLOWED_ACCOUNT_NUMBERS
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: allowed-account-numbers
+            - name: SEPAY_ENVIRONMENT
+              value: live
+            - name: SEPAY_PAYMENT_CODE_PREFIX
+              value: EMX
+            - name: SEPAY_QR_TEMPLATE
+              value: compact
+            - name: SEPAY_PAYMENT_EXPIRES_MINUTES
+              value: "15"
+            - name: SEPAY_WEBHOOK_AUTH_MODE
+              value: hmac
+            - name: SEPAY_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: webhook-secret
+            - name: SEPAY_WEBHOOK_SECRETS
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: webhook-secrets
+                  optional: true
+            - name: SEPAY_WEBHOOK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: webhook-api-key
+                  optional: true
+            - name: SEPAY_TIMESTAMP_TOLERANCE_SECONDS
+              value: "300"
+            - name: SEPAY_RECONCILE_ENABLED
+              value: "true"
+            - name: SEPAY_API_BASE_URL
+              value: https://my.sepay.vn/userapi
+            - name: SEPAY_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: payment-service-sepay-secret
+                  key: api-token
+            - name: SEPAY_RECONCILE_INTERVAL_MS
+              value: "15000"
+            - name: SEPAY_RECONCILE_BATCH_SIZE
+              value: "100"
+            - name: PAYMENT_EXPIRY_WORKER_ENABLED
+              value: "true"
+            - name: PAYMENT_EXPIRY_WORKER_INTERVAL_MS
+              value: "60000"
+            - name: PAYMENT_EXPIRY_WORKER_BATCH_SIZE
+              value: "100"
           readinessProbe:
             httpGet:
               path: /api/v1/health

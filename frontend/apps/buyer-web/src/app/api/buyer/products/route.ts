@@ -1,5 +1,6 @@
 import type { ProductSearchOutput } from '@/lib/api/types';
 import { ok } from '@/lib/server/buyer-api-response';
+import { filterProductsWithAvailableStock } from '@/lib/server/product-availability';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client';
 
@@ -88,8 +89,9 @@ export async function GET(request: Request) {
 
   try {
     const result = await requestProductListUpstream(upstreamUrl, fallbackPage, fallbackPageSize);
+    const availableItems = await filterProductsWithAvailableStock(result.items);
 
-    return ok(toProductSearchOutput(result), 'backend');
+    return ok(toProductSearchOutput({ ...result, items: availableItems }), 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }

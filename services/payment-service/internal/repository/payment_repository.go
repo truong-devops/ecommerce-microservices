@@ -45,6 +45,28 @@ type WebhookIdempotencyRecord struct {
 	CreatedAt       time.Time
 }
 
+type PaymentProviderEvent struct {
+	ID                   string
+	Provider             string
+	ProviderEventID      string
+	GatewayTransactionID *string
+	ProviderPaymentID    *string
+	PaymentID            *string
+	EventType            string
+	ProcessStatus        string
+	FailureCode          *string
+	FailureReason        *string
+	CreatedAt            time.Time
+	ProcessedAt          *time.Time
+}
+
+type ReconciliationCursor struct {
+	Provider     string
+	SinceID      *string
+	LastSyncedAt *time.Time
+	UpdatedAt    time.Time
+}
+
 type CreatePaymentInput struct {
 	OrderID           string
 	UserID            string
@@ -57,6 +79,8 @@ type CreatePaymentInput struct {
 	RefundedAmount    float64
 	Description       *string
 	Metadata          map[string]any
+	ExpiresAt         *time.Time
+	CapturedAt        *time.Time
 }
 
 type CreatePaymentTransactionInput struct {
@@ -86,6 +110,20 @@ type CreatePaymentAuditLogInput struct {
 	ActorRole domain.Role
 	RequestID string
 	Metadata  map[string]any
+}
+
+type CreatePaymentProviderEventInput struct {
+	Provider             string
+	ProviderEventID      string
+	GatewayTransactionID *string
+	ProviderPaymentID    *string
+	PaymentID            *string
+	EventType            string
+	ProcessStatus        string
+	FailureCode          *string
+	FailureReason        *string
+	RawPayload           map[string]any
+	RawBody              *string
 }
 
 type CreateRefundInput struct {
@@ -129,6 +167,30 @@ type ListPaymentsQuery struct {
 	SortOrder string
 }
 
+const findIdempotencyRecordQuery = `
+	SELECT id, user_id, idempotency_key, request_hash, payment_id, response_status,
+		response_body, expires_at, created_at
+	FROM idempotency_records
+	WHERE user_id = $1 AND idempotency_key = $2
+`
+
+const createIdempotencyRecordQuery = `
+	INSERT INTO idempotency_records (
+		user_id, idempotency_key, request_hash, payment_id,
+		response_status, response_body, expires_at
+	)
+	VALUES ($1,$2,$3,$4,$5,$6,$7)
+`
+
+const updateIdempotencyResultQuery = `
+	UPDATE idempotency_records
+	SET response_status = $1,
+		response_body = $2,
+		payment_id = $3,
+		expires_at = $4
+	WHERE user_id = $5 AND idempotency_key = $6 AND request_hash = $7
+`
+
 func NewPaymentRepository(pool *pgxpool.Pool) *PaymentRepository {
 	return &PaymentRepository{pool: pool}
 }
@@ -150,11 +212,11 @@ func (r *PaymentRepository) CreatePayment(ctx context.Context, tx pgx.Tx, input 
 	row := tx.QueryRow(ctx, `
 		INSERT INTO payments (
 			order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at
 		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 		RETURNING id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 	`,
 		input.OrderID,
 		input.UserID,
@@ -167,6 +229,8 @@ func (r *PaymentRepository) CreatePayment(ctx context.Context, tx pgx.Tx, input 
 		input.RefundedAmount,
 		input.Description,
 		metadata,
+		input.ExpiresAt,
+		input.CapturedAt,
 	)
 
 	payment, err := scanPaymentRow(row)
@@ -193,10 +257,12 @@ func (r *PaymentRepository) SavePayment(ctx context.Context, tx pgx.Tx, payment 
 			refunded_amount=$8,
 			description=$9,
 			metadata=$10,
+			expires_at=$11,
+			captured_at=$12,
 			updated_at=now()
 		WHERE id=$1
 		RETURNING id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 	`,
 		payment.ID,
 		payment.SellerID,
@@ -208,6 +274,8 @@ func (r *PaymentRepository) SavePayment(ctx context.Context, tx pgx.Tx, payment 
 		payment.RefundedAmount,
 		payment.Description,
 		metadata,
+		payment.ExpiresAt,
+		payment.CapturedAt,
 	)
 
 	updated, err := scanPaymentRow(row)
@@ -220,7 +288,7 @@ func (r *PaymentRepository) SavePayment(ctx context.Context, tx pgx.Tx, payment 
 func (r *PaymentRepository) FindPaymentByID(ctx context.Context, id string) (*domain.Payment, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		FROM payments
 		WHERE id = $1
 	`, id)
@@ -238,7 +306,7 @@ func (r *PaymentRepository) FindPaymentByID(ctx context.Context, id string) (*do
 func (r *PaymentRepository) FindPaymentByIDForUpdate(ctx context.Context, tx pgx.Tx, id string) (*domain.Payment, error) {
 	row := tx.QueryRow(ctx, `
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		FROM payments
 		WHERE id = $1
 		FOR UPDATE
@@ -257,7 +325,7 @@ func (r *PaymentRepository) FindPaymentByIDForUpdate(ctx context.Context, tx pgx
 func (r *PaymentRepository) FindPaymentByOrderID(ctx context.Context, orderID string) (*domain.Payment, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		FROM payments
 		WHERE order_id = $1
 	`, orderID)
@@ -275,7 +343,7 @@ func (r *PaymentRepository) FindPaymentByOrderID(ctx context.Context, orderID st
 func (r *PaymentRepository) FindPaymentByOrderIDForUpdate(ctx context.Context, tx pgx.Tx, orderID string) (*domain.Payment, error) {
 	row := tx.QueryRow(ctx, `
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		FROM payments
 		WHERE order_id = $1
 		FOR UPDATE
@@ -294,7 +362,7 @@ func (r *PaymentRepository) FindPaymentByOrderIDForUpdate(ctx context.Context, t
 func (r *PaymentRepository) FindPaymentByProviderPaymentID(ctx context.Context, providerPaymentID string) (*domain.Payment, error) {
 	row := r.pool.QueryRow(ctx, `
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		FROM payments
 		WHERE provider_payment_id = $1
 	`, providerPaymentID)
@@ -312,7 +380,7 @@ func (r *PaymentRepository) FindPaymentByProviderPaymentID(ctx context.Context, 
 func (r *PaymentRepository) FindPaymentByProviderPaymentIDForUpdate(ctx context.Context, tx pgx.Tx, providerPaymentID string) (*domain.Payment, error) {
 	row := tx.QueryRow(ctx, `
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		FROM payments
 		WHERE provider_payment_id = $1
 		FOR UPDATE
@@ -393,7 +461,7 @@ func (r *PaymentRepository) ListPayments(ctx context.Context, query ListPayments
 
 	listQuery := fmt.Sprintf(`
 		SELECT id, order_id, user_id, seller_id, provider, provider_payment_id, status,
-			currency, amount, refunded_amount, description, metadata, created_at, updated_at
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
 		%s
 		ORDER BY %s %s
 		LIMIT $%d OFFSET $%d
@@ -512,6 +580,137 @@ func (r *PaymentRepository) CreatePaymentAuditLog(ctx context.Context, tx pgx.Tx
 	return nil
 }
 
+func (r *PaymentRepository) UpsertPaymentProviderEvent(ctx context.Context, tx pgx.Tx, input CreatePaymentProviderEventInput) error {
+	rawPayload, err := toJSONB(input.RawPayload)
+	if err != nil {
+		return queryFailed("marshal payment provider event raw payload failed", err)
+	}
+	status := strings.TrimSpace(input.ProcessStatus)
+	if status == "" {
+		status = "RECEIVED"
+	}
+	_, err = tx.Exec(ctx, `
+		INSERT INTO payment_provider_events (
+			provider, provider_event_id, gateway_transaction_id, provider_payment_id,
+			payment_id, event_type, process_status, failure_code, failure_reason,
+			raw_payload, raw_body, processed_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7::varchar,$8,$9,$10,$11, CASE WHEN $7::text IN ('PROCESSED','FAILED','IGNORED') THEN now() ELSE NULL END)
+		ON CONFLICT (provider, provider_event_id)
+		DO UPDATE SET
+			gateway_transaction_id = COALESCE(EXCLUDED.gateway_transaction_id, payment_provider_events.gateway_transaction_id),
+			provider_payment_id = COALESCE(EXCLUDED.provider_payment_id, payment_provider_events.provider_payment_id),
+			payment_id = COALESCE(EXCLUDED.payment_id, payment_provider_events.payment_id),
+			event_type = EXCLUDED.event_type,
+			process_status = EXCLUDED.process_status,
+			failure_code = EXCLUDED.failure_code,
+			failure_reason = EXCLUDED.failure_reason,
+			raw_payload = EXCLUDED.raw_payload,
+			raw_body = EXCLUDED.raw_body,
+			processed_at = CASE WHEN EXCLUDED.process_status IN ('PROCESSED','FAILED','IGNORED') THEN now() ELSE payment_provider_events.processed_at END
+	`,
+		input.Provider,
+		input.ProviderEventID,
+		input.GatewayTransactionID,
+		input.ProviderPaymentID,
+		input.PaymentID,
+		input.EventType,
+		status,
+		input.FailureCode,
+		input.FailureReason,
+		rawPayload,
+		input.RawBody,
+	)
+	if err != nil {
+		return queryFailed("upsert payment provider event failed", err)
+	}
+	return nil
+}
+
+func (r *PaymentRepository) UpdatePaymentProviderEventStatus(
+	ctx context.Context,
+	tx pgx.Tx,
+	provider string,
+	providerEventID string,
+	paymentID *string,
+	processStatus string,
+	failureCode *string,
+	failureReason *string,
+) error {
+	_, err := tx.Exec(ctx, `
+		UPDATE payment_provider_events
+		SET payment_id = COALESCE($3::uuid, payment_id),
+			process_status = $4,
+			failure_code = $5,
+			failure_reason = $6,
+			processed_at = now()
+		WHERE provider = $1 AND provider_event_id = $2
+	`,
+		provider,
+		providerEventID,
+		paymentID,
+		processStatus,
+		failureCode,
+		failureReason,
+	)
+	if err != nil {
+		return queryFailed("update payment provider event status failed", err)
+	}
+	return nil
+}
+
+func (r *PaymentRepository) FindPaymentProviderEvent(ctx context.Context, provider string, providerEventID string) (*PaymentProviderEvent, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, provider, provider_event_id, gateway_transaction_id, provider_payment_id,
+			payment_id::text, event_type, process_status, failure_code, failure_reason,
+			received_at, processed_at
+		FROM payment_provider_events
+		WHERE provider = $1 AND provider_event_id = $2
+	`, strings.TrimSpace(provider), strings.TrimSpace(providerEventID))
+
+	event, err := scanPaymentProviderEventRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("get payment provider event failed", err)
+	}
+	return &event, nil
+}
+
+func (r *PaymentRepository) GetReconciliationCursor(ctx context.Context, provider string) (*ReconciliationCursor, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT provider, since_id, last_synced_at, updated_at
+		FROM payment_reconciliation_cursors
+		WHERE provider = $1
+	`, strings.TrimSpace(provider))
+
+	cursor, err := scanReconciliationCursorRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("get payment reconciliation cursor failed", err)
+	}
+	return &cursor, nil
+}
+
+func (r *PaymentRepository) UpsertReconciliationCursor(ctx context.Context, provider string, sinceID string, lastSyncedAt time.Time) error {
+	_, err := r.pool.Exec(ctx, `
+		INSERT INTO payment_reconciliation_cursors (provider, since_id, last_synced_at, updated_at)
+		VALUES ($1,$2,$3,now())
+		ON CONFLICT (provider)
+		DO UPDATE SET
+			since_id = EXCLUDED.since_id,
+			last_synced_at = EXCLUDED.last_synced_at,
+			updated_at = now()
+	`, strings.TrimSpace(provider), strings.TrimSpace(sinceID), lastSyncedAt)
+	if err != nil {
+		return queryFailed("upsert payment reconciliation cursor failed", err)
+	}
+	return nil
+}
+
 func (r *PaymentRepository) CreateRefund(ctx context.Context, tx pgx.Tx, input CreateRefundInput) (domain.Refund, error) {
 	metadata, err := toJSONB(input.Metadata)
 	if err != nil {
@@ -573,12 +772,7 @@ func (r *PaymentRepository) ListRefundsByPaymentID(ctx context.Context, paymentI
 }
 
 func (r *PaymentRepository) FindIdempotencyRecord(ctx context.Context, userID, key string) (*IdempotencyRecord, error) {
-	row := r.pool.QueryRow(ctx, `
-		SELECT id, user_id, idempotency_key, request_hash, order_id AS payment_id, response_status,
-			response_body, expires_at, created_at
-		FROM idempotency_records
-		WHERE user_id = $1 AND idempotency_key = $2
-	`, userID, key)
+	row := r.pool.QueryRow(ctx, findIdempotencyRecordQuery, userID, key)
 
 	rec, err := scanIdempotencyRecordRow(row)
 	if err != nil {
@@ -596,13 +790,7 @@ func (r *PaymentRepository) CreateIdempotencyRecord(ctx context.Context, tx pgx.
 		return queryFailed("marshal idempotency response body failed", err)
 	}
 
-	_, err = tx.Exec(ctx, `
-		INSERT INTO idempotency_records (
-			user_id, idempotency_key, request_hash, order_id,
-			response_status, response_body, expires_at
-		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7)
-	`,
+	_, err = tx.Exec(ctx, createIdempotencyRecordQuery,
 		rec.UserID,
 		rec.IdempotencyKey,
 		rec.RequestHash,
@@ -633,14 +821,7 @@ func (r *PaymentRepository) UpdateIdempotencyResult(
 		return queryFailed("marshal idempotency response failed", err)
 	}
 
-	cmd, err := tx.Exec(ctx, `
-		UPDATE idempotency_records
-		SET response_status = $1,
-			response_body = $2,
-			order_id = $3,
-			expires_at = $4
-		WHERE user_id = $5 AND idempotency_key = $6 AND request_hash = $7
-	`,
+	cmd, err := tx.Exec(ctx, updateIdempotencyResultQuery,
 		responseStatus,
 		responseBodyJSON,
 		paymentID,
@@ -767,6 +948,39 @@ func (r *PaymentRepository) TryMarkEventProcessed(ctx context.Context, tx pgx.Tx
 	return tag.RowsAffected() == 0, nil
 }
 
+func (r *PaymentRepository) FindExpiredPendingPaymentIDs(ctx context.Context, provider string, limit int) ([]string, error) {
+	if limit < 1 {
+		limit = 100
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id
+		FROM payments
+		WHERE provider = $1
+			AND status IN ('PENDING','REQUIRES_ACTION')
+			AND expires_at IS NOT NULL
+			AND expires_at <= now()
+		ORDER BY expires_at ASC
+		LIMIT $2
+	`, strings.TrimSpace(provider), limit)
+	if err != nil {
+		return nil, queryFailed("list expired pending payments failed", err)
+	}
+	defer rows.Close()
+
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, queryFailed("scan expired payment id failed", err)
+		}
+		ids = append(ids, id)
+	}
+	if rows.Err() != nil {
+		return nil, queryFailed("iterate expired payment ids failed", rows.Err())
+	}
+	return ids, nil
+}
+
 func (r *PaymentRepository) FindDispatchableOutboxEvents(ctx context.Context, limit int) ([]domain.OutboxEvent, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, aggregate_type, aggregate_id, event_type, payload, status, retry_count, next_retry_at, created_at, published_at
@@ -835,6 +1049,8 @@ func scanPaymentRow(row pgx.Row) (domain.Payment, error) {
 		description       pgtype.Text
 		status            string
 		metadataRaw       []byte
+		expiresAt         pgtype.Timestamptz
+		capturedAt        pgtype.Timestamptz
 	)
 
 	err := row.Scan(
@@ -850,6 +1066,8 @@ func scanPaymentRow(row pgx.Row) (domain.Payment, error) {
 		&payment.RefundedAmount,
 		&description,
 		&metadataRaw,
+		&expiresAt,
+		&capturedAt,
 		&payment.CreatedAt,
 		&payment.UpdatedAt,
 	)
@@ -871,6 +1089,14 @@ func scanPaymentRow(row pgx.Row) (domain.Payment, error) {
 	}
 	payment.Status = domain.PaymentStatus(status)
 	payment.Metadata = decodeJSONMap(metadataRaw)
+	if expiresAt.Valid {
+		t := expiresAt.Time
+		payment.ExpiresAt = &t
+	}
+	if capturedAt.Valid {
+		t := capturedAt.Time
+		payment.CapturedAt = &t
+	}
 
 	return payment, nil
 }
@@ -883,6 +1109,8 @@ func scanPaymentRows(rows pgx.Rows) (domain.Payment, error) {
 		description       pgtype.Text
 		status            string
 		metadataRaw       []byte
+		expiresAt         pgtype.Timestamptz
+		capturedAt        pgtype.Timestamptz
 	)
 
 	err := rows.Scan(
@@ -898,6 +1126,8 @@ func scanPaymentRows(rows pgx.Rows) (domain.Payment, error) {
 		&payment.RefundedAmount,
 		&description,
 		&metadataRaw,
+		&expiresAt,
+		&capturedAt,
 		&payment.CreatedAt,
 		&payment.UpdatedAt,
 	)
@@ -919,6 +1149,14 @@ func scanPaymentRows(rows pgx.Rows) (domain.Payment, error) {
 	}
 	payment.Status = domain.PaymentStatus(status)
 	payment.Metadata = decodeJSONMap(metadataRaw)
+	if expiresAt.Valid {
+		t := expiresAt.Time
+		payment.ExpiresAt = &t
+	}
+	if capturedAt.Valid {
+		t := capturedAt.Time
+		payment.CapturedAt = &t
+	}
 
 	return payment, nil
 }
@@ -951,6 +1189,85 @@ func scanPaymentTransactionRow(row pgx.Row) (domain.PaymentTransaction, error) {
 	}
 	item.RawPayload = decodeJSONMap(rawPayload)
 	return item, nil
+}
+
+func scanPaymentProviderEventRow(row pgx.Row) (PaymentProviderEvent, error) {
+	var (
+		event                PaymentProviderEvent
+		gatewayTransactionID pgtype.Text
+		providerPaymentID    pgtype.Text
+		paymentID            pgtype.Text
+		failureCode          pgtype.Text
+		failureReason        pgtype.Text
+		processedAt          pgtype.Timestamptz
+	)
+
+	err := row.Scan(
+		&event.ID,
+		&event.Provider,
+		&event.ProviderEventID,
+		&gatewayTransactionID,
+		&providerPaymentID,
+		&paymentID,
+		&event.EventType,
+		&event.ProcessStatus,
+		&failureCode,
+		&failureReason,
+		&event.CreatedAt,
+		&processedAt,
+	)
+	if err != nil {
+		return PaymentProviderEvent{}, err
+	}
+
+	if gatewayTransactionID.Valid {
+		v := gatewayTransactionID.String
+		event.GatewayTransactionID = &v
+	}
+	if providerPaymentID.Valid {
+		v := providerPaymentID.String
+		event.ProviderPaymentID = &v
+	}
+	if paymentID.Valid {
+		v := paymentID.String
+		event.PaymentID = &v
+	}
+	if failureCode.Valid {
+		v := failureCode.String
+		event.FailureCode = &v
+	}
+	if failureReason.Valid {
+		v := failureReason.String
+		event.FailureReason = &v
+	}
+	if processedAt.Valid {
+		t := processedAt.Time
+		event.ProcessedAt = &t
+	}
+
+	return event, nil
+}
+
+func scanReconciliationCursorRow(row pgx.Row) (ReconciliationCursor, error) {
+	var (
+		cursor       ReconciliationCursor
+		sinceID      pgtype.Text
+		lastSyncedAt pgtype.Timestamptz
+	)
+
+	err := row.Scan(&cursor.Provider, &sinceID, &lastSyncedAt, &cursor.UpdatedAt)
+	if err != nil {
+		return ReconciliationCursor{}, err
+	}
+	if sinceID.Valid {
+		v := sinceID.String
+		cursor.SinceID = &v
+	}
+	if lastSyncedAt.Valid {
+		t := lastSyncedAt.Time
+		cursor.LastSyncedAt = &t
+	}
+	return cursor, nil
 }
 
 func scanRefundRow(row pgx.Row) (domain.Refund, error) {

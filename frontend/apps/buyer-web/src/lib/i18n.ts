@@ -148,6 +148,8 @@ export interface AppMessages {
     note: string;
     summary: string;
     shippingFee: string;
+    shippingQuoteLoading: string;
+    shippingQuoteFailed: string;
     discount: string;
     total: string;
     placeOrder: string;
@@ -160,6 +162,25 @@ export interface AppMessages {
     orderSuccess: string;
     paymentIntentSuccess: string;
     paymentIntentFailed: string;
+  };
+  paymentQr: {
+    title: string;
+    subtitle: string;
+    amount: string;
+    content: string;
+    bank: string;
+    account: string;
+    accountName: string;
+    copy: string;
+    copied: string;
+    expiresIn: string;
+    expired: string;
+    paid: string;
+    pending: string;
+    retry: string;
+    support: string;
+    viewOrder: string;
+    qrAlt: string;
   };
   orders: {
     title: string;
@@ -195,7 +216,9 @@ export interface AppMessages {
     sectionTracking: string;
     recipient: string;
     trackingCode: string;
+    statusPlaced: string;
     statusPending: string;
+    statusAwaitingConfirmation: string;
     statusConfirmed: string;
     statusProcessing: string;
     statusShipped: string;
@@ -387,6 +410,8 @@ export const messages: Record<Locale, AppMessages> = {
       note: 'Order note (optional)',
       summary: 'Order summary',
       shippingFee: 'Shipping fee',
+      shippingQuoteLoading: 'Calculating...',
+      shippingQuoteFailed: 'Cannot calculate shipping fee right now. Please check seller and delivery addresses.',
       discount: 'Discount',
       total: 'Total payment',
       placeOrder: 'Confirm order',
@@ -399,6 +424,25 @@ export const messages: Record<Locale, AppMessages> = {
       orderSuccess: 'Order created successfully.',
       paymentIntentSuccess: 'Payment initialized successfully.',
       paymentIntentFailed: 'Order created but payment initialization failed. Please check in My Orders.'
+    },
+    paymentQr: {
+      title: 'Scan QR to pay',
+      subtitle: 'Transfer the exact amount with the shown content so the order can be confirmed automatically.',
+      amount: 'Amount',
+      content: 'Transfer content',
+      bank: 'Bank',
+      account: 'Account number',
+      accountName: 'Account name',
+      copy: 'Copy',
+      copied: 'Copied',
+      expiresIn: 'Expires in',
+      expired: 'Expired',
+      paid: 'Paid',
+      pending: 'Waiting for transfer',
+      retry: 'Create QR again',
+      support: 'Payment details are not ready. Please retry or contact support.',
+      viewOrder: 'View order',
+      qrAlt: 'Payment QR code'
     },
     orders: {
       title: 'My Orders',
@@ -434,7 +478,9 @@ export const messages: Record<Locale, AppMessages> = {
       sectionTracking: 'Tracking events',
       recipient: 'Recipient',
       trackingCode: 'Tracking code',
+      statusPlaced: 'Order placed',
       statusPending: 'Pending payment',
+      statusAwaitingConfirmation: 'Awaiting confirmation',
       statusConfirmed: 'Order confirmed',
       statusProcessing: 'Preparing shipment',
       statusShipped: 'In transit',
@@ -624,6 +670,8 @@ export const messages: Record<Locale, AppMessages> = {
       note: 'Ghi chú đơn hàng (không bắt buộc)',
       summary: 'Tóm tắt đơn hàng',
       shippingFee: 'Phí vận chuyển',
+      shippingQuoteLoading: 'Đang tính...',
+      shippingQuoteFailed: 'Chưa tính được phí vận chuyển. Vui lòng kiểm tra địa chỉ người bán và người nhận.',
       discount: 'Giảm giá',
       total: 'Tổng thanh toán',
       placeOrder: 'Xác nhận đặt hàng',
@@ -636,6 +684,25 @@ export const messages: Record<Locale, AppMessages> = {
       orderSuccess: 'Tạo đơn hàng thành công.',
       paymentIntentSuccess: 'Khởi tạo thanh toán thành công.',
       paymentIntentFailed: 'Đơn hàng đã tạo nhưng khởi tạo thanh toán thất bại. Vui lòng kiểm tra ở Đơn mua.'
+    },
+    paymentQr: {
+      title: 'Quét QR để thanh toán',
+      subtitle: 'Chuyển đúng số tiền và nội dung để hệ thống tự xác nhận đơn hàng.',
+      amount: 'Số tiền',
+      content: 'Nội dung chuyển khoản',
+      bank: 'Ngân hàng',
+      account: 'Số tài khoản',
+      accountName: 'Tên tài khoản',
+      copy: 'Sao chép',
+      copied: 'Đã sao chép',
+      expiresIn: 'Còn hiệu lực',
+      expired: 'Hết hạn',
+      paid: 'Đã thanh toán',
+      pending: 'Chờ chuyển khoản',
+      retry: 'Tạo lại mã QR',
+      support: 'Thông tin thanh toán chưa sẵn sàng. Vui lòng thử lại hoặc liên hệ hỗ trợ.',
+      viewOrder: 'Xem đơn hàng',
+      qrAlt: 'Mã QR thanh toán'
     },
     orders: {
       title: 'Theo Dõi Đơn Mua',
@@ -671,7 +738,9 @@ export const messages: Record<Locale, AppMessages> = {
       sectionTracking: 'Lịch sử giao hàng',
       recipient: 'Người nhận',
       trackingCode: 'Mã vận đơn',
+      statusPlaced: 'Đã đặt hàng',
       statusPending: 'Chờ thanh toán',
+      statusAwaitingConfirmation: 'Chờ xác nhận',
       statusConfirmed: 'Đã xác nhận',
       statusProcessing: 'Đang chuẩn bị hàng',
       statusShipped: 'Đang giao hàng',

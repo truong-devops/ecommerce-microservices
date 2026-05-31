@@ -193,6 +193,18 @@ function statusLabel(status: OrderStatus, localeText: ReturnType<typeof useLangu
   return dictionary[status] ?? status;
 }
 
+function displayStatusLabel(
+  order: Order,
+  status: OrderStatus,
+  payment: Payment | null | undefined,
+  localeText: ReturnType<typeof useLanguage>['text']
+): string {
+  if (status === 'PENDING' && order.paymentMethod === 'ONLINE' && payment?.status === 'CAPTURED') {
+    return localeText.orders.statusAwaitingConfirmation;
+  }
+  return statusLabel(status, localeText);
+}
+
 function paymentStatusLabel(status: PaymentStatus, localeText: ReturnType<typeof useLanguage>['text']): string {
   const dictionary: Record<PaymentStatus, string> = {
     PENDING: localeText.orders.paymentPending,
@@ -207,6 +219,19 @@ function paymentStatusLabel(status: PaymentStatus, localeText: ReturnType<typeof
   };
 
   return dictionary[status] ?? status;
+}
+
+function canContinueOnlinePayment(order: Order, payment: Payment | null | undefined): boolean {
+  if (order.paymentMethod !== 'ONLINE' || order.status !== 'PENDING') {
+    return false;
+  }
+  if (payment === undefined) {
+    return false;
+  }
+  if (payment === null) {
+    return true;
+  }
+  return payment.status === 'PENDING' || payment.status === 'REQUIRES_ACTION' || payment.status === 'AUTHORIZED';
 }
 
 function toShipmentStatus(raw: unknown): ShipmentStatus {
@@ -720,6 +745,7 @@ export default function OrdersPage() {
                 const canCancel = order.status === 'PENDING' && shipment === null;
                 const canConfirmReceived = displayedStatus === 'SHIPPED';
                 const canBuyAgain = displayedStatus === 'DELIVERED';
+                const canContinuePayment = canContinueOnlinePayment(order, payment);
                 const paymentLabel =
                   order.paymentMethod === 'COD'
                     ? text.checkout.paymentCod
@@ -753,7 +779,7 @@ export default function OrdersPage() {
                         <span className="text-slate-500">
                           {text.orders.shipmentLabel}: <span className="font-medium text-slate-700">{shipmentLabel}</span>
                         </span>
-                        <span className="font-semibold text-brand-600">{statusLabel(displayedStatus, text)}</span>
+                        <span className="font-semibold text-brand-600">{displayStatusLabel(order, displayedStatus, payment, text)}</span>
                       </div>
                     </div>
 
@@ -814,6 +840,15 @@ export default function OrdersPage() {
                           >
                             {text.orders.paymentAction}
                           </a>
+                        ) : null}
+
+                        {canContinuePayment ? (
+                          <Link
+                            href={`/checkout/payment/${encodeURIComponent(order.id)}`}
+                            className="inline-flex h-10 items-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+                          >
+                            {text.orders.paymentAction}
+                          </Link>
                         ) : null}
 
                         {canCancel ? (

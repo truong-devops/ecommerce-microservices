@@ -62,6 +62,7 @@ func New(
 
 		orders := "/" + cfg.APIPrefix + "/orders"
 		private.With(auth.RequireRoles(domain.RoleCustomer)).Post(orders, orderHandler.CreateOrder)
+		private.With(auth.RequireRoles(domain.RoleCustomer)).Post(orders+"/shipping-quotes", orderHandler.QuoteShipping)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Get(orders, orderHandler.ListOrders)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Get(orders+"/{id}", orderHandler.GetOrderByID)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Patch(orders+"/{id}/cancel", orderHandler.CancelOrder)

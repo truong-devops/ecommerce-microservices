@@ -740,10 +740,7 @@ func (s *ShippingService) AutoCreateShipmentFromConfirmedOrderEvent(ctx context.
 	}
 	paymentMethod := strings.ToUpper(asString(payload["paymentMethod"]))
 	totalAmount := asNonNegativeNumber(payload["totalAmount"])
-	codAmount := 0.0
-	if paymentMethod == "COD" && totalAmount != nil {
-		codAmount = *totalAmount
-	}
+	codAmount := codAmountForPaymentMethod(paymentMethod, totalAmount)
 
 	// Skip auto-create when critical shipment fields are missing to avoid persisting placeholder data.
 	if !isUUIDStrict(orderID) || !isUUIDStrict(buyerID) || !isUUIDStrict(sellerID) || !currencyRegex.MatchString(currency) {
@@ -1172,6 +1169,13 @@ func asNonNegativeNumber(v any) *float64 {
 func ptrFloat(v float64) *float64 {
 	vv := v
 	return &vv
+}
+
+func codAmountForPaymentMethod(paymentMethod string, totalAmount *float64) float64 {
+	if !strings.EqualFold(strings.TrimSpace(paymentMethod), "COD") || totalAmount == nil {
+		return 0
+	}
+	return roundMoney(*totalAmount)
 }
 
 func isOrderEligibleForShipment(status string) bool {

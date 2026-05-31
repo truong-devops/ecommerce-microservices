@@ -1,0 +1,14 @@
+.git
+.gitignore
+.DS_Store
+
+.env
+.env.*
+
+tmp
+logs
+*.log
+
+coverage
+dist
+build

@@ -1,9 +1,11 @@
 import type { HomeSectionsData } from '@/lib/api/types';
 import { ok } from '@/lib/server/buyer-api-response';
+import { filterProductsWithAvailableStock } from '@/lib/server/product-availability';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 interface ProductVariant {
+  sku: string;
   name: string;
   price: number;
   compareAtPrice: number | null;
@@ -61,8 +63,9 @@ export async function GET() {
     const products = await requestUpstream<BackendProduct[]>(
       `${serviceBaseUrls.product}/products?page=1&pageSize=${HOME_PRODUCTS_PAGE_SIZE}&sortBy=createdAt&sortOrder=DESC`
     );
+    const availableProducts = await filterProductsWithAvailableStock(products);
 
-    return ok(buildHomeSections(products), 'backend');
+    return ok(buildHomeSections(availableProducts), 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }

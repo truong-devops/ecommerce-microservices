@@ -46,6 +46,28 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, r, http.StatusCreated, result)
 }
 
+func (h *OrderHandler) QuoteShipping(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	var req service.ShippingQuoteRequest
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{"body": err.Error()})
+		return
+	}
+
+	result, err := h.orderService.QuoteShipping(r.Context(), user, req)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
 func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {

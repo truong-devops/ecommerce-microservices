@@ -123,6 +123,8 @@ type Payment struct {
 	RefundedAmount    float64
 	Description       *string
 	Metadata          map[string]any
+	ExpiresAt         *time.Time
+	CapturedAt        *time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }

@@ -65,7 +65,7 @@ func main() {
 
 	repo := repository.NewPaymentRepository(pool)
 	idempotencyService := service.NewIdempotencyService(repo, redisService, cfg.IdempotencyRecordTTLMinutes, cfg.IdempotencyLockTTLSeconds)
-	gateway := service.NewMockPaymentGateway()
+	gateway := newPaymentGateway(cfg)
 	orderClient := service.NewOrderClient(cfg.OrderServiceBaseURL, cfg.DependencyTimeout)
 	paymentService := service.NewPaymentService(repo, idempotencyService, gateway, orderClient, cfg.GatewayProvider, cfg.WebhookIdempotencyTTLMin)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
@@ -80,11 +80,16 @@ func main() {
 
 	dispatcher := events.NewDispatcher(repo, publisher, logger, cfg.DispatchInterval, cfg.DispatchBatch, cfg.DispatchMaxRetry)
 	consumer := service.NewOrderEventsConsumer(cfg, logger, paymentService)
+	expiryWorker := service.NewPaymentExpiryWorker(paymentService, logger, cfg.PaymentExpiryEnabled, cfg.PaymentExpiryInterval, cfg.PaymentExpiryBatch)
+	sepayClient := service.NewSePayAPIClient(cfg.SePay, &http.Client{Timeout: cfg.DependencyTimeout})
+	sepayReconciliationWorker := service.NewSePayReconciliationWorker(paymentService, sepayClient, logger, cfg.SePay.ReconcileEnabled, cfg.SePay.ReconcileInterval, cfg.SePay.ReconcileBatch)
 
 	runCtx, runCancel := context.WithCancel(context.Background())
 	defer runCancel()
 	go dispatcher.Run(runCtx)
 	go consumer.Run(runCtx)
+	go expiryWorker.Run(runCtx)
+	go sepayReconciliationWorker.Run(runCtx)
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
@@ -120,6 +125,15 @@ func main() {
 	}
 
 	logger.Info("server stopped")
+}
+
+func newPaymentGateway(cfg config.Config) service.PaymentGateway {
+	switch cfg.GatewayProvider {
+	case "sepay":
+		return service.NewSePayGateway(cfg.SePay)
+	default:
+		return service.NewMockPaymentGateway()
+	}
 }
 
 func runMigration(ctx context.Context, pool *pgxpool.Pool, migrationFile string) error {

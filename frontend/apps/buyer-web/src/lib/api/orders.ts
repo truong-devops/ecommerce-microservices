@@ -5,7 +5,8 @@ import type {
   ListOrdersInput,
   Order,
   OrderListOutput,
-  OrderStatusHistoryOutput
+  OrderStatusHistoryOutput,
+  ShippingQuotesOutput
 } from './types';
 
 interface AuthRequestInit extends RequestInit {
@@ -79,6 +80,19 @@ export function createBuyerOrder(input: AuthRequestInit & { payload: CreateOrder
       headers: {
         'Idempotency-Key': idempotencyKey
       },
+      body: JSON.stringify(payload),
+      ...init
+    })
+  );
+}
+
+export function quoteBuyerShipping(input: AuthRequestInit & { payload: { sellerIds: string[]; destinationProvince: string } }): Promise<ShippingQuotesOutput> {
+  const { accessToken, payload, ...init } = input;
+
+  return requestBuyerApi<ShippingQuotesOutput>(
+    '/api/buyer/shipping/quotes',
+    withAuth(accessToken, {
+      method: 'POST',
       body: JSON.stringify(payload),
       ...init
     })

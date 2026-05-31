@@ -86,6 +86,11 @@ CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 CREATE INDEX IF NOT EXISTS idx_payments_provider ON payments(provider);
 CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at);
 
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS captured_at timestamptz;
+CREATE INDEX IF NOT EXISTS idx_payments_expires_at ON payments(expires_at);
+CREATE INDEX IF NOT EXISTS idx_payments_provider_status_expires_at ON payments(provider, status, expires_at);
+
 CREATE TABLE IF NOT EXISTS payment_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_id uuid NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
@@ -159,6 +164,35 @@ CREATE TABLE IF NOT EXISTS webhook_idempotency_records (
 );
 
 CREATE INDEX IF NOT EXISTS idx_webhook_idempotency_records_expires_at ON webhook_idempotency_records(expires_at);
+
+CREATE TABLE IF NOT EXISTS payment_provider_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider varchar(64) NOT NULL,
+  provider_event_id varchar(128) NOT NULL,
+  gateway_transaction_id varchar(128),
+  provider_payment_id varchar(128),
+  payment_id uuid,
+  event_type varchar(128) NOT NULL,
+  process_status varchar(32) NOT NULL DEFAULT 'RECEIVED',
+  failure_code varchar(128),
+  failure_reason varchar(500),
+  raw_payload jsonb NOT NULL,
+  raw_body text,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  processed_at timestamptz,
+  UNIQUE(provider, provider_event_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_provider_events_payment_id ON payment_provider_events(payment_id);
+CREATE INDEX IF NOT EXISTS idx_payment_provider_events_status ON payment_provider_events(process_status);
+CREATE INDEX IF NOT EXISTS idx_payment_provider_events_provider_payment_id ON payment_provider_events(provider, provider_payment_id);
+
+CREATE TABLE IF NOT EXISTS payment_reconciliation_cursors (
+  provider varchar(64) PRIMARY KEY,
+  since_id varchar(128),
+  last_synced_at timestamptz,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS refunds (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

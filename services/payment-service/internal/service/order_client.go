@@ -19,6 +19,7 @@ type OrderClient struct {
 
 type OrderSnapshot struct {
 	ID          string
+	OrderNumber string
 	UserID      string
 	Status      string
 	Currency    string
@@ -72,6 +73,7 @@ func (c *OrderClient) GetOrderByID(ctx context.Context, orderID, bearerToken str
 		Success bool `json:"success"`
 		Data    struct {
 			ID          string  `json:"id"`
+			OrderNumber string  `json:"orderNumber"`
 			UserID      string  `json:"userId"`
 			Status      string  `json:"status"`
 			Currency    string  `json:"currency"`
@@ -87,6 +89,7 @@ func (c *OrderClient) GetOrderByID(ctx context.Context, orderID, bearerToken str
 
 	return &OrderSnapshot{
 		ID:          strings.TrimSpace(envelope.Data.ID),
+		OrderNumber: strings.TrimSpace(envelope.Data.OrderNumber),
 		UserID:      strings.TrimSpace(envelope.Data.UserID),
 		Status:      strings.ToUpper(strings.TrimSpace(envelope.Data.Status)),
 		Currency:    strings.ToUpper(strings.TrimSpace(envelope.Data.Currency)),

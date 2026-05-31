@@ -12,13 +12,13 @@ images:
   newTag: 849fc1786fb5
 - name: api-gateway
   newName: docker.io/vantruong179/ecommerce-microservices-api-gateway
-  newTag: c6479c444309
+  newTag: 859e8a69678b
 - name: auth-service
   newName: docker.io/vantruong179/ecommerce-microservices-auth-service
   newTag: 6b398ae54c7c
 - name: buyer-web
   newName: docker.io/vantruong179/ecommerce-microservices-buyer-web
-  newTag: 3bede0449462
+  newTag: 859e8a69678b
 - name: cart-service
   newName: docker.io/vantruong179/ecommerce-microservices-cart-service
   newTag: c6479c444309
@@ -42,10 +42,10 @@ images:
   newTag: 849fc1786fb5
 - name: order-service
   newName: docker.io/vantruong179/ecommerce-microservices-order-service
-  newTag: 849fc1786fb5
+  newTag: 859e8a69678b
 - name: payment-service
   newName: docker.io/vantruong179/ecommerce-microservices-payment-service
-  newTag: 849fc1786fb5
+  newTag: 859e8a69678b
 - name: product-service
   newName: docker.io/vantruong179/ecommerce-microservices-product-service
   newTag: c6479c444309
@@ -57,7 +57,7 @@ images:
   newTag: 3bede0449462
 - name: shipping-service
   newName: docker.io/vantruong179/ecommerce-microservices-shipping-service
-  newTag: 849fc1786fb5
+  newTag: 859e8a69678b
 - name: user-service
   newName: docker.io/vantruong179/ecommerce-microservices-user-service
   newTag: 6b398ae54c7c

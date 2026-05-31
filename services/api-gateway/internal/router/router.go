@@ -87,6 +87,8 @@ func New(
 		public.Method(http.MethodGet, "/api/products/*", proxies[config.ServiceProduct])
 		public.Method(http.MethodGet, "/api/v1/products", proxies[config.ServiceProduct])
 		public.Method(http.MethodGet, "/api/v1/products/*", proxies[config.ServiceProduct])
+		public.Method(http.MethodGet, "/api/inventory/validate", proxies[config.ServiceInventory])
+		public.Method(http.MethodGet, "/api/v1/inventory/validate", proxies[config.ServiceInventory])
 		public.Method(http.MethodGet, "/api/shops", proxies[config.ServiceProduct])
 		public.Method(http.MethodGet, "/api/shops/*", proxies[config.ServiceProduct])
 		public.Method(http.MethodGet, "/api/v1/shops", proxies[config.ServiceProduct])

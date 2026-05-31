@@ -54,6 +54,11 @@ type CreateOrderRequest struct {
 	Items             []CreateOrderItemRequest `json:"items"`
 }
 
+type ShippingQuoteRequest struct {
+	SellerIDs           []string `json:"sellerIds"`
+	DestinationProvince string   `json:"destinationProvince"`
+}
+
 type CancelOrderRequest struct {
 	Reason *string `json:"reason,omitempty"`
 }
@@ -84,12 +89,19 @@ type OrderService struct {
 	repo              *repository.OrderRepository
 	idempotency       *IdempotencyService
 	productCatalog    *ProductCatalogClient
+	sellerProfiles    *SellerProfileClient
 	sagaMetrics       *metrics.CheckoutSagaMetrics
 	defaultStatusTime func() time.Time
 	orderSeq          uint64
 }
 
-func NewOrderService(repo *repository.OrderRepository, idem *IdempotencyService, productCatalog *ProductCatalogClient, sagaMetrics ...*metrics.CheckoutSagaMetrics) *OrderService {
+func NewOrderService(
+	repo *repository.OrderRepository,
+	idem *IdempotencyService,
+	productCatalog *ProductCatalogClient,
+	sellerProfiles *SellerProfileClient,
+	sagaMetrics ...*metrics.CheckoutSagaMetrics,
+) *OrderService {
 	var checkoutMetrics *metrics.CheckoutSagaMetrics
 	if len(sagaMetrics) > 0 {
 		checkoutMetrics = sagaMetrics[0]
@@ -98,6 +110,7 @@ func NewOrderService(repo *repository.OrderRepository, idem *IdempotencyService,
 		repo:              repo,
 		idempotency:       idem,
 		productCatalog:    productCatalog,
+		sellerProfiles:    sellerProfiles,
 		sagaMetrics:       checkoutMetrics,
 		defaultStatusTime: func() time.Time { return time.Now().UTC() },
 	}
@@ -127,16 +140,16 @@ func (s *OrderService) CreateOrder(ctx context.Context, user domain.UserContext,
 	}
 	defer tx.Rollback(ctx)
 
-	shippingAmount := 0.0
-	if req.ShippingAmount != nil {
-		shippingAmount = *req.ShippingAmount
-	}
 	discountAmount := 0.0
 	if req.DiscountAmount != nil {
 		discountAmount = *req.DiscountAmount
 	}
 
 	normalizedItems, subtotal, err := s.resolveAuthoritativeOrderItems(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	shippingAmount, err := s.deriveShippingAmount(ctx, req)
 	if err != nil {
 		return nil, err
 	}

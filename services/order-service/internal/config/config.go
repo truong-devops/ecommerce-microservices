@@ -23,6 +23,7 @@ type Config struct {
 	InternalServiceToken string
 
 	ProductServiceBaseURL string
+	UserServiceBaseURL    string
 	DependencyTimeout     time.Duration
 
 	IdempotencyRecordTTLMinutes int
@@ -68,6 +69,10 @@ func Load() (Config, error) {
 		InternalServiceToken: strings.TrimSpace(os.Getenv("INTERNAL_SERVICE_TOKEN")),
 		ProductServiceBaseURL: strings.TrimRight(
 			strings.TrimSpace(getEnv("PRODUCT_SERVICE_BASE_URL", "http://product-service:8080/api/v1")),
+			"/",
+		),
+		UserServiceBaseURL: strings.TrimRight(
+			strings.TrimSpace(getEnv("USER_SERVICE_BASE_URL", "http://user-service:8080/api/v1")),
 			"/",
 		),
 		SagaTimeoutEnabled: parseBool(getEnv("CHECKOUT_SAGA_TIMEOUT_ENABLED", "true")),

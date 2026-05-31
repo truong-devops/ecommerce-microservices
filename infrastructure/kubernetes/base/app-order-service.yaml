@@ -43,6 +43,8 @@ spec:
               value: "true"
             - name: PRODUCT_SERVICE_BASE_URL
               value: http://product-service:8080/api/v1
+            - name: USER_SERVICE_BASE_URL
+              value: http://user-service:8080/api/v1
             - name: INTERNAL_SERVICE_TOKEN
               value: dev-internal-service-token
           readinessProbe:

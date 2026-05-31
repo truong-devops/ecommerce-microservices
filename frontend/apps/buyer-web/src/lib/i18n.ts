@@ -148,6 +148,8 @@ export interface AppMessages {
     note: string;
     summary: string;
     shippingFee: string;
+    shippingQuoteLoading: string;
+    shippingQuoteFailed: string;
     discount: string;
     total: string;
     placeOrder: string;
@@ -408,6 +410,8 @@ export const messages: Record<Locale, AppMessages> = {
       note: 'Order note (optional)',
       summary: 'Order summary',
       shippingFee: 'Shipping fee',
+      shippingQuoteLoading: 'Calculating...',
+      shippingQuoteFailed: 'Cannot calculate shipping fee right now. Please check seller and delivery addresses.',
       discount: 'Discount',
       total: 'Total payment',
       placeOrder: 'Confirm order',
@@ -666,6 +670,8 @@ export const messages: Record<Locale, AppMessages> = {
       note: 'Ghi chú đơn hàng (không bắt buộc)',
       summary: 'Tóm tắt đơn hàng',
       shippingFee: 'Phí vận chuyển',
+      shippingQuoteLoading: 'Đang tính...',
+      shippingQuoteFailed: 'Chưa tính được phí vận chuyển. Vui lòng kiểm tra địa chỉ người bán và người nhận.',
       discount: 'Giảm giá',
       total: 'Tổng thanh toán',
       placeOrder: 'Xác nhận đặt hàng',

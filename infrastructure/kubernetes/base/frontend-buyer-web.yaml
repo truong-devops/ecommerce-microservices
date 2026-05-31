@@ -46,6 +46,8 @@ spec:
               value: http://api-gateway:8080/api/v1
             - name: PAYMENT_SERVICE_BASE_URL
               value: http://api-gateway:8080/api/v1
+            - name: INVENTORY_SERVICE_BASE_URL
+              value: http://api-gateway:8080/api/v1
             - name: SHIPPING_SERVICE_BASE_URL
               value: http://api-gateway:8080/api/v1
             - name: CHAT_SERVICE_BASE_URL

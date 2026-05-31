@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { fetchBuyerRuntimeConfig } from '@/lib/api/config';
-import { createBuyerOrder } from '@/lib/api/orders';
+import { createBuyerOrder, quoteBuyerShipping } from '@/lib/api/orders';
 import { createBuyerPaymentIntent } from '@/lib/api/payments';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { formatPrice } from '@/lib/price';
@@ -107,15 +107,31 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shippingQuotesBySellerId, setShippingQuotesBySellerId] = useState<Record<string, number>>({});
+  const [isShippingQuoteLoading, setIsShippingQuoteLoading] = useState(false);
+  const [shippingQuoteError, setShippingQuoteError] = useState('');
   const orderKeys = useRef(new Map<string, string>());
   const paymentKeys = useRef(new Map<string, string>());
 
   const ready = authReady && cartReady;
   const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(isOnlinePaymentEnabled());
   const orderCurrency = items[0]?.currency ? normalizeCurrency(items[0].currency) : 'USD';
-  const shippingAmount = 0;
   const discountAmount = 0;
+  const sellerIds = useMemo(
+    () => Array.from(new Set(items.map((item) => item.sellerId.trim()).filter(Boolean))).sort(),
+    [items]
+  );
+  const shippingQuoteByItemKey = useMemo(() => {
+    const quotes = new Map<string, number>();
+    for (const [index, item] of items.entries()) {
+      quotes.set(lineItemKey(item, index), shippingQuotesBySellerId[item.sellerId.trim()] ?? 0);
+    }
+    return quotes;
+  }, [items, shippingQuotesBySellerId]);
+  const shippingAmount = roundMoney(Array.from(shippingQuoteByItemKey.values()).reduce((sum, fee) => sum + fee, 0));
   const totalDue = roundMoney(cartTotal + shippingAmount - discountAmount);
+  const hasShippingQuotes =
+    recipientProvince.trim().length === 0 || sellerIds.every((sellerId) => typeof shippingQuotesBySellerId[sellerId] === 'number');
 
   useEffect(() => {
     if (!user) {
@@ -163,22 +179,85 @@ export default function CheckoutPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!accessToken || sellerIds.length === 0 || recipientProvince.trim().length === 0) {
+      setShippingQuotesBySellerId({});
+      setShippingQuoteError('');
+      setIsShippingQuoteLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setShippingQuoteError('');
+    setIsShippingQuoteLoading(true);
+
+    quoteBuyerShipping({
+      accessToken,
+      payload: {
+        sellerIds,
+        destinationProvince: recipientProvince.trim()
+      }
+    })
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+        const nextQuotes: Record<string, number> = {};
+        for (const item of result.items) {
+          nextQuotes[item.sellerId] = item.shippingAmount;
+        }
+        setShippingQuotesBySellerId(nextQuotes);
+        if (sellerIds.some((sellerId) => typeof nextQuotes[sellerId] !== 'number')) {
+          setShippingQuoteError(text.checkout.shippingQuoteFailed);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setShippingQuotesBySellerId({});
+          setShippingQuoteError(text.checkout.shippingQuoteFailed);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsShippingQuoteLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, recipientProvince, sellerIds, text.checkout.shippingQuoteFailed]);
+
   const canSubmit = useMemo(
     () =>
       !isSubmitting &&
+      !isShippingQuoteLoading &&
+      shippingQuoteError.length === 0 &&
+      hasShippingQuotes &&
       items.length > 0 &&
       recipientName.trim().length > 0 &&
       recipientPhone.trim().length > 0 &&
       recipientAddress.trim().length > 0 &&
       recipientWard.trim().length > 0 &&
       recipientProvince.trim().length > 0,
-    [isSubmitting, items.length, recipientAddress, recipientName, recipientPhone, recipientProvince, recipientWard]
+    [
+      hasShippingQuotes,
+      isShippingQuoteLoading,
+      isSubmitting,
+      items.length,
+      recipientAddress,
+      recipientName,
+      recipientPhone,
+      recipientProvince,
+      recipientWard,
+      shippingQuoteError.length
+    ]
   );
 
   const handlePlaceOrder = async () => {
     if (!canSubmit) {
       if (items.length > 0) {
-        setFeedback(text.checkout.addressRequired);
+        setFeedback(shippingQuoteError || text.checkout.addressRequired);
       }
       return;
     }
@@ -215,13 +294,14 @@ export default function CheckoutPage() {
       for (const [index, orderItem] of orderItems.entries()) {
         const item = items[index];
         const itemKey = lineItemKey(item, index);
+        const itemShippingAmount = shippingQuoteByItemKey.get(itemKey) ?? 0;
         const createdOrder = await createBuyerOrder({
           accessToken,
           idempotencyKey: getLineIdempotencyKey(orderKeys.current, itemKey),
           payload: {
             sellerId: item.sellerId.trim(),
             currency: normalizeCurrency(item.currency),
-            shippingAmount,
+            shippingAmount: itemShippingAmount,
             discountAmount,
             note: note.trim().length > 0 ? note.trim() : undefined,
             paymentMethod: paymentMethod === 'cod' ? 'COD' : 'ONLINE',
@@ -402,22 +482,31 @@ export default function CheckoutPage() {
               <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-600">{text.checkout.summary}</h2>
 
               <div className="mt-3 space-y-3">
-                {items.map((item) => (
-                  <article key={item.productId} className="flex items-center gap-3 rounded-md bg-white p-2">
-                    <img src={item.image} alt={item.title} className="h-12 w-12 rounded border border-slate-200 object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-sm text-slate-800">{item.title}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">x{item.quantity}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-700">{formatPrice(item.unitPrice * item.quantity, item.currency)}</p>
-                  </article>
-                ))}
+                {items.map((item, index) => {
+                  const itemKey = lineItemKey(item, index);
+                  const itemShippingAmount = shippingQuoteByItemKey.get(itemKey) ?? 0;
+                  return (
+                    <article key={itemKey} className="flex items-center gap-3 rounded-md bg-white p-2">
+                      <img src={item.image} alt={item.title} className="h-12 w-12 rounded border border-slate-200 object-cover" />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm text-slate-800">{item.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">x{item.quantity}</p>
+                        {recipientProvince.trim().length > 0 ? (
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {text.checkout.shippingFee}: {formatPrice(itemShippingAmount, item.currency)}
+                          </p>
+                        ) : null}
+                      </div>
+                      <p className="text-sm font-semibold text-slate-700">{formatPrice(item.unitPrice * item.quantity, item.currency)}</p>
+                    </article>
+                  );
+                })}
               </div>
 
               <div className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-sm text-slate-600">
                 <p className="flex items-center justify-between">
                   <span>{text.checkout.shippingFee}</span>
-                  <span>{formatPrice(shippingAmount, orderCurrency)}</span>
+                  <span>{isShippingQuoteLoading ? text.checkout.shippingQuoteLoading : formatPrice(shippingAmount, orderCurrency)}</span>
                 </p>
                 <p className="flex items-center justify-between">
                   <span>{text.checkout.discount}</span>
@@ -429,6 +518,7 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
+              {shippingQuoteError ? <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{shippingQuoteError}</p> : null}
               {feedback ? <p className="mt-3 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">{feedback}</p> : null}
 
               <button

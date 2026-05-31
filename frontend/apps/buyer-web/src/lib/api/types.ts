@@ -409,6 +409,18 @@ export interface CreateOrderInput {
   items: [CreateOrderItemInput];
 }
 
+export interface ShippingQuote {
+  sellerId: string;
+  originProvince: string;
+  originProvinceCode: string;
+  destinationProvince: string;
+  shippingAmount: number;
+}
+
+export interface ShippingQuotesOutput {
+  items: ShippingQuote[];
+}
+
 export interface CancelOrderInput {
   reason?: string;
 }

@@ -89,6 +89,22 @@ func TestPublicShopRoutesAreMounted(t *testing.T) {
 	}
 }
 
+func TestPublicInventoryValidateRouteIsMounted(t *testing.T) {
+	handler, err := New(testGatewayConfig(), zap.NewNop(), observability.NewMetrics("api-gateway-inventory-validate-test"), nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	for _, path := range []string{"/api/inventory/validate?sku=SKU-001&quantity=1", "/api/v1/inventory/validate?sku=SKU-001&quantity=1"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+			t.Fatalf("expected mounted public inventory validate route for %s, got %d", path, rec.Code)
+		}
+	}
+}
+
 func TestPublicVideoRoutesAreMounted(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-video-public-test")

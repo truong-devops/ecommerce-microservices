@@ -68,7 +68,8 @@ func main() {
 	checkoutSagaMetrics := metrics.NewCheckoutSagaMetrics()
 	idemService := service.NewIdempotencyService(repo, redisService, cfg.IdempotencyRecordTTLMinutes, cfg.IdempotencyLockTTLSeconds)
 	productCatalogClient := service.NewProductCatalogClient(cfg.ProductServiceBaseURL, cfg.DependencyTimeout)
-	orderService := service.NewOrderService(repo, idemService, productCatalogClient, checkoutSagaMetrics)
+	sellerProfileClient := service.NewSellerProfileClient(cfg.UserServiceBaseURL, cfg.InternalServiceToken, cfg.DependencyTimeout)
+	orderService := service.NewOrderService(repo, idemService, productCatalogClient, sellerProfileClient, checkoutSagaMetrics)
 	orderSagaService := service.NewOrderSagaService(repo, logger, checkoutSagaMetrics)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 

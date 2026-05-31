@@ -113,10 +113,17 @@ func (s *OrderSagaService) HandleInventoryExpired(ctx context.Context, event Inv
 
 func (s *OrderSagaService) HandlePaymentCaptured(ctx context.Context, event PaymentEvent, meta SagaEventMeta) error {
 	return s.withSagaState(ctx, strings.TrimSpace(event.OrderID), meta, func(order domain.Order, state *domain.OrderSagaState) (domain.OrderStatus, *string) {
+		wasPaymentFailed := state.PaymentStatus == domain.SagaPaymentStatusFailed
+		previousFailureCode := valueOrEmpty(state.FailureCode)
 		state.PaymentStatus = domain.SagaPaymentStatusCaptured
 		state.PaymentEventID = stringPtr(eventIDOrOffset(meta))
 		if checkoutPrerequisitesSatisfied(order, state) {
 			state.SagaStatus = domain.SagaStatusCompleted
+			state.FailureCode = nil
+			state.FailureReason = nil
+		}
+		if shouldRestorePaymentFailedOrder(order, state, wasPaymentFailed, previousFailureCode) {
+			return domain.OrderStatusPending, stringPtr("Payment captured after delayed reconciliation")
 		}
 		return "", nil
 	})
@@ -440,12 +447,27 @@ func stringPtr(value string) *string {
 	return &v
 }
 
+func valueOrEmpty(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return strings.TrimSpace(*value)
+}
+
 func checkoutPrerequisitesSatisfied(order domain.Order, state *domain.OrderSagaState) bool {
 	if state == nil || state.InventoryStatus != domain.SagaInventoryStatusReserved {
 		return false
 	}
 	return strings.EqualFold(order.PaymentMethod, "COD") ||
 		state.PaymentStatus == domain.SagaPaymentStatusCaptured
+}
+
+func shouldRestorePaymentFailedOrder(order domain.Order, state *domain.OrderSagaState, wasPaymentFailed bool, previousFailureCode string) bool {
+	return order.Status == domain.OrderStatusFailed &&
+		state != nil &&
+		state.SagaStatus == domain.SagaStatusCompleted &&
+		wasPaymentFailed &&
+		strings.EqualFold(strings.TrimSpace(previousFailureCode), "PAYMENT_FAILED")
 }
 
 func canSellerConfirmCheckout(order domain.Order, state *domain.OrderSagaState) bool {

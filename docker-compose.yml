@@ -361,26 +361,6 @@ services:
     env_file:
       - path: ./services/payment-service/.env
         required: false
-    environment:
-      <<: *shared-jwt-access-secret
-      APP_NAME: payment-service
-      APP_ENV: development
-      PORT: 8080
-      API_PREFIX: api/v1
-      DATABASE_URL: postgresql://epayment:epayment@postgres:5432/ecommerce_payment
-      REDIS_ENABLED: 'true'
-      REDIS_URL: redis://redis:6379
-      ORDER_SERVICE_BASE_URL: http://api-gateway:8080/api/v1
-      DEPENDENCY_TIMEOUT_MS: 5000
-      PAYMENT_GATEWAY: mock
-      KAFKA_BROKERS: kafka:29092
-      ORDER_EVENTS_TOPIC: order.events
-      ORDER_EVENTS_CONSUMER_GROUP: payment-service-order-events-group
-      PAYMENT_EVENTS_TOPIC: payment.events
-      NOTIFICATION_EVENTS_TOPIC: notification.events
-      ANALYTICS_EVENTS_TOPIC: analytics.events
-      DB_MIGRATIONS_RUN: 'true'
-      MIGRATION_FILE: migrations/0001_init_payment_service.sql
     ports:
       - '12017:8080'
     depends_on:

@@ -455,9 +455,25 @@ export interface Payment {
   refundableAmount: number;
   description: string | null;
   metadata: Record<string, unknown> | null;
+  paymentInstructions?: PaymentInstructions;
+  expiresAt?: string | null;
+  capturedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   requiresActionUrl?: string;
+}
+
+export interface PaymentInstructions {
+  type: 'VIETQR';
+  paymentCode: string;
+  qrImageUrl: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName?: string | null;
+  amount: number;
+  currency: 'VND';
+  transferDescription: string;
+  expiresAt: string;
 }
 
 export interface CreatePaymentIntentInput {

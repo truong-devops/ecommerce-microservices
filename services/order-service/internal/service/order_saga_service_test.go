@@ -55,6 +55,27 @@ func TestSellerCanOnlyConfirmCompletedCheckout(t *testing.T) {
 	}
 }
 
+func TestShouldRestorePaymentFailedOrderAfterDelayedCapture(t *testing.T) {
+	t.Parallel()
+
+	order := domain.Order{Status: domain.OrderStatusFailed, PaymentMethod: "ONLINE"}
+	state := &domain.OrderSagaState{
+		SagaStatus:      domain.SagaStatusCompleted,
+		InventoryStatus: domain.SagaInventoryStatusReserved,
+		PaymentStatus:   domain.SagaPaymentStatusCaptured,
+	}
+
+	if !shouldRestorePaymentFailedOrder(order, state, true, "PAYMENT_FAILED") {
+		t.Fatalf("expected delayed payment capture to restore payment-failed order")
+	}
+	if shouldRestorePaymentFailedOrder(order, state, true, "INVENTORY_RESERVATION_FAILED") {
+		t.Fatalf("did not expect non-payment failure to be restored")
+	}
+	if shouldRestorePaymentFailedOrder(order, state, false, "PAYMENT_FAILED") {
+		t.Fatalf("did not expect order to be restored when previous payment state was not failed")
+	}
+}
+
 func TestTargetOrderStatusForShipment(t *testing.T) {
 	tests := []struct {
 		shipmentStatus string

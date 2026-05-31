@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"payment-service-go/internal/domain"
 )
@@ -18,6 +19,7 @@ type CreatePaymentIntentGatewayInput struct {
 	AutoCapture     bool
 	SimulatedStatus *domain.PaymentStatus
 	Metadata        map[string]any
+	OrderNumber     *string
 }
 
 type CreatePaymentIntentGatewayOutput struct {
@@ -25,7 +27,21 @@ type CreatePaymentIntentGatewayOutput struct {
 	GatewayTransactionID string
 	Status               domain.PaymentStatus
 	RequiresActionURL    *string
+	Instructions         *PaymentInstructions
 	RawPayload           map[string]any
+}
+
+type PaymentInstructions struct {
+	Type                string
+	PaymentCode         string
+	QRImageURL          string
+	BankCode            string
+	AccountNumber       string
+	AccountName         string
+	Amount              float64
+	Currency            string
+	TransferDescription string
+	ExpiresAt           time.Time
 }
 
 type ParseWebhookGatewayInput struct {

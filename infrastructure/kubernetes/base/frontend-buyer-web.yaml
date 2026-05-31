@@ -58,6 +58,10 @@ spec:
               value: wss://api.dt-commerce.site/api/v1
             - name: NEXT_PUBLIC_CHAT_WS_BASE_URL
               value: https://api.dt-commerce.site
+            - name: NEXT_PUBLIC_BUYER_ONLINE_PAYMENT_ENABLED
+              value: "true"
+            - name: BUYER_ONLINE_PAYMENT_ENABLED
+              value: "true"
           readinessProbe:
             httpGet:
               path: /

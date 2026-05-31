@@ -27,6 +27,13 @@
 | GET | `/api/v1/payments/:id/refunds` | Roles(`CUSTOMER`,`ADMIN`,`SUPPORT`,`WAREHOUSE`,`SELLER`,`SUPER_ADMIN`) | Danh sách refund |
 | POST | `/api/v1/payments/webhooks/:provider` | Public | Webhook callback từ cổng thanh toán |
 
+Public SePay webhook qua API Gateway:
+
+- `POST /api/v1/payments/webhooks/sepay`
+- `POST /api/payments/webhooks/sepay`
+
+Endpoint SePay nhận raw JSON body để xác thực HMAC/API key. Khi xử lý được request, service trả `{"success":true}` theo contract webhook SePay.
+
 ## DTO chính
 
 ### `CreatePaymentIntentDto`
@@ -44,6 +51,35 @@
 
 Header khuyến nghị:
 - `Idempotency-Key`
+
+Với `provider=sepay` hoặc `PAYMENT_GATEWAY=sepay`:
+
+- `currency` phải là `VND`.
+- `amount` phải là số nguyên VND.
+- Response có thêm `paymentInstructions`:
+  - `type`: `VIETQR`
+  - `paymentCode`
+  - `qrImageUrl`
+  - `bankCode`
+  - `accountNumber`
+  - `accountName`
+  - `amount`
+  - `currency`
+  - `transferDescription`
+  - `expiresAt`
+- Response có thêm `expiresAt` và `capturedAt`.
+
+### SePay reconciliation config
+
+Worker đối soát đọc SePay User API `GET /transactions/list` khi bật:
+
+- `SEPAY_RECONCILE_ENABLED=true`
+- `SEPAY_API_BASE_URL` (mặc định `https://my.sepay.vn/userapi`)
+- `SEPAY_API_TOKEN`
+- `SEPAY_RECONCILE_INTERVAL_MS`
+- `SEPAY_RECONCILE_BATCH_SIZE`
+
+Cursor lưu trong `payment_reconciliation_cursors`. Raw transaction được lưu vào `payment_provider_events` với `source=reconciliation`.
 
 ### `ListPaymentsDto` (query)
 
@@ -69,6 +105,8 @@ Header khuyến nghị:
 - `status` (required, `PaymentStatus`)
 - `amount`, `currency`, `occurredAt`, `signature` (optional)
 - `metadata`, `rawPayload` (optional object)
+
+Lưu ý: DTO generic này vẫn dùng cho mock/gateway cũ. SePay webhook dùng native payload từ SePay gồm các trường như `id`, `gateway`, `transactionDate`, `accountNumber`, `code`, `content`, `transferType`, `transferAmount`, `referenceCode`.
 
 ## Payment status enum
 

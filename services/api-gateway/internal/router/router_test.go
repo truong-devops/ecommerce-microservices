@@ -142,6 +142,22 @@ func TestPublicLiveMediaMetricRouteIsMounted(t *testing.T) {
 	}
 }
 
+func TestPublicSePayWebhookRouteIsMounted(t *testing.T) {
+	handler, err := New(testGatewayConfig(), zap.NewNop(), observability.NewMetrics("api-gateway-sepay-webhook-test"), nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+
+	for _, path := range []string{"/api/payments/webhooks/sepay", "/api/v1/payments/webhooks/sepay"} {
+		req := httptest.NewRequest(http.MethodPost, path, nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusNotFound {
+			t.Fatalf("expected mounted public SePay webhook route for %s, got %d", path, rec.Code)
+		}
+	}
+}
+
 func TestPublicLiveMessageHistoryRouteIsMounted(t *testing.T) {
 	cfg := testGatewayConfig()
 	metrics := observability.NewMetrics("api-gateway-router-live-messages-test")

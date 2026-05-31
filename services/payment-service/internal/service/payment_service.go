@@ -93,7 +93,19 @@ type PaymentService struct {
 	gateway       PaymentGateway
 	orderClient   *OrderClient
 	gatewayActive string
+	sepayGateway  *SePayGateway
 	webhookTTLMin int
+}
+
+type sePayProcessInput struct {
+	RequestID            string
+	Payload              SePayWebhookPayload
+	RawPayload           map[string]any
+	RawBody              []byte
+	RemoteAddr           string
+	Source               string
+	RequestHash          string
+	PersistWebhookResult bool
 }
 
 func NewPaymentService(
@@ -104,12 +116,14 @@ func NewPaymentService(
 	gatewayActive string,
 	webhookTTLMin int,
 ) *PaymentService {
+	sepayGateway, _ := gateway.(*SePayGateway)
 	return &PaymentService{
 		repo:          repo,
 		idempotency:   idempotency,
 		gateway:       gateway,
 		orderClient:   orderClient,
 		gatewayActive: strings.ToLower(strings.TrimSpace(gatewayActive)),
+		sepayGateway:  sepayGateway,
 		webhookTTLMin: webhookTTLMin,
 	}
 }
@@ -195,6 +209,7 @@ func (s *PaymentService) CreatePaymentIntent(
 		AutoCapture:     autoCapture,
 		SimulatedStatus: simulatedStatus,
 		Metadata:        req.Metadata,
+		OrderNumber:     trimAndNilIfEmpty(&orderSnapshot.OrderNumber),
 	})
 	if err != nil {
 		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodePaymentGatewayUnavailable, "Payment gateway unavailable", map[string]any{"error": err.Error()})
@@ -228,8 +243,21 @@ func (s *PaymentService) CreatePaymentIntent(
 	} else {
 		metadata["requiresActionUrl"] = nil
 	}
+	if gatewayResult.Instructions != nil {
+		metadata["paymentInstructions"] = paymentInstructionsToMap(*gatewayResult.Instructions)
+	}
 	if len(metadata) == 0 {
 		metadata = nil
+	}
+
+	var expiresAt *time.Time
+	if gatewayResult.Instructions != nil && !gatewayResult.Instructions.ExpiresAt.IsZero() {
+		expiresAt = &gatewayResult.Instructions.ExpiresAt
+	}
+	var capturedAt *time.Time
+	if gatewayResult.Status == domain.PaymentStatusCaptured {
+		now := time.Now().UTC()
+		capturedAt = &now
 	}
 
 	var (
@@ -252,6 +280,8 @@ func (s *PaymentService) CreatePaymentIntent(
 			RefundedAmount:    0,
 			Description:       trimAndNilIfEmpty(req.Description),
 			Metadata:          metadata,
+			ExpiresAt:         expiresAt,
+			CapturedAt:        capturedAt,
 		})
 		if err != nil {
 			if repository.IsUniqueViolation(err) {
@@ -286,6 +316,10 @@ func (s *PaymentService) CreatePaymentIntent(
 		updated.Amount = authoritativeAmount
 		updated.Description = trimAndNilIfEmpty(req.Description)
 		updated.Metadata = metadata
+		updated.ExpiresAt = expiresAt
+		if gatewayResult.Status == domain.PaymentStatusCaptured {
+			updated.CapturedAt = capturedAt
+		}
 		if updated.SellerID == nil && req.SellerID != nil && strings.TrimSpace(*req.SellerID) != "" {
 			trimmedSellerID := strings.TrimSpace(*req.SellerID)
 			updated.SellerID = &trimmedSellerID
@@ -710,6 +744,10 @@ func (s *PaymentService) HandleProviderWebhook(
 
 		previousStatus := payment.Status
 		updatedPayment.Status = parsedWebhook.Status
+		if parsedWebhook.Status == domain.PaymentStatusCaptured && updatedPayment.CapturedAt == nil {
+			now := time.Now().UTC()
+			updatedPayment.CapturedAt = &now
+		}
 		if parsedWebhook.Status == domain.PaymentStatusRefunded {
 			updatedPayment.RefundedAmount = updatedPayment.Amount
 		}
@@ -815,12 +853,477 @@ func (s *PaymentService) HandleProviderWebhook(
 	return responseBody, http.StatusOK, nil
 }
 
+func (s *PaymentService) HandleSePayWebhook(
+	ctx context.Context,
+	requestID string,
+	headers http.Header,
+	rawBody []byte,
+	remoteAddr string,
+) (map[string]any, int, error) {
+	normalizedProvider := sepayProviderName
+	if s.gatewayActive != normalizedProvider {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "Webhook provider sepay is not enabled. Active provider is "+s.gatewayActive, nil)
+	}
+	if s.sepayGateway == nil {
+		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodePaymentGatewayUnavailable, "SePay gateway unavailable", nil)
+	}
+	if err := s.sepayGateway.VerifyWebhook(headers, rawBody, time.Now().UTC()); err != nil {
+		return nil, 0, httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeGatewayCallbackInvalidSig, err.Error(), nil)
+	}
+
+	payload, rawPayload, err := s.sepayGateway.ParseWebhookPayload(rawBody)
+	if err != nil {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Invalid SePay webhook payload", map[string]any{"body": err.Error()})
+	}
+	providerEventID := payload.ProviderEventID()
+	if strings.TrimSpace(providerEventID) == "" {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "SePay webhook payload has no event id", nil)
+	}
+
+	requestHash := hashRawWebhookPayload(normalizedProvider, rawBody)
+	existing, err := s.repo.FindUnexpiredWebhookIdempotencyRecord(ctx, normalizedProvider, providerEventID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if existing != nil && existing.RequestHash != "" && existing.RequestHash != requestHash {
+		return nil, 0, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeWebhookIdempotencyConflict, "Webhook event id already exists with different payload", nil)
+	}
+	if existing != nil && existing.ResponseBody != nil {
+		return existing.ResponseBody, http.StatusOK, nil
+	}
+
+	return s.processSePayPayload(ctx, sePayProcessInput{
+		RequestID:            requestID,
+		Payload:              payload,
+		RawPayload:           rawPayload,
+		RawBody:              rawBody,
+		RemoteAddr:           remoteAddr,
+		Source:               "webhook",
+		RequestHash:          requestHash,
+		PersistWebhookResult: true,
+	})
+}
+
+func (s *PaymentService) processSePayPayload(ctx context.Context, input sePayProcessInput) (map[string]any, int, error) {
+	normalizedProvider := sepayProviderName
+	payload := input.Payload
+	providerEventID := payload.ProviderEventID()
+	if strings.TrimSpace(providerEventID) == "" {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "SePay payload has no event id", nil)
+	}
+
+	existingEvent, err := s.repo.FindPaymentProviderEvent(ctx, normalizedProvider, providerEventID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if existingEvent != nil && existingEvent.ProcessStatus == "PROCESSED" {
+		return map[string]any{
+			"success":         true,
+			"processed":       false,
+			"duplicate":       true,
+			"provider":        normalizedProvider,
+			"providerEventId": providerEventID,
+		}, http.StatusOK, nil
+	}
+
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	providerPaymentID := strings.TrimSpace(payload.Code)
+	gatewayTxnID := strings.TrimSpace(payload.ReferenceCode)
+	rawBodyString := string(input.RawBody)
+	rawPayload := make(map[string]any, len(input.RawPayload)+2)
+	for k, v := range input.RawPayload {
+		rawPayload[k] = v
+	}
+	if strings.TrimSpace(input.RemoteAddr) != "" {
+		rawPayload["remoteAddr"] = input.RemoteAddr
+	}
+	source := strings.TrimSpace(input.Source)
+	if source == "" {
+		source = "webhook"
+	}
+	rawPayload["source"] = source
+
+	if err := s.repo.UpsertPaymentProviderEvent(ctx, tx, repository.CreatePaymentProviderEventInput{
+		Provider:             normalizedProvider,
+		ProviderEventID:      providerEventID,
+		GatewayTransactionID: strPtr(gatewayTxnID),
+		ProviderPaymentID:    strPtr(providerPaymentID),
+		EventType:            "sepay.bank-transaction",
+		ProcessStatus:        "RECEIVED",
+		RawPayload:           rawPayload,
+		RawBody:              &rawBodyString,
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	failAndCommit := func(code string, reason string, paymentID *string, status string) (map[string]any, int, error) {
+		if strings.TrimSpace(status) == "" {
+			status = "FAILED"
+		}
+		responseBody := map[string]any{
+			"success":         true,
+			"processed":       false,
+			"provider":        normalizedProvider,
+			"providerEventId": providerEventID,
+			"failureCode":     code,
+			"message":         reason,
+		}
+		if err := s.repo.UpdatePaymentProviderEventStatus(ctx, tx, normalizedProvider, providerEventID, paymentID, status, strPtr(code), strPtr(reason)); err != nil {
+			return nil, 0, err
+		}
+		if input.PersistWebhookResult {
+			if err := s.persistWebhookResult(ctx, tx, normalizedProvider, providerEventID, input.RequestHash, paymentID, responseBody); err != nil {
+				return nil, 0, err
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return nil, 0, err
+		}
+		return responseBody, http.StatusOK, nil
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(payload.TransferType), "in") {
+		return failAndCommit("TRANSFER_TYPE_IGNORED", "SePay transaction is not an incoming transfer", nil, "IGNORED")
+	}
+	if !s.sepayGateway.AllowsAccount(payload.AccountNumber) {
+		return failAndCommit("ACCOUNT_MISMATCH", "SePay transaction account does not match configured receiving account", nil, "FAILED")
+	}
+	if providerPaymentID == "" {
+		return failAndCommit("UNKNOWN_PAYMENT_CODE", "SePay transaction has no recognized payment code", nil, "FAILED")
+	}
+
+	payment, err := s.repo.FindPaymentByProviderPaymentIDForUpdate(ctx, tx, providerPaymentID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if payment == nil {
+		return failAndCommit("UNKNOWN_PAYMENT_CODE", "Payment not found for SePay payment code", nil, "FAILED")
+	}
+	paymentID := &payment.ID
+
+	if payment.Provider != normalizedProvider {
+		return failAndCommit("PROVIDER_MISMATCH", "Payment provider does not match SePay", paymentID, "FAILED")
+	}
+	if !strings.EqualFold(payment.Currency, "VND") {
+		return failAndCommit("CURRENCY_MISMATCH", "SePay payment must use VND", paymentID, "FAILED")
+	}
+	if roundMoney(float64(payload.TransferAmount)) != payment.Amount {
+		return failAndCommit("AMOUNT_MISMATCH", "SePay transfer amount does not match payment amount", paymentID, "FAILED")
+	}
+	now := time.Now().UTC()
+	transferTime := sePayTransferTime(payload, now)
+	if payment.ExpiresAt != nil && transferTime.After(payment.ExpiresAt.UTC()) {
+		return failAndCommit("EXPIRED_PAYMENT", "SePay transfer arrived after payment expiry", paymentID, "FAILED")
+	}
+	if payment.Status == domain.PaymentStatusCaptured {
+		return failAndCommit("DUPLICATE_CAPTURED_PAYMENT", "Payment is already captured", paymentID, "IGNORED")
+	}
+	if payment.Status != domain.PaymentStatusPending && payment.Status != domain.PaymentStatusRequiresAction {
+		if !canRecoverFailedSePayPayment(*payment, transferTime) {
+			return failAndCommit("ORDER_NOT_PAYABLE", "Payment is no longer payable", paymentID, "FAILED")
+		}
+	}
+	if payment.Status != domain.PaymentStatusFailed {
+		if err := assertCanTransition(payment.Status, domain.PaymentStatusCaptured); err != nil {
+			return failAndCommit("INVALID_STATUS_TRANSITION", err.Error(), paymentID, "FAILED")
+		}
+	} else if !canRecoverFailedSePayPayment(*payment, transferTime) {
+		return failAndCommit("INVALID_STATUS_TRANSITION", "Cannot recover failed payment from SePay transaction", paymentID, "FAILED")
+	}
+
+	previousStatus := payment.Status
+	updatedPayment := *payment
+	updatedPayment.Status = domain.PaymentStatusCaptured
+	updatedPayment.CapturedAt = &transferTime
+	updatedPayment, err = s.repo.SavePayment(ctx, tx, updatedPayment)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}
+	statusReason := "SePay bank transfer captured"
+	if previousStatus == domain.PaymentStatusFailed {
+		statusReason = "SePay bank transfer captured after delayed reconciliation"
+	}
+	if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+		PaymentID:     updatedPayment.ID,
+		FromStatus:    &previousStatus,
+		ToStatus:      domain.PaymentStatusCaptured,
+		ChangedBy:     systemActorID,
+		ChangedByRole: domain.RoleSupport,
+		Reason:        strPtr(statusReason),
+	}); err != nil {
+		return nil, 0, err
+	}
+	if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
+		PaymentID:            updatedPayment.ID,
+		TransactionType:      TransactionCaptured,
+		GatewayTransactionID: strPtr(gatewayTxnID),
+		Amount:               float64(payload.TransferAmount),
+		Currency:             "VND",
+		Status:               string(domain.PaymentStatusCaptured),
+		RequestID:            strings.TrimSpace(input.RequestID),
+		RawPayload:           rawPayload,
+	}); err != nil {
+		if !repository.IsUniqueViolation(err) {
+			return nil, 0, err
+		}
+	}
+	auditAction := "SEPAY_WEBHOOK_CAPTURED"
+	if source == "reconciliation" {
+		auditAction = "SEPAY_RECONCILIATION_CAPTURED"
+	}
+	if err := s.repo.CreatePaymentAuditLog(ctx, tx, repository.CreatePaymentAuditLogInput{
+		PaymentID: updatedPayment.ID,
+		Action:    auditAction,
+		ActorID:   systemActorID,
+		ActorRole: domain.RoleSupport,
+		RequestID: strings.TrimSpace(input.RequestID),
+		Metadata: map[string]any{
+			"providerEventId":      providerEventID,
+			"gatewayTransactionId": gatewayTxnID,
+			"paymentCode":          providerPaymentID,
+			"accountNumber":        payload.AccountNumber,
+			"transferAmount":       payload.TransferAmount,
+			"source":               source,
+		},
+	}); err != nil {
+		return nil, 0, err
+	}
+	if err := s.enqueueStatusEvent(ctx, tx, updatedPayment, systemActor, strings.TrimSpace(input.RequestID)); err != nil {
+		return nil, 0, err
+	}
+	if err := s.repo.UpdatePaymentProviderEventStatus(ctx, tx, normalizedProvider, providerEventID, paymentID, "PROCESSED", nil, nil); err != nil {
+		return nil, 0, err
+	}
+
+	responseBody := map[string]any{
+		"success":         true,
+		"processed":       true,
+		"provider":        normalizedProvider,
+		"providerEventId": providerEventID,
+		"payment":         toPaymentResponse(updatedPayment, nil),
+	}
+	if input.PersistWebhookResult {
+		if err := s.persistWebhookResult(ctx, tx, normalizedProvider, providerEventID, input.RequestHash, paymentID, responseBody); err != nil {
+			return nil, 0, err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, 0, err
+	}
+	return responseBody, http.StatusOK, nil
+}
+
+func (s *PaymentService) ReconcileSePayTransactions(ctx context.Context, client *SePayAPIClient, batchSize int) (int, error) {
+	if s.gatewayActive != sepayProviderName || s.sepayGateway == nil || client == nil {
+		return 0, nil
+	}
+	if batchSize < 1 {
+		batchSize = 100
+	}
+
+	cursor, err := s.repo.GetReconciliationCursor(ctx, sepayProviderName)
+	if err != nil {
+		return 0, err
+	}
+	sinceID := ""
+	if cursor != nil && cursor.SinceID != nil {
+		sinceID = strings.TrimSpace(*cursor.SinceID)
+	}
+
+	transactions, err := client.ListTransactions(ctx, ListSePayTransactionsInput{
+		AccountNumber: s.sepayGateway.cfg.BankAccountNumber,
+		SinceID:       sinceID,
+		Limit:         batchSize,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	processed := 0
+	maxID := sinceID
+	for _, txn := range transactions {
+		if !sePayIDAfter(txn.ID, sinceID) {
+			continue
+		}
+		payload, rawPayload, rawBody, err := sePayTransactionToWebhookPayload(txn, s.sepayGateway.cfg.PaymentCodePrefix)
+		if err != nil {
+			return processed, err
+		}
+		responseBody, _, err := s.processSePayPayload(ctx, sePayProcessInput{
+			RequestID:            "sepay-reconciliation",
+			Payload:              payload,
+			RawPayload:           rawPayload,
+			RawBody:              rawBody,
+			Source:               "reconciliation",
+			PersistWebhookResult: false,
+		})
+		if err != nil {
+			return processed, err
+		}
+		if didProcess, ok := responseBody["processed"].(bool); ok && didProcess {
+			processed++
+		}
+		if compareSePayIDs(txn.ID, maxID) > 0 {
+			maxID = strings.TrimSpace(txn.ID)
+		}
+	}
+	if strings.TrimSpace(maxID) != "" && strings.TrimSpace(maxID) != sinceID {
+		if err := s.repo.UpsertReconciliationCursor(ctx, sepayProviderName, maxID, time.Now().UTC()); err != nil {
+			return processed, err
+		}
+	}
+	return processed, nil
+}
+
+func sePayTransferTime(payload SePayWebhookPayload, fallback time.Time) time.Time {
+	if fallback.IsZero() {
+		fallback = time.Now().UTC()
+	}
+	raw := strings.TrimSpace(payload.TransactionDate)
+	if raw == "" {
+		return fallback.UTC()
+	}
+
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
+		if parsed, err := time.Parse(layout, raw); err == nil {
+			return parsed.UTC()
+		}
+	}
+
+	location, err := time.LoadLocation("Asia/Ho_Chi_Minh")
+	if err != nil {
+		location = time.Local
+	}
+	for _, layout := range []string{"2006-01-02 15:04:05", "2006-01-02 15:04", "2006-01-02"} {
+		if parsed, err := time.ParseInLocation(layout, raw, location); err == nil {
+			return parsed.UTC()
+		}
+	}
+
+	return fallback.UTC()
+}
+
+func canRecoverFailedSePayPayment(payment domain.Payment, transferTime time.Time) bool {
+	if payment.Status != domain.PaymentStatusFailed || payment.ExpiresAt == nil || payment.CapturedAt != nil {
+		return false
+	}
+	if transferTime.IsZero() {
+		return false
+	}
+	return !transferTime.UTC().After(payment.ExpiresAt.UTC())
+}
+
+func (s *PaymentService) FailExpiredPayments(ctx context.Context, batchSize int) (int, error) {
+	if s.gatewayActive == "" {
+		return 0, nil
+	}
+	ids, err := s.repo.FindExpiredPendingPaymentIDs(ctx, s.gatewayActive, batchSize)
+	if err != nil {
+		return 0, err
+	}
+	failed := 0
+	for _, id := range ids {
+		ok, err := s.failExpiredPayment(ctx, id)
+		if err != nil {
+			return failed, err
+		}
+		if ok {
+			failed++
+		}
+	}
+	return failed, nil
+}
+
+func (s *PaymentService) failExpiredPayment(ctx context.Context, paymentID string) (bool, error) {
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+
+	payment, err := s.repo.FindPaymentByIDForUpdate(ctx, tx, paymentID)
+	if err != nil {
+		return false, err
+	}
+	if payment == nil || payment.ExpiresAt == nil || time.Now().UTC().Before(payment.ExpiresAt.UTC()) {
+		return false, tx.Commit(ctx)
+	}
+	if payment.Status != domain.PaymentStatusPending && payment.Status != domain.PaymentStatusRequiresAction {
+		return false, tx.Commit(ctx)
+	}
+	if err := assertCanTransition(payment.Status, domain.PaymentStatusFailed); err != nil {
+		return false, err
+	}
+
+	previousStatus := payment.Status
+	updatedPayment := *payment
+	updatedPayment.Status = domain.PaymentStatusFailed
+	updatedPayment, err = s.repo.SavePayment(ctx, tx, updatedPayment)
+	if err != nil {
+		return false, err
+	}
+	systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}
+	if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+		PaymentID:     updatedPayment.ID,
+		FromStatus:    &previousStatus,
+		ToStatus:      domain.PaymentStatusFailed,
+		ChangedBy:     systemActorID,
+		ChangedByRole: domain.RoleSupport,
+		Reason:        strPtr("Payment expired before capture"),
+	}); err != nil {
+		return false, err
+	}
+	if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
+		PaymentID:       updatedPayment.ID,
+		TransactionType: TransactionFailed,
+		Amount:          updatedPayment.Amount,
+		Currency:        updatedPayment.Currency,
+		Status:          string(domain.PaymentStatusFailed),
+		RequestID:       "payment-expiry-worker",
+		RawPayload: map[string]any{
+			"source":    "payment-expiry-worker",
+			"expiresAt": valueOrTime(updatedPayment.ExpiresAt),
+		},
+	}); err != nil {
+		return false, err
+	}
+	if err := s.repo.CreatePaymentAuditLog(ctx, tx, repository.CreatePaymentAuditLogInput{
+		PaymentID: updatedPayment.ID,
+		Action:    "PAYMENT_EXPIRED",
+		ActorID:   systemActorID,
+		ActorRole: domain.RoleSupport,
+		RequestID: "payment-expiry-worker",
+		Metadata: map[string]any{
+			"fromStatus": previousStatus,
+			"toStatus":   domain.PaymentStatusFailed,
+			"expiresAt":  valueOrTime(updatedPayment.ExpiresAt),
+		},
+	}); err != nil {
+		return false, err
+	}
+	if err := s.enqueueStatusEvent(ctx, tx, updatedPayment, systemActor, "payment-expiry-worker"); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *PaymentService) HandleOrderCreatedEvent(
 	ctx context.Context,
 	orderID, userID string,
 	totalAmount float64,
 	currency string,
 	orderNumber *string,
+	paymentMethod string,
 	requestID string,
 	eventID string,
 	topic string,
@@ -848,6 +1351,9 @@ func (s *PaymentService) HandleOrderCreatedEvent(
 		return err
 	}
 	if alreadyProcessed {
+		return tx.Commit(ctx)
+	}
+	if strings.TrimSpace(paymentMethod) != "" && !strings.EqualFold(paymentMethod, "ONLINE") {
 		return tx.Commit(ctx)
 	}
 
@@ -1011,8 +1517,15 @@ func toPaymentResponse(payment domain.Payment, requiresActionURL *string) map[st
 		"refundableAmount":  roundMoney(maxFloat(payment.Amount-payment.RefundedAmount, 0)),
 		"description":       valueOrNil(payment.Description),
 		"metadata":          payment.Metadata,
+		"expiresAt":         valueOrTime(payment.ExpiresAt),
+		"capturedAt":        valueOrTime(payment.CapturedAt),
 		"createdAt":         payment.CreatedAt.UTC().Format(time.RFC3339Nano),
 		"updatedAt":         payment.UpdatedAt.UTC().Format(time.RFC3339Nano),
+	}
+	if payment.Metadata != nil {
+		if instructions, ok := payment.Metadata["paymentInstructions"]; ok {
+			resp["paymentInstructions"] = instructions
+		}
 	}
 
 	resolvedActionURL := ""
@@ -1186,6 +1699,33 @@ func hashWebhookPayload(provider string, req PaymentWebhookRequest) string {
 	return hex.EncodeToString(sum[:])
 }
 
+func hashRawWebhookPayload(provider string, rawBody []byte) string {
+	sum := sha256.Sum256(append([]byte(provider+":"), rawBody...))
+	return hex.EncodeToString(sum[:])
+}
+
+func (s *PaymentService) persistWebhookResult(
+	ctx context.Context,
+	tx pgx.Tx,
+	provider string,
+	providerEventID string,
+	requestHash string,
+	paymentID *string,
+	responseBody map[string]any,
+) error {
+	statusCode := http.StatusOK
+	expiresAt := time.Now().UTC().Add(time.Duration(s.webhookTTLMin) * time.Minute)
+	return s.repo.UpsertWebhookIdempotencyRecord(ctx, tx, repository.WebhookIdempotencyRecord{
+		Provider:        provider,
+		ProviderEventID: providerEventID,
+		RequestHash:     requestHash,
+		PaymentID:       paymentID,
+		ResponseStatus:  &statusCode,
+		ResponseBody:    responseBody,
+		ExpiresAt:       expiresAt,
+	})
+}
+
 func canonicalize(v any) string {
 	if v == nil {
 		return "null"
@@ -1256,6 +1796,28 @@ func valueOrNil(v *string) any {
 		return nil
 	}
 	return *v
+}
+
+func valueOrTime(v *time.Time) any {
+	if v == nil {
+		return nil
+	}
+	return v.UTC().Format(time.RFC3339Nano)
+}
+
+func paymentInstructionsToMap(instructions PaymentInstructions) map[string]any {
+	return map[string]any{
+		"type":                instructions.Type,
+		"paymentCode":         instructions.PaymentCode,
+		"qrImageUrl":          instructions.QRImageURL,
+		"bankCode":            instructions.BankCode,
+		"accountNumber":       instructions.AccountNumber,
+		"accountName":         instructions.AccountName,
+		"amount":              instructions.Amount,
+		"currency":            instructions.Currency,
+		"transferDescription": instructions.TransferDescription,
+		"expiresAt":           instructions.ExpiresAt.UTC().Format(time.RFC3339Nano),
+	}
 }
 
 func strPtr(v string) *string {

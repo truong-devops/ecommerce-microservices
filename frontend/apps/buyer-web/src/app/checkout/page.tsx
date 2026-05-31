@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
+import { fetchBuyerRuntimeConfig } from '@/lib/api/config';
 import { createBuyerOrder } from '@/lib/api/orders';
 import { createBuyerPaymentIntent } from '@/lib/api/payments';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
+import { isOnlinePaymentEnabled } from '@/lib/payment-flags';
 import type { CreateOrderItemInput } from '@/lib/api/types';
 import type { CartItem } from '@/providers/AppProvider';
 import { useAuth, useCart, useLanguage } from '@/providers/AppProvider';
@@ -82,6 +84,14 @@ function getLineIdempotencyKey(keys: Map<string, string>, itemKey: string): stri
   return key;
 }
 
+function buildPaymentRedirectUrl(orderIds: string[]): string {
+  if (orderIds.length === 1) {
+    return `/checkout/payment/${encodeURIComponent(orderIds[0])}`;
+  }
+
+  return `/checkout/payment?orderIds=${encodeURIComponent(orderIds.join(','))}`;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { text } = useLanguage();
@@ -101,6 +111,7 @@ export default function CheckoutPage() {
   const paymentKeys = useRef(new Map<string, string>());
 
   const ready = authReady && cartReady;
+  const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(isOnlinePaymentEnabled());
   const orderCurrency = items[0]?.currency ? normalizeCurrency(items[0].currency) : 'USD';
   const shippingAmount = 0;
   const discountAmount = 0;
@@ -127,6 +138,30 @@ export default function CheckoutPage() {
       router.replace(buildLoginRedirectUrl('/checkout'));
     }
   }, [accessToken, ready, router, user]);
+
+  useEffect(() => {
+    if (!onlinePaymentEnabled && paymentMethod === 'online') {
+      setPaymentMethod('cod');
+    }
+  }, [onlinePaymentEnabled, paymentMethod]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchBuyerRuntimeConfig()
+      .then((cfg) => {
+        if (!cancelled) {
+          setOnlinePaymentEnabled(cfg.onlinePaymentEnabled);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOnlinePaymentEnabled(isOnlinePaymentEnabled());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const canSubmit = useMemo(
     () =>
@@ -176,6 +211,7 @@ export default function CheckoutPage() {
     try {
       let nextFeedback = text.checkout.orderSuccess;
       let paymentIntentFailed = false;
+      const createdOrderIds: string[] = [];
       for (const [index, orderItem] of orderItems.entries()) {
         const item = items[index];
         const itemKey = lineItemKey(item, index);
@@ -197,6 +233,7 @@ export default function CheckoutPage() {
             items: [orderItem]
           }
         });
+        createdOrderIds.push(createdOrder.id);
 
         if (paymentMethod === 'online' && createdOrder.totalAmount > 0) {
           try {
@@ -225,6 +262,11 @@ export default function CheckoutPage() {
       }
 
       clearCart();
+      if (paymentMethod === 'online' && createdOrderIds.length > 0) {
+        router.push(buildPaymentRedirectUrl(createdOrderIds));
+        return;
+      }
+
       setFeedback(nextFeedback);
       router.push('/orders');
     } catch (error) {
@@ -331,15 +373,17 @@ export default function CheckoutPage() {
                     <span>{text.checkout.paymentCod}</span>
                   </label>
 
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      checked={paymentMethod === 'online'}
-                      onChange={() => setPaymentMethod('online')}
-                      className="h-4 w-4 border-slate-300 text-brand-600 focus:ring-brand-500"
-                    />
-                    <span>{text.checkout.paymentOnline}</span>
-                  </label>
+                  {onlinePaymentEnabled ? (
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        checked={paymentMethod === 'online'}
+                        onChange={() => setPaymentMethod('online')}
+                        className="h-4 w-4 border-slate-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      <span>{text.checkout.paymentOnline}</span>
+                    </label>
+                  ) : null}
                 </div>
               </article>
 

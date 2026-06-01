@@ -47,6 +47,15 @@ describe('cart domain', () => {
     assert.equal(toCreateOrderInputs(state, undefined, undefined, 'ONLINE')[0].paymentMethod, 'ONLINE');
   });
 
+  it('attaches quoted shipping amount by seller to checkout input', () => {
+    const state = {
+      version: 1 as const,
+      items: [phone]
+    };
+
+    assert.equal(toCreateOrderInputs(state, undefined, undefined, 'COD', { 'seller-1': 10000 })[0].shippingAmount, 10000);
+  });
+
   it('selects only the buy-now item for checkout without changing unrelated cart items', () => {
     const state = {
       version: 1 as const,

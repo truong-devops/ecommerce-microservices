@@ -6,13 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { Order, OrderStatus } from '@frontend/buyer-contracts';
 import { fetchProductDetail } from '@/api/buyer';
-import { fetchOrders } from '@/api/commerce';
+import { fetchOrders, fetchShipmentForOrder } from '@/api/commerce';
 import { useAuth } from '@/auth/auth-context';
 import { AppIcon } from '@/components/core/app-icon';
 import { IconButton } from '@/components/core/icon-button';
 import { PrimaryButton } from '@/components/core/primary-button';
 import { ScreenState } from '@/components/core/screen-state';
 import { buyerOrderListStatusLabel } from '@/domain/orders';
+import { shipmentDisplayCode } from '@/domain/shipping';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 import { normalizeRemoteAssetUrl } from '@/utils/asset-url';
 
@@ -56,7 +57,7 @@ export default function OrdersScreen() {
           data={orders.data}
           keyExtractor={(order) => order.id}
           ListEmptyComponent={<ScreenState title="Chưa có đơn hàng trong trạng thái này" />}
-          renderItem={({ item: order }) => <OrderCard order={order} onPress={() => router.push(`/orders/${order.id}`)} />}
+          renderItem={({ item: order }) => <OrderCard accessToken={session.accessToken} order={order} onPress={() => router.push(`/orders/${order.id}`)} />}
           showsVerticalScrollIndicator={false}
         />
       ) : null}
@@ -64,15 +65,21 @@ export default function OrdersScreen() {
   );
 }
 
-function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
+function OrderCard({ accessToken, order, onPress }: { accessToken: string; order: Order; onPress: () => void }) {
   const item = order.items[0];
   const product = useQuery({
     queryKey: ['order-product-preview', item?.productId],
     queryFn: () => fetchProductDetail(item!.productId),
     enabled: Boolean(item?.productId)
   });
+  const shipment = useQuery({
+    queryKey: ['order-shipment-preview', order.id],
+    queryFn: () => fetchShipmentForOrder(accessToken, order.id),
+    enabled: Boolean(accessToken && order.id)
+  });
   const image = product.data?.image;
   const productName = product.data?.title ?? item?.productName ?? 'Sản phẩm';
+  const shipmentCode = shipmentDisplayCode(shipment.data);
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
@@ -102,7 +109,7 @@ function OrderCard({ order, onPress }: { order: Order; onPress: () => void }) {
         <Text style={styles.amount}>{Math.round(order.totalAmount).toLocaleString('vi-VN')}đ</Text>
       </View>
       <View style={styles.buttonLine}>
-        <Text style={styles.orderNumber}>{order.orderNumber}</Text>
+        <Text style={styles.orderNumber}>{shipmentCode || order.orderNumber}</Text>
         <View style={styles.buyAgain}><Text style={styles.buyAgainText}>{order.status === 'DELIVERED' ? 'Mua lại' : 'Xem đơn'}</Text></View>
       </View>
     </Pressable>

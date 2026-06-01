@@ -4,13 +4,14 @@ import * as WebBrowser from 'expo-web-browser';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { cancelOrder, confirmOrderReceived, fetchOrder, fetchPaymentForOrder } from '@/api/commerce';
+import { cancelOrder, confirmOrderReceived, fetchOrder, fetchPaymentForOrder, fetchShipmentForOrder } from '@/api/commerce';
 import { useAuth } from '@/auth/auth-context';
 import { AppIcon } from '@/components/core/app-icon';
 import { IconButton } from '@/components/core/icon-button';
 import { PrimaryButton } from '@/components/core/primary-button';
 import { ScreenState } from '@/components/core/screen-state';
 import { buyerOrderStatusLabel } from '@/domain/orders';
+import { shipmentDisplayCode, shipmentStatusLabel } from '@/domain/shipping';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export default function OrderDetailScreen() {
@@ -21,8 +22,9 @@ export default function OrderDetailScreen() {
   const id = orderId ?? '';
   const order = useQuery({ queryKey: ['order', id], queryFn: () => fetchOrder(session!.accessToken, id), enabled: Boolean(session && id) });
   const payment = useQuery({ queryKey: ['payment', id], queryFn: () => fetchPaymentForOrder(session!.accessToken, id), enabled: Boolean(session && id) });
+  const shipment = useQuery({ queryKey: ['shipment', id], queryFn: () => fetchShipmentForOrder(session!.accessToken, id), enabled: Boolean(session && id) });
   const refresh = async () => {
-    await Promise.all([order.refetch(), payment.refetch()]);
+    await Promise.all([order.refetch(), payment.refetch(), shipment.refetch()]);
     await queryClient.invalidateQueries({ queryKey: ['orders'] });
   };
   const cancel = useMutation({
@@ -42,6 +44,7 @@ export default function OrderDetailScreen() {
 
   const data = order.data;
   const statusLabel = buyerOrderStatusLabel(data.status, payment.data?.status);
+  const shipmentCode = shipmentDisplayCode(shipment.data);
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -53,6 +56,7 @@ export default function OrderDetailScreen() {
         <View style={styles.statusCard}>
           <View style={styles.statusLine}><AppIcon color={colors.surface} name="car-outline" size={26} /><Text style={styles.status}>{statusLabel}</Text></View>
           <Text style={styles.meta}>{data.orderNumber}</Text>
+          {shipmentCode ? <Text style={styles.statusMeta}>{shipmentCode}</Text> : null}
         </View>
         <View style={styles.card}>
           <Text style={styles.section}>Sản phẩm</Text>
@@ -75,7 +79,26 @@ export default function OrderDetailScreen() {
           {payment.data?.requiresActionUrl ? (
             <PrimaryButton onPress={() => void WebBrowser.openBrowserAsync(payment.data!.requiresActionUrl!)}>Tiếp tục thanh toán</PrimaryButton>
           ) : null}
+          {data.paymentMethod === 'ONLINE' && data.status === 'PENDING' && payment.data?.status !== 'CAPTURED' ? (
+            <PrimaryButton onPress={() => router.push(`/checkout/payment/${encodeURIComponent(data.id)}`)}>Tiếp tục thanh toán QR</PrimaryButton>
+          ) : null}
+          <View style={styles.moneyRow}><Text style={styles.meta}>Tạm tính</Text><Text>{formatMoney(data.subtotalAmount, data.currency)}</Text></View>
+          <View style={styles.moneyRow}><Text style={styles.meta}>Phí vận chuyển</Text><Text>{formatMoney(data.shippingAmount, data.currency)}</Text></View>
+          <View style={styles.moneyRow}><Text style={styles.meta}>Giảm giá</Text><Text>{formatMoney(data.discountAmount, data.currency)}</Text></View>
           <Text style={styles.total}>Tổng: {Math.round(data.totalAmount).toLocaleString('vi-VN')}đ</Text>
+        </View>
+        <View style={styles.card}>
+          <Text style={styles.section}>Vận chuyển</Text>
+          <View style={styles.moneyRow}>
+            <Text style={styles.meta}>Trạng thái</Text>
+            <Text>{shipment.data ? shipmentStatusLabel(shipment.data.status) : shipment.isPending ? 'Đang cập nhật' : 'Chưa tạo'}</Text>
+          </View>
+          {shipmentCode ? (
+            <View style={styles.moneyRow}>
+              <Text style={styles.meta}>Mã vận đơn</Text>
+              <Text style={styles.shipmentCode}>{shipmentCode}</Text>
+            </View>
+          ) : null}
         </View>
         <View style={styles.actions}>
           {(data.status === 'PENDING' || data.status === 'CONFIRMED') ? (
@@ -93,6 +116,10 @@ export default function OrderDetailScreen() {
   );
 }
 
+function formatMoney(amount: number, currency = 'VND'): string {
+  return `${Math.round(amount).toLocaleString('vi-VN')} ${currency}`;
+}
+
 const styles = StyleSheet.create({
   safeArea: { backgroundColor: colors.background, flex: 1 },
   header: { alignItems: 'center', backgroundColor: colors.surface, flexDirection: 'row', justifyContent: 'space-between', padding: spacing[2] },
@@ -101,6 +128,7 @@ const styles = StyleSheet.create({
   statusCard: { backgroundColor: colors.brand, borderRadius: radius.md, gap: spacing[2], padding: spacing[4] },
   statusLine: { alignItems: 'center', flexDirection: 'row', gap: spacing[2] },
   status: { color: colors.surface, fontSize: 20, fontWeight: '800' },
+  statusMeta: { color: colors.surface, fontSize: typography.body, fontWeight: '700' },
   meta: { color: colors.muted, fontSize: typography.label },
   card: { backgroundColor: colors.surface, borderRadius: radius.md, gap: spacing[3], padding: spacing[4] },
   section: { color: colors.ink, fontSize: 16, fontWeight: '800' },
@@ -109,5 +137,7 @@ const styles = StyleSheet.create({
   itemTitle: { color: colors.ink, fontWeight: '600' },
   action: { color: colors.brand, fontWeight: '700' },
   total: { color: colors.brand, fontSize: 17, fontWeight: '800', textAlign: 'right' },
+  moneyRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  shipmentCode: { color: colors.ink, fontWeight: '700' },
   actions: { gap: spacing[2] }
 });

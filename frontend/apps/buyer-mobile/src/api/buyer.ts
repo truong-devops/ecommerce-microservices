@@ -27,6 +27,13 @@ interface BackendProduct {
   variants: ProductVariant[];
 }
 
+interface InventoryValidation {
+  sku: string;
+  requestedQuantity: number;
+  availableQuantity: number;
+  isAvailable: boolean;
+}
+
 type ProductQuery = {
   page?: number;
   pageSize?: number;
@@ -52,21 +59,23 @@ const categoryLabels: Record<string, string> = {
 
 export async function fetchHomeSections(): Promise<HomeSectionsData> {
   const products = await requestBuyerApi<BackendProduct[]>('/products?page=1&pageSize=100&sortBy=createdAt&sortOrder=DESC');
-  return buildHomeSections(products);
+  return buildHomeSections(await filterSellableProducts(products));
 }
 
 export async function searchProducts(input: ProductQuery): Promise<ProductSearchOutput> {
   const query = buildProductSearchQuery(input);
   const result = await requestBuyerApiEnvelope<BackendProduct[]>(`/products${query ? `?${query}` : ''}`);
+  const products = await filterSellableProducts(result.data);
   return {
-    items: result.data.map(toProductSearchItem),
-    pagination: result.meta?.pagination ?? fallbackPagination(input, result.data.length)
+    items: products.map(toProductSearchItem),
+    pagination: result.meta?.pagination ?? fallbackPagination(input, products.length)
   };
 }
 
 export async function fetchProductDetail(productId: string): Promise<ProductDetail> {
   const product = await requestBuyerApi<BackendProduct>(`/products/${encodeURIComponent(productId)}`);
   const item = toProductSearchItem(product);
+  const stock = await fetchDefaultVariantStock(product);
   return {
     ...item,
     description: product.description?.trim() || 'Thông tin sản phẩm đang được cập nhật.',
@@ -76,7 +85,7 @@ export async function fetchProductDetail(productId: string): Promise<ProductDeta
     variants: product.variants,
     status: product.status,
     defaultSku: product.variants.find((variant) => variant.isDefault)?.sku ?? product.variants[0]?.sku ?? null,
-    stock: extractStock(product.attributes)
+    stock: stock ?? extractStock(product.attributes)
   };
 }
 
@@ -85,7 +94,7 @@ export function fetchShopDetail(sellerId: string): Promise<BuyerShopDetail> {
 }
 
 export function toProductSearchItem(product: BackendProduct): ProductSearchItem {
-  const variant = product.variants.find((item) => item.isDefault) ?? product.variants[0];
+  const variant = defaultVariant(product);
   const price = variant?.price ?? product.minPrice;
   const compareAtPrice = variant?.compareAtPrice && variant.compareAtPrice > price ? variant.compareAtPrice : null;
   return {
@@ -149,6 +158,59 @@ function fallbackPagination(input: ProductQuery, itemCount: number): Pagination 
     totalItems: itemCount,
     totalPages: itemCount > 0 ? 1 : 0
   };
+}
+
+async function filterSellableProducts(products: BackendProduct[]): Promise<BackendProduct[]> {
+  if (products.length === 0) {
+    return products;
+  }
+
+  const skuByProduct = new Map<BackendProduct, string>();
+  for (const product of products) {
+    const sku = defaultVariant(product)?.sku?.trim();
+    if (sku) {
+      skuByProduct.set(product, sku);
+    }
+  }
+
+  const uniqueSkus = Array.from(new Set(skuByProduct.values()));
+  if (uniqueSkus.length === 0) {
+    return [];
+  }
+
+  const stockEntries = await Promise.all(uniqueSkus.map(async (sku) => [sku, await fetchSkuStock(sku)] as const));
+  const stockBySku = new Map(stockEntries);
+
+  return products.filter((product) => {
+    const sku = skuByProduct.get(product);
+    return Boolean(sku && (stockBySku.get(sku) ?? 0) > 0);
+  });
+}
+
+async function fetchDefaultVariantStock(product: BackendProduct): Promise<number | null> {
+  const sku = defaultVariant(product)?.sku?.trim();
+  if (!sku) {
+    return null;
+  }
+
+  return fetchSkuStock(sku);
+}
+
+async function fetchSkuStock(sku: string): Promise<number | null> {
+  try {
+    const query = new URLSearchParams({ sku, quantity: '1' });
+    const validation = await requestBuyerApi<InventoryValidation>(`/inventory/validate?${query.toString()}`);
+    if (typeof validation.availableQuantity === 'number' && Number.isFinite(validation.availableQuantity)) {
+      return Math.max(0, Math.floor(validation.availableQuantity));
+    }
+    return validation.isAvailable ? 1 : 0;
+  } catch {
+    return null;
+  }
+}
+
+function defaultVariant(product: BackendProduct): ProductVariant | undefined {
+  return product.variants.find((item) => item.isDefault) ?? product.variants[0];
 }
 
 function extractStock(attributes?: Record<string, unknown>): number | null {

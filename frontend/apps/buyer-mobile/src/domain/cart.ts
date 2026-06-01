@@ -110,7 +110,8 @@ export function toCreateOrderInputs(
   state: CartState,
   note?: string,
   profile?: BuyerProfile,
-  paymentMethod: CreateOrderInput['paymentMethod'] = 'COD'
+  paymentMethod: CreateOrderInput['paymentMethod'] = 'COD',
+  shippingAmountBySeller: Record<string, number> = {}
 ): CreateOrderInput[] {
   const items = selectedCartItems(state);
   if (items.length === 0) {
@@ -135,6 +136,7 @@ export function toCreateOrderInputs(
     return {
       sellerId,
       currency: item.currency,
+      ...(Number.isFinite(shippingAmountBySeller[sellerId]) ? { shippingAmount: shippingAmountBySeller[sellerId] } : {}),
       ...(trimmedNote ? { note: trimmedNote } : {}),
       paymentMethod,
       ...(recipientName ? { recipientName } : {}),

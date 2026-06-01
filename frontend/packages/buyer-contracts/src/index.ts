@@ -201,6 +201,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
+  sellerId?: string;
   status: OrderStatus;
   currency: string;
   subtotalAmount: number;
@@ -208,6 +209,13 @@ export interface Order {
   discountAmount: number;
   totalAmount: number;
   note: string | null;
+  paymentMethod?: 'COD' | 'ONLINE';
+  recipientName?: string;
+  recipientPhone?: string;
+  recipientAddress?: string;
+  recipientWard?: string | null;
+  recipientDistrict?: string | null;
+  recipientProvince?: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -254,10 +262,89 @@ export type PaymentStatus =
 export interface Payment {
   id: string;
   orderId: string;
+  userId?: string;
+  sellerId?: string | null;
+  provider?: string;
+  providerPaymentId?: string | null;
   status: PaymentStatus;
   currency: string;
   amount: number;
+  refundedAmount?: number;
+  refundableAmount?: number;
+  description?: string | null;
+  metadata?: Record<string, unknown> | null;
+  paymentInstructions?: PaymentInstructions;
+  expiresAt?: string | null;
+  capturedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   requiresActionUrl?: string;
+}
+
+export interface PaymentInstructions {
+  type: 'VIETQR';
+  paymentCode: string;
+  qrImageUrl: string;
+  bankCode: string;
+  accountNumber: string;
+  accountName?: string | null;
+  amount: number;
+  currency: 'VND';
+  transferDescription: string;
+  expiresAt: string;
+}
+
+export interface CreatePaymentIntentInput {
+  orderId: string;
+  sellerId?: string;
+  currency: string;
+  amount: number;
+  description?: string;
+  autoCapture?: boolean;
+}
+
+export interface ShippingQuote {
+  sellerId: string;
+  originProvince: string;
+  originProvinceCode: string;
+  destinationProvince: string;
+  shippingAmount: number;
+}
+
+export interface ShippingQuotesOutput {
+  items: ShippingQuote[];
+}
+
+export type ShipmentStatus =
+  | 'PENDING'
+  | 'AWB_CREATED'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'FAILED'
+  | 'RETURNED';
+
+export interface Shipment {
+  id: string;
+  orderId: string;
+  buyerId: string;
+  sellerId: string;
+  provider: string;
+  awb: string | null;
+  trackingNumber: string | null;
+  status: ShipmentStatus;
+  currency: string;
+  shippingFee: number;
+  codAmount: number;
+  recipientName: string;
+  recipientPhone: string;
+  recipientAddress: string;
+  note: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ReviewSummary {

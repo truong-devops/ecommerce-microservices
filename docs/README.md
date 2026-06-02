@@ -12,6 +12,10 @@ Last updated: 2026-05-18.
 - [`architecture/chat-realtime-design.md`](architecture/chat-realtime-design.md) — Buyer–seller chat.
 - Live / video plans under `architecture/livestream-*`, `shoppable-video-*` (may include historical migration notes).
 
+## Presentation Diagrams
+
+- [`diagram/media-commerce-presentation-flows.md`](diagram/media-commerce-presentation-flows.md) — concise deployment, runtime, livestream, video, and chat flows with rendered PNG/SVG images.
+
 ## API
 
 - [`api/`](api/) — Per-service API reference markdown.

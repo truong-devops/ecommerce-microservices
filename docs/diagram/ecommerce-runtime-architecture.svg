@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="900" viewBox="0 0 1480 900" role="img" aria-labelledby="title desc">
+  <title id="title">Ecommerce Microservices Runtime Architecture</title>
+  <desc id="desc">High-level runtime architecture for the ecommerce microservices platform, showing client applications, ingress, API gateway, backend services, data stores, messaging, media infrastructure, and observability tools.</desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#334155" />
+    </marker>
+
+    <linearGradient id="headerGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.12" />
+    </filter>
+
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 700 30px Inter, Arial, sans-serif; fill: #fff; }
+      .subtitle { font: 500 15px Inter, Arial, sans-serif; fill: #ccfbf1; }
+      .group { fill: #fff; stroke: #cbd5e1; stroke-width: 1.5; rx: 22; filter: url(#shadow); }
+      .group-title { font: 700 18px Inter, Arial, sans-serif; fill: #0f172a; }
+      .node { fill: #fff; stroke: #cbd5e1; stroke-width: 1.5; rx: 14; }
+      .client { fill: #eff6ff; stroke: #60a5fa; }
+      .edge { fill: #f5f3ff; stroke: #8b5cf6; }
+      .service { fill: #ecfdf5; stroke: #10b981; }
+      .data { fill: #fff7ed; stroke: #f97316; }
+      .ops { fill: #fef2f2; stroke: #ef4444; }
+      .node-title { font: 700 14px Inter, Arial, sans-serif; fill: #0f172a; }
+      .node-text { font: 500 12px Inter, Arial, sans-serif; fill: #475569; }
+      .label { font: 700 13px Inter, Arial, sans-serif; fill: #334155; }
+      .small { font: 500 12px Inter, Arial, sans-serif; fill: #64748b; }
+      .arrow { stroke: #334155; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .arrow-soft { stroke: #64748b; stroke-width: 1.8; fill: none; marker-end: url(#arrow); stroke-dasharray: 5 5; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1480" height="900" />
+  <rect x="0" y="0" width="1480" height="92" fill="url(#headerGradient)" />
+  <text class="title" x="50" y="42">Ecommerce Microservices Runtime Architecture</text>
+  <text class="subtitle" x="50" y="68">Client applications enter through Kubernetes Ingress and API Gateway, then reach domain services, data stores, messaging, media, and observability layers.</text>
+
+  <rect class="group" x="40" y="130" width="220" height="560" />
+  <text class="group-title" x="70" y="164">Client Apps</text>
+
+  <rect class="node client" x="70" y="195" width="160" height="62" />
+  <text class="node-title" x="98" y="220">Buyer Web</text>
+  <text class="node-text" x="106" y="241">Next.js</text>
+
+  <rect class="node client" x="70" y="285" width="160" height="62" />
+  <text class="node-title" x="92" y="310">Buyer Mobile</text>
+  <text class="node-text" x="116" y="331">Expo</text>
+
+  <rect class="node client" x="70" y="375" width="160" height="62" />
+  <text class="node-title" x="96" y="400">Seller Web</text>
+  <text class="node-text" x="106" y="421">Next.js</text>
+
+  <rect class="node client" x="70" y="465" width="160" height="62" />
+  <text class="node-title" x="86" y="490">Moderator Web</text>
+  <text class="node-text" x="106" y="511">Next.js</text>
+
+  <rect class="node ops" x="70" y="585" width="160" height="62" />
+  <text class="node-title" x="104" y="610">Teleport</text>
+  <text class="node-text" x="88" y="631">Access control</text>
+
+  <rect class="group" x="315" y="130" width="250" height="560" />
+  <text class="group-title" x="345" y="164">Edge Layer</text>
+
+  <rect class="node edge" x="350" y="230" width="180" height="82" />
+  <text class="node-title" x="392" y="260">Nginx Ingress</text>
+  <text class="node-text" x="378" y="282">TLS + domain routing</text>
+
+  <rect class="node edge" x="350" y="395" width="180" height="88" />
+  <text class="node-title" x="393" y="427">API Gateway</text>
+  <text class="node-text" x="385" y="449">JWT / CORS / rate limit</text>
+  <text class="node-text" x="397" y="466">REST + WebSocket proxy</text>
+
+  <path class="arrow" d="M230 226 L344 265" />
+  <path class="arrow" d="M230 316 L344 274" />
+  <path class="arrow" d="M230 406 L344 432" />
+  <path class="arrow" d="M230 496 L344 444" />
+  <path class="arrow" d="M440 312 L440 389" />
+
+  <rect class="group" x="620" y="130" width="420" height="560" />
+  <text class="group-title" x="650" y="164">Backend Microservices</text>
+
+  <rect class="node service" x="650" y="195" width="150" height="58" />
+  <text class="node-title" x="687" y="220">Auth</text>
+  <text class="node-text" x="671" y="239">OAuth / JWT</text>
+
+  <rect class="node service" x="830" y="195" width="150" height="58" />
+  <text class="node-title" x="864" y="220">Product</text>
+  <text class="node-text" x="849" y="239">Catalog / video</text>
+
+  <rect class="node service" x="650" y="285" width="150" height="58" />
+  <text class="node-title" x="690" y="310">User</text>
+  <text class="node-text" x="669" y="329">Profiles</text>
+
+  <rect class="node service" x="830" y="285" width="150" height="58" />
+  <text class="node-title" x="866" y="310">Media</text>
+  <text class="node-text" x="850" y="329">Upload / MinIO</text>
+
+  <rect class="node service" x="650" y="375" width="150" height="58" />
+  <text class="node-title" x="692" y="400">Cart</text>
+  <text class="node-text" x="670" y="419">Buyer basket</text>
+
+  <rect class="node service" x="830" y="375" width="150" height="58" />
+  <text class="node-title" x="872" y="400">Order</text>
+  <text class="node-text" x="850" y="419">Checkout flow</text>
+
+  <rect class="node service" x="650" y="465" width="150" height="58" />
+  <text class="node-title" x="676" y="490">Payment</text>
+  <text class="node-text" x="667" y="509">Payment intent</text>
+
+  <rect class="node service" x="830" y="465" width="150" height="58" />
+  <text class="node-title" x="862" y="490">Inventory</text>
+  <text class="node-text" x="850" y="509">Stock reserve</text>
+
+  <rect class="node service" x="650" y="555" width="150" height="58" />
+  <text class="node-title" x="671" y="580">Shipping</text>
+  <text class="node-text" x="669" y="599">Fulfillment</text>
+
+  <rect class="node service" x="830" y="555" width="150" height="58" />
+  <text class="node-title" x="855" y="580">Engagement</text>
+  <text class="node-text" x="847" y="599">Review / chat / live</text>
+
+  <path class="arrow" d="M530 439 L644 224" />
+  <path class="arrow" d="M530 439 L644 314" />
+  <path class="arrow" d="M530 439 L644 404" />
+  <path class="arrow" d="M530 439 L824 404" />
+  <path class="arrow" d="M530 439 L644 494" />
+  <path class="arrow" d="M530 439 L824 494" />
+  <path class="arrow" d="M530 439 L644 584" />
+  <path class="arrow" d="M530 439 L824 584" />
+
+  <rect class="group" x="1095" y="130" width="355" height="560" />
+  <text class="group-title" x="1125" y="164">Data, Messaging, Media</text>
+
+  <rect class="node data" x="1130" y="195" width="135" height="58" />
+  <text class="node-title" x="1153" y="220">PostgreSQL</text>
+  <text class="node-text" x="1156" y="239">ACID domains</text>
+
+  <rect class="node data" x="1290" y="195" width="135" height="58" />
+  <text class="node-title" x="1322" y="220">MongoDB</text>
+  <text class="node-text" x="1309" y="239">Catalog / UGC</text>
+
+  <rect class="node data" x="1130" y="305" width="135" height="58" />
+  <text class="node-title" x="1164" y="330">Redis</text>
+  <text class="node-text" x="1148" y="349">Cache / presence</text>
+
+  <rect class="node data" x="1290" y="305" width="135" height="58" />
+  <text class="node-title" x="1327" y="330">Kafka</text>
+  <text class="node-text" x="1316" y="349">Domain events</text>
+
+  <rect class="node data" x="1130" y="415" width="135" height="58" />
+  <text class="node-title" x="1168" y="440">MinIO</text>
+  <text class="node-text" x="1152" y="459">Object storage</text>
+
+  <rect class="node data" x="1290" y="415" width="135" height="58" />
+  <text class="node-title" x="1322" y="440">MediaMTX</text>
+  <text class="node-text" x="1306" y="459">Live media path</text>
+
+  <rect class="node ops" x="1130" y="555" width="135" height="58" />
+  <text class="node-title" x="1155" y="580">Prometheus</text>
+  <text class="node-text" x="1154" y="599">Metrics</text>
+
+  <rect class="node ops" x="1290" y="555" width="135" height="58" />
+  <text class="node-title" x="1320" y="580">Grafana</text>
+  <text class="node-text" x="1317" y="599">Dashboards</text>
+
+  <path class="arrow" d="M980 224 L1124 224" />
+  <path class="arrow" d="M980 314 L1284 224" />
+  <path class="arrow" d="M980 404 L1124 224" />
+  <path class="arrow" d="M980 494 L1124 224" />
+  <path class="arrow" d="M980 584 L1124 224" />
+
+  <path class="arrow" d="M980 224 L1284 224" />
+  <path class="arrow" d="M980 584 L1284 224" />
+  <path class="arrow" d="M980 494 L1124 334" />
+  <path class="arrow" d="M980 584 L1124 334" />
+  <path class="arrow" d="M980 404 L1284 334" />
+  <path class="arrow" d="M980 494 L1284 334" />
+  <path class="arrow" d="M980 584 L1284 334" />
+  <path class="arrow" d="M980 314 L1124 444" />
+  <path class="arrow" d="M980 584 L1284 444" />
+
+  <path class="arrow-soft" d="M1197 613 L1197 725 L1357 725 L1357 619" />
+  <path class="arrow" d="M1265 584 L1284 584" />
+
+  <rect x="50" y="755" width="1400" height="56" rx="16" fill="#ecfeff" stroke="#06b6d4" />
+  <text class="label" x="80" y="787">Runtime principle:</text>
+  <text class="small" x="205" y="787">public traffic enters through Ingress and API Gateway; services own their business domains; Kafka decouples side effects; observability and access-control tools support operations.</text>
+</svg>

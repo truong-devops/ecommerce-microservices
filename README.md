@@ -3,21 +3,19 @@
   <img src="https://img.shields.io/badge/NestJS-auth--service-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" />
   <img src="https://img.shields.io/badge/Next.js-web--apps-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" />
   <img src="https://img.shields.io/badge/Expo-mobile--app-000020?style=for-the-badge&logo=expo&logoColor=white" />
-  <img src="https://img.shields.io/badge/Kubernetes-GitOps-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white" />
-  <img src="https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?style=for-the-badge&logo=jenkins&logoColor=white" />
 </p>
 
 <h1 align="center">Ecommerce Microservices Platform</h1>
 
 <p align="center">
-  A production-like ecommerce platform built as a microservices monorepo, with Go services, a NestJS authentication service, Next.js web apps, an Expo mobile app, event-driven workflows, realtime commerce features, and a Jenkins + Argo CD GitOps deployment flow on Kubernetes.
+  A production-like ecommerce platform built as a microservices monorepo, with Go services, a NestJS authentication service, Next.js web apps, an Expo mobile app, event-driven workflows, and realtime commerce features.
 </p>
 
 ---
 
 ## Overview
 
-This project is an end-to-end ecommerce platform designed to demonstrate how a modern commerce system can be built, deployed, monitored, and operated using microservices and DevSecOps practices.
+This project is an end-to-end ecommerce platform designed to demonstrate how a modern commerce system can be built and operated using microservices.
 
 The platform includes:
 
@@ -30,7 +28,7 @@ The platform includes:
 - Realtime services for buyer-seller chat and livestream commerce.
 - Media storage and playback through MinIO and MediaMTX.
 - Analytics and recommendation features, including FP-Growth association-rule mining.
-- Kubernetes deployment with Jenkins CI/CD, Docker Hub images, Argo CD GitOps, Rancher, Teleport, Prometheus, and Grafana.
+- Local Docker Compose runtime with optional monitoring and logging configuration.
 
 ## High-Level Runtime Architecture
 
@@ -67,9 +65,8 @@ ecommerce-microservices/
 │
 ├── packages/backend-shared/      # Shared NestJS/backend utilities
 ├── shared/                       # Shared contracts, Kafka topics, proto files, types
-├── infrastructure/               # Docker, Kubernetes, monitoring, logging, Terraform
-├── cicd/                         # Jenkins pipelines and CI/CD helper scripts
-└── docs/                         # Architecture, API docs, deployment guides, runbooks
+├── infrastructure/               # Docker, Kafka, monitoring, and logging assets
+└── docs/                         # Architecture, API docs, operations docs, runbooks
 ```
 
 ## Backend Service Inventory
@@ -174,148 +171,15 @@ The main implementation is in:
 services/analytics-service/internal/recommendation/fpgrowth.go
 ```
 
-## Deployment And DevSecOps Flow
+## Local Runtime
 
-The project is deployed using a Jenkins-driven CI/CD pipeline and Argo CD GitOps.
-
-The current public environment is a production-like development environment:
-
-```txt
-Kubernetes namespace: ecommerce-dev
-Argo CD application: ecommerce-dev
-Kustomize overlay: infrastructure/kubernetes/overlays/dev
-Docker image repository prefix: docker.io/vantruong179/ecommerce-microservices-*
-```
-
-Public application URLs:
-
-```txt
-https://api.dt-commerce.site
-https://buyer.dt-commerce.site
-https://seller.dt-commerce.site
-https://moderator.dt-commerce.site
-https://argocd.dt-commerce.site
-https://rancher.dt-commerce.site
-https://grafana.dt-commerce.site
-https://teleport.dt-commerce.site
-```
-
-### CI/CD Pipeline Diagram
-
-The diagram below is a clean version of the deployment flow represented in the reference image.
-
-![DevSecOps CI/CD and GitOps deployment flow](./docs/diagram/devsecops-cicd-flow.png)
-
-### Pull Request Validation Flow
-
-Pull requests are validation-only.
-
-```txt
-Developer branch
--> Pull Request into main
--> Jenkins detects impacted services/apps
--> Test/build changed targets
--> Trivy filesystem scan
--> Optional OWASP Dependency Check
--> Optional SonarQube analysis
--> No Docker push
--> No Kubernetes deployment
-```
-
-### Main Branch Deployment Flow
-
-Deployments happen after code is merged into `main`.
-
-```txt
-Merge into main
--> Jenkins CI detects impacted services/apps
--> Test/build
--> Filesystem scan
--> Docker build
--> Docker image scan
--> Push image to Docker Hub using the git short SHA tag
--> Jenkins CD updates the image tag in Kustomize
--> Jenkins commits the GitOps change back to GitHub
--> Argo CD syncs the manifest
--> Kubernetes rolls out the new version
-```
-
-Important rule:
-
-```txt
-Pushing a Docker image does not deploy the application by itself.
-The cluster changes only when the GitOps manifest tag changes and Argo CD syncs it.
-```
-
-## Kubernetes Deployment Model
-
-The Kubernetes manifests are organized with Kustomize:
-
-```txt
-infrastructure/kubernetes/base
-infrastructure/kubernetes/overlays/dev
-```
-
-The runtime layer includes:
-
-- Deployments and Services for backend microservices.
-- Deployments and Services for frontend web applications.
-- Stateful/demo data services such as PostgreSQL, MongoDB, Redis, Kafka, and MinIO.
-- MediaMTX for livestream ingest and playback.
-- Ingress resources for public domains.
-- TLS certificates through cert-manager.
-- Node placement through labels such as `workload=app` and `workload=data`.
-
-Example rollout verification:
+The default local stack is managed through Docker Compose:
 
 ```bash
-kubectl -n ecommerce-dev get pods
-kubectl -n ecommerce-dev get deploy
-kubectl -n ecommerce-dev rollout status deploy/api-gateway
-kubectl -n ecommerce-dev get ingress
+docker compose up
 ```
 
-## Operations Tooling
-
-| Tool | Role in this project |
-|---|---|
-| Jenkins | Runs CI/CD pipelines, tests, scans, builds images, and triggers GitOps updates |
-| Docker Hub | Stores immutable service images tagged by git commit SHA |
-| Argo CD | Watches Git and syncs Kubernetes manifests into the cluster |
-| Kubernetes | Runs the actual workloads, restarts pods, handles rollouts, and manages service discovery |
-| Rancher | Provides a web UI for Kubernetes administration, pod logs, events, resources, and cluster health |
-| Teleport | Provides controlled SSH and Kubernetes access with user roles and auditability |
-| Prometheus | Collects infrastructure and application metrics |
-| Grafana | Visualizes metrics and dashboards for nodes, pods, services, and application health |
-| Trivy | Scans source filesystems and Docker images for vulnerabilities |
-| OWASP Dependency Check | Detects known vulnerable dependencies |
-| SonarQube | Checks code quality, bugs, vulnerabilities, duplication, and quality gates |
-
-## Deployment Verification
-
-Check the latest GitOps commit and image tag:
-
-```bash
-git fetch origin main
-git log origin/main --oneline -5
-git show origin/main:infrastructure/kubernetes/overlays/dev/kustomization.yaml | grep -A2 api-gateway
-```
-
-Check the running image in Kubernetes:
-
-```bash
-kubectl -n ecommerce-dev get deploy api-gateway -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
-kubectl -n ecommerce-dev rollout status deploy/api-gateway
-```
-
-Check Argo CD:
-
-```txt
-Application: ecommerce-dev
-Sync Status: Synced
-Health Status: Healthy
-Last Sync Revision: commit containing the GitOps image tag update
-```
+Service-specific Dockerfiles remain under `services/*/Dockerfile`, and shared local infrastructure assets remain under `infrastructure/docker`, `infrastructure/kafka`, `infrastructure/monitoring`, and `infrastructure/logging`.
 
 ## Documentation
 
@@ -325,10 +189,6 @@ Key documents:
 - [Data flow](./docs/architecture/data-flow.md)
 - [Kafka events](./docs/architecture/kafka-events.md)
 - [Security](./docs/architecture/security.md)
-- [CI/CD design](./docs/deployment/automated-gitops-cicd-design.md)
-- [Manual Kubernetes deployment runbook](./docs/deployment/manual-k8s-build-and-deploy-runbook.md)
-- [DevSecOps tools operator guide](./docs/deployment/devsecops-tools-operator-guide.md)
-- [DevSecOps presentation script](./docs/deployment/devsecops-tools-presentation-script.md)
 - [API documentation](./docs/api/README.md)
 - [Development standards](./docs/development/code-standards.md)
 

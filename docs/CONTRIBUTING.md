@@ -1,6 +1,6 @@
 # CONTRIBUTING
 
-Áp dụng cho dự án **ecommerce-microservices** (monorepo: `services/`, `shared/`, `frontend/`, `infrastructure/`, `cicd/`).  
+Áp dụng cho dự án **ecommerce-microservices** (monorepo: `services/`, `shared/`, `frontend/`, `infrastructure/`).  
 Mục tiêu: làm việc nhóm 2 người **rõ ràng – ít conflict – dễ review – dễ demo**.
 
 > **Quy tắc vàng**

@@ -292,7 +292,6 @@ Cap nhat:
 
 - `docker-compose.yml`
 - `services/payment-service/docker-compose.dev.yml`
-- `infrastructure/kubernetes/base/app-payment-service.yaml`
 - secret templates neu repo co.
 
 ### 7.2. SePay gateway adapter

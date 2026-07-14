@@ -2,49 +2,11 @@
 
 Last updated: 2026-06-01
 
-Mục tiêu của file này là gom các sơ đồ ngắn, dễ trình bày cho phần triển khai, livestream, shoppable video và chat. Các hình dưới đây lấy ý chính từ `docs/architecture/*`, `docs/deployment/*`, `docs/development/video-live-comments-implementation-plan.md`, `docs/img-uc/livestream-flow-technology-algorithm.md` và đối chiếu thêm với route hiện tại trong services.
+Mục tiêu của file này là gom các sơ đồ ngắn, dễ trình bày cho phần livestream, shoppable video và chat. Các hình dưới đây lấy ý chính từ `docs/architecture/*`, `docs/development/video-live-comments-implementation-plan.md`, `docs/img-uc/livestream-flow-technology-algorithm.md` và đối chiếu thêm với route hiện tại trong services.
 
 File này dùng PNG đã render sẵn để preview hiện hình ổn định. SVG cùng tên cũng được giữ lại nếu cần ảnh vector; Mermaid source nằm trong phần thu gọn để sửa lại khi cần.
 
-## 1. Các Kiểu Triển Khai
-
-![Các kiểu triển khai](./media-commerce-deployment.png)
-
-<details>
-<summary>Mermaid source</summary>
-
-```mermaid
-graph LR
-  Dev[Developer] --> Repo[GitHub Repo]
-
-  Repo --> Compose[Local Compose]
-  Compose --> LocalStack[Services And Data Local]
-
-  Repo --> K3sLab[K3s Lab]
-  K3sLab --> LabStack[Small Learning Cluster]
-
-  Repo --> Manual[Manual Kubernetes]
-  Manual --> DockerHub[Docker Hub]
-  DockerHub --> K8s[Kubernetes Dev]
-
-  Repo --> Jenkins[Jenkins CI CD]
-  Jenkins --> Scan[Test And Scan]
-  Scan --> DockerHub
-  Jenkins --> GitOps[Update Kustomize Tag]
-  GitOps --> Argo[Argo CD]
-  Argo --> K8s
-```
-
-</details>
-
-Ý chính:
-
-- Local: `docker compose up` để chạy full stack trên máy dev.
-- Lab: K3s/on-prem VM dùng để học workflow DevOps gọn nhẹ.
-- Manual K8s: build/push image rồi cập nhật Kustomize khi Jenkins chưa ổn.
-- GitOps: Jenkins build/scan/push image, Argo CD sync manifest vào Kubernetes.
-
-## 2. Kiến Trúc Runtime Rút Gọn
+## 1. Kiến Trúc Runtime Rút Gọn
 
 ![Kiến trúc runtime rút gọn](./media-commerce-runtime.png)
 

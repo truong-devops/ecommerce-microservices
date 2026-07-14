@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This monorepo contains an ecommerce microservices platform. Backend runtime code lives in `services/*`: most services are Go (`api-gateway`, `user-service`, `product-service`, etc.), while `services/auth-service` is NestJS/TypeScript. Cross-service contracts live in `shared/*`, including proto, Kafka, contracts, and shared types. NestJS runtime helpers belong in `packages/backend-shared/*`. Frontend apps are under `frontend/apps/*`; reusable UI/client packages are under `frontend/packages/*`. Infrastructure, deployment, and observability assets are in `infrastructure/`, `cicd/`, and `docs/`.
+This monorepo contains an ecommerce microservices platform. Backend runtime code lives in `services/*`: most services are Go (`api-gateway`, `user-service`, `product-service`, etc.), while `services/auth-service` is NestJS/TypeScript. Cross-service contracts live in `shared/*`, including proto, Kafka, contracts, and shared types. NestJS runtime helpers belong in `packages/backend-shared/*`. Frontend apps are under `frontend/apps/*`; reusable UI/client packages are under `frontend/packages/*`. Local infrastructure, observability assets, and documentation are in `infrastructure/` and `docs/`.
 
 ## Build, Test, and Development Commands
 

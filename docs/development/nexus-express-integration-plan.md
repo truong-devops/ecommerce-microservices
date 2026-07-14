@@ -938,8 +938,6 @@ services/shipping-service/internal/*/*_test.go
 
 ```text
 docker-compose.yml
-infrastructure/kubernetes/*/shipping-service*
-docs/deployment/* (nếu có runbook cấu hình production)
 ```
 
 ## 15. Test Plan

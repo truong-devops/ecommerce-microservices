@@ -222,7 +222,7 @@ Data-flow narrative: [`data-flow.md`](data-flow.md).
 | `shared/*` | Proto, Kafka schemas, TS contracts/types/constants |
 | `packages/backend-shared/*` | NestJS helpers — **auth-service only** in current stack |
 | `frontend/*` | Apps + shared UI/API packages (Turborepo workspaces) |
-| `infrastructure/*` | Docker, K3s/Kustomize, Kafka topics, monitoring, Terraform |
+| `infrastructure/*` | Docker, Kafka topics, monitoring, and logging assets |
 | `scripts/*` | Integration tests and bench/compare scripts |
 
 Go services do **not** import `packages/backend-shared`; they implement `internal/auth`, `internal/httpx`, etc. locally.
@@ -241,14 +241,9 @@ docker compose up -d    # full stack: 15 services + kafka, postgres, mongo, redi
 
 Lightweight variant: `docker-compose.local.yml`.
 
-### Kubernetes
+### Deployment
 
-Manifests under `infrastructure/k3s/` (Kustomize base + overlays, HPA, PDB, NetworkPolicy, ingress). Intended runtime: **K3s** or compatible Kubernetes.
-
-### CI/CD
-
-- `cicd/` — Jenkins pipelines
-- `.github/workflows/` — GitHub Actions
+The previous Kubernetes and CI/CD assets have been removed so a new DevSecOps workflow can be introduced cleanly.
 
 ---
 

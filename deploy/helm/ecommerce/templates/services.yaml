@@ -1,0 +1,85 @@
+{{- $root := . -}}
+{{- range $name, $svc := .Values.services }}
+{{- if $svc.enabled }}
+{{- $defaults := $root.Values.defaults -}}
+{{- $svcImage := default dict $svc.image -}}
+{{- $repo := default (printf "%s/%s/%s" $defaults.image.registry $defaults.image.project $name) $svcImage.repository -}}
+{{- $tag := default $defaults.image.tag $svcImage.tag -}}
+{{- $digest := default "" $svcImage.digest -}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ecommerce.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  replicas: {{ default $defaults.replicas $svc.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: {{ $name }}
+        app.kubernetes.io/part-of: ecommerce
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "{{ $svc.port }}"
+    spec:
+      {{- if $root.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $root.Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: {{ $name }}
+          image: {{ if $digest }}{{ $repo }}@{{ $digest }}{{ else }}{{ $repo }}:{{ $tag }}{{ end }}
+          imagePullPolicy: {{ default $defaults.image.pullPolicy $svcImage.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $svc.port }}
+          env:
+            {{- range $key, $value := $root.Values.global.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: SERVICE_NAME
+              value: {{ $name | quote }}
+          readinessProbe:
+            httpGet:
+              path: {{ default "/health" $svc.healthPath }}
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: {{ default "/health" $svc.healthPath }}
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            {{- toYaml (default $defaults.resources $svc.resources) | nindent 12 }}
+          securityContext:
+            {{- toYaml (default $defaults.securityContext $svc.securityContext) | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "ecommerce.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: {{ $name }}
+  ports:
+    - name: http
+      port: {{ $svc.port }}
+      targetPort: http
+{{- end }}
+{{- end }}

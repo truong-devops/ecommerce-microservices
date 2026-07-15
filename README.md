@@ -34,6 +34,61 @@ The platform includes:
 
 ![Ecommerce microservices runtime architecture](./docs/diagram/ecommerce-runtime-architecture.png)
 
+## DevSecOps Code Deployment Flow
+
+The target delivery model uses GitLab CI for validation and artifact publishing, Harbor for trusted images, Argo CD for GitOps deployment, Kyverno for runtime admission control, Prometheus/Grafana for metrics, and ELK/Filebeat for logs.
+
+```mermaid
+flowchart LR
+  dev[Developer<br/>writes code] -->|Push code| repo[GitLab Repository<br/>source code]
+
+  subgraph ci["GitLab CI - Code, Test, Build, and Security Gates"]
+    repo -->|Trigger pipeline| detect[Detect changed<br/>services]
+    detect --> lint[Lint + unit tests]
+    lint --> gitleaks[Gitleaks<br/>secret scan]
+    gitleaks --> semgrep[Semgrep<br/>SAST scan]
+    semgrep --> trivyfs[Trivy<br/>dependency + filesystem scan]
+    trivyfs --> docker[Docker build<br/>service image]
+    docker --> trivyimg[Trivy<br/>image scan]
+    trivyimg --> sbom[Generate SBOM]
+    sbom --> cosign[Cosign<br/>sign image]
+  end
+
+  cosign -->|Push signed image<br/>tag + digest| harbor[(Harbor Registry)]
+
+  subgraph gitops["GitOps CD Flow"]
+    release[GitLab CI<br/>release job] -->|Update image digest| values[GitOps config<br/>Helm values]
+    values -->|Pull desired state| argocd[Argo CD]
+  end
+
+  ci -->|Main/develop passed| release
+  argocd -->|Sync application| kyverno[Kyverno<br/>admission policies]
+  kyverno -->|Allow compliant workload| k8s[Kubernetes Cluster<br/>ecommerce microservices]
+  k8s -.->|Pull signed image<br/>by digest| harbor
+  k8s --> smoke[Smoke tests<br/>API Gateway + frontends]
+
+  subgraph metrics["Metrics Observability"]
+    k8s -.->|Scrape /metrics| prometheus[Prometheus]
+    prometheus --> grafana[Grafana<br/>dashboards + alerts]
+  end
+
+  subgraph logs["ELK Logging"]
+    k8s -.->|Container logs| filebeat[Filebeat]
+    filebeat --> logstash[Logstash<br/>parse + enrich]
+    logstash --> elastic[(Elasticsearch)]
+    elastic --> kibana[Kibana<br/>search + dashboards]
+  end
+
+  release -.->|Pipeline/deploy result| notify[Email / Slack notification]
+```
+
+Security gates are split across the pipeline and the cluster:
+
+- GitLab CI runs Gitleaks, Semgrep, Trivy filesystem scan, Trivy image scan, SBOM generation, and Cosign image signing.
+- Harbor stores signed internal images.
+- Argo CD deploys from Git instead of applying manifests directly from CI.
+- Kyverno blocks non-compliant workloads, such as images outside Harbor, `latest` tags, privileged containers, missing resource limits, or unsigned images.
+
 ## Repository Organization
 
 ```txt
@@ -189,6 +244,7 @@ Key documents:
 - [Data flow](./docs/architecture/data-flow.md)
 - [Kafka events](./docs/architecture/kafka-events.md)
 - [Security](./docs/architecture/security.md)
+- [DevSecOps platform design](./docs/devsecops/new-platform-design.md)
 - [API documentation](./docs/api/README.md)
 - [Development standards](./docs/development/code-standards.md)
 

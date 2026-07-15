@@ -1,0 +1,6 @@
+apiVersion: v2
+name: ecommerce
+description: Ecommerce microservices platform runtime chart.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

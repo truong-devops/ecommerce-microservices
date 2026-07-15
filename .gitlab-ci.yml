@@ -1,0 +1,149 @@
+stages:
+  - discover
+  - validate
+  - security
+  - build
+  - publish
+  - gitops
+
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_BUILDKIT: "1"
+  HARBOR_PROJECT: "ecommerce"
+  HARBOR_REGISTRY: "harbor.example.com"
+  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+  GITOPS_VALUES_FILE: "deploy/helm/ecommerce/values-dev.yaml"
+  TRIVY_CACHE_DIR: ".trivycache"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+detect_changed_targets:
+  stage: discover
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache bash git jq
+  script:
+    - bash ci/scripts/detect-changed-targets.sh
+  artifacts:
+    reports:
+      dotenv: changed-targets.env
+    paths:
+      - changed-targets.txt
+      - changed-targets.env
+    expire_in: 1 week
+
+lint_and_test:
+  stage: validate
+  image: node:22-alpine
+  needs:
+    - detect_changed_targets
+  before_script:
+    - apk add --no-cache bash git go
+    - npm ci
+  script:
+    - bash ci/scripts/run-quality-gates.sh
+
+gitleaks_secret_scan:
+  stage: security
+  image:
+    name: zricethezav/gitleaks:v8.24.2
+    entrypoint: [""]
+  script:
+    - gitleaks detect --source . --redact --verbose
+
+semgrep_sast:
+  stage: security
+  image: semgrep/semgrep:1.101.0
+  script:
+    - semgrep scan --config p/ci --config p/secrets --config p/owasp-top-ten --error
+
+trivy_filesystem_scan:
+  stage: security
+  image:
+    name: aquasec/trivy:0.58.1
+    entrypoint: [""]
+  cache:
+    paths:
+      - .trivycache/
+  script:
+    - trivy fs --cache-dir "$TRIVY_CACHE_DIR" --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed .
+
+build_images:
+  stage: build
+  image: docker:27.4.1
+  services:
+    - docker:27.4.1-dind
+  needs:
+    - detect_changed_targets
+    - lint_and_test
+    - gitleaks_secret_scan
+    - semgrep_sast
+    - trivy_filesystem_scan
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - bash ci/scripts/build-images.sh
+  artifacts:
+    paths:
+      - build-images.env
+      - built-images.txt
+      - image-tars/
+    reports:
+      dotenv: build-images.env
+    expire_in: 1 week
+
+trivy_image_scan:
+  stage: build
+  image:
+    name: aquasec/trivy:0.58.1
+    entrypoint: [""]
+  needs:
+    - build_images
+  cache:
+    paths:
+      - .trivycache/
+  script:
+    - sh ci/scripts/scan-built-images.sh
+  artifacts:
+    paths:
+      - sbom-*.json
+    expire_in: 1 week
+
+publish_images:
+  stage: publish
+  image: docker:27.4.1
+  services:
+    - docker:27.4.1-dind
+  needs:
+    - build_images
+    - trivy_image_scan
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == "develop"
+  before_script:
+    - apk add --no-cache bash
+    - echo "$HARBOR_PASSWORD" | docker login "$HARBOR_REGISTRY" -u "$HARBOR_USERNAME" --password-stdin
+  script:
+    - bash ci/scripts/publish-images.sh
+  artifacts:
+    paths:
+      - published-images.txt
+    expire_in: 1 week
+
+update_gitops_dev:
+  stage: gitops
+  image: alpine:3.20
+  needs:
+    - publish_images
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+  before_script:
+    - apk add --no-cache bash git yq
+    - git config user.name "${GITLAB_USER_NAME:-gitlab-ci}"
+    - git config user.email "${GITLAB_USER_EMAIL:-gitlab-ci@example.com}"
+  script:
+    - bash ci/scripts/update-gitops-values.sh

@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-harbor-images
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: only-harbor-registry
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: "Images must come from the approved Harbor registry."
+        pattern:
+          spec:
+            containers:
+              - image: "harbor.example.com/ecommerce/*"
+    - name: block-latest-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: "Do not use mutable latest image tags."
+        deny:
+          conditions:
+            any:
+              - key: "{{ images.containers.*.tag || '' }}"
+                operator: AnyIn
+                value:
+                  - latest

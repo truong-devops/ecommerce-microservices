@@ -1,0 +1,12 @@
+global:
+  imagePullSecrets:
+    - name: harbor-pull-secret
+  env:
+    APP_ENV: dev
+
+ingress:
+  enabled: false
+  className: nginx
+  host: ecommerce.local
+
+services: {}

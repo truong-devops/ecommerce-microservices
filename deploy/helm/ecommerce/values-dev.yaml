@@ -1,0 +1,106 @@
+global:
+  env:
+    APP_ENV: dev
+    LOG_FORMAT: json
+    OTEL_SERVICE_NAMESPACE: ecommerce
+
+ingress:
+  enabled: true
+  className: nginx
+  host: dev.ecommerce.local
+
+defaults:
+  replicas: 1
+  image:
+    registry: harbor.example.com
+    project: ecommerce
+    tag: dev
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+
+services:
+  api-gateway:
+    enabled: true
+    port: 8080
+    path: /
+  auth-service:
+    enabled: true
+    port: 3000
+    path: /auth
+  user-service:
+    enabled: true
+    port: 8080
+    path: /users
+  product-service:
+    enabled: true
+    port: 8080
+    path: /products
+  cart-service:
+    enabled: true
+    port: 8080
+    path: /cart
+  order-service:
+    enabled: true
+    port: 8080
+    path: /orders
+  payment-service:
+    enabled: true
+    port: 8080
+    path: /payments
+  inventory-service:
+    enabled: true
+    port: 8080
+    path: /inventory
+  shipping-service:
+    enabled: true
+    port: 8080
+    path: /shipping
+  notification-service:
+    enabled: true
+    port: 8080
+    path: /notifications
+  analytics-service:
+    enabled: true
+    port: 8080
+    path: /analytics
+  review-service:
+    enabled: true
+    port: 8080
+    path: /reviews
+  chat-service:
+    enabled: true
+    port: 8080
+    path: /chat
+  media-service:
+    enabled: true
+    port: 8080
+    path: /media
+  live-service:
+    enabled: true
+    port: 8080
+    path: /live
+  buyer-web:
+    enabled: true
+    port: 3000
+    path: /buyer
+  seller:
+    enabled: true
+    port: 3000
+    path: /seller
+  moderator:
+    enabled: true
+    port: 3000
+    path: /moderator

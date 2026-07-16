@@ -2,32 +2,38 @@ import { Injectable, LoggerService } from '@nestjs/common';
 
 @Injectable()
 export class AppLogger implements LoggerService {
-  log(message: string, context?: string): void {
+  log(message: unknown, context?: string): void {
     this.write('info', message, context);
   }
 
-  error(message: string, trace?: string, context?: string): void {
+  error(message: unknown, trace?: string, context?: string): void {
     this.write('error', message, context, trace);
   }
 
-  warn(message: string, context?: string): void {
+  warn(message: unknown, context?: string): void {
     this.write('warn', message, context);
   }
 
-  debug(message: string, context?: string): void {
+  debug(message: unknown, context?: string): void {
     this.write('debug', message, context);
   }
 
-  verbose(message: string, context?: string): void {
+  verbose(message: unknown, context?: string): void {
     this.write('verbose', message, context);
   }
 
-  private write(level: string, message: string, context?: string, trace?: string): void {
+  private write(level: string, message: unknown, context?: string, trace?: string): void {
+    const fields =
+      message && typeof message === 'object' && !Array.isArray(message)
+        ? (message as Record<string, unknown>)
+        : { message };
+
     const payload: Record<string, unknown> = {
       level,
-      message,
+      service: process.env.APP_NAME ?? 'auth-service',
       context,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...fields
     };
 
     if (trace) {

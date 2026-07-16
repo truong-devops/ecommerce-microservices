@@ -69,8 +69,59 @@ COSIGN_PASSWORD
 7. Add Prometheus/Grafana and ELK into the cluster.
 8. Switch image updates to digest-only GitOps promotion.
 
+## Local ELK
+
+Run the local application stack with ELK:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
+```
+
+Open Kibana at:
+
+```txt
+http://localhost:5601
+```
+
+Create a data view:
+
+```txt
+ecommerce-logs-local-*
+```
+
+More details: [`deploy/observability/elk/README.md`](../../deploy/observability/elk/README.md).
+
 ## Notes
 
 - Replace `harbor.example.com` and `gitlab.example.com` placeholders before using this in a real environment.
 - `require-signed-images` starts in `Audit` mode because it needs a real Cosign public key.
 - The Helm chart assumes every service exposes `/health` and `/metrics`. Override `healthPath` per service if needed.
+- The dev Helm values set `APP_ENV=production` so Go services use zap JSON logs, which are easier for Logstash and Elasticsearch to parse.
+
+## ELK Readiness Check
+
+The current source is mostly ready for ELK because services log to stdout/stderr and Kubernetes/Filebeat can collect those container logs.
+
+What is already in place:
+
+- Go services use `zap`.
+- Go HTTP middleware emits request logs with request ID, method, path, status, duration, and client IP.
+- HTTP request logs use ELK-friendly fields such as `service`, `request_id`, `status`, and `duration_ms`.
+- `X-Request-ID` is generated or propagated by middleware.
+- `auth-service` writes JSON lines to stdout through `AppLogger`.
+
+Items to verify before deploying ELK:
+
+1. Keep application logs on stdout/stderr. Do not write application logs to files inside containers.
+2. Run Kubernetes services with `APP_ENV=production` or update the code to support a dedicated `LOG_FORMAT=json` flag.
+3. Use Kubernetes metadata as a fallback for `service` when a non-HTTP log line does not include it.
+4. Avoid logging secrets, tokens, passwords, authorization headers, and sensitive personal data.
+
+Recommended Logstash normalization:
+
+```txt
+request_id = request_id || kubernetes.labels.request_id
+service = service || kubernetes.labels.app.kubernetes.io/component || kubernetes.container.name
+status = status
+duration_ms = duration_ms || parsed duration
+```

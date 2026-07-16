@@ -52,7 +52,7 @@ func Logger(logger *zap.Logger, serviceName string) func(http.Handler) http.Hand
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
 				zap.Int("status", recorder.status),
-				zap.Duration("duration", time.Since(start)),
+				zap.Int64("duration_ms", time.Since(start).Milliseconds()),
 				zap.String("client_ip", ClientIP(r)),
 			)
 		})

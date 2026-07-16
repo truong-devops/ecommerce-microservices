@@ -1,0 +1,29 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-containers
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - container:
+          stream: all
+          format: docker
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - drop_event:
+          when:
+            or:
+              - equals:
+                  container.name: "ecommerce-microservices-filebeat-1"
+              - equals:
+                  container.name: "ecommerce-microservices-logstash-1"
+              - equals:
+                  container.name: "ecommerce-microservices-elasticsearch-1"
+              - equals:
+                  container.name: "ecommerce-microservices-kibana-1"
+
+output.logstash:
+  hosts: ["logstash:5044"]
+
+logging.level: info

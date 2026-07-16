@@ -17,14 +17,15 @@ export class LoggingInterceptor implements NestInterceptor {
         next: () => {
           const durationMs = Date.now() - start;
           this.logger.log(
-            JSON.stringify({
-              requestId: request.requestId,
+            {
+              event: 'http_request',
+              request_id: request.requestId,
               method: request.method,
               path: request.url,
-              statusCode: response.statusCode,
-              durationMs,
-              clientIp: request.ip
-            }),
+              status: response.statusCode,
+              duration_ms: durationMs,
+              client_ip: request.ip
+            },
             'http'
           );
         }

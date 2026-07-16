@@ -1,6 +1,6 @@
 global:
   env:
-    APP_ENV: dev
+    APP_ENV: production
     LOG_FORMAT: json
     OTEL_SERVICE_NAMESPACE: ecommerce
 

@@ -35,14 +35,12 @@ async function bootstrap(): Promise<void> {
   const port = configService.get<number>('app.port', 3001);
   await app.listen(port);
 
-  appLogger.log(
-    JSON.stringify({
-      message: 'Auth service started',
-      port,
-      apiPrefix,
-      service: configService.get<string>('app.name', 'auth-service')
-    })
-  );
+  appLogger.log({
+    message: 'Auth service started',
+    port,
+    apiPrefix,
+    service: configService.get<string>('app.name', 'auth-service')
+  });
 }
 
 void bootstrap();

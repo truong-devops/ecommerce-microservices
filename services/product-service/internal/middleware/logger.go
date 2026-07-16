@@ -23,13 +23,13 @@ func Logger(logger *zap.Logger, service string) func(http.Handler) http.Handler 
 			start := time.Now()
 			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(rec, r)
-			logger.Info("http request",
-				zap.String("requestId", RequestIDFromContext(r.Context())),
+			logger.Info("http_request",
+				zap.String("request_id", RequestIDFromContext(r.Context())),
 				zap.String("service", service),
 				zap.String("method", r.Method),
 				zap.String("path", r.URL.Path),
-				zap.Int("statusCode", rec.status),
-				zap.Int64("durationMs", time.Since(start).Milliseconds()),
+				zap.Int("status", rec.status),
+				zap.Int64("duration_ms", time.Since(start).Milliseconds()),
 			)
 		})
 	}

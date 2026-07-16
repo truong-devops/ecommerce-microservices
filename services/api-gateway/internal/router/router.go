@@ -45,7 +45,7 @@ func New(
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Recovery(logger))
-	r.Use(middleware.Logger(logger))
+	r.Use(middleware.Logger(logger, cfg.AppName))
 	r.Use(middleware.Timeout(cfg.Server.RequestTimeout))
 	r.Use(middleware.CORS(cfg.CORSAllowedOrigins))
 	r.Use(middleware.RateLimit(cfg.RateLimit.RPS, cfg.RateLimit.Burst))

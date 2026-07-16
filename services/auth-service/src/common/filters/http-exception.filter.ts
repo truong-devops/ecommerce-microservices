@@ -59,14 +59,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     this.logger.error(
-      JSON.stringify({
-        requestId,
-        statusCode,
+      {
+        event: 'http_exception',
+        request_id: requestId,
+        status: statusCode,
         code,
         message,
         path: request.url,
         method: request.method
-      }),
+      },
       undefined,
       'http-exception'
     );

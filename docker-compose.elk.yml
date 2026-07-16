@@ -1,0 +1,135 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.security.http.ssl.enabled: "false"
+      ES_JAVA_OPTS: "-Xms768m -Xmx768m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.3
+    environment:
+      LS_JAVA_OPTS: "-Xms384m -Xmx384m"
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./deploy/observability/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.3
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+      SERVER_PUBLICBASEURL: "http://localhost:5601"
+      TELEMETRY_ENABLED: "false"
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.15.3
+    user: root
+    command: ["--strict.perms=false", "-e"]
+    volumes:
+      - ./deploy/observability/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      logstash:
+        condition: service_started
+
+  auth-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: auth-service
+
+  user-service:
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      APP_NAME: user-service
+      SERVICE_NAME: user-service
+
+  product-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: product-service
+
+  media-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: media-service
+
+  cart-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: cart-service
+
+  order-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: order-service
+
+  payment-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: payment-service
+
+  inventory-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: inventory-service
+
+  shipping-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: shipping-service
+
+  review-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: review-service
+
+  chat-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: chat-service
+
+  live-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: live-service
+
+  notification-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: notification-service
+
+  analytics-service:
+    environment:
+      APP_ENV: production
+      APP_NAME: analytics-service
+
+  api-gateway:
+    environment:
+      APP_ENV: production
+      APP_NAME: api-gateway
+
+volumes:
+  elasticsearch_data:

@@ -30,7 +30,7 @@ logs/
 
 # Local app runtime data
 .data/
-frontend/apps/buyer-web/tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
 node_modules/
 .next/
 dist/

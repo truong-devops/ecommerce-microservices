@@ -93,7 +93,7 @@ func Load() (*Config, error) {
 		JWTSecret:          jwtSecret,
 		RedisEnabled:       parseBoolEnv("REDIS_ENABLED", false),
 		RedisURL:           strings.TrimSpace(os.Getenv("REDIS_URL")),
-		CORSAllowedOrigins: splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "*")),
+		CORSAllowedOrigins: splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:8888,http://localhost:6789,http://localhost:1111,http://localhost:3000,http://localhost:3001")),
 		Server: ServerConfig{
 			RequestTimeout:  requestTimeout,
 			ShutdownTimeout: shutdownTimeout,

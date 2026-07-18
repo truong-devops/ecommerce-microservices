@@ -14,10 +14,10 @@ coverage/
 .turbo/
 .expo/
 
-# Env đang dev nên push luôn .env
+# Local environment files must stay out of Git. Commit .env.example instead.
 .env
-# .env.local
-# .env.*.local
+.env.local
+.env.*.local
 
 # IDE/OS
 .DS_Store

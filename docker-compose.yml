@@ -80,7 +80,7 @@ services:
       retries: 20
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
@@ -92,7 +92,7 @@ services:
       - '12031:9001'
 
   mediamtx:
-    image: bluenviron/mediamtx:latest
+    image: bluenviron/mediamtx:1.19.2
     restart: unless-stopped
     environment:
       MTX_HLSVARIANT: lowLatency
@@ -117,12 +117,12 @@ services:
       <<: *shared-jwt-access-secret
       APP_ENV: development
       PORT: 8080
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       JWT_ACCESS_EXPIRES_IN: 8h
-      JWT_REFRESH_SECRET: dev-shared-jwt-refresh-secret-min-32-chars
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-shared-jwt-refresh-secret-min-32-chars}
       JWT_REFRESH_EXPIRES_IN: 45d
-      JWT_MFA_SECRET: dev-shared-jwt-mfa-secret-min-32-chars
-      REFRESH_TOKEN_PEPPER: dev-refresh-token-pepper-16chars
+      JWT_MFA_SECRET: ${JWT_MFA_SECRET:-dev-shared-jwt-mfa-secret-min-32-chars}
+      REFRESH_TOKEN_PEPPER: ${REFRESH_TOKEN_PEPPER:-dev-refresh-token-pepper-16chars}
       DATABASE_URL: postgresql://eauth:eauth@postgres:5432/ecommerce_auth
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
@@ -179,7 +179,7 @@ services:
       MIGRATION_FILE: migrations/0001_init_user_service_go.sql
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
-      INTERNAL_SERVICE_TOKEN: dev-internal-service-token
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-internal-service-token}
       KAFKA_ENABLED: ${USER_SERVICE_KAFKA_ENABLED:-false}
       KAFKA_CLIENT_ID: ${USER_SERVICE_KAFKA_CLIENT_ID:-user-service}
       KAFKA_BROKERS: ${USER_SERVICE_KAFKA_BROKERS:-kafka:29092}
@@ -207,7 +207,7 @@ services:
       APP_ENV: development
       PORT: 8080
       API_PREFIX: api/v1
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DATABASE_URL: mongodb://mongo:27017/ecommerce_product
       DATABASE_NAME: ecommerce_product
       REDIS_ENABLED: 'true'
@@ -239,7 +239,7 @@ services:
       APP_ENV: development
       PORT: 8080
       API_PREFIX: api/v1
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       MINIO_ENDPOINT: minio:9000
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-127.0.0.1:12030}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
@@ -277,7 +277,7 @@ services:
       DB_SSL: 'false'
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       CART_TTL_SECONDS: 259200
       CART_MAX_QTY_PER_ITEM: 99
       CART_DEFAULT_CURRENCY: USD
@@ -315,13 +315,13 @@ services:
       APP_ENV: development
       PORT: 8080
       API_PREFIX: api/v1
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       DATABASE_URL: postgresql://eorder:eorder@postgres:5432/ecommerce_order
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       PRODUCT_SERVICE_BASE_URL: http://product-service:8080/api/v1
       USER_SERVICE_BASE_URL: http://user-service:8080/api/v1
-      INTERNAL_SERVICE_TOKEN: dev-internal-service-token
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-internal-service-token}
       DEPENDENCY_TIMEOUT_MS: 5000
       IDEMPOTENCY_RECORD_TTL_MINUTES: 60
       IDEMPOTENCY_LOCK_TTL_SECONDS: 30
@@ -435,7 +435,7 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       ORDER_SERVICE_BASE_URL: http://order-service:8080/api/v1
       DEPENDENCY_TIMEOUT_MS: 5000
-      SHIPPING_WEBHOOK_SIGNING_SECRET: dev-shipping-webhook-signing-secret
+      SHIPPING_WEBHOOK_SIGNING_SECRET: ${SHIPPING_WEBHOOK_SIGNING_SECRET:-dev-shipping-webhook-signing-secret}
       NEXUS_ENABLED: 'false'
       NEXUS_WEBHOOK_ENABLED: 'false'
       NEXUS_BASE_URL: https://ops.nexus-ex.site
@@ -518,7 +518,7 @@ services:
       MONGO_DATABASE: ecommerce_chat
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       KAFKA_ENABLED: 'true'
       KAFKA_CLIENT_ID: chat-service
       KAFKA_BROKERS: kafka:29092
@@ -556,7 +556,7 @@ services:
       MONGO_DATABASE: ecommerce_live
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
-      JWT_ACCESS_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       KAFKA_ENABLED: 'true'
       KAFKA_CLIENT_ID: live-service
       KAFKA_BROKERS: kafka:29092
@@ -658,7 +658,8 @@ services:
       APP_ENV: development
       PORT: 8080
       REQUEST_TIMEOUT: 45s
-      JWT_SECRET: dev-shared-jwt-access-secret-min-32-chars
+      JWT_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8888,http://localhost:6789,http://localhost:1111,http://localhost:3000,http://localhost:3001}
       REDIS_ENABLED: 'true'
       REDIS_URL: redis://redis:6379
       AUTH_SERVICE_URL: http://auth-service:8080

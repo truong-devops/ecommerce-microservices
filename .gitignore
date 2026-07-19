@@ -14,7 +14,7 @@ coverage/
 .turbo/
 .expo/
 
-# Local environment files must stay out of Git. Commit .env.example instead.
+# Local environment files must stay out of Git.
 .env
 .env.local
 .env.*.local

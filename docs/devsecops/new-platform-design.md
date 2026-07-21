@@ -213,25 +213,7 @@ This RAG-based decision layer is not implemented yet. It should be treated as fu
 
 ## Local ELK
 
-Run the local application stack with ELK:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
-```
-
-Open Kibana at:
-
-```txt
-http://localhost:5601
-```
-
-Create a data view:
-
-```txt
-ecommerce-logs-local-*
-```
-
-More details: [`deploy/observability/elk/README.md`](../../deploy/observability/elk/README.md).
+Local ELK is available through `docker-compose.elk.yml`. Startup commands, Kibana data view setup, test queries, and local Elasticsearch notes are documented in [`deploy/observability/elk/README.md`](../../deploy/observability/elk/README.md).
 
 ## Notes
 

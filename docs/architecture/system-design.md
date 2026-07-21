@@ -239,11 +239,15 @@ Coding rules: [`docs/development/code-standards.md`](../development/code-standar
 docker compose up -d    # full stack: 15 services + kafka, postgres, mongo, redis, minio, mediamtx
 ```
 
-Lightweight variant: `docker-compose.local.yml`.
+Run with local ELK log collection:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
+```
 
 ### Deployment
 
-The previous Kubernetes and CI/CD assets have been removed so a new DevSecOps workflow can be introduced cleanly.
+The repository includes a GitLab CI pipeline, Helm chart, Argo CD application manifest, and Kyverno policies for the target Kubernetes-based DevSecOps workflow. These assets still use placeholder values such as `harbor.example.com` and `gitlab.example.com`; replace them before deploying to a real environment.
 
 ---
 
@@ -252,7 +256,8 @@ The previous Kubernetes and CI/CD assets have been removed so a new DevSecOps wo
 - **Metrics**: Prometheus scrapes service `/metrics` (gateway exposes `prometheus/client_golang`).
 - **Logs**: Structured JSON (zap in Go services).
 - **Correlation**: `X-Request-ID` propagated from gateway middleware.
-- **Stack configs**: `infrastructure/monitoring/` (Prometheus, Grafana, Thanos), `infrastructure/logging/` (ELK-oriented).
+- **Local logging stack**: `docker-compose.elk.yml` with Filebeat, Logstash, Elasticsearch, and Kibana.
+- **Target monitoring**: Prometheus/Grafana are part of the target platform design, but the active in-cluster manifests still need to be added or connected through an existing platform stack.
 
 Scalability notes: [`scalability.md`](scalability.md) (section on “9 of 12 Go services” is outdated — prefer this document for service counts).
 

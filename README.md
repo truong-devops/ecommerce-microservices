@@ -36,7 +36,27 @@ The platform includes:
 
 ## DevSecOps Code Deployment Flow
 
-The target delivery model uses GitLab CI for validation and artifact publishing, Harbor for trusted images, Argo CD for GitOps deployment, Kyverno for runtime admission control, Prometheus/Grafana for metrics, and ELK/Filebeat for logs.
+This repository uses the new GitLab-centered DevSecOps pipeline defined in `.gitlab-ci.yml`. It is not the old legacy flow based on manual deployment or Jenkins-style jobs.
+
+The implemented pipeline validates changed services, runs security scans, builds images, scans image tarballs, publishes images to Harbor when configured, and updates the dev Helm values for GitOps promotion.
+
+Harbor, Argo CD, Kyverno, Prometheus/Grafana, and in-cluster ELK are the target deployment model. Local development currently uses Docker Compose, with ELK available through `docker-compose.elk.yml`.
+
+Current implemented pipeline stages:
+
+| Stage | Job | Purpose |
+|---|---|---|
+| `discover` | `detect_changed_targets` | Detect changed services/apps and write `changed-targets.txt`. |
+| `validate` | `lint_and_test` | Run service-scoped Go tests or npm lint/test/build commands. |
+| `security` | `gitleaks_secret_scan` | Scan the repository for committed secrets. |
+| `security` | `semgrep_sast` | Run SAST checks with CI, secrets, and OWASP rules. |
+| `security` | `trivy_filesystem_scan` | Scan filesystem and dependencies for high/critical issues. |
+| `build` | `build_images` | Build Docker images for changed targets and export image tarballs. |
+| `build` | `trivy_image_scan` | Scan built image tarballs and generate CycloneDX SBOM files. |
+| `publish` | `publish_images` | Push images to Harbor-compatible registry when credentials are configured. |
+| `gitops` | `update_gitops_dev` | Update `deploy/helm/ecommerce/values-dev.yaml` for dev GitOps promotion. |
+
+Target platform components are documented in the flow below, but they should be read as the intended production architecture unless the repository has a concrete config for them.
 
 ```mermaid
 flowchart LR
@@ -51,10 +71,9 @@ flowchart LR
     trivyfs --> docker[Docker build<br/>service image]
     docker --> trivyimg[Trivy<br/>image scan]
     trivyimg --> sbom[Generate SBOM]
-    sbom --> cosign[Cosign<br/>sign image]
   end
 
-  cosign -->|Push signed image<br/>tag + digest| harbor[(Harbor Registry)]
+  sbom -->|Push image<br/>tag or digest| harbor[(Harbor Registry)]
 
   subgraph gitops["GitOps CD Flow"]
     release[GitLab CI<br/>release job] -->|Update image digest| values[GitOps config<br/>Helm values]
@@ -64,7 +83,7 @@ flowchart LR
   ci -->|Main/develop passed| release
   argocd -->|Sync application| kyverno[Kyverno<br/>admission policies]
   kyverno -->|Allow compliant workload| k8s[Kubernetes Cluster<br/>ecommerce microservices]
-  k8s -.->|Pull signed image<br/>by digest| harbor
+  k8s -.->|Pull image<br/>by tag or digest| harbor
   k8s --> smoke[Smoke tests<br/>API Gateway + frontends]
 
   subgraph metrics["Metrics Observability"]
@@ -82,12 +101,13 @@ flowchart LR
   release -.->|Pipeline/deploy result| notify[Email / Slack notification]
 ```
 
-Security gates are split across the pipeline and the cluster:
+Security gates are split across the pipeline and the target cluster:
 
-- GitLab CI runs Gitleaks, Semgrep, Trivy filesystem scan, Trivy image scan, SBOM generation, and Cosign image signing.
-- Harbor stores signed internal images.
-- Argo CD deploys from Git instead of applying manifests directly from CI.
-- Kyverno blocks non-compliant workloads, such as images outside Harbor, `latest` tags, privileged containers, missing resource limits, or unsigned images.
+- GitLab CI currently runs Gitleaks, Semgrep, Trivy filesystem scan, Trivy image scan, and SBOM generation.
+- Harbor is used by the CI scripts when real registry variables are configured.
+- Cosign signing is optional in `ci/scripts/publish-images.sh`; it runs only when Cosign is installed in the publish job image and `COSIGN_PRIVATE_KEY` is configured.
+- Argo CD deployment is represented by `deploy/argocd/ecommerce-dev-application.yaml`.
+- Kyverno policies are available under `deploy/kyverno/policies` for Harbor-only images, non-`latest` tags, pod security, resource limits, and image signature verification in audit mode.
 
 ## Repository Organization
 
@@ -234,7 +254,25 @@ The default local stack is managed through Docker Compose:
 docker compose up
 ```
 
-Service-specific Dockerfiles remain under `services/*/Dockerfile`, and shared local infrastructure assets remain under `infrastructure/docker`, `infrastructure/kafka`, `infrastructure/monitoring`, and `infrastructure/logging`.
+Run the local stack with ELK log collection:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
+```
+
+Kibana is available at:
+
+```txt
+http://localhost:5601
+```
+
+Use the Kibana data view:
+
+```txt
+ecommerce-logs-local-*
+```
+
+Service-specific Dockerfiles remain under `services/*/Dockerfile`. The active local ELK assets are under `deploy/observability/elk`; older infrastructure folders are retained for reference and service-specific development.
 
 ## Documentation
 
@@ -245,6 +283,7 @@ Key documents:
 - [Kafka events](./docs/architecture/kafka-events.md)
 - [Security](./docs/architecture/security.md)
 - [DevSecOps platform design](./docs/devsecops/new-platform-design.md)
+- [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md)
 - [API documentation](./docs/api/README.md)
 - [Development standards](./docs/development/code-standards.md)
 

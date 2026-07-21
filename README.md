@@ -36,58 +36,19 @@ The platform includes:
 
 ## DevSecOps Code Deployment Flow
 
-The target delivery model uses GitLab CI for validation and artifact publishing, Harbor for trusted images, Argo CD for GitOps deployment, Kyverno for runtime admission control, Prometheus/Grafana for metrics, and ELK/Filebeat for logs.
+This repository uses the new GitLab-centered DevSecOps pipeline defined in `.gitlab-ci.yml`. It is not the old legacy flow based on manual deployment or Jenkins-style jobs.
 
-```mermaid
-flowchart LR
-  dev[Developer<br/>writes code] -->|Push code| repo[GitLab Repository<br/>source code]
+The implemented pipeline validates changed services, runs security scans, builds images, scans image tarballs, publishes images to Harbor when configured, and updates the dev Helm values for GitOps promotion. The detailed stage-by-stage pipeline, diagram, required variables, and rollout boundaries are documented in [DevSecOps platform design](./docs/devsecops/new-platform-design.md).
 
-  subgraph ci["GitLab CI - Code, Test, Build, and Security Gates"]
-    repo -->|Trigger pipeline| detect[Detect changed<br/>services]
-    detect --> lint[Lint + unit tests]
-    lint --> gitleaks[Gitleaks<br/>secret scan]
-    gitleaks --> semgrep[Semgrep<br/>SAST scan]
-    semgrep --> trivyfs[Trivy<br/>dependency + filesystem scan]
-    trivyfs --> docker[Docker build<br/>service image]
-    docker --> trivyimg[Trivy<br/>image scan]
-    trivyimg --> sbom[Generate SBOM]
-    sbom --> cosign[Cosign<br/>sign image]
-  end
+Harbor, Argo CD, Kyverno, Prometheus/Grafana, and in-cluster ELK are the target deployment model. Local development currently uses Docker Compose, with ELK available through `docker-compose.elk.yml`.
 
-  cosign -->|Push signed image<br/>tag + digest| harbor[(Harbor Registry)]
+Pipeline diagrams are maintained in [DevSecOps platform design](./docs/devsecops/new-platform-design.md) and [the draw.io diagram](./docs/diagram/devsecops-current-target-rag.drawio).
 
-  subgraph gitops["GitOps CD Flow"]
-    release[GitLab CI<br/>release job] -->|Update image digest| values[GitOps config<br/>Helm values]
-    values -->|Pull desired state| argocd[Argo CD]
-  end
+Security gates are split across the pipeline and the target cluster:
 
-  ci -->|Main/develop passed| release
-  argocd -->|Sync application| kyverno[Kyverno<br/>admission policies]
-  kyverno -->|Allow compliant workload| k8s[Kubernetes Cluster<br/>ecommerce microservices]
-  k8s -.->|Pull signed image<br/>by digest| harbor
-  k8s --> smoke[Smoke tests<br/>API Gateway + frontends]
-
-  subgraph metrics["Metrics Observability"]
-    k8s -.->|Scrape /metrics| prometheus[Prometheus]
-    prometheus --> grafana[Grafana<br/>dashboards + alerts]
-  end
-
-  subgraph logs["ELK Logging"]
-    k8s -.->|Container logs| filebeat[Filebeat]
-    filebeat --> logstash[Logstash<br/>parse + enrich]
-    logstash --> elastic[(Elasticsearch)]
-    elastic --> kibana[Kibana<br/>search + dashboards]
-  end
-
-  release -.->|Pipeline/deploy result| notify[Email / Slack notification]
-```
-
-Security gates are split across the pipeline and the cluster:
-
-- GitLab CI runs Gitleaks, Semgrep, Trivy filesystem scan, Trivy image scan, SBOM generation, and Cosign image signing.
-- Harbor stores signed internal images.
-- Argo CD deploys from Git instead of applying manifests directly from CI.
-- Kyverno blocks non-compliant workloads, such as images outside Harbor, `latest` tags, privileged containers, missing resource limits, or unsigned images.
+- GitLab CI currently runs Gitleaks, Semgrep, Trivy filesystem scan, Trivy image scan, and SBOM generation.
+- Harbor, Argo CD, Kyverno, Cosign, Prometheus/Grafana, and in-cluster ELK require real environment setup before production use.
+- RAG-based risk gating is a proposed research extension, documented in [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md).
 
 ## Repository Organization
 
@@ -234,7 +195,25 @@ The default local stack is managed through Docker Compose:
 docker compose up
 ```
 
-Service-specific Dockerfiles remain under `services/*/Dockerfile`, and shared local infrastructure assets remain under `infrastructure/docker`, `infrastructure/kafka`, `infrastructure/monitoring`, and `infrastructure/logging`.
+Run the local stack with ELK log collection:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
+```
+
+Kibana is available at:
+
+```txt
+http://localhost:5601
+```
+
+Use the Kibana data view:
+
+```txt
+ecommerce-logs-local-*
+```
+
+Service-specific Dockerfiles remain under `services/*/Dockerfile`. The active local ELK assets are under `deploy/observability/elk`; older infrastructure folders are retained for reference and service-specific development.
 
 ## Documentation
 
@@ -245,6 +224,7 @@ Key documents:
 - [Kafka events](./docs/architecture/kafka-events.md)
 - [Security](./docs/architecture/security.md)
 - [DevSecOps platform design](./docs/devsecops/new-platform-design.md)
+- [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md)
 - [API documentation](./docs/api/README.md)
 - [Development standards](./docs/development/code-standards.md)
 

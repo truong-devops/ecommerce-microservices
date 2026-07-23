@@ -28,27 +28,26 @@ The platform includes:
 - Realtime services for buyer-seller chat and livestream commerce.
 - Media storage and playback through MinIO and MediaMTX.
 - Analytics and recommendation features, including FP-Growth association-rule mining.
-- Local Docker Compose runtime with optional monitoring and logging configuration.
+- Local Docker Compose runtime, with optional ELK log collection through `docker-compose.elk.yml`.
 
 ## High-Level Runtime Architecture
 
 ![Ecommerce microservices runtime architecture](./docs/diagram/ecommerce-runtime-architecture.png)
 
-## DevSecOps Code Deployment Flow
+## DevSecOps And Observability Status
 
 This repository uses the new GitLab-centered DevSecOps pipeline defined in `.gitlab-ci.yml`. It is not the old legacy flow based on manual deployment or Jenkins-style jobs.
 
-The implemented pipeline validates changed services, runs security scans, builds images, scans image tarballs, publishes images to Harbor when configured, and updates the dev Helm values for GitOps promotion. The detailed stage-by-stage pipeline, diagram, required variables, and rollout boundaries are documented in [DevSecOps platform design](./docs/devsecops/new-platform-design.md).
+The implemented pipeline validates changed services, runs security scans, builds images, scans image tarballs, publishes images to Harbor when configured, and updates the dev Helm values for GitOps promotion.
 
-Harbor, Argo CD, Kyverno, Prometheus/Grafana, and in-cluster ELK are the target deployment model. Local development currently uses Docker Compose, with ELK available through `docker-compose.elk.yml`.
+Current status:
 
-Pipeline diagrams are maintained in [DevSecOps platform design](./docs/devsecops/new-platform-design.md) and [the draw.io diagram](./docs/diagram/devsecops-current-target-rag.drawio).
-
-Security gates are split across the pipeline and the target cluster:
-
-- GitLab CI currently runs Gitleaks, Semgrep, Trivy filesystem scan, Trivy image scan, and SBOM generation.
+- GitLab CI currently runs changed-target discovery, scoped validation, Gitleaks, Semgrep, Trivy filesystem scan, Docker image build, Trivy image scan, SBOM generation, optional registry publishing, and Helm dev values update.
+- Local ELK is available through `docker-compose.elk.yml` and stores logs in `ecommerce-logs-local-*`.
 - Harbor, Argo CD, Kyverno, Cosign, Prometheus/Grafana, and in-cluster ELK require real environment setup before production use.
 - RAG-based risk gating is a proposed research extension, documented in [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md).
+
+Detailed pipeline stages, diagrams, required variables, rollout boundaries, and the draw.io architecture are documented in [DevSecOps platform design](./docs/devsecops/new-platform-design.md).
 
 ## Repository Organization
 
@@ -81,7 +80,8 @@ ecommerce-microservices/
 │
 ├── packages/backend-shared/      # Shared NestJS/backend utilities
 ├── shared/                       # Shared contracts, Kafka topics, proto files, types
-├── infrastructure/               # Docker, Kafka, monitoring, and logging assets
+├── infrastructure/               # Legacy/reference Docker and Kafka assets
+├── deploy/                       # Helm, Argo CD, Kyverno, and observability assets
 └── docs/                         # Architecture, API docs, operations docs, runbooks
 ```
 
@@ -225,6 +225,8 @@ Key documents:
 - [Security](./docs/architecture/security.md)
 - [DevSecOps platform design](./docs/devsecops/new-platform-design.md)
 - [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md)
+- [Local ELK guide](./deploy/observability/elk/README.md)
+- [DevSecOps draw.io diagram](./docs/diagram/devsecops-current-target-rag.drawio)
 - [API documentation](./docs/api/README.md)
 - [Development standards](./docs/development/code-standards.md)
 

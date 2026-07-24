@@ -195,10 +195,22 @@ The default local stack is managed through Docker Compose:
 docker compose up
 ```
 
+Or use the local helper script:
+
+```bash
+./start-service.sh --build
+```
+
 Run the local stack with ELK log collection:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
+```
+
+The equivalent helper command is:
+
+```bash
+./start-service.sh --elk --build
 ```
 
 Kibana is available at:

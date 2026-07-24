@@ -22,10 +22,10 @@ Last updated: 2026-05-18.
 
 ## Deployment & operations
 
-- [`deployment/on-prem-3vm-utm-k3s-deployment.md`](deployment/on-prem-3vm-utm-k3s-deployment.md) — On-prem K3s lab (UTM).
-- [`development/on-prem-devops-lab-plan.md`](development/on-prem-devops-lab-plan.md) — DevOps lab planning.
+- [`devsecops/new-platform-design.md`](devsecops/new-platform-design.md) — Current GitLab CI pipeline and target DevSecOps platform.
+- [`devsecops/rag-risk-gate-proposal.md`](devsecops/rag-risk-gate-proposal.md) — Proposed RAG-based DevSecOps risk gate research extension.
 - [`development/local-setup.md`](development/local-setup.md) — Local development.
-- [`operations/`](operations/) — Runbooks and QA checklists.
+- [`operations/buyer-profile-phase-a-qa-checklist.md`](operations/buyer-profile-phase-a-qa-checklist.md) — Buyer profile QA checklist.
 
 ## Development
 

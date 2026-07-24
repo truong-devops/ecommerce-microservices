@@ -6,7 +6,7 @@ Go catalog service (`services/product-service/`). Default stack: MongoDB + Redis
 
 `services/product-service/`
 
-Legacy NestJS implementation: `services/product-service-nest/` (shadow/compare only, not in root `docker compose up`).
+Historical docs may mention a legacy NestJS implementation, but the current source tree uses the Go `services/product-service/` only.
 
 ## 2) Đọc nhanh (5 file)
 

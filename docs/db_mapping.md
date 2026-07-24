@@ -22,7 +22,7 @@ Last updated: 2026-05-18. Runtime defaults: root `docker-compose.yml`.
 | Notification Service | PostgreSQL, Redis | Templates, dispatch queue |
 | Analytics Service | PostgreSQL, Redis (optional) | `analytics_events_raw`, `seller_daily_metrics` |
 
-**Not in default compose:** `services/product-service-nest/` (legacy NestJS catalog for shadow tests).
+Historical docs may mention `services/product-service-nest/`, but that legacy implementation is no longer present in the current source tree.
 
 ## 2. Infrastructure (compose)
 

@@ -3,7 +3,7 @@
 Last updated: 2026-05-18  
 Source of truth for runtime layout: root `docker-compose.yml`, `services/api-gateway/internal/config/config.go`, and per-service `internal/config`.
 
-This document describes the **current** e-commerce microservices platform. Older docs may still mention NestJS `product-service` or `shipping-service`; both runtimes are **Go** in the default compose stack. `product-service-nest` remains in the repo for migration reference only and is **not** started by `docker compose up`.
+This document describes the **current** e-commerce microservices platform. Older historical docs may still mention NestJS `product-service` or `shipping-service`; both runtimes are **Go** in the default compose stack. The legacy `product-service-nest` implementation is no longer present in the current source tree.
 
 ---
 
@@ -21,7 +21,7 @@ The platform uses a **microservices architecture** inside a single monorepo. Bus
 
 | Runtime | Services |
 |---|---|
-| **Go** (13) | `api-gateway`, `user-service`, `product-service`, `media-service`, `cart-service`, `order-service`, `payment-service`, `inventory-service`, `shipping-service`, `review-service`, `notification-service`, `chat-service`, `live-service`, `analytics-service` |
+| **Go** (14) | `api-gateway`, `user-service`, `product-service`, `media-service`, `cart-service`, `order-service`, `payment-service`, `inventory-service`, `shipping-service`, `review-service`, `notification-service`, `chat-service`, `live-service`, `analytics-service` |
 | **NestJS / TypeScript** (1) | `auth-service` only |
 
 Go services use **chi**, **pgx** (PostgreSQL), **mongo-driver** (MongoDB), **kafka-go**, **zap**, and **JWT** middleware in `internal/`. NestJS `auth-service` uses Passport, TypeORM, and `@nestjs/config`.
@@ -30,7 +30,7 @@ Go services use **chi**, **pgx** (PostgreSQL), **mongo-driver** (MongoDB), **kaf
 
 Four frontend apps under `frontend/apps/`:
 
-- `buyer` — mobile buyer
+- `buyer-mobile` — mobile buyer
 - `buyer-web` — web buyer
 - `seller` — seller dashboard
 - `moderator` — moderation panel
@@ -122,7 +122,6 @@ Implementation: `services/api-gateway/internal/router/router.go`.
 
 | Path | Status |
 |---|---|
-| `services/product-service-nest/` | NestJS catalog implementation kept for shadow/compare scripts; **not** deployed by root `docker-compose.yml` |
 | ClickHouse for `analytics-service` | Documented in some service guides; **current Go service uses PostgreSQL** via `DATABASE_URL` (see `services/analytics-service/internal/config/config.go`) |
 
 ---

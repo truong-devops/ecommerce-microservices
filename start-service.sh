@@ -2,26 +2,20 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOCAL_COMPOSE_FILE="$ROOT_DIR/docker-compose.local.yml"
+BASE_COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+ELK_COMPOSE_FILE="$ROOT_DIR/docker-compose.elk.yml"
 
-SERVICES_NPM=(
-  "auth-service"
-  "order-service"
-  "payment-service"
-  "inventory-service"
-  "shipping-service"
-  "notification-service"
-  "analytics-service"
-  "cart-service"
-  "product-service"
-)
+usage() {
+  cat <<'USAGE'
+Usage:
+  ./start-service.sh [--elk] [--build] [--down]
 
-SERVICES_GO=(
-  "review-service"
-  "user-service"
-)
-
-PIDS=()
+Options:
+  --elk     Start the local stack with Filebeat, Logstash, Elasticsearch, and Kibana.
+  --build   Build images before starting containers.
+  --down    Stop the selected local stack instead of starting it.
+USAGE
+}
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -30,102 +24,57 @@ require_cmd() {
   fi
 }
 
-start_npm_service() {
-  local service="$1"
-  local env_file="$ROOT_DIR/services/$service/.env.local"
-  local service_dir="$ROOT_DIR/services/$service"
+WITH_ELK=false
+WITH_BUILD=false
+DOWN=false
 
-  if [[ ! -f "$env_file" ]]; then
-    echo "[skip] services/$service/.env.local not found"
-    return
-  fi
-
-  echo "==> Starting $service (npm start:dev)"
-  bash -lc '
-    set -euo pipefail
-    env_file="$1"
-    service_dir="$2"
-    service_name="$3"
-    unset TS_NODE_COMPILER_OPTIONS TS_NODE_PROJECT TS_NODE_FILES || true
-    set -a
-    source "$env_file"
-    set +a
-    cd "'"$ROOT_DIR"'"
-    npm run start:dev --workspace "services/$service_name"
-  ' _ "$env_file" "$service_dir" "$service" &
-  PIDS+=("$!")
-}
-
-start_go_service() {
-  local service="$1"
-  local env_file="$ROOT_DIR/services/$service/.env.local"
-  local service_dir="$ROOT_DIR/services/$service"
-
-  if [[ ! -f "$env_file" ]]; then
-    echo "[skip] services/$service/.env.local not found"
-    return
-  fi
-
-  echo "==> Starting $service (go run)"
-  bash -lc '
-    set -euo pipefail
-    env_file="$1"
-    service_dir="$2"
-    set -a
-    source "$env_file"
-    set +a
-    cd "$service_dir"
-    go run ./cmd/server
-  ' _ "$env_file" "$service_dir" &
-  PIDS+=("$!")
-}
-
-cleanup() {
-  echo
-  echo "==> Stopping local service processes..."
-  for pid in "${PIDS[@]:-}"; do
-    if [[ -n "${pid:-}" ]] && kill -0 "$pid" >/dev/null 2>&1; then
-      kill "$pid" >/dev/null 2>&1 || true
-    fi
-  done
-
-  echo "==> Keeping infrastructure running."
-  echo "   Stop infra manually: docker compose -f docker-compose.local.yml down"
-}
-
-trap cleanup INT TERM
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --elk)
+      WITH_ELK=true
+      ;;
+    --build)
+      WITH_BUILD=true
+      ;;
+    --down)
+      DOWN=true
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
 
 require_cmd docker
-require_cmd npm
-require_cmd go
 
-if [[ ! -f "$LOCAL_COMPOSE_FILE" ]]; then
-  echo "Missing $LOCAL_COMPOSE_FILE" >&2
-  exit 1
+compose_args=(-f "$BASE_COMPOSE_FILE")
+if [[ "$WITH_ELK" == "true" ]]; then
+  compose_args+=(-f "$ELK_COMPOSE_FILE")
 fi
 
-INFRA_SERVICES=(
-  "zookeeper"
-  "kafka"
-  "postgres"
-  "redis"
-  "mongo"
-  "api-gateway"
-)
+if [[ "$DOWN" == "true" ]]; then
+  docker compose "${compose_args[@]}" down
+  exit 0
+fi
 
-echo "==> Starting local infrastructure from docker-compose.local.yml"
-docker compose -f "$LOCAL_COMPOSE_FILE" up -d --remove-orphans "${INFRA_SERVICES[@]}"
+up_args=(up -d --remove-orphans)
+if [[ "$WITH_BUILD" == "true" ]]; then
+  up_args+=(--build)
+fi
 
-for svc in "${SERVICES_NPM[@]}"; do
-  start_npm_service "$svc"
-done
-
-for svc in "${SERVICES_GO[@]}"; do
-  start_go_service "$svc"
-done
+docker compose "${compose_args[@]}" "${up_args[@]}"
 
 echo
-echo "==> All local services started (api-gateway runs in Docker)."
-echo "Press Ctrl+C to stop local processes."
-
-wait || true
+echo "Local stack is running."
+echo "API Gateway: http://localhost:12000"
+if [[ "$WITH_ELK" == "true" ]]; then
+  echo "Kibana:      http://localhost:5601"
+  echo "Elasticsearch index pattern: ecommerce-logs-local-*"
+fi

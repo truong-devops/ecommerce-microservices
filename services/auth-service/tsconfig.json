@@ -13,7 +13,6 @@
     "forceConsistentCasingInFileNames": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "isolatedModules": true,
     "moduleResolution": "Node16",
     "ignoreDeprecations": "5.0",
     "types": ["node", "jest"]

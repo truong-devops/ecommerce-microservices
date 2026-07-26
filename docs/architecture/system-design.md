@@ -252,11 +252,11 @@ The repository includes a GitLab CI pipeline, Helm chart, Argo CD application ma
 
 ## 11. Observability
 
-- **Metrics**: Prometheus scrapes service `/metrics` (gateway exposes `prometheus/client_golang`).
+- **Metrics**: Services expose lightweight `/metrics` endpoints where implemented; `api-gateway` exposes Prometheus-format metrics through `prometheus/client_golang`.
 - **Logs**: Structured JSON (zap in Go services).
 - **Correlation**: `X-Request-ID` propagated from gateway middleware.
 - **Local logging stack**: `docker-compose.elk.yml` with Filebeat, Logstash, Elasticsearch, and Kibana.
-- **Target monitoring**: Prometheus/Grafana are part of the target platform design, but the active in-cluster manifests still need to be added or connected through an existing platform stack.
+- **Target monitoring**: Prometheus/Grafana are part of the target platform design, but active in-cluster monitoring manifests still need to be added or connected through an existing platform stack.
 
 Scalability notes: [`scalability.md`](scalability.md) (section on “9 of 12 Go services” is outdated — prefer this document for service counts).
 

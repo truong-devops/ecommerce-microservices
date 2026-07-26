@@ -124,22 +124,12 @@ flowchart LR
   logstash -.-> elastic
   elastic -.-> kibana
 
-  subgraph future["Future research extension"]
-    rag[RAG Risk Gate<br/>PASS / WARNING / BLOCK]
-  end
-
-  gitleaks -.-> rag
-  semgrep -.-> rag
-  trivyfs -.-> rag
-  trivyimg -.-> rag
-  sbom -.-> rag
-  rag -.->|future gate decision| publish
 ```
 
 If your Markdown viewer does not render Mermaid, open the draw.io version:
 
 ```txt
-docs/diagram/devsecops-current-target-rag.drawio
+docs/diagram/devsecops-current-target.drawio
 ```
 
 Target production flow:
@@ -201,15 +191,17 @@ COSIGN_PASSWORD
 7. Add Prometheus/Grafana and ELK into the cluster.
 8. Switch image updates to digest-only GitOps promotion.
 
-## Proposed RAG Risk Gate
+## Research Extension Boundary
 
-A proposed research extension is documented in [`rag-risk-gate-proposal.md`](./rag-risk-gate-proposal.md). The idea is to consume scanner reports from Trivy, Semgrep, and Gitleaks, retrieve additional context from CVE/CWE/OWASP references and service architecture metadata, then output a deployment decision:
+A proposed RAG-based risk gate is documented separately in [`rag-risk-gate-proposal.md`](./rag-risk-gate-proposal.md). It is intentionally not shown as part of the active CI/CD flow above because it is not implemented in `.gitlab-ci.yml`.
+
+If implemented later, it would consume scanner reports from Trivy, Semgrep, Gitleaks, and SBOM outputs, retrieve additional context from CVE/CWE/OWASP references and service architecture metadata, then output a deployment decision:
 
 ```txt
 PASS | WARNING | BLOCK
 ```
 
-This RAG-based decision layer is not implemented yet. It should be treated as future work on top of the existing CI security reports and deployment metadata.
+Until that component exists as code and a CI job, the current pipeline remains scanner-based and does not perform RAG-driven PASS/WARNING/BLOCK decisions.
 
 ## Local ELK
 

@@ -1,6 +1,6 @@
 # RAG-Based DevSecOps Risk Gate Proposal
 
-This document describes a proposed research extension for the ecommerce microservices platform. It is not fully implemented in the current source.
+This document describes a proposed research extension for the ecommerce microservices platform. It is not implemented in the current source and is not part of the active GitLab CI pipeline.
 
 ## Proposed Topic
 
@@ -32,7 +32,7 @@ Already available:
 - Kyverno policy examples for image source, non-`latest` tags, pod security, resource limits, and signed-image verification in audit mode.
 - Local ELK stack for runtime log collection and search.
 
-Not implemented yet:
+Not implemented:
 
 - RAG ingestion pipeline.
 - Vector database or knowledge base index.
@@ -120,4 +120,3 @@ Expected evaluation metrics:
 - improvement in vulnerability prioritization
 - consistency of generated remediation recommendations
 - time saved during security triage
-

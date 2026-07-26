@@ -45,7 +45,7 @@ Current status:
 - GitLab CI currently runs changed-target discovery, scoped validation, Gitleaks, Semgrep, Trivy filesystem scan, Docker image build, Trivy image scan, SBOM generation, optional registry publishing, and Helm dev values update.
 - Local ELK is available through `docker-compose.elk.yml` and stores logs in `ecommerce-logs-local-*`.
 - Harbor, Argo CD, Kyverno, Cosign, Prometheus/Grafana, and in-cluster ELK require real environment setup before production use.
-- RAG-based risk gating is a proposed research extension, documented in [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md).
+- RAG-based risk gating is not part of the current pipeline; it is documented separately as a research proposal in [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md).
 
 Detailed pipeline stages, diagrams, required variables, rollout boundaries, and the draw.io architecture are documented in [DevSecOps platform design](./docs/devsecops/new-platform-design.md).
 
@@ -238,7 +238,7 @@ Key documents:
 - [DevSecOps platform design](./docs/devsecops/new-platform-design.md)
 - [RAG-based DevSecOps risk gate proposal](./docs/devsecops/rag-risk-gate-proposal.md)
 - [Local ELK guide](./deploy/observability/elk/README.md)
-- [DevSecOps draw.io diagram](./docs/diagram/devsecops-current-target-rag.drawio)
+- [DevSecOps draw.io diagram](./docs/diagram/devsecops-current-target.drawio)
 - [API documentation](./docs/api/README.md)
 - [Development standards](./docs/development/code-standards.md)
 

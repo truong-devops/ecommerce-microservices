@@ -14,6 +14,7 @@ while IFS= read -r target; do
 
   if [[ -f "${target}/go.mod" ]]; then
     (cd "$target" && go test ./...)
+    (cd "$target" && go vet ./...)
     continue
   fi
 

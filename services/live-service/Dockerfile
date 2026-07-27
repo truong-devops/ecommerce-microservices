@@ -6,9 +6,8 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/live-service ./cmd/server
 
-FROM alpine:3.20
-
-WORKDIR /app
-COPY --from=builder /out/live-service /app/live-service
+FROM gcr.io/distroless/static-debian12:nonroot
+WORKDIR /
+COPY --from=builder /out/live-service /live-service
 EXPOSE 8080
-ENTRYPOINT ["/app/live-service"]
+ENTRYPOINT ["/live-service"]

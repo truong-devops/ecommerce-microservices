@@ -1,12 +1,15 @@
 global:
   imagePullSecrets:
     - name: harbor-pull-secret
+  # Created outside Git by the deployment operator. It supplies runtime
+  # credentials and connection strings to every application workload.
+  existingSecret: ""
   env:
     APP_ENV: dev
 
 ingress:
   enabled: false
   className: nginx
-  host: ecommerce.local
+  hosts: []
 
 services: {}

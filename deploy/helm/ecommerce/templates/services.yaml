@@ -42,6 +42,11 @@ spec:
           ports:
             - name: http
               containerPort: {{ $svc.port }}
+          {{- if $root.Values.global.existingSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ $root.Values.global.existingSecret }}
+          {{- end }}
           env:
             {{- range $key, $value := $root.Values.global.env }}
             - name: {{ $key }}
@@ -49,6 +54,12 @@ spec:
             {{- end }}
             - name: SERVICE_NAME
               value: {{ $name | quote }}
+            - name: APP_NAME
+              value: {{ $name | quote }}
+            {{- range $key, $value := default dict $svc.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: {{ default "/health" $svc.healthPath }}

@@ -9,17 +9,17 @@ ingress:
   enabled: true
   className: nginx
   hosts:
-    - host: dev.ecommerce.local
+    - host: ecommerce.local
       routes:
         - path: /api
           service: api-gateway
         - path: /
           service: buyer-web
-    - host: seller.dev.ecommerce.local
+    - host: seller.ecommerce.local
       routes:
         - path: /
           service: seller
-    - host: moderator.dev.ecommerce.local
+    - host: moderator.ecommerce.local
       routes:
         - path: /
           service: moderator
@@ -29,7 +29,7 @@ defaults:
   image:
     registry: harbor.example.com
     project: ecommerce
-    tag: dev
+    tag: stable
     pullPolicy: IfNotPresent
   resources:
     requests:

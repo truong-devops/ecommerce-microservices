@@ -3,23 +3,24 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "ecommerce.fullname" . }}
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    {{- range $host := .Values.ingress.hosts }}
+    - host: {{ $host.host }}
       http:
         paths:
-          {{- range $name, $svc := .Values.services }}
-          {{- if and $svc.enabled $svc.path }}
-          - path: {{ $svc.path }}
+          {{- range $route := $host.routes }}
+          {{- $svc := index $.Values.services $route.service }}
+          {{- if and $svc $svc.enabled }}
+          - path: {{ $route.path }}
             pathType: Prefix
             backend:
               service:
-                name: {{ $name }}
+                name: {{ $route.service }}
                 port:
                   name: http
           {{- end }}
           {{- end }}
+    {{- end }}
 {{- end }}

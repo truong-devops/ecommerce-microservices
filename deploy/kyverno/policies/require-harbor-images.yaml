@@ -12,6 +12,9 @@ spec:
           - resources:
               kinds:
                 - Pod
+              namespaces:
+                - ecommerce-dev
+                - ecommerce-prod
       validate:
         message: "Images must come from the approved Harbor registry."
         pattern:
@@ -24,6 +27,9 @@ spec:
           - resources:
               kinds:
                 - Pod
+              namespaces:
+                - ecommerce-dev
+                - ecommerce-prod
       validate:
         message: "Do not use mutable latest image tags."
         deny:

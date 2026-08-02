@@ -12,6 +12,9 @@ spec:
           - resources:
               kinds:
                 - Pod
+              namespaces:
+                - ecommerce-dev
+                - ecommerce-prod
       verifyImages:
         - imageReferences:
             - "harbor.example.com/ecommerce/*"

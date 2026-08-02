@@ -12,6 +12,9 @@ spec:
           - resources:
               kinds:
                 - Pod
+              namespaces:
+                - ecommerce-dev
+                - ecommerce-prod
       validate:
         message: "Containers must run as non-root."
         pattern:
@@ -25,6 +28,9 @@ spec:
           - resources:
               kinds:
                 - Pod
+              namespaces:
+                - ecommerce-dev
+                - ecommerce-prod
       validate:
         message: "Privileged containers are not allowed."
         pattern:
@@ -38,6 +44,9 @@ spec:
           - resources:
               kinds:
                 - Pod
+              namespaces:
+                - ecommerce-dev
+                - ecommerce-prod
       validate:
         message: "CPU and memory requests and limits are required."
         pattern:

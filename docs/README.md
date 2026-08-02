@@ -23,7 +23,6 @@ Last updated: 2026-05-18.
 ## Deployment & operations
 
 - [`devsecops/new-platform-design.md`](devsecops/new-platform-design.md) — Current GitLab CI pipeline and target DevSecOps platform.
-- [`devsecops/rag-risk-gate-proposal.md`](devsecops/rag-risk-gate-proposal.md) — Proposed RAG-based DevSecOps risk gate research extension.
 - [`development/local-setup.md`](development/local-setup.md) — Local development.
 - [`operations/buyer-profile-phase-a-qa-checklist.md`](operations/buyer-profile-phase-a-qa-checklist.md) — Buyer profile QA checklist.
 

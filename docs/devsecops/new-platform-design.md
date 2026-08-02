@@ -15,7 +15,7 @@ Implemented:
 - Docker image build and push scripts for Harbor-compatible image names.
 - Optional Cosign signing logic in `ci/scripts/publish-images.sh` when Cosign and `COSIGN_PRIVATE_KEY` are available.
 - Helm chart and dev values under `deploy/helm/ecommerce`.
-- Argo CD application manifest under `deploy/argocd`.
+- Argo CD application manifests for isolated development and production namespaces under `deploy/argocd`.
 - Kyverno policies under `deploy/kyverno/policies`.
 - Local ELK stack through `docker-compose.elk.yml`.
 
@@ -26,14 +26,23 @@ The active pipeline is defined in `.gitlab-ci.yml`.
 | Stage | Job | What It Does | Output |
 |---|---|---|---|
 | `discover` | `detect_changed_targets` | Detects changed service/app folders from the Git diff. | `changed-targets.txt`, `changed-targets.env` |
-| `validate` | `lint_and_test` | Runs scoped quality gates for each changed target. Go targets run `go test ./...`; npm targets run available lint/test/build scripts. | pass/fail validation |
+| `validate` | `lint_and_test` | Runs scoped quality gates for each changed target. Go targets run `go test ./...` and `go vet ./...`; npm targets run available lint/test/build scripts. | pass/fail validation |
 | `security` | `gitleaks_secret_scan` | Scans the full repo for committed secrets. | fail on detected secrets |
 | `security` | `semgrep_sast` | Runs Semgrep CI, secrets, and OWASP Top 10 rules. | fail on detected blocking findings |
 | `security` | `trivy_filesystem_scan` | Scans source filesystem and dependencies for high/critical vulnerabilities. | fail on high/critical findings |
 | `build` | `build_images` | Builds Docker images for changed targets using Harbor-style names. | `built-images.txt`, `image-tars/` |
 | `build` | `trivy_image_scan` | Scans built image tarballs and generates CycloneDX SBOMs. | `sbom-*.json` |
-| `publish` | `publish_images` | Pushes images to Harbor-compatible registry on `main` or `develop` when registry credentials exist. | `published-images.txt` |
-| `gitops` | `update_gitops_dev` | Updates Helm dev image references for GitOps deployment. | commit to `deploy/helm/ecommerce/values-dev.yaml` |
+| `publish` | `publish_images` | Pushes images to Harbor-compatible registry on `main` or `develop` only when real Harbor credentials are configured. | `published-images.txt` |
+| `gitops` | `update_gitops_dev` | Updates Helm dev image references only after a successful configured publish on `develop`. | commit to `deploy/helm/ecommerce/values-dev.yaml` |
+
+## Environment Separation
+
+| Environment | Git branch | Argo CD application | Kubernetes namespace | Helm values | Default image tag |
+|---|---|---|---|---|---|
+| Development | `develop` | `ecommerce-dev` | `ecommerce-dev` | `values-dev.yaml` | `dev` |
+| Production | `main` | `ecommerce-prod` | `ecommerce-prod` | `values-prod.yaml` | `stable` |
+
+The CI pipeline updates only development image references automatically. Promote a reviewed image digest or release tag to `values-prod.yaml` through a controlled merge to `main`; do not let a development push directly update production.
 
 Important boundaries:
 
@@ -186,22 +195,18 @@ COSIGN_PASSWORD
 2. Enable Docker build and Trivy image scan.
 3. Connect Harbor and publish images.
 4. Deploy the Helm chart manually to a dev cluster.
-5. Install Argo CD and apply `deploy/argocd/ecommerce-dev-application.yaml`.
+5. Install Argo CD and apply `deploy/argocd/ecommerce-dev-application.yaml` and `deploy/argocd/ecommerce-prod-application.yaml`.
 6. Install Kyverno and apply policies from `deploy/kyverno/policies`.
 7. Add Prometheus/Grafana and ELK into the cluster.
 8. Switch image updates to digest-only GitOps promotion.
 
-## Research Extension Boundary
+## Local VM Deployment Boundary
 
-A proposed RAG-based risk gate is documented separately in [`rag-risk-gate-proposal.md`](./rag-risk-gate-proposal.md). It is intentionally not shown as part of the active CI/CD flow above because it is not implemented in `.gitlab-ci.yml`.
+For a local VM, install a Kubernetes distribution such as k3s, an ingress controller, Argo CD, Kyverno, Harbor, and a GitLab Runner configured for privileged Docker-in-Docker jobs. The Helm chart deploys application workloads only; PostgreSQL, MongoDB, Redis, Kafka, MinIO, and MediaMTX must be deployed separately or supplied as managed services.
 
-If implemented later, it would consume scanner reports from Trivy, Semgrep, Gitleaks, and SBOM outputs, retrieve additional context from CVE/CWE/OWASP references and service architecture metadata, then output a deployment decision:
+Before the first Argo CD sync, create an `ecommerce-runtime-env` Secret separately in both `ecommerce-dev` and `ecommerce-prod`. Each Secret contains the runtime variables required by the services, including database URLs, Redis URL, Kafka brokers, MinIO credentials, JWT secrets, OAuth settings, and integration secrets. The chart references existing secrets rather than committing credentials to Git.
 
-```txt
-PASS | WARNING | BLOCK
-```
-
-Until that component exists as code and a CI job, the current pipeline remains scanner-based and does not perform RAG-driven PASS/WARNING/BLOCK decisions.
+The development ingress routes `/api` to `api-gateway` and `/` to `buyer-web` on `dev.ecommerce.local`. Seller and moderator use `seller.dev.ecommerce.local` and `moderator.dev.ecommerce.local` respectively. Production uses the corresponding `ecommerce.local`, `seller.ecommerce.local`, and `moderator.ecommerce.local` hosts. This prevents Next.js asset paths from colliding, while API traffic preserves the `/api/v1/...` paths expected by the gateway and downstream services.
 
 ## Local ELK
 

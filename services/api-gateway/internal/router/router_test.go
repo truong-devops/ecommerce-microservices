@@ -9,6 +9,7 @@ import (
 	"api-gateway/internal/config"
 	"api-gateway/internal/observability"
 
+	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 )
 
@@ -23,6 +24,8 @@ func TestPrivateV1RoutesRequireAuth(t *testing.T) {
 
 	paths := []string{
 		"/api/v1/payments",
+		"/api/v1/wallets/me",
+		"/api/v1/payouts",
 		"/api/v1/notifications",
 		"/api/v1/users/me",
 		"/api/v1/inventory/stocks/SKU-001",
@@ -43,6 +46,39 @@ func TestPrivateV1RoutesRequireAuth(t *testing.T) {
 				t.Fatalf("expected status %d for %s, got %d", http.StatusUnauthorized, path, rec.Code)
 			}
 		})
+	}
+}
+
+func TestWalletRouteProxiesAuthenticatedRequest(t *testing.T) {
+	var forwardedPath, forwardedAuthorization string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		forwardedPath = r.URL.Path
+		forwardedAuthorization = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer upstream.Close()
+	cfg := testGatewayConfig()
+	wallet := cfg.Services[config.ServiceWallet]
+	wallet.URL = upstream.URL
+	cfg.Services[config.ServiceWallet] = wallet
+	handler, err := New(cfg, zap.NewNop(), observability.NewMetrics("api-gateway-wallet-proxy-test"), nil)
+	if err != nil {
+		t.Fatalf("create router: %v", err)
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": "11111111-1111-4111-8111-111111111111", "jti": "wallet-proxy-test", "role": "SELLER", "exp": time.Now().Add(time.Hour).Unix()})
+	signed, err := token.SignedString([]byte(cfg.JWTSecret))
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/wallets/me", nil)
+	request.Header.Set("Authorization", "Bearer "+signed)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+	if forwardedPath != "/api/v1/wallets/me" || forwardedAuthorization != "Bearer "+signed {
+		t.Fatalf("path=%q authorization forwarded=%v", forwardedPath, forwardedAuthorization != "")
 	}
 }
 
@@ -336,6 +372,7 @@ func testGatewayConfig() *config.Config {
 		config.ServiceCart:         {Name: config.ServiceCart, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServiceOrder:        {Name: config.ServiceOrder, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServicePayment:      {Name: config.ServicePayment, URL: "http://127.0.0.1:1", Timeout: timeout},
+		config.ServiceWallet:       {Name: config.ServiceWallet, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServiceInventory:    {Name: config.ServiceInventory, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServiceShipping:     {Name: config.ServiceShipping, URL: "http://127.0.0.1:1", Timeout: timeout},
 		config.ServiceReview:       {Name: config.ServiceReview, URL: "http://127.0.0.1:1", Timeout: timeout},

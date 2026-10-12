@@ -59,16 +59,13 @@ const sections: SidebarSection[] = [
     title: 'Tài Chính',
     items: [
       { label: 'Doanh Thu', href: '/finance/revenue' },
-      { label: 'Số dư TK Shopee', href: '/finance/balance' },
+      { label: 'Số dư eMall', href: '/finance/balance' },
       { label: 'Tài Khoản Ngân Hàng', href: '/finance/bank-account' }
     ]
   },
   {
     title: 'Dữ Liệu',
-    items: [
-      { label: 'Phân Tích Bán Hàng', href: '/data/sales-analytics' },
-      { label: 'Hiệu Quả Hoạt Động' }
-    ]
+    items: [{ label: 'Phân Tích Bán Hàng', href: '/data/sales-analytics' }, { label: 'Hiệu Quả Hoạt Động' }]
   },
   {
     title: 'Quản Lý Shop',
@@ -128,10 +125,7 @@ export function SellerSidebar() {
                 <span className="pt-0.5 text-xs text-slate-500">{expandedSections[section.title] ? '▴' : '▾'}</span>
               </button>
             ) : (
-              <button
-                type="button"
-                className="w-full rounded-md px-2 py-1 text-left text-[13px] font-semibold text-slate-600 hover:bg-white"
-              >
+              <button type="button" className="w-full rounded-md px-2 py-1 text-left text-[13px] font-semibold text-slate-600 hover:bg-white">
                 {section.title}
               </button>
             )}

@@ -17,6 +17,7 @@ const (
 	ServiceCart         = "cart"
 	ServiceOrder        = "order"
 	ServicePayment      = "payment"
+	ServiceWallet       = "wallet"
 	ServiceInventory    = "inventory"
 	ServiceShipping     = "shipping"
 	ServiceReview       = "review"
@@ -120,6 +121,7 @@ func Load() (*Config, error) {
 		{ServiceCart, "CART_SERVICE_URL", "CART_SERVICE_TIMEOUT"},
 		{ServiceOrder, "ORDER_SERVICE_URL", "ORDER_SERVICE_TIMEOUT"},
 		{ServicePayment, "PAYMENT_SERVICE_URL", "PAYMENT_SERVICE_TIMEOUT"},
+		{ServiceWallet, "WALLET_SERVICE_URL", "WALLET_SERVICE_TIMEOUT"},
 		{ServiceInventory, "INVENTORY_SERVICE_URL", "INVENTORY_SERVICE_TIMEOUT"},
 		{ServiceShipping, "SHIPPING_SERVICE_URL", "SHIPPING_SERVICE_TIMEOUT"},
 		{ServiceReview, "REVIEW_SERVICE_URL", "REVIEW_SERVICE_TIMEOUT"},

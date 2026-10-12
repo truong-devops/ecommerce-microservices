@@ -1,15 +1,58 @@
 services:
   minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+    image: rustfs/rustfs:1.0.1
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      RUSTFS_VOLUMES: /data/rustfs{0...3}
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: 'true'
+      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: '*'
+      RUSTFS_ACCESS_KEY: minioadmin
+      RUSTFS_SECRET_KEY: minioadmin
+      RUSTFS_OBS_LOGGER_LEVEL: info
+      RUSTFS_OBS_LOG_DIRECTORY: /app/logs
+      # This development stack stores all Docker volumes on one physical disk.
+      RUSTFS_UNSAFE_BYPASS_DISK_CHECK: 'true'
     ports:
       - '9000:9000'
       - '9001:9001'
     volumes:
-      - media_service_minio_data:/data
+      - media_service_rustfs_data_0:/data/rustfs0
+      - media_service_rustfs_data_1:/data/rustfs1
+      - media_service_rustfs_data_2:/data/rustfs2
+      - media_service_rustfs_data_3:/data/rustfs3
+      - media_service_rustfs_logs:/app/logs
+    depends_on:
+      object-storage-permissions:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'sh',
+          '-ec',
+          'curl -fsS http://127.0.0.1:9000/health && curl -fsS http://127.0.0.1:9001/rustfs/console/health',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  object-storage-permissions:
+    image: alpine:3.22
+    command: >
+      sh -c "chown -R 10001:10001 /data/rustfs0 /data/rustfs1
+      /data/rustfs2 /data/rustfs3 /app/logs"
+    volumes:
+      - media_service_rustfs_data_0:/data/rustfs0
+      - media_service_rustfs_data_1:/data/rustfs1
+      - media_service_rustfs_data_2:/data/rustfs2
+      - media_service_rustfs_data_3:/data/rustfs3
+      - media_service_rustfs_logs:/app/logs
+    restart: 'no'
 
   media-service:
     build:
@@ -22,10 +65,15 @@ services:
     ports:
       - '12022:8080'
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     restart: unless-stopped
     extra_hosts:
       - 'host.docker.internal:host-gateway'
 
 volumes:
-  media_service_minio_data:
+  media_service_rustfs_data_0:
+  media_service_rustfs_data_1:
+  media_service_rustfs_data_2:
+  media_service_rustfs_data_3:
+  media_service_rustfs_logs:

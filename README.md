@@ -26,7 +26,7 @@ The platform includes:
 - Authentication with email/password, Google OAuth, JWT sessions, refresh tokens, and role-based access control.
 - Commerce services for catalog, cart, checkout, order, payment, inventory, shipping, and review flows.
 - Realtime services for buyer-seller chat and livestream commerce.
-- Media storage and playback through MinIO and MediaMTX.
+- Media storage and playback through RustFS (S3-compatible) and MediaMTX.
 - Analytics and recommendation features, including FP-Growth association-rule mining.
 - Local Docker Compose runtime, with optional ELK log collection through `docker-compose.elk.yml`.
 
@@ -58,7 +58,7 @@ ecommerce-microservices/
 │   ├── auth-service/             # NestJS authentication, OAuth, JWT, sessions, MFA
 │   ├── user-service/             # User profiles and addresses
 │   ├── product-service/          # Product catalog, shops, shoppable videos
-│   ├── media-service/            # Media upload/download and MinIO integration
+│   ├── media-service/            # Media upload/download and S3 integration
 │   ├── cart-service/             # Shopping cart and price snapshots
 │   ├── order-service/            # Order lifecycle and checkout orchestration
 │   ├── payment-service/          # Payment intent and payment event handling
@@ -93,7 +93,7 @@ ecommerce-microservices/
 | `auth-service` | NestJS / TypeScript | Login, registration, Google OAuth, JWT, refresh tokens, sessions, MFA |
 | `user-service` | Go | Buyer/seller profile and address management |
 | `product-service` | Go | Product catalog, shops, product assets, shoppable video metadata |
-| `media-service` | Go | Media object storage integration through MinIO |
+| `media-service` | Go | Media object storage integration through an S3-compatible API |
 | `cart-service` | Go | Buyer cart, item snapshots, cart validation |
 | `order-service` | Go | Checkout, order status lifecycle, order audit logs |
 | `payment-service` | Go | Payment intents, payment status, payment events |
@@ -142,7 +142,7 @@ The checkout workflow is designed around explicit state transitions and event-dr
 Seller video content is managed through the product and media services:
 
 ```txt
-Seller Web -> API Gateway -> Product Service -> Media Service -> MinIO
+Seller Web -> API Gateway -> Product Service -> Media Service -> RustFS/S3
 Moderator approval -> Published video feed
 Buyer watches video -> product click/comment/cart/order events -> Analytics
 ```

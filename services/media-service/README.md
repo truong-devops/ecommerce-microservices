@@ -1,6 +1,6 @@
 # media-service
 
-Go media service for S3-compatible object storage (MinIO/S3). It provides endpoints to generate presigned upload/download URLs and delete objects by `objectKey`.
+Go media service for S3-compatible object storage. The default Docker Compose stack uses RustFS while retaining the existing `MINIO_*` client variables for compatibility. The service provides endpoints to generate presigned upload/download URLs and delete objects by `objectKey`.
 
 ## Main endpoints
 

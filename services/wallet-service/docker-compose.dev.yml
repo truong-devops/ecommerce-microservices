@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ewallet
+      POSTGRES_PASSWORD: ewallet
+      POSTGRES_DB: ecommerce_wallet
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ewallet -d ecommerce_wallet']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    ports:
+      - '55435:5432'
+
+  wallet-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env.example
+    environment:
+      PORT: 3015
+      DATABASE_URL: postgresql://ewallet:ewallet@postgres:5432/ecommerce_wallet
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
+      BANK_ACCOUNT_ENCRYPTION_KEY: ${WALLET_BANK_ACCOUNT_ENCRYPTION_KEY:-dev-wallet-bank-account-encryption-key-32-chars}
+      KAFKA_ENABLED: 'false'
+      KAFKA_START_OFFSET: first
+      PAYOUT_ENABLED: 'true'
+      PAYOUT_PROVIDER: mock
+      MOCK_PAYOUT_MODE: ${MOCK_PAYOUT_MODE:-success}
+    ports:
+      - '3015:3015'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped

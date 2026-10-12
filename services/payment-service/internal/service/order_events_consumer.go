@@ -101,6 +101,7 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 	payload := envelope.Payload
 	orderID := asString(payload["orderId"])
 	userID := asString(payload["userId"])
+	sellerID := asString(payload["sellerId"])
 	orderNumber := asStringPtr(payload["orderNumber"])
 	paymentMethod := strings.ToUpper(asString(payload["paymentMethod"]))
 	currency := strings.ToUpper(asString(payload["currency"]))
@@ -133,7 +134,7 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 		zap.Int("partition", msg.Partition),
 		zap.Int64("offset", msg.Offset),
 	)
-	return c.service.HandleOrderCreatedEvent(ctx, orderID, userID, totalAmount, currency, orderNumber, paymentMethod, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
+	return c.service.HandleOrderCreatedEvent(ctx, orderID, userID, sellerID, totalAmount, currency, orderNumber, paymentMethod, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
 }
 
 func asString(v any) string {

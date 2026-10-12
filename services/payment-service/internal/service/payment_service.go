@@ -158,6 +158,11 @@ func (s *PaymentService) CreatePaymentIntent(
 	if orderSnapshot.UserID == "" || orderSnapshot.UserID != user.UserID {
 		return nil, 0, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Order does not belong to current user", nil)
 	}
+	if strings.TrimSpace(orderSnapshot.SellerID) == "" {
+		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Order service payload is missing sellerId", nil)
+	}
+	authoritativeSellerID := strings.TrimSpace(orderSnapshot.SellerID)
+	req.SellerID = &authoritativeSellerID
 	if !isPayableOrderStatus(orderSnapshot.Status) {
 		return nil, 0, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Order status is not payable", map[string]any{"status": orderSnapshot.Status})
 	}
@@ -1319,7 +1324,7 @@ func (s *PaymentService) failExpiredPayment(ctx context.Context, paymentID strin
 
 func (s *PaymentService) HandleOrderCreatedEvent(
 	ctx context.Context,
-	orderID, userID string,
+	orderID, userID, sellerID string,
 	totalAmount float64,
 	currency string,
 	orderNumber *string,
@@ -1330,7 +1335,7 @@ func (s *PaymentService) HandleOrderCreatedEvent(
 	partition int,
 	offset int64,
 ) error {
-	if strings.TrimSpace(orderID) == "" || strings.TrimSpace(userID) == "" || strings.TrimSpace(currency) == "" {
+	if strings.TrimSpace(orderID) == "" || strings.TrimSpace(userID) == "" || strings.TrimSpace(sellerID) == "" || strings.TrimSpace(currency) == "" {
 		return nil
 	}
 
@@ -1379,6 +1384,7 @@ func (s *PaymentService) HandleOrderCreatedEvent(
 	payment, err := s.repo.CreatePayment(ctx, tx, repository.CreatePaymentInput{
 		OrderID:        orderID,
 		UserID:         userID,
+		SellerID:       strPtr(strings.TrimSpace(sellerID)),
 		Provider:       s.gatewayActive,
 		Status:         domain.PaymentStatusPending,
 		Currency:       strings.ToUpper(currency),

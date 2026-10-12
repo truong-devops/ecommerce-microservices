@@ -126,6 +126,7 @@ services:
       DATABASE_URL: postgresql://eauth:eauth@postgres:5432/ecommerce_auth
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:29092
+      KAFKA_START_OFFSET: first
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-dev-google-client-id.apps.googleusercontent.com}
       GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-dev-google-client-secret}
       GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://localhost:12010/api/v1/auth/oauth/google/callback}
@@ -370,6 +371,61 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  wallet-service:
+    <<: *service-defaults
+    build:
+      context: ./services/wallet-service
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./services/wallet-service/.env
+        required: false
+    environment:
+      <<: *shared-jwt-access-secret
+      APP_NAME: wallet-service
+      APP_ENV: development
+      PORT: 8080
+      API_PREFIX: api/v1
+      DATABASE_URL: postgresql://ewallet:ewallet@postgres:5432/ecommerce_wallet
+      BANK_ACCOUNT_ENCRYPTION_KEY: ${WALLET_BANK_ACCOUNT_ENCRYPTION_KEY:-dev-wallet-bank-account-encryption-key-32-chars}
+      WALLET_HOLD_DURATION_SECONDS: 60
+      WALLET_RELEASE_INTERVAL_MS: 5000
+      WALLET_RELEASE_BATCH_SIZE: 100
+      PAYOUT_ENABLED: 'true'
+      PAYOUT_PROVIDER: mock
+      MOCK_PAYOUT_MODE: ${MOCK_PAYOUT_MODE:-success}
+      PAYOUT_MIN_AMOUNT_VND: 10000
+      PAYOUT_MAX_AMOUNT_VND: 10000000
+      PAYOUT_WORKER_INTERVAL_MS: 2000
+      PAYOUT_WORKER_BATCH_SIZE: 20
+      PAYOUT_RECONCILE_INTERVAL_MS: 5000
+      PAYOUT_STALE_AFTER_SECONDS: 30
+      PAYOUT_IDEMPOTENCY_TTL_HOURS: 24
+      KAFKA_ENABLED: 'true'
+      KAFKA_CLIENT_ID: wallet-service
+      KAFKA_BROKERS: kafka:29092
+      PAYMENT_EVENTS_TOPIC: payment.events
+      PAYMENT_EVENTS_CONSUMER_GROUP: wallet-service-payment-events-group
+      ORDER_EVENTS_TOPIC: order.events
+      ORDER_EVENTS_CONSUMER_GROUP: wallet-service-order-events-group
+      WALLET_EVENTS_TOPIC: wallet.events
+      OUTBOX_DISPATCH_INTERVAL_MS: 3000
+      OUTBOX_BATCH_SIZE: 50
+      OUTBOX_MAX_RETRY: 10
+      DB_MIGRATIONS_RUN: 'true'
+      MIGRATION_FILE: migrations/0001_init_wallet_service.sql
+    ports:
+      - '12024:8080'
+    healthcheck:
+      test: ['CMD', '/wallet-service', '--healthcheck']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -672,6 +728,8 @@ services:
       CART_SERVICE_URL: http://cart-service:8080
       ORDER_SERVICE_URL: http://order-service:8080
       PAYMENT_SERVICE_URL: http://payment-service:8080
+      WALLET_SERVICE_URL: http://wallet-service:8080
+      WALLET_SERVICE_TIMEOUT: 10s
       INVENTORY_SERVICE_URL: http://inventory-service:8080
       SHIPPING_SERVICE_URL: http://shipping-service:8080
       REVIEW_SERVICE_URL: http://review-service:8080
@@ -699,6 +757,8 @@ services:
       order-service:
         condition: service_started
       payment-service:
+        condition: service_started
+      wallet-service:
         condition: service_started
       inventory-service:
         condition: service_started

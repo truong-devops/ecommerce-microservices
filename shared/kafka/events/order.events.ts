@@ -67,6 +67,7 @@ export interface OrderDeliveredEvent {
   orderId: string;
   orderNumber: string;
   userId: string;
+  sellerId: string;
   status: string;
   totalAmount: number;
   currency: string;

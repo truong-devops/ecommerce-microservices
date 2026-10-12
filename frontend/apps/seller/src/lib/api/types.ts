@@ -20,6 +20,109 @@ export interface SellerApiFailure {
   };
 }
 
+export interface SellerPagination {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface SellerWalletBalance {
+  walletId: string | null;
+  sellerId: string;
+  currency: 'VND';
+  heldAmount: number;
+  availableAmount: number;
+  payoutPendingAmount: number;
+  totalPaidOut: number;
+  isFrozen: boolean;
+  updatedAt: string;
+}
+
+export type SellerWalletTransactionType =
+  'PAYMENT_HELD' | 'FUNDS_RELEASED' | 'PAYMENT_REFUND' | 'CHARGEBACK' | 'PAYOUT_REQUESTED' | 'PAYOUT_SUCCEEDED' | 'PAYOUT_FAILED';
+
+export interface SellerWalletTransaction {
+  id: string;
+  type: SellerWalletTransactionType;
+  referenceType: string;
+  referenceId: string;
+  amount: number;
+  currency: 'VND';
+  description?: string;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface SellerWalletTransactionListOutput {
+  items: SellerWalletTransaction[];
+  pagination: SellerPagination;
+}
+
+export type SellerBankAccountStatus = 'UNVERIFIED' | 'ALLOWLISTED' | 'DISABLED';
+
+export interface SellerBankAccount {
+  id: string;
+  bankCode: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  status: SellerBankAccountStatus;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateSellerBankAccountInput {
+  bankCode: string;
+  accountNumber: string;
+  accountHolderName: string;
+}
+
+export type SellerPayoutStatus = 'REQUESTED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+
+export interface SellerPayout {
+  id: string;
+  amount: number;
+  currency: 'VND';
+  status: SellerPayoutStatus;
+  bankCode: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  provider?: string;
+  providerReference?: string;
+  failureCode?: string;
+  failureMessage?: string;
+  requestedAt: string;
+  processedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SellerPayoutListOutput {
+  items: SellerPayout[];
+  pagination: SellerPagination;
+}
+
+export interface SellerPayoutSummary {
+  paidThisWeek: number;
+  paidThisMonth: number;
+  totalPaidOut: number;
+}
+
+export interface CreateSellerPayoutInput {
+  amount: number;
+  currency?: 'VND';
+}
+
+export interface ListSellerFinanceInput {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListSellerPayoutsInput extends ListSellerFinanceInput {
+  status?: SellerPayoutStatus;
+}
+
 export type SellerApiResponse<T> = SellerApiSuccess<T> | SellerApiFailure;
 
 export interface SellerAuthUser {
@@ -405,15 +508,7 @@ export interface SellerOrderStatusHistoryOutput {
 }
 
 export type SellerShipmentStatus =
-  | 'PENDING'
-  | 'AWB_CREATED'
-  | 'PICKED_UP'
-  | 'IN_TRANSIT'
-  | 'OUT_FOR_DELIVERY'
-  | 'DELIVERED'
-  | 'CANCELLED'
-  | 'FAILED'
-  | 'RETURNED';
+  'PENDING' | 'AWB_CREATED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURNED';
 
 export interface SellerShipment {
   id: string;

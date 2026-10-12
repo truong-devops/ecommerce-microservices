@@ -21,7 +21,7 @@ func TestOrderClientGetOrderByIDSuccess(t *testing.T) {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"success":true,"data":{"id":"order-1","userId":"user-1","status":"PENDING","currency":"USD","totalAmount":120.5}}`))
+		_, _ = w.Write([]byte(`{"success":true,"data":{"id":"order-1","userId":"user-1","sellerId":"seller-1","status":"PENDING","currency":"USD","totalAmount":120.5}}`))
 	}))
 	defer srv.Close()
 
@@ -33,7 +33,7 @@ func TestOrderClientGetOrderByIDSuccess(t *testing.T) {
 	if order == nil {
 		t.Fatalf("expected order, got nil")
 	}
-	if order.ID != "order-1" || order.UserID != "user-1" || order.Currency != "USD" {
+	if order.ID != "order-1" || order.UserID != "user-1" || order.SellerID != "seller-1" || order.Currency != "USD" {
 		t.Fatalf("unexpected order snapshot: %+v", order)
 	}
 }

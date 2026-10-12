@@ -10,6 +10,7 @@ const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? API_GATEWAY_B
 const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const MEDIA_SERVICE_BASE_URL = process.env.MEDIA_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const LIVE_SERVICE_BASE_URL = process.env.LIVE_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const WALLET_SERVICE_BASE_URL = process.env.WALLET_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
@@ -22,7 +23,8 @@ export const serviceBaseUrls = {
   user: USER_SERVICE_BASE_URL,
   chat: CHAT_SERVICE_BASE_URL,
   media: MEDIA_SERVICE_BASE_URL,
-  live: LIVE_SERVICE_BASE_URL
+  live: LIVE_SERVICE_BASE_URL,
+  wallet: WALLET_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {
@@ -50,9 +52,22 @@ interface UpstreamErrorBody {
 interface UpstreamSuccessBody<T> {
   success: true;
   data: T;
+  meta?: Record<string, unknown>;
+}
+
+export interface UpstreamResponseEnvelope<T> {
+  data: T;
+  meta?: Record<string, unknown>;
+  status: number;
+  idempotentReplayed: boolean;
 }
 
 export async function requestUpstream<T>(url: string, init?: RequestInit): Promise<T> {
+  const envelope = await requestUpstreamEnvelope<T>(url, init);
+  return envelope.data;
+}
+
+export async function requestUpstreamEnvelope<T>(url: string, init?: RequestInit): Promise<UpstreamResponseEnvelope<T>> {
   let response: Response;
 
   try {
@@ -79,7 +94,12 @@ export async function requestUpstream<T>(url: string, init?: RequestInit): Promi
 
   if (payload && typeof payload === 'object' && 'success' in payload) {
     if (payload.success === true) {
-      return payload.data;
+      return {
+        data: payload.data,
+        meta: payload.meta,
+        status: response.status,
+        idempotentReplayed: response.headers.get('idempotent-replayed') === 'true'
+      };
     }
 
     const code = payload.error?.code ?? 'UPSTREAM_ERROR';
@@ -91,7 +111,11 @@ export async function requestUpstream<T>(url: string, init?: RequestInit): Promi
     throw new UpstreamHttpError(502, 'INVALID_UPSTREAM_RESPONSE', 'Upstream returned non-JSON response');
   }
 
-  return payload as T;
+  return {
+    data: payload as T,
+    status: response.status,
+    idempotentReplayed: response.headers.get('idempotent-replayed') === 'true'
+  };
 }
 
 function safeParseJson(raw: string): unknown | null {

@@ -1,0 +1,3461 @@
+[
+  {
+    "name": "Áo thun nam cotton compact form regular cổ tròn",
+    "slug": "ao-thun-nam-cotton-compact-form-regular-co-tron",
+    "description": "ÁO THUN NAM COTTON COMPACT FORM REGULAR CỔ TRÒN\n\nĐIỂM NỔI BẬT\n• Cotton compact mềm và thoáng\n• Form regular dễ phối đồ\n• Đường may gia cố ở vai và cổ\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Urban Cotton\n• Phân loại: Đen - M, Đen - L, Trắng - M, Trắng - L\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "Urban Cotton",
+    "attributes": {
+      "material": "Cotton compact",
+      "origin": "Việt Nam",
+      "weightGram": 260,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/urban-tee/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "URBAN-TEE-V1",
+        "name": "Đen - M",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 229000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "URBAN-TEE-V2",
+        "name": "Đen - L",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 229000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - L",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "URBAN-TEE-V3",
+        "name": "Trắng - M",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 229000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "URBAN-TEE-V4",
+        "name": "Trắng - L",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 229000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng - L",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Áo polo nam pique co giãn thấm hút tốt",
+    "slug": "ao-polo-nam-pique-co-gian-tham-hut-tot",
+    "description": "ÁO POLO NAM PIQUE CO GIÃN THẤM HÚT TỐT\n\nĐIỂM NỔI BẬT\n• Vải pique co giãn nhẹ\n• Cổ áo giữ phom\n• Phù hợp đi làm và đi chơi\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: North Lane\n• Phân loại: Xanh navy - M, Xanh navy - L, Be - M, Be - L\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "North Lane",
+    "attributes": {
+      "material": "Cotton pique",
+      "origin": "Việt Nam",
+      "weightGram": 320,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/north-polo/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "NORTH-POLO-V1",
+        "name": "Xanh navy - M",
+        "price": 249000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 349000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Xanh navy - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "NORTH-POLO-V2",
+        "name": "Xanh navy - L",
+        "price": 249000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh navy - L",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "NORTH-POLO-V3",
+        "name": "Be - M",
+        "price": 249000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Be - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "NORTH-POLO-V4",
+        "name": "Be - L",
+        "price": 249000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Be - L",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Quần short nam thể thao túi khóa kéo",
+    "slug": "quan-short-nam-the-thao-tui-khoa-keo",
+    "description": "QUẦN SHORT NAM THỂ THAO TÚI KHÓA KÉO\n\nĐIỂM NỔI BẬT\n• Vải nhanh khô\n• Túi hai bên có khóa kéo\n• Lưng thun có dây rút\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Move Daily\n• Phân loại: Đen - M, Đen - L, Xám - M, Xám - L\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thoi-trang-nam",
+    "brand": "Move Daily",
+    "attributes": {
+      "material": "Polyester",
+      "origin": "Việt Nam",
+      "weightGram": 280,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/move-short/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MOVE-SHORT-V1",
+        "name": "Đen - M",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 269000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOVE-SHORT-V2",
+        "name": "Đen - L",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 269000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - L",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOVE-SHORT-V3",
+        "name": "Xám - M",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 269000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xám - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOVE-SHORT-V4",
+        "name": "Xám - L",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 269000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xám - L",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đầm nữ cổ vuông tay phồng dáng midi",
+    "slug": "dam-nu-co-vuong-tay-phong-dang-midi",
+    "description": "ĐẦM NỮ CỔ VUÔNG TAY PHỒNG DÁNG MIDI\n\nĐIỂM NỔI BẬT\n• Dáng midi thanh lịch\n• Khóa kéo sau dễ mặc\n• Có lớp lót mềm\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Luna Wear\n• Phân loại: Kem - S, Kem - M, Đen - S, Đen - M\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "Luna Wear",
+    "attributes": {
+      "material": "Cotton blend",
+      "origin": "Việt Nam",
+      "weightGram": 420,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/luna-dress/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "LUNA-DRESS-V1",
+        "name": "Kem - S",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 459000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Kem - S",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LUNA-DRESS-V2",
+        "name": "Kem - M",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 459000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LUNA-DRESS-V3",
+        "name": "Đen - S",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 459000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - S",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LUNA-DRESS-V4",
+        "name": "Đen - M",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 459000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - M",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Áo cardigan nữ dệt kim mỏng phong cách Hàn Quốc",
+    "slug": "ao-cardigan-nu-det-kim-mong-phong-cach-han-quoc",
+    "description": "ÁO CARDIGAN NỮ DỆT KIM MỎNG PHONG CÁCH HÀN QUỐC\n\nĐIỂM NỔI BẬT\n• Sợi dệt mềm\n• Độ dày vừa phải\n• Phối được nhiều phong cách\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Mellow Knit\n• Phân loại: Kem, Hồng phấn, Xanh nhạt\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "Mellow Knit",
+    "attributes": {
+      "material": "Acrylic blend",
+      "origin": "Việt Nam",
+      "weightGram": 350,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/mellow-cardi/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MELLOW-CARDI-V1",
+        "name": "Kem",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 389000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MELLOW-CARDI-V2",
+        "name": "Hồng phấn",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng phấn",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MELLOW-CARDI-V3",
+        "name": "Xanh nhạt",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh nhạt",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Quần ống rộng nữ cạp cao rủ mềm",
+    "slug": "quan-ong-rong-nu-cap-cao-ru-mem",
+    "description": "QUẦN ỐNG RỘNG NỮ CẠP CAO RỦ MỀM\n\nĐIỂM NỔI BẬT\n• Cạp cao tôn dáng\n• Ống suông rộng\n• Vải ít nhăn\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Aeri Studio\n• Phân loại: Đen - S, Đen - M, Nâu - S, Nâu - M\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thoi-trang-nu",
+    "brand": "Aeri Studio",
+    "attributes": {
+      "material": "Twill mềm",
+      "origin": "Việt Nam",
+      "weightGram": 410,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/aeri-pants/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "AERI-PANTS-V1",
+        "name": "Đen - S",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 429000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - S",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "AERI-PANTS-V2",
+        "name": "Đen - M",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 429000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "AERI-PANTS-V3",
+        "name": "Nâu - S",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 429000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nâu - S",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "AERI-PANTS-V4",
+        "name": "Nâu - M",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 429000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nâu - M",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tai nghe Bluetooth 5.3 chống ồn ENC hộp sạc Type-C",
+    "slug": "tai-nghe-bluetooth-5-3-chong-on-enc-hop-sac-type-c",
+    "description": "TAI NGHE BLUETOOTH 5.3 CHỐNG ỒN ENC HỘP SẠC TYPE-C\n\nĐIỂM NỔI BẬT\n• Bluetooth 5.3 kết nối ổn định\n• Mic ENC hỗ trợ đàm thoại\n• Hộp sạc dùng cổng Type-C\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: NovaSound\n• Phân loại: Đen, Trắng, Tím\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "NovaSound",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 120,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/nova-buds/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "NOVA-BUDS-V1",
+        "name": "Đen",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 499000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "NOVA-BUDS-V2",
+        "name": "Trắng",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 499000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "NOVA-BUDS-V3",
+        "name": "Tím",
+        "price": 329000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 499000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Tím",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Củ sạc nhanh GaN 35W hai cổng USB-C và USB-A",
+    "slug": "cu-sac-nhanh-gan-35w-hai-cong-usb-c-va-usb-a",
+    "description": "CỦ SẠC NHANH GAN 35W HAI CỔNG USB-C VÀ USB-A\n\nĐIỂM NỔI BẬT\n• Công suất tối đa 35W\n• Hai cổng sạc tiện dụng\n• Chip bảo vệ quá nhiệt\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: VoltGo\n• Phân loại: Trắng, Đen\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "VoltGo",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 95,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/volt-charge/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "VOLT-CHARGE-V1",
+        "name": "Trắng",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 399000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "VOLT-CHARGE-V2",
+        "name": "Đen",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 399000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ốp lưng chống sốc viền nhám bảo vệ camera",
+    "slug": "op-lung-chong-soc-vien-nham-bao-ve-camera",
+    "description": "ỐP LƯNG CHỐNG SỐC VIỀN NHÁM BẢO VỆ CAMERA\n\nĐIỂM NỔI BẬT\n• Viền TPU đàn hồi\n• Gờ bảo vệ cụm camera\n• Nút bấm độ nảy tốt\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: MobiCase\n• Phân loại: iPhone 13 - Trong, iPhone 14 - Trong, iPhone 15 - Đen\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "MobiCase",
+    "attributes": {
+      "warranty": "1 đổi 1 trong 7 ngày",
+      "origin": "Việt Nam",
+      "weightGram": 65,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/mobi-case/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MOBI-CASE-V1",
+        "name": "iPhone 13 - Trong",
+        "price": 79000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 129000,
+        "isDefault": true,
+        "metadata": {
+          "option": "iPhone 13 - Trong",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOBI-CASE-V2",
+        "name": "iPhone 14 - Trong",
+        "price": 79000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 129000,
+        "isDefault": false,
+        "metadata": {
+          "option": "iPhone 14 - Trong",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOBI-CASE-V3",
+        "name": "iPhone 15 - Đen",
+        "price": 79000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 129000,
+        "isDefault": false,
+        "metadata": {
+          "option": "iPhone 15 - Đen",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Loa Bluetooth mini công suất 10W chống nước IPX6",
+    "slug": "loa-bluetooth-mini-cong-suat-10w-chong-nuoc-ipx6",
+    "description": "LOA BLUETOOTH MINI CÔNG SUẤT 10W CHỐNG NƯỚC IPX6\n\nĐIỂM NỔI BẬT\n• Âm thanh 10W\n• Kháng nước IPX6\n• Thời lượng nghe đến 10 giờ\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: SonicPod\n• Phân loại: Đen, Xanh rêu, Cam\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "SonicPod",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 520,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/sound-mini/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "SOUND-MINI-V1",
+        "name": "Đen",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 559000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "SOUND-MINI-V2",
+        "name": "Xanh rêu",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 559000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh rêu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "SOUND-MINI-V3",
+        "name": "Cam",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 559000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Cam",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ổ cắm thông minh Wi-Fi điều khiển từ xa hẹn giờ",
+    "slug": "o-cam-thong-minh-wi-fi-dieu-khien-tu-xa-hen-gio",
+    "description": "Ổ CẮM THÔNG MINH WI-FI ĐIỀU KHIỂN TỪ XA HẸN GIỜ\n\nĐIỂM NỔI BẬT\n• Điều khiển qua ứng dụng\n• Hẹn giờ bật tắt\n• Theo dõi trạng thái thiết bị\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: HomeLink\n• Phân loại: Bản 10A, Bản 16A\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "HomeLink",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 140,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/smart-plug/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "SMART-PLUG-V1",
+        "name": "Bản 10A",
+        "price": 179000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 249000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bản 10A",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "SMART-PLUG-V2",
+        "name": "Bản 16A",
+        "price": 209000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 279000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bản 16A",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Micro thu âm USB cardioid cho học tập và livestream",
+    "slug": "micro-thu-am-usb-cardioid-cho-hoc-tap-va-livestream",
+    "description": "MICRO THU ÂM USB CARDIOID CHO HỌC TẬP VÀ LIVESTREAM\n\nĐIỂM NỔI BẬT\n• Kết nối USB cắm là dùng\n• Hướng thu cardioid\n• Có nút tắt tiếng nhanh\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: StreamOne\n• Phân loại: Đen, Trắng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "StreamOne",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 780,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/stream-mic/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "STREAM-MIC-V1",
+        "name": "Đen",
+        "price": 649000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 849000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "STREAM-MIC-V2",
+        "name": "Trắng",
+        "price": 649000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 849000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bàn phím cơ không dây layout 75% hot-swap",
+    "slug": "ban-phim-co-khong-day-layout-75-hot-swap",
+    "description": "BÀN PHÍM CƠ KHÔNG DÂY LAYOUT 75% HOT-SWAP\n\nĐIỂM NỔI BẬT\n• Kết nối Bluetooth, 2.4G và USB\n• PCB hot-swap\n• LED RGB nhiều hiệu ứng\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: KeyNova\n• Phân loại: Blue switch, Brown switch, Red switch\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "KeyNova",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 920,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/key-mech/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "KEY-MECH-V1",
+        "name": "Blue switch",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 1390000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Blue switch",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "KEY-MECH-V2",
+        "name": "Brown switch",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 1390000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Brown switch",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "KEY-MECH-V3",
+        "name": "Red switch",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 1390000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Red switch",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Chuột không dây công thái học silent click",
+    "slug": "chuot-khong-day-cong-thai-hoc-silent-click",
+    "description": "CHUỘT KHÔNG DÂY CÔNG THÁI HỌC SILENT CLICK\n\nĐIỂM NỔI BẬT\n• Thiết kế ôm tay\n• Nút bấm giảm tiếng ồn\n• DPI điều chỉnh ba mức\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: ClickPro\n• Phân loại: Đen, Trắng, Hồng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ClickPro",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 110,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/click-mouse/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "CLICK-MOUSE-V1",
+        "name": "Đen",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 349000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CLICK-MOUSE-V2",
+        "name": "Trắng",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CLICK-MOUSE-V3",
+        "name": "Hồng",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giá đỡ laptop nhôm gấp gọn điều chỉnh độ cao",
+    "slug": "gia-do-laptop-nhom-gap-gon-dieu-chinh-do-cao",
+    "description": "GIÁ ĐỠ LAPTOP NHÔM GẤP GỌN ĐIỀU CHỈNH ĐỘ CAO\n\nĐIỂM NỔI BẬT\n• Hợp kim nhôm chắc chắn\n• Điều chỉnh nhiều góc\n• Đệm silicone chống trượt\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: ErgoLift\n• Phân loại: Bạc, Xám\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ErgoLift",
+    "attributes": {
+      "warranty": "6 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 680,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/ergo-stand/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "ERGO-STAND-V1",
+        "name": "Bạc",
+        "price": 319000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 449000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bạc",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ERGO-STAND-V2",
+        "name": "Xám",
+        "price": 319000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 449000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xám",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tripod máy ảnh nhôm 1m6 kèm đầu xoay 3 chiều",
+    "slug": "tripod-may-anh-nhom-1m6-kem-dau-xoay-3-chieu",
+    "description": "TRIPOD MÁY ẢNH NHÔM 1M6 KÈM ĐẦU XOAY 3 CHIỀU\n\nĐIỂM NỔI BẬT\n• Chiều cao tối đa 160cm\n• Đầu xoay ba chiều\n• Chân chống trượt\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: SnapGear\n• Phân loại: Bản tiêu chuẩn, Kèm túi chống sốc\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "SnapGear",
+    "attributes": {
+      "warranty": "6 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 1450,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/snap-tripod/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "SNAP-TRIPOD-V1",
+        "name": "Bản tiêu chuẩn",
+        "price": 499000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 699000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bản tiêu chuẩn",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "SNAP-TRIPOD-V2",
+        "name": "Kèm túi chống sốc",
+        "price": 579000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 779000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kèm túi chống sốc",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Túi đựng máy ảnh chống sốc chia ngăn linh hoạt",
+    "slug": "tui-dung-may-anh-chong-soc-chia-ngan-linh-hoat",
+    "description": "TÚI ĐỰNG MÁY ẢNH CHỐNG SỐC CHIA NGĂN LINH HOẠT\n\nĐIỂM NỔI BẬT\n• Vách ngăn tháo rời\n• Lớp đệm chống va đập\n• Có áo trùm mưa\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: FocusPack\n• Phân loại: Size M, Size L\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "FocusPack",
+    "attributes": {
+      "warranty": "3 tháng",
+      "origin": "Việt Nam",
+      "weightGram": 620,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/lens-bag/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "LENS-BAG-V1",
+        "name": "Size M",
+        "price": 379000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 529000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Size M",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LENS-BAG-V2",
+        "name": "Size L",
+        "price": 469000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 619000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Size L",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đèn LED ring light 12 inch ba chế độ màu",
+    "slug": "den-led-ring-light-12-inch-ba-che-do-mau",
+    "description": "ĐÈN LED RING LIGHT 12 INCH BA CHẾ ĐỘ MÀU\n\nĐIỂM NỔI BẬT\n• Ba nhiệt độ màu\n• Mười mức sáng\n• Nguồn USB tiện dụng\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: GlowShot\n• Phân loại: Kèm tripod bàn, Kèm tripod 1m6\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "GlowShot",
+    "attributes": {
+      "warranty": "6 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 980,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/ring-light/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "RING-LIGHT-V1",
+        "name": "Kèm tripod bàn",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 399000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Kèm tripod bàn",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "RING-LIGHT-V2",
+        "name": "Kèm tripod 1m6",
+        "price": 439000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 549000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kèm tripod 1m6",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đồng hồ nam mặt tối giản dây thép không gỉ",
+    "slug": "dong-ho-nam-mat-toi-gian-day-thep-khong-gi",
+    "description": "ĐỒNG HỒ NAM MẶT TỐI GIẢN DÂY THÉP KHÔNG GỈ\n\nĐIỂM NỔI BẬT\n• Máy quartz ổn định\n• Dây thép không gỉ\n• Kính khoáng chống xước nhẹ\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Tempo\n• Phân loại: Mặt đen, Mặt trắng, Mặt xanh\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dong-ho",
+    "brand": "Tempo",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 180,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/tempo-classic/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "TEMPO-CLASSIC-V1",
+        "name": "Mặt đen",
+        "price": 589000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 799000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Mặt đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "TEMPO-CLASSIC-V2",
+        "name": "Mặt trắng",
+        "price": 589000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 799000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Mặt trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "TEMPO-CLASSIC-V3",
+        "name": "Mặt xanh",
+        "price": 589000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 799000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Mặt xanh",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đồng hồ thông minh theo dõi vận động màn hình AMOLED",
+    "slug": "dong-ho-thong-minh-theo-doi-van-dong-man-hinh-amoled",
+    "description": "ĐỒNG HỒ THÔNG MINH THEO DÕI VẬN ĐỘNG MÀN HÌNH AMOLED\n\nĐIỂM NỔI BẬT\n• Màn hình AMOLED\n• Theo dõi nhiều môn thể thao\n• Nhận thông báo từ điện thoại\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Astra Fit\n• Phân loại: Đen, Kem, Hồng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dong-ho",
+    "brand": "Astra Fit",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 150,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/astra-smart/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "ASTRA-SMART-V1",
+        "name": "Đen",
+        "price": 1290000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 1690000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ASTRA-SMART-V2",
+        "name": "Kem",
+        "price": 1290000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 1690000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ASTRA-SMART-V3",
+        "name": "Hồng",
+        "price": 1290000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 1690000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đồng hồ nữ mặt vuông dây da thanh lịch",
+    "slug": "dong-ho-nu-mat-vuong-day-da-thanh-lich",
+    "description": "ĐỒNG HỒ NỮ MẶT VUÔNG DÂY DA THANH LỊCH\n\nĐIỂM NỔI BẬT\n• Mặt vuông nhỏ gọn\n• Dây da mềm\n• Phong cách tối giản\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: MonoTime\n• Phân loại: Nâu, Đen, Kem\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dong-ho",
+    "brand": "MonoTime",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 120,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/mono-watch/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MONO-WATCH-V1",
+        "name": "Nâu",
+        "price": 449000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 629000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Nâu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MONO-WATCH-V2",
+        "name": "Đen",
+        "price": 449000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 629000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MONO-WATCH-V3",
+        "name": "Kem",
+        "price": 449000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 629000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giày sneaker nam đế nhẹ thoáng khí",
+    "slug": "giay-sneaker-nam-de-nhe-thoang-khi",
+    "description": "GIÀY SNEAKER NAM ĐẾ NHẸ THOÁNG KHÍ\n\nĐIỂM NỔI BẬT\n• Upper lưới thoáng khí\n• Đế EVA nhẹ\n• Lót giày êm\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Stride\n• Phân loại: Đen - 40, Đen - 41, Trắng - 40, Trắng - 41\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "giay-dep-nam",
+    "brand": "Stride",
+    "attributes": {
+      "material": "Mesh và EVA",
+      "origin": "Việt Nam",
+      "weightGram": 760,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/stride-run/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "STRIDE-RUN-V1",
+        "name": "Đen - 40",
+        "price": 459000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 649000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - 40",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "STRIDE-RUN-V2",
+        "name": "Đen - 41",
+        "price": 459000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 649000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - 41",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "STRIDE-RUN-V3",
+        "name": "Trắng - 40",
+        "price": 459000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 649000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng - 40",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "STRIDE-RUN-V4",
+        "name": "Trắng - 41",
+        "price": 459000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 649000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng - 41",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Sandal nam quai chéo đế chống trượt",
+    "slug": "sandal-nam-quai-cheo-de-chong-truot",
+    "description": "SANDAL NAM QUAI CHÉO ĐẾ CHỐNG TRƯỢT\n\nĐIỂM NỔI BẬT\n• Quai mềm không cấn chân\n• Đế bám tốt\n• Phù hợp đi hằng ngày\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Rove\n• Phân loại: Nâu - 40, Nâu - 41, Đen - 40, Đen - 41\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "giay-dep-nam",
+    "brand": "Rove",
+    "attributes": {
+      "material": "Da PU",
+      "origin": "Việt Nam",
+      "weightGram": 650,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/rove-sandal/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "ROVE-SANDAL-V1",
+        "name": "Nâu - 40",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 399000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Nâu - 40",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ROVE-SANDAL-V2",
+        "name": "Nâu - 41",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 399000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nâu - 41",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ROVE-SANDAL-V3",
+        "name": "Đen - 40",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 399000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - 40",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ROVE-SANDAL-V4",
+        "name": "Đen - 41",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 399000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - 41",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giày lười nam da mềm phong cách công sở",
+    "slug": "giay-luoi-nam-da-mem-phong-cach-cong-so",
+    "description": "GIÀY LƯỜI NAM DA MỀM PHONG CÁCH CÔNG SỞ\n\nĐIỂM NỔI BẬT\n• Da mềm dễ vệ sinh\n• Đế cao su chống trượt\n• Dáng loafer lịch sự\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: GentStep\n• Phân loại: Đen - 40, Đen - 41, Nâu - 40, Nâu - 41\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "giay-dep-nam",
+    "brand": "GentStep",
+    "attributes": {
+      "material": "Da PU cao cấp",
+      "origin": "Việt Nam",
+      "weightGram": 820,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/gent-loafer/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "GENT-LOAFER-V1",
+        "name": "Đen - 40",
+        "price": 549000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 749000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - 40",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "GENT-LOAFER-V2",
+        "name": "Đen - 41",
+        "price": 549000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 749000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - 41",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "GENT-LOAFER-V3",
+        "name": "Nâu - 40",
+        "price": 549000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 749000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nâu - 40",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "GENT-LOAFER-V4",
+        "name": "Nâu - 41",
+        "price": 549000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 749000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nâu - 41",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Nồi chiên không dầu điện tử dung tích 5 lít",
+    "slug": "noi-chien-khong-dau-dien-tu-dung-tich-5-lit",
+    "description": "NỒI CHIÊN KHÔNG DẦU ĐIỆN TỬ DUNG TÍCH 5 LÍT\n\nĐIỂM NỔI BẬT\n• Dung tích 5 lít\n• Bảng điều khiển cảm ứng\n• Lòng nồi phủ chống dính\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: ChefMate\n• Phân loại: Đen, Kem\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-gia-dung",
+    "brand": "ChefMate",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 5200,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/chef-air/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "CHEF-AIR-V1",
+        "name": "Đen",
+        "price": 1390000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 1890000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CHEF-AIR-V2",
+        "name": "Kem",
+        "price": 1390000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 1890000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Quạt tuần hoàn không khí mini ba tốc độ",
+    "slug": "quat-tuan-hoan-khong-khi-mini-ba-toc-do",
+    "description": "QUẠT TUẦN HOÀN KHÔNG KHÍ MINI BA TỐC ĐỘ\n\nĐIỂM NỔI BẬT\n• Ba mức gió\n• Góc quay linh hoạt\n• Động cơ vận hành êm\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: BreezeGo\n• Phân loại: Trắng, Xanh\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-gia-dung",
+    "brand": "BreezeGo",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 1800,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/breeze-fan/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "BREEZE-FAN-V1",
+        "name": "Trắng",
+        "price": 529000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 699000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BREEZE-FAN-V2",
+        "name": "Xanh",
+        "price": 529000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 699000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ấm siêu tốc inox 304 tự ngắt 1.7 lít",
+    "slug": "am-sieu-toc-inox-304-tu-ngat-1-7-lit",
+    "description": "ẤM SIÊU TỐC INOX 304 TỰ NGẮT 1.7 LÍT\n\nĐIỂM NỔI BẬT\n• Ruột inox 304\n• Tự ngắt khi nước sôi\n• Dung tích 1.7 lít\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: HeatJoy\n• Phân loại: Bạc, Kem\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-gia-dung",
+    "brand": "HeatJoy",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 1300,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/heat-kettle/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "HEAT-KETTLE-V1",
+        "name": "Bạc",
+        "price": 369000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 499000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bạc",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "HEAT-KETTLE-V2",
+        "name": "Kem",
+        "price": 369000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 499000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Thảm yoga TPE hai lớp chống trượt 6mm",
+    "slug": "tham-yoga-tpe-hai-lop-chong-truot-6mm",
+    "description": "THẢM YOGA TPE HAI LỚP CHỐNG TRƯỢT 6MM\n\nĐIỂM NỔI BẬT\n• TPE hai lớp\n• Độ dày 6mm\n• Kèm dây đeo tiện lợi\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: MoveFit\n• Phân loại: Tím, Xanh rêu, Hồng đất\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "the-thao-du-lich",
+    "brand": "MoveFit",
+    "attributes": {
+      "material": "TPE",
+      "origin": "Trung Quốc",
+      "weightGram": 900,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/move-yoga/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MOVE-YOGA-V1",
+        "name": "Tím",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 419000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Tím",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOVE-YOGA-V2",
+        "name": "Xanh rêu",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 419000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh rêu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOVE-YOGA-V3",
+        "name": "Hồng đất",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 419000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng đất",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bình giữ nhiệt thể thao inox 750ml có quai xách",
+    "slug": "binh-giu-nhiet-the-thao-inox-750ml-co-quai-xach",
+    "description": "BÌNH GIỮ NHIỆT THỂ THAO INOX 750ML CÓ QUAI XÁCH\n\nĐIỂM NỔI BẬT\n• Inox 304 hai lớp\n• Nắp kín chống rò\n• Dung tích 750ml\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: TrailGo\n• Phân loại: Đen, Trắng, Xanh\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "the-thao-du-lich",
+    "brand": "TrailGo",
+    "attributes": {
+      "material": "Inox 304",
+      "origin": "Trung Quốc",
+      "weightGram": 430,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/trail-bottle/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "TRAIL-BOTTLE-V1",
+        "name": "Đen",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 389000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "TRAIL-BOTTLE-V2",
+        "name": "Trắng",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "TRAIL-BOTTLE-V3",
+        "name": "Xanh",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bộ dây kháng lực tập gym 5 mức lực",
+    "slug": "bo-day-khang-luc-tap-gym-5-muc-luc",
+    "description": "BỘ DÂY KHÁNG LỰC TẬP GYM 5 MỨC LỰC\n\nĐIỂM NỔI BẬT\n• Năm mức kháng lực\n• Latex đàn hồi\n• Dùng tập tại nhà hoặc du lịch\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: FlexBand\n• Phân loại: Bộ cơ bản, Bộ kèm túi\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "the-thao-du-lich",
+    "brand": "FlexBand",
+    "attributes": {
+      "material": "Latex",
+      "origin": "Trung Quốc",
+      "weightGram": 650,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/flex-band/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "FLEX-BAND-V1",
+        "name": "Bộ cơ bản",
+        "price": 199000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 289000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bộ cơ bản",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "FLEX-BAND-V2",
+        "name": "Bộ kèm túi",
+        "price": 239000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 329000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bộ kèm túi",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giá đỡ điện thoại ô tô khóa tự động",
+    "slug": "gia-do-dien-thoai-o-to-khoa-tu-dong",
+    "description": "GIÁ ĐỠ ĐIỆN THOẠI Ô TÔ KHÓA TỰ ĐỘNG\n\nĐIỂM NỔI BẬT\n• Khóa điện thoại tự động\n• Xoay ngang dọc 360 độ\n• Đệm silicone chống trầy\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: RoadMate\n• Phân loại: Gắn cửa gió, Gắn taplo\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "o-to-xe-may-xe-dap",
+    "brand": "RoadMate",
+    "attributes": {
+      "warranty": "6 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 210,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/road-holder/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "ROAD-HOLDER-V1",
+        "name": "Gắn cửa gió",
+        "price": 249000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 349000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Gắn cửa gió",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "ROAD-HOLDER-V2",
+        "name": "Gắn taplo",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 379000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Gắn taplo",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bơm lốp điện mini màn hình số dùng cho ô tô xe máy",
+    "slug": "bom-lop-dien-mini-man-hinh-so-dung-cho-o-to-xe-may",
+    "description": "BƠM LỐP ĐIỆN MINI MÀN HÌNH SỐ DÙNG CHO Ô TÔ XE MÁY\n\nĐIỂM NỔI BẬT\n• Hiển thị áp suất số\n• Tự dừng khi đủ áp suất\n• Đèn LED hỗ trợ ban đêm\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: RideSafe\n• Phân loại: Bản tiêu chuẩn, Bản kèm túi\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "o-to-xe-may-xe-dap",
+    "brand": "RideSafe",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "weightGram": 780,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/ride-pump/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "RIDE-PUMP-V1",
+        "name": "Bản tiêu chuẩn",
+        "price": 799000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 1090000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bản tiêu chuẩn",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "RIDE-PUMP-V2",
+        "name": "Bản kèm túi",
+        "price": 889000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 1180000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bản kèm túi",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bộ vệ sinh nội thất ô tô 8 món",
+    "slug": "bo-ve-sinh-noi-that-o-to-8-mon",
+    "description": "BỘ VỆ SINH NỘI THẤT Ô TÔ 8 MÓN\n\nĐIỂM NỔI BẬT\n• Đủ dụng cụ vệ sinh cơ bản\n• Dùng cho taplo và ghế xe\n• Túi đựng gọn gàng\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: AutoCare\n• Phân loại: Hương chanh, Không mùi\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "o-to-xe-may-xe-dap",
+    "brand": "AutoCare",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 1100,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/auto-clean/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "AUTO-CLEAN-V1",
+        "name": "Hương chanh",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 269000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Hương chanh",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "AUTO-CLEAN-V2",
+        "name": "Không mùi",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 269000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Không mùi",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tã quần siêu mỏng thoáng khí cho bé",
+    "slug": "ta-quan-sieu-mong-thoang-khi-cho-be",
+    "description": "TÃ QUẦN SIÊU MỎNG THOÁNG KHÍ CHO BÉ\n\nĐIỂM NỔI BẬT\n• Lõi thấm hút nhanh\n• Bề mặt mềm thoáng\n• Vạch báo thay tã\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Bé Mây\n• Phân loại: Size M - 54 miếng, Size L - 48 miếng, Size XL - 42 miếng\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "me-va-be",
+    "brand": "Bé Mây",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 1900,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/bemay-diaper/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "BEMAY-DIAPER-V1",
+        "name": "Size M - 54 miếng",
+        "price": 285000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 345000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Size M - 54 miếng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BEMAY-DIAPER-V2",
+        "name": "Size L - 48 miếng",
+        "price": 295000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 355000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Size L - 48 miếng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BEMAY-DIAPER-V3",
+        "name": "Size XL - 42 miếng",
+        "price": 305000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 365000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Size XL - 42 miếng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bình sữa PPSU cổ rộng chống đầy hơi 240ml",
+    "slug": "binh-sua-ppsu-co-rong-chong-day-hoi-240ml",
+    "description": "BÌNH SỮA PPSU CỔ RỘNG CHỐNG ĐẦY HƠI 240ML\n\nĐIỂM NỔI BẬT\n• Chất liệu PPSU\n• Van thông khí\n• Cổ rộng dễ vệ sinh\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: TinySip\n• Phân loại: Màu kem, Màu xanh, Màu hồng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "me-va-be",
+    "brand": "TinySip",
+    "attributes": {
+      "material": "PPSU",
+      "origin": "Trung Quốc",
+      "weightGram": 160,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/tiny-bottle/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "TINY-BOTTLE-V1",
+        "name": "Màu kem",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 349000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Màu kem",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "TINY-BOTTLE-V2",
+        "name": "Màu xanh",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Màu xanh",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "TINY-BOTTLE-V3",
+        "name": "Màu hồng",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 349000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Màu hồng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Khăn ướt em bé không mùi 100 tờ nắp bật",
+    "slug": "khan-uot-em-be-khong-mui-100-to-nap-bat",
+    "description": "KHĂN ƯỚT EM BÉ KHÔNG MÙI 100 TỜ NẮP BẬT\n\nĐIỂM NỔI BẬT\n• Không bổ sung hương liệu\n• Sợi vải mềm\n• Nắp bật giữ ẩm\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: SoftCare\n• Phân loại: 1 gói, Combo 5 gói, Thùng 10 gói\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "me-va-be",
+    "brand": "SoftCare",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 520,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/soft-wipes/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "SOFT-WIPES-V1",
+        "name": "1 gói",
+        "price": 45000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 59000,
+        "isDefault": true,
+        "metadata": {
+          "option": "1 gói",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "SOFT-WIPES-V2",
+        "name": "Combo 5 gói",
+        "price": 195000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 209000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 5 gói",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "SOFT-WIPES-V3",
+        "name": "Thùng 10 gói",
+        "price": 345000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 359000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Thùng 10 gói",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Hộp đựng đồ gấp gọn có cửa mở phía trước",
+    "slug": "hop-dung-do-gap-gon-co-cua-mo-phia-truoc",
+    "description": "HỘP ĐỰNG ĐỒ GẤP GỌN CÓ CỬA MỞ PHÍA TRƯỚC\n\nĐIỂM NỔI BẬT\n• Có thể xếp chồng\n• Mở nắp trên và cửa trước\n• Bánh xe nhỏ dễ di chuyển\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: HomeNest\n• Phân loại: Size M - Trắng, Size L - Trắng, Size L - Xám\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "nha-cua-doi-song",
+    "brand": "HomeNest",
+    "attributes": {
+      "material": "Nhựa PP",
+      "origin": "Việt Nam",
+      "weightGram": 1450,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/home-box/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "HOME-BOX-V1",
+        "name": "Size M - Trắng",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 269000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Size M - Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "HOME-BOX-V2",
+        "name": "Size L - Trắng",
+        "price": 239000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 319000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Size L - Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "HOME-BOX-V3",
+        "name": "Size L - Xám",
+        "price": 289000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 369000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Size L - Xám",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bộ hộp bảo quản thực phẩm kín khí 5 món",
+    "slug": "bo-hop-bao-quan-thuc-pham-kin-khi-5-mon",
+    "description": "BỘ HỘP BẢO QUẢN THỰC PHẨM KÍN KHÍ 5 MÓN\n\nĐIỂM NỔI BẬT\n• Gioăng kín hạn chế ám mùi\n• Nhiều kích thước\n• Thân hộp trong dễ quan sát\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: FreshBox\n• Phân loại: Nắp trắng, Nắp xanh\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "nha-cua-doi-song",
+    "brand": "FreshBox",
+    "attributes": {
+      "material": "Nhựa PP",
+      "origin": "Việt Nam",
+      "weightGram": 980,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/fresh-container/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "FRESH-CONTAINER-V1",
+        "name": "Nắp trắng",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 419000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Nắp trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "FRESH-CONTAINER-V2",
+        "name": "Nắp xanh",
+        "price": 299000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 419000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nắp xanh",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ly giữ nhiệt có ống hút dung tích 900ml",
+    "slug": "ly-giu-nhiet-co-ong-hut-dung-tich-900ml",
+    "description": "LY GIỮ NHIỆT CÓ ỐNG HÚT DUNG TÍCH 900ML\n\nĐIỂM NỔI BẬT\n• Dung tích 900ml\n• Có tay cầm và ống hút\n• Đáy vừa hộc để ly ô tô\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: AquaDay\n• Phân loại: Trắng, Hồng, Xanh mint\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "nha-cua-doi-song",
+    "brand": "AquaDay",
+    "attributes": {
+      "material": "Inox 304",
+      "origin": "Trung Quốc",
+      "weightGram": 520,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/aqua-tumbler/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "AQUA-TUMBLER-V1",
+        "name": "Trắng",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 359000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "AQUA-TUMBLER-V2",
+        "name": "Hồng",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 359000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "AQUA-TUMBLER-V3",
+        "name": "Xanh mint",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 359000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh mint",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Kem chống nắng nâng tông nhẹ SPF50+ PA++++ 50ml",
+    "slug": "kem-chong-nang-nang-tong-nhe-spf50-pa-50ml",
+    "description": "KEM CHỐNG NẮNG NÂNG TÔNG NHẸ SPF50+ PA++++ 50ML\n\nĐIỂM NỔI BẬT\n• Kết cấu mỏng nhẹ\n• Hoàn thiện ráo\n• Phù hợp dùng hằng ngày\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: LumiSkin\n• Phân loại: Bản tự nhiên, Bản nâng tông\n• Xuất xứ: Hàn Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "sac-dep",
+    "brand": "LumiSkin",
+    "attributes": {
+      "origin": "Hàn Quốc",
+      "volumeMl": 50,
+      "skinType": "Mọi loại da",
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/lumi-sun/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "LUMI-SUN-V1",
+        "name": "Bản tự nhiên",
+        "price": 269000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 359000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bản tự nhiên",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LUMI-SUN-V2",
+        "name": "Bản nâng tông",
+        "price": 269000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 359000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bản nâng tông",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Sữa rửa mặt dịu nhẹ pH cân bằng 150ml",
+    "slug": "sua-rua-mat-diu-nhe-ph-can-bang-150ml",
+    "description": "SỮA RỬA MẶT DỊU NHẸ PH CÂN BẰNG 150ML\n\nĐIỂM NỔI BẬT\n• Làm sạch dịu nhẹ\n• Không gây cảm giác khô căng\n• Dạng gel dễ tạo bọt\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: PureLab\n• Phân loại: 150ml, Combo 2 chai\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "sac-dep",
+    "brand": "PureLab",
+    "attributes": {
+      "origin": "Việt Nam",
+      "volumeMl": 150,
+      "skinType": "Da thường và da dầu",
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/pure-cleanser/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "PURE-CLEANSER-V1",
+        "name": "150ml",
+        "price": 219000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 289000,
+        "isDefault": true,
+        "metadata": {
+          "option": "150ml",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "PURE-CLEANSER-V2",
+        "name": "Combo 2 chai",
+        "price": 409000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 479000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 2 chai",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Son kem lì mịn nhẹ môi bảng màu đất",
+    "slug": "son-kem-li-min-nhe-moi-bang-mau-dat",
+    "description": "SON KEM LÌ MỊN NHẸ MÔI BẢNG MÀU ĐẤT\n\nĐIỂM NỔI BẬT\n• Chất son mịn\n• Màu lên rõ\n• Thiết kế nhỏ gọn\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: VelvetHue\n• Phân loại: 01 Đỏ gạch, 02 Cam đất, 03 Hồng nâu, 04 Đỏ lạnh\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "sac-dep",
+    "brand": "VelvetHue",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 35,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/velvet-lip/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "VELVET-LIP-V1",
+        "name": "01 Đỏ gạch",
+        "price": 179000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 249000,
+        "isDefault": true,
+        "metadata": {
+          "option": "01 Đỏ gạch",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "VELVET-LIP-V2",
+        "name": "02 Cam đất",
+        "price": 179000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 249000,
+        "isDefault": false,
+        "metadata": {
+          "option": "02 Cam đất",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "VELVET-LIP-V3",
+        "name": "03 Hồng nâu",
+        "price": 179000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 249000,
+        "isDefault": false,
+        "metadata": {
+          "option": "03 Hồng nâu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "VELVET-LIP-V4",
+        "name": "04 Đỏ lạnh",
+        "price": 179000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 249000,
+        "isDefault": false,
+        "metadata": {
+          "option": "04 Đỏ lạnh",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Cân điện tử sức khỏe kính cường lực",
+    "slug": "can-dien-tu-suc-khoe-kinh-cuong-luc",
+    "description": "CÂN ĐIỆN TỬ SỨC KHỎE KÍNH CƯỜNG LỰC\n\nĐIỂM NỔI BẬT\n• Cảm biến bốn điểm\n• Màn hình LED\n• Tự động bật khi sử dụng\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: WellScale\n• Phân loại: Đen, Trắng, Hồng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "suc-khoe",
+    "brand": "WellScale",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "maxLoadKg": 180,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/well-scale/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "WELL-SCALE-V1",
+        "name": "Đen",
+        "price": 239000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 329000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "WELL-SCALE-V2",
+        "name": "Trắng",
+        "price": 239000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 329000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "WELL-SCALE-V3",
+        "name": "Hồng",
+        "price": 239000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 329000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Miếng dán giữ ấm dùng một lần gói 10 miếng",
+    "slug": "mieng-dan-giu-am-dung-mot-lan-goi-10-mieng",
+    "description": "MIẾNG DÁN GIỮ ẤM DÙNG MỘT LẦN GÓI 10 MIẾNG\n\nĐIỂM NỔI BẬT\n• Tỏa ấm từ từ\n• Dạng mỏng dễ mang theo\n• Sử dụng ngoài quần áo\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: WarmPatch\n• Phân loại: Gói 10 miếng, Combo 3 gói\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "suc-khoe",
+    "brand": "WarmPatch",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 180,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/warm-patch/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "WARM-PATCH-V1",
+        "name": "Gói 10 miếng",
+        "price": 69000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 99000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Gói 10 miếng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "WARM-PATCH-V2",
+        "name": "Combo 3 gói",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 219000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 3 gói",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Hộp chia thuốc 7 ngày sáng trưa tối",
+    "slug": "hop-chia-thuoc-7-ngay-sang-trua-toi",
+    "description": "HỘP CHIA THUỐC 7 NGÀY SÁNG TRƯA TỐI\n\nĐIỂM NỔI BẬT\n• Chia theo bảy ngày\n• Ba ngăn mỗi ngày\n• Nắp đóng chắc chắn\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: CarePlus\n• Phân loại: Xanh, Trắng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "suc-khoe",
+    "brand": "CarePlus",
+    "attributes": {
+      "material": "Nhựa PP",
+      "origin": "Trung Quốc",
+      "weightGram": 240,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/care-box/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "CARE-BOX-V1",
+        "name": "Xanh",
+        "price": 89000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 129000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Xanh",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CARE-BOX-V2",
+        "name": "Trắng",
+        "price": 89000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 129000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giày sneaker nữ đế độn 4cm phong cách tối giản",
+    "slug": "giay-sneaker-nu-de-don-4cm-phong-cach-toi-gian",
+    "description": "GIÀY SNEAKER NỮ ĐẾ ĐỘN 4CM PHONG CÁCH TỐI GIẢN\n\nĐIỂM NỔI BẬT\n• Đế độn 4cm\n• Lót êm\n• Thiết kế dễ phối đồ\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Mira\n• Phân loại: Trắng - 36, Trắng - 37, Kem - 36, Kem - 37\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "giay-dep-nu",
+    "brand": "Mira",
+    "attributes": {
+      "material": "Da PU và cao su",
+      "origin": "Việt Nam",
+      "weightGram": 720,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/mira-sneaker/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MIRA-SNEAKER-V1",
+        "name": "Trắng - 36",
+        "price": 429000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 599000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Trắng - 36",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MIRA-SNEAKER-V2",
+        "name": "Trắng - 37",
+        "price": 429000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 599000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng - 37",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MIRA-SNEAKER-V3",
+        "name": "Kem - 36",
+        "price": 429000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 599000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem - 36",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MIRA-SNEAKER-V4",
+        "name": "Kem - 37",
+        "price": 429000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 599000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem - 37",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giày búp bê nữ mũi vuông đính nơ",
+    "slug": "giay-bup-be-nu-mui-vuong-dinh-no",
+    "description": "GIÀY BÚP BÊ NỮ MŨI VUÔNG ĐÍNH NƠ\n\nĐIỂM NỔI BẬT\n• Mũi vuông hiện đại\n• Lót mềm\n• Gót thấp dễ đi\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: BelleStep\n• Phân loại: Đen - 36, Đen - 37, Kem - 36, Kem - 37\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "giay-dep-nu",
+    "brand": "BelleStep",
+    "attributes": {
+      "material": "Da PU",
+      "origin": "Việt Nam",
+      "weightGram": 520,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/belle-flat/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "BELLE-FLAT-V1",
+        "name": "Đen - 36",
+        "price": 319000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 449000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - 36",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BELLE-FLAT-V2",
+        "name": "Đen - 37",
+        "price": 319000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 449000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - 37",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BELLE-FLAT-V3",
+        "name": "Kem - 36",
+        "price": 319000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 449000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem - 36",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BELLE-FLAT-V4",
+        "name": "Kem - 37",
+        "price": 319000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 449000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem - 37",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Sandal nữ quai ngang đế êm chống trượt",
+    "slug": "sandal-nu-quai-ngang-de-em-chong-truot",
+    "description": "SANDAL NỮ QUAI NGANG ĐẾ ÊM CHỐNG TRƯỢT\n\nĐIỂM NỔI BẬT\n• Đế êm nhẹ\n• Quai ngang chắc chắn\n• Rãnh đế tăng độ bám\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: CloudWalk\n• Phân loại: Đen - 36, Đen - 37, Be - 36, Be - 37\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "giay-dep-nu",
+    "brand": "CloudWalk",
+    "attributes": {
+      "material": "EVA",
+      "origin": "Việt Nam",
+      "weightGram": 480,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/cloud-sandal/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "CLOUD-SANDAL-V1",
+        "name": "Đen - 36",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 389000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen - 36",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CLOUD-SANDAL-V2",
+        "name": "Đen - 37",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen - 37",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CLOUD-SANDAL-V3",
+        "name": "Be - 36",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Be - 36",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "CLOUD-SANDAL-V4",
+        "name": "Be - 37",
+        "price": 279000,
+        "currency": "VND",
+        "initialStock": 47,
+        "compareAtPrice": 389000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Be - 37",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Túi tote nữ da mềm đựng vừa laptop 13 inch",
+    "slug": "tui-tote-nu-da-mem-dung-vua-laptop-13-inch",
+    "description": "TÚI TOTE NỮ DA MỀM ĐỰNG VỪA LAPTOP 13 INCH\n\nĐIỂM NỔI BẬT\n• Ngăn chính rộng\n• Có ngăn khóa kéo\n• Quai đeo chắc chắn\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: LunaBag\n• Phân loại: Đen, Nâu, Kem\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "tui-vi-nu",
+    "brand": "LunaBag",
+    "attributes": {
+      "material": "Da PU",
+      "origin": "Việt Nam",
+      "weightGram": 620,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/luna-tote/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "LUNA-TOTE-V1",
+        "name": "Đen",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 549000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LUNA-TOTE-V2",
+        "name": "Nâu",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 549000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Nâu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "LUNA-TOTE-V3",
+        "name": "Kem",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 549000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Túi đeo chéo nữ mini nhiều ngăn",
+    "slug": "tui-deo-cheo-nu-mini-nhieu-ngan",
+    "description": "TÚI ĐEO CHÉO NỮ MINI NHIỀU NGĂN\n\nĐIỂM NỔI BẬT\n• Ba ngăn tiện dụng\n• Dây đeo điều chỉnh\n• Khóa kéo trơn\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: DailyCarry\n• Phân loại: Đen, Kem, Xanh rêu\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "tui-vi-nu",
+    "brand": "DailyCarry",
+    "attributes": {
+      "material": "Vải canvas chống bám nước nhẹ",
+      "origin": "Việt Nam",
+      "weightGram": 340,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/daily-cross/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DAILY-CROSS-V1",
+        "name": "Đen",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 359000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "DAILY-CROSS-V2",
+        "name": "Kem",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 359000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "DAILY-CROSS-V3",
+        "name": "Xanh rêu",
+        "price": 259000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 359000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh rêu",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ví nữ gập ngắn khóa bấm nhiều ngăn thẻ",
+    "slug": "vi-nu-gap-ngan-khoa-bam-nhieu-ngan-the",
+    "description": "VÍ NỮ GẬP NGẮN KHÓA BẤM NHIỀU NGĂN THẺ\n\nĐIỂM NỔI BẬT\n• Nhiều khe thẻ\n• Ngăn tiền xu có khóa\n• Kích thước nhỏ gọn\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Mori Wallet\n• Phân loại: Nâu, Đen, Hồng\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "tui-vi-nu",
+    "brand": "Mori Wallet",
+    "attributes": {
+      "material": "Da PU",
+      "origin": "Việt Nam",
+      "weightGram": 160,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/mini-wallet/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MINI-WALLET-V1",
+        "name": "Nâu",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 269000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Nâu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MINI-WALLET-V2",
+        "name": "Đen",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 269000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MINI-WALLET-V3",
+        "name": "Hồng",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 269000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Dây chuyền nữ mặt giọt nước phong cách tối giản",
+    "slug": "day-chuyen-nu-mat-giot-nuoc-phong-cach-toi-gian",
+    "description": "DÂY CHUYỀN NỮ MẶT GIỌT NƯỚC PHONG CÁCH TỐI GIẢN\n\nĐIỂM NỔI BẬT\n• Thiết kế thanh mảnh\n• Dây có nấc điều chỉnh\n• Hộp đựng phù hợp làm quà\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Glimmer\n• Phân loại: Màu bạc, Màu vàng\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "phu-kien-trang-suc-nu",
+    "brand": "Glimmer",
+    "attributes": {
+      "material": "Thép không gỉ",
+      "origin": "Trung Quốc",
+      "weightGram": 45,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/glimmer-neck/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "GLIMMER-NECK-V1",
+        "name": "Màu bạc",
+        "price": 149000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 219000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Màu bạc",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "GLIMMER-NECK-V2",
+        "name": "Màu vàng",
+        "price": 149000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 219000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Màu vàng",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bông tai ngọc trai nhân tạo dáng nhỏ thanh lịch",
+    "slug": "bong-tai-ngoc-trai-nhan-tao-dang-nho-thanh-lich",
+    "description": "BÔNG TAI NGỌC TRAI NHÂN TẠO DÁNG NHỎ THANH LỊCH\n\nĐIỂM NỔI BẬT\n• Dáng nhỏ dễ đeo\n• Chốt chắc chắn\n• Kèm hộp bảo quản\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Ami Jewelry\n• Phân loại: Trắng, Hồng nhạt\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "phu-kien-trang-suc-nu",
+    "brand": "Ami Jewelry",
+    "attributes": {
+      "material": "Hợp kim và ngọc trai nhân tạo",
+      "origin": "Trung Quốc",
+      "weightGram": 35,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/pearl-earring/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "PEARL-EARRING-V1",
+        "name": "Trắng",
+        "price": 119000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 179000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "PEARL-EARRING-V2",
+        "name": "Hồng nhạt",
+        "price": 119000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 179000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng nhạt",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Set 6 kẹp tóc nữ màu trung tính nhiều kiểu",
+    "slug": "set-6-kep-toc-nu-mau-trung-tinh-nhieu-kieu",
+    "description": "SET 6 KẸP TÓC NỮ MÀU TRUNG TÍNH NHIỀU KIỂU\n\nĐIỂM NỔI BẬT\n• Sáu mẫu trong một set\n• Lò xo kẹp chắc\n• Màu dễ phối trang phục\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Mellow Accessory\n• Phân loại: Tông nâu, Tông pastel\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "phu-kien-trang-suc-nu",
+    "brand": "Mellow Accessory",
+    "attributes": {
+      "material": "Nhựa acetate và hợp kim",
+      "origin": "Trung Quốc",
+      "weightGram": 120,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/hair-clip/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "HAIR-CLIP-V1",
+        "name": "Tông nâu",
+        "price": 89000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 129000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Tông nâu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "HAIR-CLIP-V2",
+        "name": "Tông pastel",
+        "price": 89000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 129000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Tông pastel",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Cà phê rang xay nguyên chất pha phin 500g",
+    "slug": "ca-phe-rang-xay-nguyen-chat-pha-phin-500g",
+    "description": "CÀ PHÊ RANG XAY NGUYÊN CHẤT PHA PHIN 500G\n\nĐIỂM NỔI BẬT\n• Hương thơm cân bằng\n• Xay phù hợp pha phin\n• Túi có van một chiều\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: Mộc Brew\n• Phân loại: Rang vừa, Rang đậm\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "bach-hoa-online",
+    "brand": "Mộc Brew",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 500,
+      "shelfLifeMonths": 12,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/moc-coffee/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "MOC-COFFEE-V1",
+        "name": "Rang vừa",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 199000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Rang vừa",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "MOC-COFFEE-V2",
+        "name": "Rang đậm",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 199000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Rang đậm",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Granola yến mạch hạt dinh dưỡng ít ngọt 500g",
+    "slug": "granola-yen-mach-hat-dinh-duong-it-ngot-500g",
+    "description": "GRANOLA YẾN MẠCH HẠT DINH DƯỠNG ÍT NGỌT 500G\n\nĐIỂM NỔI BẬT\n• Yến mạch nướng giòn\n• Kết hợp nhiều loại hạt\n• Túi zip tiện bảo quản\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: NutriDay\n• Phân loại: Vị truyền thống, Vị cacao\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "bach-hoa-online",
+    "brand": "NutriDay",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 500,
+      "shelfLifeMonths": 9,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/nutri-granola/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "NUTRI-GRANOLA-V1",
+        "name": "Vị truyền thống",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 249000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Vị truyền thống",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "NUTRI-GRANOLA-V2",
+        "name": "Vị cacao",
+        "price": 189000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 249000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Vị cacao",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Hạt điều rang muối vỏ lụa loại 1 hộp 500g",
+    "slug": "hat-dieu-rang-muoi-vo-lua-loai-1-hop-500g",
+    "description": "HẠT ĐIỀU RANG MUỐI VỎ LỤA LOẠI 1 HỘP 500G\n\nĐIỂM NỔI BẬT\n• Hạt kích thước đồng đều\n• Rang vừa vị\n• Hộp kín tiện bảo quản\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: GreenFarm\n• Phân loại: Hộp 500g, Combo 2 hộp\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "bach-hoa-online",
+    "brand": "GreenFarm",
+    "attributes": {
+      "origin": "Việt Nam",
+      "weightGram": 500,
+      "shelfLifeMonths": 12,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/green-cashew/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "GREEN-CASHEW-V1",
+        "name": "Hộp 500g",
+        "price": 209000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 269000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Hộp 500g",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "GREEN-CASHEW-V2",
+        "name": "Combo 2 hộp",
+        "price": 399000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 459000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 2 hộp",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Sổ planner 12 tháng bìa cứng tối giản",
+    "slug": "so-planner-12-thang-bia-cung-toi-gian",
+    "description": "SỔ PLANNER 12 THÁNG BÌA CỨNG TỐI GIẢN\n\nĐIỂM NỔI BẬT\n• Bố cục theo tháng và tuần\n• Giấy màu kem dễ viết\n• Có dây đánh dấu trang\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: PaperMood\n• Phân loại: Xanh navy, Kem, Hồng đất\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "nha-sach-online",
+    "brand": "PaperMood",
+    "attributes": {
+      "origin": "Việt Nam",
+      "pageCount": 224,
+      "weightGram": 420,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/paper-planner/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "PAPER-PLANNER-V1",
+        "name": "Xanh navy",
+        "price": 129000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 179000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Xanh navy",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "PAPER-PLANNER-V2",
+        "name": "Kem",
+        "price": 129000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 179000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "PAPER-PLANNER-V3",
+        "name": "Hồng đất",
+        "price": 129000,
+        "currency": "VND",
+        "initialStock": 58,
+        "compareAtPrice": 179000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng đất",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bộ bút highlight 6 màu pastel đầu vát",
+    "slug": "bo-but-highlight-6-mau-pastel-dau-vat",
+    "description": "BỘ BÚT HIGHLIGHT 6 MÀU PASTEL ĐẦU VÁT\n\nĐIỂM NỔI BẬT\n• Màu pastel dịu mắt\n• Đầu vát hai nét\n• Mực khô nhanh\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: StudyMate\n• Phân loại: Bộ 6 màu, Combo 2 bộ\n• Xuất xứ: Trung Quốc\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "nha-sach-online",
+    "brand": "StudyMate",
+    "attributes": {
+      "origin": "Trung Quốc",
+      "weightGram": 140,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/study-pen/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "STUDY-PEN-V1",
+        "name": "Bộ 6 màu",
+        "price": 79000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 109000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bộ 6 màu",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "STUDY-PEN-V2",
+        "name": "Combo 2 bộ",
+        "price": 144000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 174000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 2 bộ",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Giá đỡ sách đọc bàn điều chỉnh 6 góc",
+    "slug": "gia-do-sach-doc-ban-dieu-chinh-6-goc",
+    "description": "GIÁ ĐỠ SÁCH ĐỌC BÀN ĐIỀU CHỈNH 6 GÓC\n\nĐIỂM NỔI BẬT\n• Điều chỉnh sáu góc\n• Thanh giữ trang\n• Gấp gọn khi không dùng\n\nTHÔNG TIN SẢN PHẨM\n• Thương hiệu: BookEase\n• Phân loại: Gỗ sáng, Gỗ nâu\n• Xuất xứ: Việt Nam\n\nCAM KẾT CỦA SHOP\n• Sản phẩm mới, được kiểm tra trước khi đóng gói.\n• Giao đúng mẫu và đúng phân loại khách hàng đã chọn.\n• Hỗ trợ xử lý nếu sản phẩm giao sai hoặc phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "nha-sach-online",
+    "brand": "BookEase",
+    "attributes": {
+      "material": "Gỗ ép phủ veneer",
+      "origin": "Việt Nam",
+      "weightGram": 950,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "vietnam-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/book-stand/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "BOOK-STAND-V1",
+        "name": "Gỗ sáng",
+        "price": 219000,
+        "currency": "VND",
+        "initialStock": 80,
+        "compareAtPrice": 299000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Gỗ sáng",
+          "demoSeed": true
+        }
+      },
+      {
+        "sku": "BOOK-STAND-V2",
+        "name": "Gỗ nâu",
+        "price": 219000,
+        "currency": "VND",
+        "initialStock": 69,
+        "compareAtPrice": 299000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Gỗ nâu",
+          "demoSeed": true
+        }
+      }
+    ],
+    "status": "DRAFT"
+  }
+]

@@ -25,6 +25,8 @@ FROM deps AS builder
 WORKDIR /repo
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL=https://media.truongam.tech/ecommerce-media
+ENV NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL=${NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL}
 
 COPY frontend/apps/moderator ./frontend/apps/moderator
 COPY frontend/packages ./frontend/packages

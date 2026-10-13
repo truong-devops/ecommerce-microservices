@@ -6,7 +6,7 @@ interface ProductModerationBoardProps {
   onUpdateStatus: (productId: string, status: ModerationProductStatus) => void;
 }
 
-const PRODUCT_ASSET_BASE_URL = process.env.NEXT_PUBLIC_PRODUCT_ASSET_BASE_URL ?? 'http://localhost:12012/api/v1/products/assets';
+const MEDIA_PUBLIC_BASE_URL = (process.env.NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL ?? 'http://127.0.0.1:12030/ecommerce-media').replace(/\/$/, '');
 
 export function ProductModerationBoard({ items, loading, onUpdateStatus }: ProductModerationBoardProps) {
   if (loading) {
@@ -99,18 +99,17 @@ function resolveImageUrl(value: string | undefined): string {
   }
 
   const normalized = value.startsWith('/') ? value.slice(1) : value;
-  return `${PRODUCT_ASSET_BASE_URL}/${normalized}`;
+  return `${MEDIA_PUBLIC_BASE_URL}/${normalized}`;
 }
 
 function normalizeProductImageUrl(raw: string): string {
   const value = raw.trim();
 
-  if (value.startsWith('http://localhost:3003/')) {
-    return value.replace('http://localhost:3003/', 'http://localhost:12012/');
-  }
-
-  if (value.startsWith('http://127.0.0.1:3003/')) {
-    return value.replace('http://127.0.0.1:3003/', 'http://127.0.0.1:12012/');
+  const legacyPrefixes = ['http://localhost:3003/', 'http://127.0.0.1:3003/', 'http://localhost:12030/', 'http://127.0.0.1:12030/'];
+  const legacyPrefix = legacyPrefixes.find((prefix) => value.startsWith(prefix));
+  if (legacyPrefix) {
+    const relativePath = value.slice(legacyPrefix.length).replace(/^ecommerce-media\//, '');
+    return `${MEDIA_PUBLIC_BASE_URL}/${relativePath}`;
   }
 
   return value;

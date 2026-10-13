@@ -16,11 +16,13 @@ services:
       context: .
       dockerfile: frontend/apps/buyer-web/Dockerfile
       args:
-        NEXT_PUBLIC_API_GATEWAY_WS_URL: ${NEXT_PUBLIC_API_GATEWAY_WS_URL:-wss://api.dt-commerce.site/api/v1}
-        NEXT_PUBLIC_CHAT_WS_BASE_URL: ${NEXT_PUBLIC_CHAT_WS_BASE_URL:-https://api.dt-commerce.site}
+        NEXT_PUBLIC_SELLER_WEB_URL: ${SELLER_WEB_BASE_URL:-https://seller.truongam.tech}
+        NEXT_PUBLIC_API_GATEWAY_WS_URL: ${NEXT_PUBLIC_API_GATEWAY_WS_URL:-wss://api.truongam.tech/api/v1}
+        NEXT_PUBLIC_CHAT_WS_BASE_URL: ${NEXT_PUBLIC_CHAT_WS_BASE_URL:-https://api.truongam.tech}
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
+      PUBLIC_WEB_BASE_URL: ${BUYER_WEB_BASE_URL:-https://shop.truongam.tech}
       API_GATEWAY_BASE_URL: http://host.docker.internal:12000/api/v1
       AUTH_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       USER_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
@@ -28,10 +30,12 @@ services:
       REVIEW_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       ORDER_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       PAYMENT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      INVENTORY_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       SHIPPING_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       CHAT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       LIVE_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       ANALYTICS_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-https://media.truongam.tech/ecommerce-media}
     ports:
       - '${FRONTEND_BIND_ADDRESS:-127.0.0.1}:8888:3000'
 
@@ -42,13 +46,14 @@ services:
       context: .
       dockerfile: frontend/apps/seller/Dockerfile
       args:
-        NEXT_PUBLIC_BUYER_WEB_URL: ${BUYER_WEB_BASE_URL:-https://buyer.dt-commerce.site}
-        NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-https://api.dt-commerce.site/ecommerce-media}
-        NEXT_PUBLIC_API_GATEWAY_WS_URL: ${NEXT_PUBLIC_API_GATEWAY_WS_URL:-wss://api.dt-commerce.site/api/v1}
-        NEXT_PUBLIC_CHAT_WS_BASE_URL: ${NEXT_PUBLIC_CHAT_WS_BASE_URL:-https://api.dt-commerce.site}
+        NEXT_PUBLIC_BUYER_WEB_URL: ${BUYER_WEB_BASE_URL:-https://shop.truongam.tech}
+        NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-https://media.truongam.tech/ecommerce-media}
+        NEXT_PUBLIC_API_GATEWAY_WS_URL: ${NEXT_PUBLIC_API_GATEWAY_WS_URL:-wss://api.truongam.tech/api/v1}
+        NEXT_PUBLIC_CHAT_WS_BASE_URL: ${NEXT_PUBLIC_CHAT_WS_BASE_URL:-https://api.truongam.tech}
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
+      PUBLIC_WEB_BASE_URL: ${SELLER_WEB_BASE_URL:-https://seller.truongam.tech}
       API_GATEWAY_BASE_URL: http://host.docker.internal:12000/api/v1
       AUTH_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       ANALYTICS_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
@@ -61,7 +66,7 @@ services:
       CHAT_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       MEDIA_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
       LIVE_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
-      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://localhost:12030/ecommerce-media}
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-https://media.truongam.tech/ecommerce-media}
     ports:
       - '${FRONTEND_BIND_ADDRESS:-127.0.0.1}:6789:3000'
 
@@ -71,9 +76,12 @@ services:
     build:
       context: .
       dockerfile: frontend/apps/moderator/Dockerfile
+      args:
+        NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-https://media.truongam.tech/ecommerce-media}
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
+      PUBLIC_WEB_BASE_URL: ${MODERATOR_WEB_BASE_URL:-https://moderator.truongam.tech}
       AUTH_SERVICE_BASE_URL: http://host.docker.internal:12010/api/v1
       PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:12012/api/v1
       CHAT_SERVICE_BASE_URL: http://host.docker.internal:12020/api/v1

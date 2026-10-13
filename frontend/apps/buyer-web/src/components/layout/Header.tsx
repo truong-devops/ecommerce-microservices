@@ -9,6 +9,8 @@ interface HeaderProps {
   keywords: string[];
 }
 
+const SELLER_WEB_URL = process.env.NEXT_PUBLIC_SELLER_WEB_URL ?? 'http://localhost:6789';
+
 export function Header({ keywords }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,7 +67,7 @@ export function Header({ keywords }: HeaderProps) {
       <div className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col gap-3 px-3 py-3 md:px-4 md:py-4">
         <div className="flex min-w-0 items-center justify-between text-xs text-white/90">
           <nav aria-label="Utility links" className="hidden gap-3 md:flex">
-            <a className="rounded-sm hover:text-white focus-visible:outline-white" href="http://localhost:6789/login">
+            <a className="rounded-sm hover:text-white focus-visible:outline-white" href={`${SELLER_WEB_URL.replace(/\/$/, '')}/login`}>
               {text.header.sellerCenter}
             </a>
             <a className="rounded-sm hover:text-white focus-visible:outline-white" href="#">

@@ -215,12 +215,12 @@ function normalizeProductImageUrl(raw: string | undefined): string {
     return '';
   }
 
-  if (trimmed.startsWith('http://localhost:3003/')) {
-    return trimmed.replace('http://localhost:3003/', 'http://localhost:12030/');
-  }
-
-  if (trimmed.startsWith('http://127.0.0.1:3003/')) {
-    return trimmed.replace('http://127.0.0.1:3003/', 'http://127.0.0.1:12030/');
+  const mediaPublicBaseUrl = (process.env.MEDIA_PUBLIC_BASE_URL ?? 'http://127.0.0.1:12030/ecommerce-media').replace(/\/$/, '');
+  const legacyPrefixes = ['http://localhost:3003/', 'http://127.0.0.1:3003/', 'http://localhost:12030/', 'http://127.0.0.1:12030/'];
+  const legacyPrefix = legacyPrefixes.find((prefix) => trimmed.startsWith(prefix));
+  if (legacyPrefix) {
+    const relativePath = trimmed.slice(legacyPrefix.length).replace(/^ecommerce-media\//, '');
+    return `${mediaPublicBaseUrl}/${relativePath}`;
   }
 
   return trimmed;

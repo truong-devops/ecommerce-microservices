@@ -11,6 +11,8 @@ interface WHEPLivePlayerProps {
   url: string;
 }
 
+const BUYER_WEB_BASE_URL = process.env.EXPO_PUBLIC_BUYER_WEB_BASE_URL ?? 'https://shop.truongam.tech';
+
 export function WHEPLivePlayer({ immersive, url }: WHEPLivePlayerProps) {
   const [status, setStatus] = useState<WHEPStatus>('connecting');
   const document = useMemo(() => buildWhepDocument(url), [url]);
@@ -38,7 +40,7 @@ export function WHEPLivePlayer({ immersive, url }: WHEPLivePlayerProps) {
         mediaPlaybackRequiresUserAction={false}
         onMessage={onMessage}
         originWhitelist={['*']}
-        source={{ html: document, baseUrl: 'https://buyer.dt-commerce.site/' }}
+        source={{ html: document, baseUrl: `${BUYER_WEB_BASE_URL.replace(/\/$/, '')}/` }}
         style={styles.webview}
       />
       {status !== 'playing' ? (

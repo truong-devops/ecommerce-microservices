@@ -161,6 +161,8 @@ func New(
 		mountPrefix(private, "/api/v1/wallets", proxies[config.ServiceWallet])
 		mountPrefix(private, "/api/payouts", proxies[config.ServiceWallet])
 		mountPrefix(private, "/api/v1/payouts", proxies[config.ServiceWallet])
+		mountPrefix(private, "/api/admin/wallets", proxies[config.ServiceWallet])
+		mountPrefix(private, "/api/v1/admin/wallets", proxies[config.ServiceWallet])
 		mountPrefix(private, "/api/inventory", proxies[config.ServiceInventory])
 		mountPrefix(private, "/api/v1/inventory", proxies[config.ServiceInventory])
 		mountPrefix(private, "/api/shipping", proxies[config.ServiceShipping])

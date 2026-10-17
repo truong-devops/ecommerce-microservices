@@ -25,6 +25,7 @@ func TestPrivateV1RoutesRequireAuth(t *testing.T) {
 	paths := []string{
 		"/api/v1/payments",
 		"/api/v1/wallets/me",
+		"/api/v1/admin/wallets",
 		"/api/v1/payouts",
 		"/api/v1/notifications",
 		"/api/v1/users/me",

@@ -97,7 +97,7 @@ function BankAccountContent({ accessToken }: { accessToken: string }) {
       setAccount(updated);
       setForm(emptyForm);
       setDialogOpen(false);
-      setMessage(wasUpdate ? 'Đã cập nhật tài khoản nhận tiền.' : 'Đã thêm tài khoản nhận tiền.');
+      setMessage(wasUpdate ? 'Đã cập nhật tài khoản. Tài khoản cần được Admin xác minh lại trước khi rút tiền.' : 'Đã thêm tài khoản. Vui lòng chờ Admin xác minh trước khi rút tiền.');
     } catch (saveError) {
       setError(toMessage(saveError, 'Không thể lưu tài khoản ngân hàng.'));
     } finally {
@@ -322,6 +322,10 @@ function SecurityPanel({ account }: { account: SellerBankAccount | null }) {
         <li className="flex gap-2">
           <span className="text-emerald-600">✓</span>
           <span>Yêu cầu rút đã tạo vẫn dùng bản chụp tài khoản tại thời điểm gửi.</span>
+        </li>
+        <li className="flex gap-2">
+          <span className="text-emerald-600">✓</span>
+          <span>Tài khoản mới hoặc vừa cập nhật phải được Admin xác minh trước khi rút tiền.</span>
         </li>
       </ul>
       {account ? (

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"wallet-service/internal/domain"
+	"wallet-service/internal/httpx"
 	"wallet-service/internal/repository"
 
 	"go.uber.org/zap"
@@ -124,6 +125,22 @@ func TestCreatePayoutValidatesFeatureFlagAndIdempotency(t *testing.T) {
 	}
 	if store.createInput.SellerID != testSellerID || store.createInput.AmountMinor != 20_000 || store.createInput.RequestHash == "" {
 		t.Fatalf("unexpected create input: %+v", store.createInput)
+	}
+}
+
+func TestCreatePayoutRequiresVerifiedBankAccount(t *testing.T) {
+	store := &fakePayoutStore{createErr: repository.ErrBankAccountNotVerified}
+	service := NewPayoutService(store, testCipher(t), true, 10_000, 10_000_000, time.Hour)
+	_, _, err := service.CreateMyPayout(
+		context.Background(),
+		domain.UserContext{UserID: testSellerID, Role: domain.RoleSeller},
+		"verified-bank-check",
+		20_000,
+		"VND",
+	)
+	var appErr *httpx.AppError
+	if !errors.As(err, &appErr) || appErr.Code != domain.ErrorCodeBankAccountNotVerified {
+		t.Fatalf("expected bank verification error, got %v", err)
 	}
 }
 

@@ -1,6 +1,6 @@
 # Wallet Service Development Plan
 
-Last updated: 2026-10-11
+Last updated: 2026-10-17
 
 ## 1. Mục tiêu
 
@@ -118,13 +118,17 @@ GET  /api/v1/payouts/{id}
 Admin API chủ yếu phục vụ quan sát và xử lý sự cố:
 
 ```text
+GET  /api/v1/admin/wallets/summary
 GET  /api/v1/admin/wallets
-GET  /api/v1/admin/payouts
-GET  /api/v1/admin/ledger-transactions
-POST /api/v1/admin/wallets/{sellerId}/freeze
+GET  /api/v1/admin/wallets/{walletId}
+GET  /api/v1/admin/wallets/{walletId}/transactions
+GET  /api/v1/admin/wallets/payouts
+GET  /api/v1/admin/wallets/audit-logs
+PATCH /api/v1/admin/wallets/{walletId}/status
+PATCH /api/v1/admin/wallets/{walletId}/bank-account/status
 ```
 
-Admin không được cập nhật trực tiếp balance. Mọi adjustment sau này đều phải tạo ledger transaction có audit trail.
+Admin có thể xác minh/khóa tài khoản ngân hàng và đóng băng/mở khóa ví với lý do bắt buộc. Admin không được cập nhật trực tiếp balance. Mọi thao tác quản trị được ghi audit log; mọi adjustment số dư sau này đều phải tạo ledger transaction.
 
 ## 7. Kế hoạch triển khai trong 3 phase
 
@@ -209,6 +213,8 @@ Công việc:
    - Xem lịch sử giao dịch.
    - Thêm/cập nhật tài khoản ngân hàng.
    - Tạo và theo dõi yêu cầu rút tiền.
+   - Admin xem tổng quan và chi tiết toàn bộ ví, giao dịch và payout.
+   - Admin xác minh/khóa tài khoản ngân hàng, đóng băng/mở khóa ví và xem audit log.
 4. Viết end-to-end test cho toàn bộ luồng payment -> hold -> release -> payout.
 5. Viết runbook và demo script.
 6. Sau khi mock ổn định, thêm adapter payout thật phía sau các biến an toàn:
@@ -243,6 +249,9 @@ Checkpoint hoàn thành:
 10. Refund trước payout đảo ledger chính xác.
 11. Refund sau payout tạo seller debt/negative adjustment và khóa payout tiếp theo.
 12. Seller A không xem hoặc rút tiền của Seller B.
+13. Seller không thể rút tiền qua tài khoản chưa được Admin xác minh.
+14. Moderator không truy cập được API quản trị ví; chỉ `ADMIN` và `SUPER_ADMIN` được phép.
+15. Mọi thao tác xác minh/khóa tài khoản hoặc đóng băng/mở khóa ví đều có audit log.
 
 ## 9. Quy trình giám sát thực hiện
 

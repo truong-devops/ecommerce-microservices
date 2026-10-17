@@ -117,6 +117,11 @@ export default function VideoReviewPage() {
             <Link href="/chat/violations" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
               Chat Violations
             </Link>
+            {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
+              <Link href="/wallets" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                Wallet Operations
+              </Link>
+            ) : null}
           </nav>
 
           <div className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3">

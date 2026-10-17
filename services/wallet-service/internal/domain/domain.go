@@ -189,3 +189,69 @@ type TransactionPage struct {
 	PageSize   int
 	TotalItems int64
 }
+
+type AdminWallet struct {
+	ID                  string       `json:"id"`
+	SellerID            string       `json:"sellerId"`
+	Currency            string       `json:"currency"`
+	HeldAmount          int64        `json:"heldAmount"`
+	AvailableAmount     int64        `json:"availableAmount"`
+	PayoutPendingAmount int64        `json:"payoutPendingAmount"`
+	TotalPaidOut        int64        `json:"totalPaidOut"`
+	IsFrozen            bool         `json:"isFrozen"`
+	BankAccount         *BankAccount `json:"bankAccount,omitempty"`
+	CreatedAt           time.Time    `json:"createdAt"`
+	UpdatedAt           time.Time    `json:"updatedAt"`
+}
+
+type AdminWalletPage struct {
+	Items      []AdminWallet
+	Page       int
+	PageSize   int
+	TotalItems int64
+}
+
+type AdminWalletSummary struct {
+	TotalWallets           int64 `json:"totalWallets"`
+	FrozenWallets          int64 `json:"frozenWallets"`
+	UnverifiedBankAccounts int64 `json:"unverifiedBankAccounts"`
+	DisabledBankAccounts   int64 `json:"disabledBankAccounts"`
+	PendingPayouts         int64 `json:"pendingPayouts"`
+	HeldAmount             int64 `json:"heldAmount"`
+	AvailableAmount        int64 `json:"availableAmount"`
+	PayoutPendingAmount    int64 `json:"payoutPendingAmount"`
+	TotalPaidOut           int64 `json:"totalPaidOut"`
+}
+
+type AdminPayout struct {
+	Payout
+	WalletID string `json:"walletId"`
+	SellerID string `json:"sellerId"`
+}
+
+type AdminPayoutPage struct {
+	Items      []AdminPayout
+	Page       int
+	PageSize   int
+	TotalItems int64
+}
+
+type AdminAuditLog struct {
+	ID             string    `json:"id"`
+	ActorID        string    `json:"actorId"`
+	ActorEmail     string    `json:"actorEmail"`
+	Action         string    `json:"action"`
+	WalletID       string    `json:"walletId"`
+	BankAccountID  *string   `json:"bankAccountId,omitempty"`
+	PreviousStatus *string   `json:"previousStatus,omitempty"`
+	NewStatus      *string   `json:"newStatus,omitempty"`
+	Reason         string    `json:"reason"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+type AdminAuditLogPage struct {
+	Items      []AdminAuditLog
+	Page       int
+	PageSize   int
+	TotalItems int64
+}

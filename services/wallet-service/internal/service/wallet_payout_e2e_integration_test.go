@@ -72,6 +72,16 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 	if _, err := payoutService.UpsertMyBankAccount(ctx, user, "VCB", "0123456789", "DEMO SELLER"); err != nil {
 		t.Fatal(err)
 	}
+	wallet, err := repo.GetBalance(ctx, sellerID, "VND")
+	if err != nil || wallet.WalletID == nil {
+		t.Fatalf("get wallet after bank account setup: wallet=%+v err=%v", wallet, err)
+	}
+	if _, err := repo.SetAdminBankAccountStatus(ctx, repository.AdminActionInput{
+		WalletID: *wallet.WalletID, ActorID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+		ActorEmail: "admin@example.com", Reason: "E2E verification",
+	}, domain.BankAccountStatusAllowlisted); err != nil {
+		t.Fatalf("verify bank account: %v", err)
+	}
 	payout, replay, err := payoutService.CreateMyPayout(ctx, user, "e2e-payout-key-001", 60_000, "VND")
 	if err != nil || replay {
 		t.Fatalf("create payout: replay=%v err=%v", replay, err)
@@ -97,7 +107,7 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 
 func truncateE2ETables(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
-	_, err := pool.Exec(ctx, `TRUNCATE TABLE outbox_events, processed_events, idempotency_records, payouts, bank_accounts, pending_payment_reversals, fund_holds, order_delivery_signals, ledger_entries, ledger_transactions, ledger_accounts, wallets RESTART IDENTITY CASCADE`)
+	_, err := pool.Exec(ctx, `TRUNCATE TABLE wallet_admin_audit_logs, outbox_events, processed_events, idempotency_records, payouts, bank_accounts, pending_payment_reversals, fund_holds, order_delivery_signals, ledger_entries, ledger_transactions, ledger_accounts, wallets RESTART IDENTITY CASCADE`)
 	if err != nil {
 		t.Fatal(err)
 	}

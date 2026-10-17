@@ -82,8 +82,10 @@ services:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: '1'
       PUBLIC_WEB_BASE_URL: ${MODERATOR_WEB_BASE_URL:-https://moderator.truongam.tech}
+      API_GATEWAY_BASE_URL: http://host.docker.internal:12000/api/v1
       AUTH_SERVICE_BASE_URL: http://host.docker.internal:12010/api/v1
       PRODUCT_SERVICE_BASE_URL: http://host.docker.internal:12012/api/v1
       CHAT_SERVICE_BASE_URL: http://host.docker.internal:12020/api/v1
+      WALLET_SERVICE_BASE_URL: http://host.docker.internal:12000/api/v1
     ports:
       - '${FRONTEND_BIND_ADDRESS:-127.0.0.1}:1111:3000'

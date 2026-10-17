@@ -82,6 +82,30 @@ func (s *routerStore) MarkPayoutPending(context.Context, string, string, string,
 	return nil
 }
 func (s *routerStore) ReschedulePayout(context.Context, string, time.Time) error { return nil }
+func (s *routerStore) GetAdminWalletSummary(context.Context, string) (domain.AdminWalletSummary, error) {
+	return domain.AdminWalletSummary{TotalWallets: 1}, nil
+}
+func (s *routerStore) ListAdminWallets(context.Context, repository.ListAdminWalletsInput) (domain.AdminWalletPage, error) {
+	return domain.AdminWalletPage{Items: []domain.AdminWallet{}, Page: 1, PageSize: 20}, nil
+}
+func (s *routerStore) GetAdminWallet(context.Context, string) (domain.AdminWallet, error) {
+	return domain.AdminWallet{}, nil
+}
+func (s *routerStore) SetAdminWalletFrozen(context.Context, repository.AdminActionInput, bool) (domain.AdminWallet, error) {
+	return domain.AdminWallet{}, nil
+}
+func (s *routerStore) SetAdminBankAccountStatus(context.Context, repository.AdminActionInput, domain.BankAccountStatus) (domain.AdminWallet, error) {
+	return domain.AdminWallet{}, nil
+}
+func (s *routerStore) ListAdminTransactions(context.Context, string, int, int) (domain.TransactionPage, error) {
+	return domain.TransactionPage{}, nil
+}
+func (s *routerStore) ListAdminPayouts(context.Context, repository.ListAdminPayoutsInput) (domain.AdminPayoutPage, error) {
+	return domain.AdminPayoutPage{}, nil
+}
+func (s *routerStore) ListAdminAuditLogs(context.Context, repository.ListAdminAuditLogsInput) (domain.AdminAuditLogPage, error) {
+	return domain.AdminAuditLogPage{}, nil
+}
 
 func TestWalletRouteRequiresAuthentication(t *testing.T) {
 	router, _ := testRouter()
@@ -132,15 +156,38 @@ func TestPayoutSummaryRouteValidatesDates(t *testing.T) {
 	}
 }
 
+func TestAdminWalletRouteAllowsAdmin(t *testing.T) {
+	router, _ := testRouter()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/admin/wallets/summary", nil)
+	request.Header.Set("Authorization", "Bearer "+signedToken(t, domain.RoleAdmin))
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestAdminWalletRouteRejectsModerator(t *testing.T) {
+	router, _ := testRouter()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/admin/wallets/summary", nil)
+	request.Header.Set("Authorization", "Bearer "+signedToken(t, domain.RoleModerator))
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
 func testRouter() (http.Handler, *routerStore) {
 	store := &routerStore{}
 	walletService := service.NewWalletService(store, zap.NewNop(), time.Minute, 100)
 	cipher, _ := service.NewBankAccountCipher("dev-bank-account-encryption-key-32-chars")
 	payoutService := service.NewPayoutService(store, cipher, true, 10_000, 10_000_000, 24*time.Hour)
+	adminService := service.NewAdminService(store)
 	healthService := service.NewHealthService("wallet-service", store)
 	return New(
 		config.Config{AppName: "wallet-service", APIPrefix: "api/v1", JWTAccessSecret: routerTestSecret},
-		zap.NewNop(), nil, handler.NewWalletHandler(walletService), handler.NewPayoutHandler(payoutService), handler.NewHealthHandler(healthService), observability.NewMetrics(),
+		zap.NewNop(), nil, handler.NewWalletHandler(walletService), handler.NewPayoutHandler(payoutService), handler.NewAdminHandler(adminService), handler.NewHealthHandler(healthService), observability.NewMetrics(),
 	), store
 }
 

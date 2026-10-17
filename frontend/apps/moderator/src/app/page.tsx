@@ -163,6 +163,11 @@ export default function ModeratorDashboardPage() {
               <Link href="/chat/violations" className="block w-full rounded-md px-2.5 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50">
                 Chat Violations
               </Link>
+              {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
+                <Link href="/wallets" className="block w-full rounded-md px-2.5 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-50">
+                  Wallet Operations
+                </Link>
+              ) : null}
               {SIDEBAR_ITEMS.map((item) => (
                 <button
                   key={item}

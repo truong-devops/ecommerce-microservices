@@ -307,4 +307,22 @@ ALTER TABLE payouts ALTER COLUMN account_number_last4 SET NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_payouts_dispatch ON payouts(status, next_attempt_at, requested_at);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_payouts_provider_reference ON payouts(provider, provider_reference) WHERE provider_reference IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS wallet_admin_audit_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid NOT NULL,
+  actor_email varchar(320) NOT NULL,
+  action varchar(64) NOT NULL,
+  wallet_id uuid NOT NULL REFERENCES wallets(id) ON DELETE RESTRICT,
+  bank_account_id uuid REFERENCES bank_accounts(id) ON DELETE RESTRICT,
+  previous_status varchar(64),
+  new_status varchar(64),
+  reason varchar(500) NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallet_admin_audit_wallet_created
+  ON wallet_admin_audit_logs(wallet_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wallet_admin_audit_actor_created
+  ON wallet_admin_audit_logs(actor_id, created_at DESC);
+
 SELECT pg_advisory_unlock(77002601);

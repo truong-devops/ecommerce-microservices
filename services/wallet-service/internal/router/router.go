@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTokenChecker, walletHandler *handler.WalletHandler, payoutHandler *handler.PayoutHandler, healthHandler *handler.HealthHandler, metrics *observability.Metrics) http.Handler {
+func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTokenChecker, walletHandler *handler.WalletHandler, payoutHandler *handler.PayoutHandler, adminHandler *handler.AdminHandler, healthHandler *handler.HealthHandler, metrics *observability.Metrics) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Recovery(logger))
@@ -38,6 +38,16 @@ func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTo
 		private.With(auth.RequireRoles(domain.RoleSeller)).Get(base+"/payouts", payoutHandler.ListPayouts)
 		private.With(auth.RequireRoles(domain.RoleSeller)).Get(base+"/payouts/summary", payoutHandler.GetPayoutSummary)
 		private.With(auth.RequireRoles(domain.RoleSeller)).Get(base+"/payouts/{payoutID}", payoutHandler.GetPayout)
+
+		adminRoles := auth.RequireRoles(domain.RoleAdmin, domain.RoleSuperAdmin)
+		private.With(adminRoles).Get(base+"/admin/wallets/summary", adminHandler.GetSummary)
+		private.With(adminRoles).Get(base+"/admin/wallets/payouts", adminHandler.ListPayouts)
+		private.With(adminRoles).Get(base+"/admin/wallets/audit-logs", adminHandler.ListAuditLogs)
+		private.With(adminRoles).Get(base+"/admin/wallets", adminHandler.ListWallets)
+		private.With(adminRoles).Get(base+"/admin/wallets/{walletID}", adminHandler.GetWallet)
+		private.With(adminRoles).Get(base+"/admin/wallets/{walletID}/transactions", adminHandler.ListTransactions)
+		private.With(adminRoles).Patch(base+"/admin/wallets/{walletID}/status", adminHandler.UpdateWalletStatus)
+		private.With(adminRoles).Patch(base+"/admin/wallets/{walletID}/bank-account/status", adminHandler.UpdateBankAccountStatus)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {

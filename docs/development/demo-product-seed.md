@@ -32,7 +32,7 @@ Run from the repository root after the latest code is pulled. The secret is read
 ```bash
 cd /opt/ecommerce-microservices
 
-SEED_JWT_SECRET="$(docker compose exec -T product-service printenv JWT_ACCESS_SECRET)"
+SEED_JWT_SECRET="$(docker compose exec -T product-service sh -c 'printf %s "$JWT_ACCESS_SECRET"')"
 
 JWT_ACCESS_SECRET="$SEED_JWT_SECRET" node scripts/import-product-seed.mjs \
   --base-url http://127.0.0.1:12012/api/v1 \

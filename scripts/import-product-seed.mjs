@@ -11,7 +11,7 @@ function parseArgs(argv) {
     createStatus: '',
     publish: false,
     publishToken: '',
-    jwtSecret: process.env.JWT_ACCESS_SECRET || 'dev-shared-jwt-access-secret-min-32-chars',
+    jwtSecret: process.env.JWT_ACCESS_SECRET?.trim() || 'dev-shared-jwt-access-secret-min-32-chars',
     devRole: '',
     devUserId: '',
     devEmail: '',
@@ -77,7 +77,7 @@ function parseArgs(argv) {
     }
 
     if (key === '--jwt-secret' && value) {
-      options.jwtSecret = value;
+      options.jwtSecret = value.trim();
       index += 1;
       continue;
     }

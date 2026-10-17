@@ -1,11 +1,14 @@
-const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? 'http://localhost:12010/api/v1';
-const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? 'http://localhost:12012/api/v1';
-const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? 'http://localhost:12020/api/v1';
+const API_GATEWAY_BASE_URL = process.env.API_GATEWAY_BASE_URL ?? 'http://localhost:12000/api/v1';
+const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const WALLET_SERVICE_BASE_URL = process.env.WALLET_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
   product: PRODUCT_SERVICE_BASE_URL,
-  chat: CHAT_SERVICE_BASE_URL
+  chat: CHAT_SERVICE_BASE_URL,
+  wallet: WALLET_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {
@@ -33,9 +36,20 @@ interface UpstreamErrorBody {
 interface UpstreamSuccessBody<T> {
   success: true;
   data: T;
+  meta?: Record<string, unknown>;
+}
+
+export interface UpstreamResponseEnvelope<T> {
+  data: T;
+  meta?: Record<string, unknown>;
+  status: number;
 }
 
 export async function requestUpstream<T>(url: string, init?: RequestInit): Promise<T> {
+  return (await requestUpstreamEnvelope<T>(url, init)).data;
+}
+
+export async function requestUpstreamEnvelope<T>(url: string, init?: RequestInit): Promise<UpstreamResponseEnvelope<T>> {
   let response: Response;
 
   try {
@@ -62,7 +76,7 @@ export async function requestUpstream<T>(url: string, init?: RequestInit): Promi
 
   if (payload && typeof payload === 'object' && 'success' in payload) {
     if (payload.success === true) {
-      return payload.data;
+      return { data: payload.data, meta: payload.meta, status: response.status };
     }
 
     const code = payload.error?.code ?? 'UPSTREAM_ERROR';
@@ -74,7 +88,7 @@ export async function requestUpstream<T>(url: string, init?: RequestInit): Promi
     throw new UpstreamHttpError(502, 'INVALID_UPSTREAM_RESPONSE', 'Upstream returned non-JSON response');
   }
 
-  return payload as T;
+  return { data: payload as T, status: response.status };
 }
 
 function safeParseJson(raw: string): unknown | null {

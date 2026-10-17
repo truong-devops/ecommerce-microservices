@@ -12,12 +12,13 @@ import (
 )
 
 var (
-	ErrWalletNotFound      = errors.New("wallet not found")
-	ErrWalletFrozen        = errors.New("wallet is frozen")
-	ErrBankAccountNotFound = errors.New("bank account not found")
-	ErrPayoutNotFound      = errors.New("payout not found")
-	ErrInsufficientBalance = errors.New("insufficient available balance")
-	ErrIdempotencyConflict = errors.New("idempotency key was used for another request")
+	ErrWalletNotFound         = errors.New("wallet not found")
+	ErrWalletFrozen           = errors.New("wallet is frozen")
+	ErrBankAccountNotFound    = errors.New("bank account not found")
+	ErrBankAccountNotVerified = errors.New("bank account is not verified")
+	ErrPayoutNotFound         = errors.New("payout not found")
+	ErrInsufficientBalance    = errors.New("insufficient available balance")
+	ErrIdempotencyConflict    = errors.New("idempotency key was used for another request")
 )
 
 type UpsertBankAccountInput struct {
@@ -156,16 +157,20 @@ func (r *WalletRepository) CreatePayout(ctx context.Context, input CreatePayoutI
 	}
 
 	var bankAccountID, bankCode, holderName, last4 string
+	var bankAccountStatus domain.BankAccountStatus
 	var encrypted, nonce []byte
 	err = tx.QueryRow(ctx, `
-		SELECT id, bank_code, account_holder_name, encrypted_account_number, encryption_nonce, account_number_last4
-		FROM bank_accounts WHERE wallet_id = $1 AND is_default = true AND status <> 'DISABLED' FOR UPDATE
-	`, walletID).Scan(&bankAccountID, &bankCode, &holderName, &encrypted, &nonce, &last4)
+		SELECT id, bank_code, account_holder_name, encrypted_account_number, encryption_nonce, account_number_last4, status
+		FROM bank_accounts WHERE wallet_id = $1 AND is_default = true FOR UPDATE
+	`, walletID).Scan(&bankAccountID, &bankCode, &holderName, &encrypted, &nonce, &last4, &bankAccountStatus)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Payout{}, false, ErrBankAccountNotFound
 	}
 	if err != nil {
 		return domain.Payout{}, false, err
+	}
+	if bankAccountStatus != domain.BankAccountStatusAllowlisted {
+		return domain.Payout{}, false, ErrBankAccountNotVerified
 	}
 	availableAccountID, err := ensureLedgerAccount(ctx, tx, &walletID, domain.AccountTypeSellerAvailable, input.Currency)
 	if err != nil {

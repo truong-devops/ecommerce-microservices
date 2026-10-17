@@ -165,3 +165,100 @@ export interface ChatViolationListOutput {
     totalPages: number;
   };
 }
+
+export type BankAccountStatus = 'UNVERIFIED' | 'ALLOWLISTED' | 'DISABLED';
+export type PayoutStatus = 'REQUESTED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+
+export interface AdminBankAccount {
+  id: string;
+  bankCode: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  status: BankAccountStatus;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminWallet {
+  id: string;
+  sellerId: string;
+  currency: string;
+  heldAmount: number;
+  availableAmount: number;
+  payoutPendingAmount: number;
+  totalPaidOut: number;
+  isFrozen: boolean;
+  bankAccount?: AdminBankAccount;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminWalletSummary {
+  totalWallets: number;
+  frozenWallets: number;
+  unverifiedBankAccounts: number;
+  disabledBankAccounts: number;
+  pendingPayouts: number;
+  heldAmount: number;
+  availableAmount: number;
+  payoutPendingAmount: number;
+  totalPaidOut: number;
+}
+
+export interface WalletTransaction {
+  id: string;
+  type: string;
+  referenceType: string;
+  referenceId: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface AdminPayout {
+  id: string;
+  walletId: string;
+  sellerId: string;
+  amount: number;
+  currency: string;
+  status: PayoutStatus;
+  bankCode: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  provider?: string;
+  providerReference?: string;
+  failureCode?: string;
+  failureMessage?: string;
+  requestedAt: string;
+  processedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletAuditLog {
+  id: string;
+  actorId: string;
+  actorEmail: string;
+  action: string;
+  walletId: string;
+  bankAccountId?: string;
+  previousStatus?: string;
+  newStatus?: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface Pagination {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface PaginatedOutput<T> {
+  items: T[];
+  pagination: Pagination;
+}

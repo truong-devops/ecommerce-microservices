@@ -191,6 +191,8 @@ func mapPayoutError(err error) error {
 		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodeWalletFrozen, "Wallet is frozen", nil)
 	case errors.Is(err, repository.ErrBankAccountNotFound):
 		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodeBankAccountNotFound, "A bank account is required", nil)
+	case errors.Is(err, repository.ErrBankAccountNotVerified):
+		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodeBankAccountNotVerified, "A verified bank account is required", nil)
 	case errors.Is(err, repository.ErrPayoutNotFound):
 		return httpx.NewAppError(http.StatusNotFound, domain.ErrorCodePayoutNotFound, "Payout not found", nil)
 	case errors.Is(err, repository.ErrInsufficientBalance):

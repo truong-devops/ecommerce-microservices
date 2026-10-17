@@ -141,7 +141,7 @@ function BalanceContent({ accessToken }: { accessToken: string }) {
     }
   };
 
-  const canPayout = Boolean(wallet && bankAccount && bankAccount.status !== 'DISABLED' && !wallet.isFrozen && wallet.availableAmount >= 10_000);
+  const canPayout = Boolean(wallet && bankAccount?.status === 'ALLOWLISTED' && !wallet.isFrozen && wallet.availableAmount >= 10_000);
 
   return (
     <section className="space-y-3 text-sm">
@@ -157,6 +157,16 @@ function BalanceContent({ accessToken }: { accessToken: string }) {
       {wallet?.isFrozen ? (
         <FinanceAlert tone="error">
           <strong>Ví đang bị khóa.</strong> Shop hiện có khoản điều chỉnh âm hoặc cần đối soát. Yêu cầu rút tiền mới tạm thời không khả dụng.
+        </FinanceAlert>
+      ) : null}
+      {bankAccount?.status === 'UNVERIFIED' ? (
+        <FinanceAlert tone="info">
+          <strong>Tài khoản ngân hàng đang chờ xác minh.</strong> Admin cần xác minh trước khi shop có thể gửi yêu cầu rút tiền.
+        </FinanceAlert>
+      ) : null}
+      {bankAccount?.status === 'DISABLED' ? (
+        <FinanceAlert tone="error">
+          <strong>Tài khoản ngân hàng đã bị khóa.</strong> Hãy cập nhật tài khoản hoặc liên hệ quản trị viên để được kiểm tra lại.
         </FinanceAlert>
       ) : null}
 
@@ -617,6 +627,7 @@ function translateWalletError(code: string, message: string): string {
     WALLET_FROZEN: 'Ví đang bị khóa để đối soát.',
     INSUFFICIENT_AVAILABLE_BALANCE: 'Số dư khả dụng không đủ.',
     BANK_ACCOUNT_NOT_FOUND: 'Bạn cần thêm tài khoản ngân hàng trước.',
+    BANK_ACCOUNT_NOT_VERIFIED: 'Tài khoản ngân hàng chưa được Admin xác minh.',
     IDEMPOTENCY_CONFLICT: 'Yêu cầu này đã được dùng với số tiền khác.'
   };
   return messages[code] ?? message;

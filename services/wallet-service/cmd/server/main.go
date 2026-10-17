@@ -61,6 +61,7 @@ func main() {
 		logger.Fatal("init bank account encryption failed", zap.Error(err))
 	}
 	payoutService := service.NewPayoutService(walletRepository, bankCipher, cfg.PayoutEnabled, cfg.PayoutMinAmount, cfg.PayoutMaxAmount, cfg.PayoutIdempotencyTTL)
+	adminService := service.NewAdminService(walletRepository)
 	payoutProvider := service.NewMockPayoutProvider(cfg.MockPayoutMode)
 	payoutWorker := service.NewPayoutWorker(walletRepository, payoutProvider, bankCipher, logger, cfg.PayoutInterval, cfg.PayoutReconcileInterval, cfg.PayoutStaleAfter, cfg.PayoutBatch)
 	metrics := observability.NewMetrics()
@@ -69,8 +70,9 @@ func main() {
 	healthService := service.NewHealthService(cfg.AppName, walletRepository)
 	walletHandler := handler.NewWalletHandler(walletService)
 	payoutHandler := handler.NewPayoutHandler(payoutService)
+	adminHandler := handler.NewAdminHandler(adminService)
 	healthHandler := handler.NewHealthHandler(healthService)
-	httpHandler := router.New(cfg, logger, nil, walletHandler, payoutHandler, healthHandler, metrics)
+	httpHandler := router.New(cfg, logger, nil, walletHandler, payoutHandler, adminHandler, healthHandler, metrics)
 
 	publisher := events.NewPublisher(cfg, logger)
 	defer publisher.Close()

@@ -14,6 +14,7 @@ The service currently supports:
 - automatic mock payout processing and reconciliation;
 - balanced success and failure ledger postings;
 - Prometheus-compatible payout metrics at `/metrics`.
+- administrator wallet overview, bank verification, wallet freezing, and audit logs.
 
 Seller endpoints:
 
@@ -26,6 +27,26 @@ POST /api/v1/payouts                 # requires Idempotency-Key
 GET  /api/v1/payouts
 GET  /api/v1/payouts/{payoutID}
 ```
+
+Payout requests require an `ALLOWLISTED` bank account. Saving or changing an
+account resets it to `UNVERIFIED` until an administrator verifies it.
+
+Administrator endpoints (`ADMIN` or `SUPER_ADMIN`):
+
+```text
+GET   /api/v1/admin/wallets/summary
+GET   /api/v1/admin/wallets
+GET   /api/v1/admin/wallets/{walletID}
+GET   /api/v1/admin/wallets/{walletID}/transactions
+GET   /api/v1/admin/wallets/payouts
+GET   /api/v1/admin/wallets/audit-logs
+PATCH /api/v1/admin/wallets/{walletID}/status
+PATCH /api/v1/admin/wallets/{walletID}/bank-account/status
+```
+
+State-changing operations require a human-readable `reason` and are recorded
+in `wallet_admin_audit_logs`. The Moderator frontend exposes these operations
+at `/wallets` for administrators.
 
 Phase 2 only implements `PAYOUT_PROVIDER=mock`. `PAYOUT_ENABLED` defaults to
 `false` in application configuration and must be deliberately enabled. Bank

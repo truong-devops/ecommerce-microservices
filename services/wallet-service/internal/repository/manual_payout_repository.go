@@ -14,10 +14,11 @@ import (
 const manualVietQRProvider = "manual_vietqr"
 
 type PrepareManualPayoutInput struct {
-	PayoutID   string
-	ActorID    string
-	ActorEmail string
-	Reason     string
+	PayoutID     string
+	ActorID      string
+	ActorEmail   string
+	Reason       string
+	TransferCode string
 }
 
 type ManualPayoutData struct {
@@ -72,9 +73,10 @@ func (r *WalletRepository) PrepareManualPayout(ctx context.Context, input Prepar
 	if result.Status == domain.PayoutStatusRequested {
 		if _, err = tx.Exec(ctx, `
 			UPDATE payouts
-			SET status = 'PROCESSING', provider = $2, processing_started_at = now(), updated_at = now()
+			SET status = 'PROCESSING', provider = $2, transfer_code = $3,
+			    processing_started_at = now(), updated_at = now()
 			WHERE id = $1
-		`, input.PayoutID, manualVietQRProvider); err != nil {
+		`, input.PayoutID, manualVietQRProvider, input.TransferCode); err != nil {
 			return ManualPayoutData{}, err
 		}
 		auditInput := AdminActionInput{WalletID: result.WalletID, ActorID: input.ActorID, ActorEmail: input.ActorEmail, Reason: input.Reason}
@@ -82,6 +84,12 @@ func (r *WalletRepository) PrepareManualPayout(ctx context.Context, input Prepar
 			return ManualPayoutData{}, err
 		}
 		result.Status = domain.PayoutStatusProcessing
+	} else if _, err = tx.Exec(ctx, `
+		UPDATE payouts
+		SET provider = $2, transfer_code = $3, updated_at = now()
+		WHERE id = $1
+	`, input.PayoutID, manualVietQRProvider, input.TransferCode); err != nil {
+		return ManualPayoutData{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return ManualPayoutData{}, err

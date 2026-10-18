@@ -112,6 +112,9 @@ func (s *routerStore) PrepareManualPayout(context.Context, repository.PrepareMan
 func (s *routerStore) CompleteManualPayout(context.Context, repository.CompleteManualPayoutInput) (domain.AdminPayout, bool, error) {
 	return domain.AdminPayout{}, true, nil
 }
+func (s *routerStore) ProcessSePayPayoutWebhook(context.Context, repository.SePayPayoutWebhookInput) (repository.SePayPayoutWebhookResult, error) {
+	return repository.SePayPayoutWebhookResult{Outcome: "MATCHED"}, nil
+}
 
 func TestWalletRouteRequiresAuthentication(t *testing.T) {
 	router, _ := testRouter()
@@ -184,16 +187,27 @@ func TestAdminWalletRouteRejectsModerator(t *testing.T) {
 	}
 }
 
+func TestSePayPayoutWebhookRouteIsPublic(t *testing.T) {
+	router, _ := testRouter()
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/wallets/webhooks/sepay/payouts", nil)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code == http.StatusUnauthorized || response.Code == http.StatusNotFound {
+		t.Fatalf("expected public payout webhook route, got status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
 func testRouter() (http.Handler, *routerStore) {
 	store := &routerStore{}
 	walletService := service.NewWalletService(store, zap.NewNop(), time.Minute, 100)
 	cipher, _ := service.NewBankAccountCipher("dev-bank-account-encryption-key-32-chars")
 	payoutService := service.NewPayoutService(store, cipher, true, 10_000, 10_000_000, 24*time.Hour)
 	adminService := service.NewAdminService(store, cipher, true, "manual_vietqr")
+	sePayWebhookService := service.NewSePayPayoutWebhookService(store, config.SePayPayoutWebhookConfig{}, zap.NewNop())
 	healthService := service.NewHealthService("wallet-service", store)
 	return New(
 		config.Config{AppName: "wallet-service", APIPrefix: "api/v1", JWTAccessSecret: routerTestSecret},
-		zap.NewNop(), nil, handler.NewWalletHandler(walletService), handler.NewPayoutHandler(payoutService), handler.NewAdminHandler(adminService), handler.NewHealthHandler(healthService), observability.NewMetrics(),
+		zap.NewNop(), nil, handler.NewWalletHandler(walletService), handler.NewPayoutHandler(payoutService), handler.NewAdminHandler(adminService), handler.NewSePayPayoutWebhookHandler(sePayWebhookService), handler.NewHealthHandler(healthService), observability.NewMetrics(),
 	), store
 }
 

@@ -62,6 +62,7 @@ func main() {
 	}
 	payoutService := service.NewPayoutService(walletRepository, bankCipher, cfg.PayoutEnabled, cfg.PayoutMinAmount, cfg.PayoutMaxAmount, cfg.PayoutIdempotencyTTL)
 	adminService := service.NewAdminService(walletRepository, bankCipher, cfg.PayoutEnabled, cfg.PayoutProvider)
+	sePayPayoutWebhookService := service.NewSePayPayoutWebhookService(walletRepository, cfg.SePayPayoutWebhook, logger)
 	var payoutWorker *service.PayoutWorker
 	if cfg.PayoutProvider == "mock" {
 		payoutProvider := service.NewMockPayoutProvider(cfg.MockPayoutMode)
@@ -76,8 +77,9 @@ func main() {
 	walletHandler := handler.NewWalletHandler(walletService)
 	payoutHandler := handler.NewPayoutHandler(payoutService)
 	adminHandler := handler.NewAdminHandler(adminService)
+	sePayPayoutWebhookHandler := handler.NewSePayPayoutWebhookHandler(sePayPayoutWebhookService)
 	healthHandler := handler.NewHealthHandler(healthService)
-	httpHandler := router.New(cfg, logger, nil, walletHandler, payoutHandler, adminHandler, healthHandler, metrics)
+	httpHandler := router.New(cfg, logger, nil, walletHandler, payoutHandler, adminHandler, sePayPayoutWebhookHandler, healthHandler, metrics)
 
 	publisher := events.NewPublisher(cfg, logger)
 	defer publisher.Close()

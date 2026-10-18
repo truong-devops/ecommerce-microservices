@@ -126,6 +126,7 @@ func New(
 		public.Method(http.MethodGet, "/api/v1/analytics/recommendations/products/{productId}", proxies[config.ServiceAnalytics])
 		public.Method(http.MethodPost, "/api/payments/webhooks/sepay", proxies[config.ServicePayment])
 		public.Method(http.MethodPost, "/api/v1/payments/webhooks/sepay", proxies[config.ServicePayment])
+		public.Method(http.MethodPost, "/api/v1/wallets/webhooks/sepay/payouts", proxies[config.ServiceWallet])
 		public.Method(http.MethodPost, "/api/v1/shipments/webhooks/nexus", proxies[config.ServiceShipping])
 
 		public.Method(http.MethodGet, "/api/v1/buyer-experience/videos/feed", rewritePathPrefix("/api/v1/buyer-experience/videos", "/api/v1/videos", proxies[config.ServiceProduct]))

@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTokenChecker, walletHandler *handler.WalletHandler, payoutHandler *handler.PayoutHandler, adminHandler *handler.AdminHandler, healthHandler *handler.HealthHandler, metrics *observability.Metrics) http.Handler {
+func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTokenChecker, walletHandler *handler.WalletHandler, payoutHandler *handler.PayoutHandler, adminHandler *handler.AdminHandler, sePayPayoutWebhookHandler *handler.SePayPayoutWebhookHandler, healthHandler *handler.HealthHandler, metrics *observability.Metrics) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Recovery(logger))
@@ -25,6 +25,7 @@ func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTo
 	r.Get(base+"/health", healthHandler.Health)
 	r.Get(base+"/ready", healthHandler.Ready)
 	r.Get(base+"/live", healthHandler.Live)
+	r.Post(base+"/wallets/webhooks/sepay/payouts", sePayPayoutWebhookHandler.Handle)
 	r.Get("/metrics", metrics.Handler)
 
 	requireJWT := auth.RequireJWT(cfg.JWTAccessSecret, revocationChecker, logger)

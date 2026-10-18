@@ -2,16 +2,19 @@ package service_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"wallet-service/internal/config"
 	"wallet-service/internal/domain"
 	"wallet-service/internal/repository"
 	"wallet-service/internal/service"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
 func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
@@ -92,8 +95,26 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 	if err != nil || transfer.AccountNumber != "0123456789" || transfer.Status != domain.PayoutStatusProcessing {
 		t.Fatalf("prepare manual payout: transfer=%+v err=%v", transfer, err)
 	}
-	if _, err := adminService.CompleteManualPayout(ctx, admin, payout.ID, "CONFIRM", "E2E-BANK-REFERENCE", "E2E bank transfer completed"); err != nil {
-		t.Fatalf("complete manual payout: %v", err)
+	webhookService := service.NewSePayPayoutWebhookService(repo, config.SePayPayoutWebhookConfig{
+		Enabled: true, SourceAccountNumber: "10004262634", AuthMode: "none",
+	}, zap.NewNop())
+	webhookBody := []byte(fmt.Sprintf(`{
+		"id": "e2e-sepay-out-001",
+		"gateway": "TPBank",
+		"transactionDate": "%s",
+		"accountNumber": "10004262634",
+		"content": "%s",
+		"transferType": "out",
+		"transferAmount": 60000,
+		"referenceCode": "E2E-BANK-REFERENCE"
+	}`, time.Now().UTC().Format(time.RFC3339), transfer.TransferContent))
+	webhookResult, err := webhookService.Handle(ctx, nil, webhookBody)
+	if err != nil || webhookResult.Outcome != "MATCHED" {
+		t.Fatalf("complete payout from SePay webhook: result=%+v err=%v", webhookResult, err)
+	}
+	duplicateResult, err := webhookService.Handle(ctx, nil, webhookBody)
+	if err != nil || !duplicateResult.Duplicate {
+		t.Fatalf("duplicate SePay webhook: result=%+v err=%v", duplicateResult, err)
 	}
 	result, err := payoutService.GetMyPayout(ctx, user, payout.ID)
 	if err != nil || result.Status != domain.PayoutStatusSucceeded {
@@ -125,7 +146,7 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 
 func truncateE2ETables(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
-	_, err := pool.Exec(ctx, `TRUNCATE TABLE wallet_admin_audit_logs, outbox_events, processed_events, idempotency_records, payouts, bank_accounts, pending_payment_reversals, fund_holds, order_delivery_signals, ledger_entries, ledger_transactions, ledger_accounts, wallets RESTART IDENTITY CASCADE`)
+	_, err := pool.Exec(ctx, `TRUNCATE TABLE sepay_payout_webhook_events, wallet_admin_audit_logs, outbox_events, processed_events, idempotency_records, payouts, bank_accounts, pending_payment_reversals, fund_holds, order_delivery_signals, ledger_entries, ledger_transactions, ledger_accounts, wallets RESTART IDENTITY CASCADE`)
 	if err != nil {
 		t.Fatal(err)
 	}

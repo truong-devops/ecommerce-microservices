@@ -146,9 +146,10 @@ func (s *AdminService) PrepareManualPayout(ctx context.Context, user domain.User
 	if err := s.validateManualPayout(user, payoutID); err != nil {
 		return domain.AdminPayoutTransfer{}, err
 	}
+	transferCode := buildPayoutTransferCode(payoutID)
 	data, err := s.store.PrepareManualPayout(ctx, repository.PrepareManualPayoutInput{
 		PayoutID: payoutID, ActorID: user.UserID, ActorEmail: user.Email,
-		Reason: "Prepared manual VietQR bank transfer",
+		Reason: "Prepared manual VietQR bank transfer", TransferCode: transferCode,
 	})
 	if err != nil {
 		return domain.AdminPayoutTransfer{}, mapAdminError(err)
@@ -158,11 +159,7 @@ func (s *AdminService) PrepareManualPayout(ctx context.Context, user domain.User
 		return domain.AdminPayoutTransfer{}, err
 	}
 	defer func() { accountNumber = "" }()
-	compactID := strings.ToUpper(strings.ReplaceAll(data.PayoutID, "-", ""))
-	if len(compactID) > 12 {
-		compactID = compactID[:12]
-	}
-	transferContent := "EMALL " + compactID
+	transferContent := transferCode
 	qrCodeURL := fmt.Sprintf(
 		"https://img.vietqr.io/image/%s-%s-compact2.svg?amount=%d&addInfo=%s&accountName=%s",
 		url.PathEscape(vietQRBankID(data.BankCode)), url.PathEscape(accountNumber), data.AmountMinor,
@@ -174,6 +171,14 @@ func (s *AdminService) PrepareManualPayout(ctx context.Context, user domain.User
 		BankCode: data.BankCode, AccountNumber: accountNumber, AccountHolderName: data.AccountHolderName,
 		TransferContent: transferContent, QRCodeURL: qrCodeURL,
 	}, nil
+}
+
+func buildPayoutTransferCode(payoutID string) string {
+	compactID := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(payoutID), "-", ""))
+	if len(compactID) > 12 {
+		compactID = compactID[:12]
+	}
+	return "EMALL" + compactID
 }
 
 func vietQRBankID(bankCode string) string {

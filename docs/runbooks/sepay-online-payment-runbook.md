@@ -14,6 +14,18 @@ services/payment-service/.env
 
 Day la file env duy nhat cho payment-service. Service cung tu load file nay khi chay binary tu repo root hoac tu thu muc `services/payment-service`.
 
+Root `docker-compose.yml` khong khai bao lai cac bien `PAYMENT_GATEWAY`/`SEPAY_*`
+trong `environment`. Neu khai bao trung o do, Docker Compose se uu tien `environment`
+va ghi de gia tri trong `env_file`, co the lam service vo tinh chay mock auto-capture.
+Sau moi lan deploy, kiem tra cau hinh thuc te trong container:
+
+```bash
+docker compose exec -T payment-service sh -c '
+  printf "PAYMENT_GATEWAY=%s\nSEPAY_ENVIRONMENT=%s\n" \
+    "$PAYMENT_GATEWAY" "$SEPAY_ENVIRONMENT"
+'
+```
+
 - `PAYMENT_GATEWAY=sepay`
 - `SEPAY_ENVIRONMENT=test`
 - `SEPAY_BANK_CODE`

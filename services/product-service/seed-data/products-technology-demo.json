@@ -1,0 +1,2126 @@
+[
+  {
+    "name": "Điện thoại Nova A55 5G màn hình AMOLED 120Hz",
+    "slug": "dien-thoai-nova-a55-5g-man-hinh-amoled-120hz",
+    "description": "ĐIỆN THOẠI NOVA A55 5G MÀN HÌNH AMOLED 120HZ\n\nĐIỂM NỔI BẬT\n• Màn hình AMOLED 6.6 inch tần số quét 120Hz\n• Kết nối 5G, NFC và hai SIM\n• Camera chính 64MP chống rung điện tử\n• Pin 5.000mAh, sạc nhanh 45W\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: Nova Mobile\n• Phân loại: 8GB + 128GB - Đen thiên thạch, 8GB + 128GB - Xanh băng, 8GB + 256GB - Đen thiên thạch, 8GB + 256GB - Xanh băng\n• Bảo hành: 18 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "Nova Mobile",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Việt Nam",
+      "screen": "6.6 inch AMOLED 120Hz",
+      "chipset": "Octa-core 5G",
+      "batteryMah": 5000,
+      "weightGram": 191,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-nova-a55/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-NOVA-A55-V1",
+        "name": "8GB + 128GB - Đen thiên thạch",
+        "price": 5990000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 6990000,
+        "isDefault": true,
+        "metadata": {
+          "option": "8GB + 128GB - Đen thiên thạch",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-NOVA-A55-V2",
+        "name": "8GB + 128GB - Xanh băng",
+        "price": 5990000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 6990000,
+        "isDefault": false,
+        "metadata": {
+          "option": "8GB + 128GB - Xanh băng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-NOVA-A55-V3",
+        "name": "8GB + 256GB - Đen thiên thạch",
+        "price": 6790000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 7790000,
+        "isDefault": false,
+        "metadata": {
+          "option": "8GB + 256GB - Đen thiên thạch",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-NOVA-A55-V4",
+        "name": "8GB + 256GB - Xanh băng",
+        "price": 6790000,
+        "currency": "VND",
+        "initialStock": 24,
+        "compareAtPrice": 7790000,
+        "isDefault": false,
+        "metadata": {
+          "option": "8GB + 256GB - Xanh băng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Điện thoại Lite C12 pin 5000mAh camera kép AI",
+    "slug": "dien-thoai-lite-c12-pin-5000mah-camera-kep-ai",
+    "description": "ĐIỆN THOẠI LITE C12 PIN 5000MAH CAMERA KÉP AI\n\nĐIỂM NỔI BẬT\n• Màn hình 6.5 inch HD+\n• Camera kép AI 50MP\n• Mở khóa khuôn mặt và vân tay cạnh bên\n• Pin 5.000mAh dùng trọn ngày\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: LitePhone\n• Phân loại: 4GB + 128GB - Đen, 4GB + 128GB - Xanh, 6GB + 128GB - Đen\n• Bảo hành: 12 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "LitePhone",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "screen": "6.5 inch HD+",
+      "batteryMah": 5000,
+      "weightGram": 198,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-lite-c12/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-LITE-C12-V1",
+        "name": "4GB + 128GB - Đen",
+        "price": 2790000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 3290000,
+        "isDefault": true,
+        "metadata": {
+          "option": "4GB + 128GB - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-LITE-C12-V2",
+        "name": "4GB + 128GB - Xanh",
+        "price": 2790000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 3290000,
+        "isDefault": false,
+        "metadata": {
+          "option": "4GB + 128GB - Xanh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-LITE-C12-V3",
+        "name": "6GB + 128GB - Đen",
+        "price": 3190000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 3690000,
+        "isDefault": false,
+        "metadata": {
+          "option": "6GB + 128GB - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Máy tính bảng AirTab 11 Wi-Fi màn hình 2K",
+    "slug": "may-tinh-bang-airtab-11-wi-fi-man-hinh-2k",
+    "description": "MÁY TÍNH BẢNG AIRTAB 11 WI-FI MÀN HÌNH 2K\n\nĐIỂM NỔI BẬT\n• Màn hình 11 inch độ phân giải 2K\n• Bốn loa stereo\n• Pin 7.500mAh và sạc nhanh USB-C\n• Hỗ trợ bàn phím và bút cảm ứng\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: AirTab\n• Phân loại: 6GB + 128GB - Xám, 8GB + 256GB - Xám, 8GB + 256GB - Xanh\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "AirTab",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "screen": "11 inch IPS 2K",
+      "batteryMah": 7500,
+      "weightGram": 475,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-airtab-11/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-AIRTAB-11-V1",
+        "name": "6GB + 128GB - Xám",
+        "price": 6490000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 7490000,
+        "isDefault": true,
+        "metadata": {
+          "option": "6GB + 128GB - Xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-AIRTAB-11-V2",
+        "name": "8GB + 256GB - Xám",
+        "price": 7890000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 8890000,
+        "isDefault": false,
+        "metadata": {
+          "option": "8GB + 256GB - Xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-AIRTAB-11-V3",
+        "name": "8GB + 256GB - Xanh",
+        "price": 7890000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 8890000,
+        "isDefault": false,
+        "metadata": {
+          "option": "8GB + 256GB - Xanh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tai nghe Bluetooth AirBuds X3 chống ồn chủ động",
+    "slug": "tai-nghe-bluetooth-airbuds-x3-chong-on-chu-dong",
+    "description": "TAI NGHE BLUETOOTH AIRBUDS X3 CHỐNG ỒN CHỦ ĐỘNG\n\nĐIỂM NỔI BẬT\n• Chống ồn chủ động lên đến 35dB\n• Ba micro mỗi bên hỗ trợ đàm thoại\n• Chế độ xuyên âm và độ trễ thấp\n• Tổng thời lượng sử dụng đến 30 giờ\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: NovaSound\n• Phân loại: Đen graphite, Trắng ngọc trai, Xanh navy\n• Bảo hành: 12 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "NovaSound",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "bluetooth": "5.3",
+      "waterResistance": "IPX5",
+      "weightGram": 52,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-airbuds-x3/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-AIRBUDS-X3-V1",
+        "name": "Đen graphite",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1190000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen graphite",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-AIRBUDS-X3-V2",
+        "name": "Trắng ngọc trai",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1190000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng ngọc trai",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-AIRBUDS-X3-V3",
+        "name": "Xanh navy",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1190000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh navy",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tai nghe chụp tai H7 Hybrid ANC pin 45 giờ",
+    "slug": "tai-nghe-chup-tai-h7-hybrid-anc-pin-45-gio",
+    "description": "TAI NGHE CHỤP TAI H7 HYBRID ANC PIN 45 GIỜ\n\nĐIỂM NỔI BẬT\n• Chống ồn chủ động hybrid\n• Driver 40mm cân bằng ba dải âm\n• Kết nối đồng thời hai thiết bị\n• Pin đến 45 giờ, sạc nhanh 10 phút\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: SonicPeak\n• Phân loại: Đen, Kem\n• Bảo hành: 12 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "SonicPeak",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "bluetooth": "5.3",
+      "driverMm": 40,
+      "weightGram": 245,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-headset-h7/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-HEADSET-H7-V1",
+        "name": "Đen",
+        "price": 1490000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1890000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-HEADSET-H7-V2",
+        "name": "Kem",
+        "price": 1590000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1990000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kem",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Củ sạc nhanh GaN 67W ba cổng PD PPS",
+    "slug": "cu-sac-nhanh-gan-67w-ba-cong-pd-pps",
+    "description": "CỦ SẠC NHANH GAN 67W BA CỔNG PD PPS\n\nĐIỂM NỔI BẬT\n• Hai cổng USB-C và một cổng USB-A\n• Hỗ trợ PD 3.0, PPS và QC\n• Chip GaN giúp thiết kế nhỏ gọn\n• Tự điều chỉnh công suất giữa các cổng\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: VoltEdge\n• Phân loại: Trắng, Đen\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "VoltEdge",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "maxPowerW": 67,
+      "ports": "2 USB-C + 1 USB-A",
+      "weightGram": 128,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-gan-67/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-GAN-67-V1",
+        "name": "Trắng",
+        "price": 649000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 849000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GAN-67-V2",
+        "name": "Đen",
+        "price": 649000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 849000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Pin sạc dự phòng 20000mAh sạc nhanh 30W có màn hình",
+    "slug": "pin-sac-du-phong-20000mah-sac-nhanh-30w-co-man-hinh",
+    "description": "PIN SẠC DỰ PHÒNG 20000MAH SẠC NHANH 30W CÓ MÀN HÌNH\n\nĐIỂM NỔI BẬT\n• Dung lượng 20.000mAh\n• Sạc nhanh hai chiều USB-C 30W\n• Màn hình hiển thị phần trăm pin\n• Bảo vệ quá dòng và quá nhiệt\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: VoltEdge\n• Phân loại: Đen, Trắng\n• Bảo hành: 12 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "VoltEdge",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "capacityMah": 20000,
+      "maxPowerW": 30,
+      "weightGram": 365,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-power-20k/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-POWER-20K-V1",
+        "name": "Đen",
+        "price": 799000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 999000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-POWER-20K-V2",
+        "name": "Trắng",
+        "price": 799000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 999000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Cáp USB-C to USB-C 100W bọc dù có E-Marker",
+    "slug": "cap-usb-c-to-usb-c-100w-boc-du-co-e-marker",
+    "description": "CÁP USB-C TO USB-C 100W BỌC DÙ CÓ E-MARKER\n\nĐIỂM NỔI BẬT\n• Công suất sạc tối đa 100W\n• Chip E-Marker nhận diện dòng điện\n• Vỏ bọc dù chống rối\n• Đầu cáp gia cố chịu uốn\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: WireLab\n• Phân loại: 1 mét - Đen, 2 mét - Đen, 2 mét - Xám\n• Bảo hành: 12 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "WireLab",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "maxPowerW": 100,
+      "dataSpeed": "480Mbps",
+      "weightGram": 68,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-cable-100/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-CABLE-100-V1",
+        "name": "1 mét - Đen",
+        "price": 159000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 229000,
+        "isDefault": true,
+        "metadata": {
+          "option": "1 mét - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-CABLE-100-V2",
+        "name": "2 mét - Đen",
+        "price": 209000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 279000,
+        "isDefault": false,
+        "metadata": {
+          "option": "2 mét - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-CABLE-100-V3",
+        "name": "2 mét - Xám",
+        "price": 209000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 279000,
+        "isDefault": false,
+        "metadata": {
+          "option": "2 mét - Xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đế sạc không dây nam châm 3 trong 1 công suất 15W",
+    "slug": "de-sac-khong-day-nam-cham-3-trong-1-cong-suat-15w",
+    "description": "ĐẾ SẠC KHÔNG DÂY NAM CHÂM 3 TRONG 1 CÔNG SUẤT 15W\n\nĐIỂM NỔI BẬT\n• Sạc đồng thời điện thoại, tai nghe và đồng hồ\n• Nam châm căn chỉnh vị trí sạc\n• Có đèn trạng thái dịu mắt\n• Tặng kèm cáp USB-C 1 mét\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: MagDock\n• Phân loại: Đen, Trắng\n• Bảo hành: 12 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "MagDock",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "maxPowerW": 15,
+      "input": "USB-C",
+      "weightGram": 310,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-magdock-15/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-MAGDOCK-15-V1",
+        "name": "Đen",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1390000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-MAGDOCK-15-V2",
+        "name": "Trắng",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1390000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Kính cường lực full màn hình 9H chống bám vân tay",
+    "slug": "kinh-cuong-luc-full-man-hinh-9h-chong-bam-van-tay",
+    "description": "KÍNH CƯỜNG LỰC FULL MÀN HÌNH 9H CHỐNG BÁM VÂN TAY\n\nĐIỂM NỔI BẬT\n• Kính độ cứng 9H\n• Lớp phủ hạn chế bám vân tay\n• Bo cong viền 2.5D\n• Kèm bộ vệ sinh và khung căn chỉnh\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: ShieldPro\n• Phân loại: Nova A55 - 1 miếng, iPhone 14 - 1 miếng, iPhone 15 - 1 miếng, Combo 2 miếng\n• Bảo hành: Đổi mới nếu lỗi khi mở hộp\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "dien-thoai-phu-kien",
+    "brand": "ShieldPro",
+    "attributes": {
+      "warranty": "Đổi mới nếu lỗi khi mở hộp",
+      "origin": "Việt Nam",
+      "material": "Kính aluminosilicate",
+      "weightGram": 42,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-glass-9h/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-GLASS-9H-V1",
+        "name": "Nova A55 - 1 miếng",
+        "price": 99000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 149000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Nova A55 - 1 miếng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GLASS-9H-V2",
+        "name": "iPhone 14 - 1 miếng",
+        "price": 99000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 149000,
+        "isDefault": false,
+        "metadata": {
+          "option": "iPhone 14 - 1 miếng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GLASS-9H-V3",
+        "name": "iPhone 15 - 1 miếng",
+        "price": 99000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 149000,
+        "isDefault": false,
+        "metadata": {
+          "option": "iPhone 15 - 1 miếng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GLASS-9H-V4",
+        "name": "Combo 2 miếng",
+        "price": 169000,
+        "currency": "VND",
+        "initialStock": 24,
+        "compareAtPrice": 219000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 2 miếng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Laptop WorkBook A14 Core i5 RAM 16GB SSD 512GB",
+    "slug": "laptop-workbook-a14-core-i5-ram-16gb-ssd-512gb",
+    "description": "LAPTOP WORKBOOK A14 CORE I5 RAM 16GB SSD 512GB\n\nĐIỂM NỔI BẬT\n• Màn hình 14 inch IPS Full HD\n• RAM 16GB chạy đa nhiệm mượt\n• Bàn phím có đèn nền\n• Vỏ kim loại, khối lượng 1,38kg\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: WorkBook\n• Phân loại: Core i5 - 16GB - 512GB, Core i5 - 16GB - 1TB\n• Bảo hành: 24 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "WorkBook",
+    "attributes": {
+      "warranty": "24 tháng",
+      "origin": "Việt Nam",
+      "cpu": "Intel Core i5",
+      "screen": "14 inch IPS Full HD",
+      "weightGram": 1380,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-book-a14/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-BOOK-A14-V1",
+        "name": "Core i5 - 16GB - 512GB",
+        "price": 16990000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 18990000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Core i5 - 16GB - 512GB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-BOOK-A14-V2",
+        "name": "Core i5 - 16GB - 1TB",
+        "price": 18790000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 20790000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Core i5 - 16GB - 1TB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Laptop Creator 15 Ryzen 7 đồ họa rời 6GB",
+    "slug": "laptop-creator-15-ryzen-7-do-hoa-roi-6gb",
+    "description": "LAPTOP CREATOR 15 RYZEN 7 ĐỒ HỌA RỜI 6GB\n\nĐIỂM NỔI BẬT\n• CPU Ryzen 7 tám nhân\n• GPU rời 6GB phù hợp thiết kế và dựng phim\n• Màn hình 15.6 inch 100% sRGB\n• Hệ thống tản nhiệt hai quạt\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: PixelForge\n• Phân loại: 16GB + SSD 512GB, 32GB + SSD 1TB\n• Bảo hành: 24 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "PixelForge",
+    "attributes": {
+      "warranty": "24 tháng",
+      "origin": "Trung Quốc",
+      "cpu": "AMD Ryzen 7",
+      "gpu": "Discrete 6GB",
+      "screen": "15.6 inch IPS 100% sRGB",
+      "weightGram": 1850,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-creator-15/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-CREATOR-15-V1",
+        "name": "16GB + SSD 512GB",
+        "price": 23990000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 26990000,
+        "isDefault": true,
+        "metadata": {
+          "option": "16GB + SSD 512GB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-CREATOR-15-V2",
+        "name": "32GB + SSD 1TB",
+        "price": 28190000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 31190000,
+        "isDefault": false,
+        "metadata": {
+          "option": "32GB + SSD 1TB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Màn hình ViewPro 24 inch IPS 100Hz viền mỏng",
+    "slug": "man-hinh-viewpro-24-inch-ips-100hz-vien-mong",
+    "description": "MÀN HÌNH VIEWPRO 24 INCH IPS 100HZ VIỀN MỎNG\n\nĐIỂM NỔI BẬT\n• Tấm nền IPS Full HD\n• Tần số quét 100Hz\n• Độ phủ màu 99% sRGB\n• Cổng HDMI và DisplayPort\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: ViewPro\n• Phân loại: 24 inch - Chân tiêu chuẩn, 24 inch - Kèm arm đơn\n• Bảo hành: 36 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ViewPro",
+    "attributes": {
+      "warranty": "36 tháng",
+      "origin": "Trung Quốc",
+      "screen": "23.8 inch IPS",
+      "refreshRateHz": 100,
+      "weightGram": 3400,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-view-24/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-VIEW-24-V1",
+        "name": "24 inch - Chân tiêu chuẩn",
+        "price": 2990000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 3490000,
+        "isDefault": true,
+        "metadata": {
+          "option": "24 inch - Chân tiêu chuẩn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-VIEW-24-V2",
+        "name": "24 inch - Kèm arm đơn",
+        "price": 3640000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 4140000,
+        "isDefault": false,
+        "metadata": {
+          "option": "24 inch - Kèm arm đơn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Màn hình ViewPro 27 inch QHD 165Hz chuyên game",
+    "slug": "man-hinh-viewpro-27-inch-qhd-165hz-chuyen-game",
+    "description": "MÀN HÌNH VIEWPRO 27 INCH QHD 165HZ CHUYÊN GAME\n\nĐIỂM NỔI BẬT\n• Độ phân giải QHD 2560 x 1440\n• Tần số quét đến 180Hz\n• Thời gian phản hồi 1ms\n• Chân đế nâng hạ và xoay dọc\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: ViewPro\n• Phân loại: 27 inch QHD 165Hz, 27 inch QHD 180Hz\n• Bảo hành: 36 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "ViewPro",
+    "attributes": {
+      "warranty": "36 tháng",
+      "origin": "Trung Quốc",
+      "screen": "27 inch Fast IPS QHD",
+      "refreshRateHz": 165,
+      "weightGram": 5900,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-view-27q/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-VIEW-27Q-V1",
+        "name": "27 inch QHD 165Hz",
+        "price": 6490000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 7490000,
+        "isDefault": true,
+        "metadata": {
+          "option": "27 inch QHD 165Hz",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-VIEW-27Q-V2",
+        "name": "27 inch QHD 180Hz",
+        "price": 7190000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 8190000,
+        "isDefault": false,
+        "metadata": {
+          "option": "27 inch QHD 180Hz",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bàn phím cơ KeyForge K75 không dây hot-swap",
+    "slug": "ban-phim-co-keyforge-k75-khong-day-hot-swap",
+    "description": "BÀN PHÍM CƠ KEYFORGE K75 KHÔNG DÂY HOT-SWAP\n\nĐIỂM NỔI BẬT\n• Layout 75% gọn gàng\n• Kết nối Bluetooth, 2.4GHz và USB-C\n• Mạch hot-swap thay switch không cần hàn\n• Keycap PBT và LED RGB\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: KeyForge\n• Phân loại: Linear switch - Đen, Linear switch - Trắng, Tactile switch - Đen\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "KeyForge",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "layout": "75%",
+      "connectivity": "Bluetooth/2.4GHz/USB-C",
+      "weightGram": 860,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-key-75/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-KEY-75-V1",
+        "name": "Linear switch - Đen",
+        "price": 1390000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1690000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Linear switch - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-KEY-75-V2",
+        "name": "Linear switch - Trắng",
+        "price": 1390000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1690000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Linear switch - Trắng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-KEY-75-V3",
+        "name": "Tactile switch - Đen",
+        "price": 1490000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1790000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Tactile switch - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Chuột không dây Feather M5 cảm biến 26000 DPI",
+    "slug": "chuot-khong-day-feather-m5-cam-bien-26000-dpi",
+    "description": "CHUỘT KHÔNG DÂY FEATHER M5 CẢM BIẾN 26000 DPI\n\nĐIỂM NỔI BẬT\n• Cảm biến quang học 26.000 DPI\n• Khối lượng chỉ 59g\n• Polling rate 1.000Hz\n• Pin sử dụng đến 70 giờ\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: FeatherGear\n• Phân loại: Đen, Trắng, Hồng\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "FeatherGear",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "sensorDpi": 26000,
+      "pollingRateHz": 1000,
+      "weightGram": 59,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-mouse-m5/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-MOUSE-M5-V1",
+        "name": "Đen",
+        "price": 990000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1290000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-MOUSE-M5-V2",
+        "name": "Trắng",
+        "price": 990000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1290000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-MOUSE-M5-V3",
+        "name": "Hồng",
+        "price": 1040000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1340000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Hồng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ổ cứng SSD NVMe PCIe 4.0 tốc độ đọc 5000MB/s",
+    "slug": "o-cung-ssd-nvme-pcie-4-0-toc-do-doc-5000mb-s",
+    "description": "Ổ CỨNG SSD NVME PCIE 4.0 TỐC ĐỘ ĐỌC 5000MB/S\n\nĐIỂM NỔI BẬT\n• Chuẩn NVMe PCIe 4.0 x4\n• Tốc độ đọc tuần tự đến 5.000MB/s\n• Hỗ trợ S.M.A.R.T và TRIM\n• Tặng kèm tản nhiệt nhôm mỏng\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: DataCore\n• Phân loại: 500GB, 1TB, 2TB\n• Bảo hành: 60 tháng\n• Xuất xứ: Đài Loan\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "DataCore",
+    "attributes": {
+      "warranty": "60 tháng",
+      "origin": "Đài Loan",
+      "interface": "M.2 2280 PCIe 4.0",
+      "readSpeed": "5000MB/s",
+      "weightGram": 38,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-ssd-p4/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-SSD-P4-V1",
+        "name": "500GB",
+        "price": 1290000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1590000,
+        "isDefault": true,
+        "metadata": {
+          "option": "500GB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-SSD-P4-V2",
+        "name": "1TB",
+        "price": 2190000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 2490000,
+        "isDefault": false,
+        "metadata": {
+          "option": "1TB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-SSD-P4-V3",
+        "name": "2TB",
+        "price": 3990000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 4290000,
+        "isDefault": false,
+        "metadata": {
+          "option": "2TB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "RAM DDR4 3200MHz tản nhiệt nhôm cho máy bàn",
+    "slug": "ram-ddr4-3200mhz-tan-nhiet-nhom-cho-may-ban",
+    "description": "RAM DDR4 3200MHZ TẢN NHIỆT NHÔM CHO MÁY BÀN\n\nĐIỂM NỔI BẬT\n• Bus 3.200MHz\n• Tản nhiệt nhôm nguyên khối\n• Hỗ trợ cấu hình XMP\n• Đã kiểm tra tương thích trước khi đóng gói\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: DataCore\n• Phân loại: 8GB x1, 16GB x1, 16GB x2\n• Bảo hành: 36 tháng\n• Xuất xứ: Đài Loan\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "DataCore",
+    "attributes": {
+      "warranty": "36 tháng",
+      "origin": "Đài Loan",
+      "memoryType": "DDR4",
+      "busMHz": 3200,
+      "weightGram": 76,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-ram-d4/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-RAM-D4-V1",
+        "name": "8GB x1",
+        "price": 699000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 899000,
+        "isDefault": true,
+        "metadata": {
+          "option": "8GB x1",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-RAM-D4-V2",
+        "name": "16GB x1",
+        "price": 1249000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1449000,
+        "isDefault": false,
+        "metadata": {
+          "option": "16GB x1",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-RAM-D4-V3",
+        "name": "16GB x2",
+        "price": 2449000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 2649000,
+        "isDefault": false,
+        "metadata": {
+          "option": "16GB x2",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Hub USB-C 9 trong 1 HDMI 4K LAN PD 100W",
+    "slug": "hub-usb-c-9-trong-1-hdmi-4k-lan-pd-100w",
+    "description": "HUB USB-C 9 TRONG 1 HDMI 4K LAN PD 100W\n\nĐIỂM NỔI BẬT\n• HDMI xuất hình 4K 60Hz\n• LAN Gigabit và đầu đọc SD/microSD\n• Sạc xuyên qua PD đến 100W\n• Vỏ nhôm hỗ trợ tản nhiệt\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: PortMate\n• Phân loại: Xám, Bạc\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "PortMate",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "ports": "9 cổng",
+      "maxPowerW": 100,
+      "weightGram": 132,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-hub-9/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-HUB-9-V1",
+        "name": "Xám",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1190000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-HUB-9-V2",
+        "name": "Bạc",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1190000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bạc",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Webcam 2K tự động lấy nét kèm nắp che riêng tư",
+    "slug": "webcam-2k-tu-dong-lay-net-kem-nap-che-rieng-tu",
+    "description": "WEBCAM 2K TỰ ĐỘNG LẤY NÉT KÈM NẮP CHE RIÊNG TƯ\n\nĐIỂM NỔI BẬT\n• Độ phân giải 2K 30fps\n• Tự động lấy nét và cân bằng sáng\n• Micro kép giảm tiếng ồn\n• Nắp che camera vật lý\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: MeetCam\n• Phân loại: Bản tiêu chuẩn, Kèm tripod mini\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-tinh-laptop",
+    "brand": "MeetCam",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "resolution": "2K 30fps",
+      "connection": "USB-A/USB-C",
+      "weightGram": 148,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-webcam-2k/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-WEBCAM-2K-V1",
+        "name": "Bản tiêu chuẩn",
+        "price": 849000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1090000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bản tiêu chuẩn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-WEBCAM-2K-V2",
+        "name": "Kèm tripod mini",
+        "price": 969000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1210000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kèm tripod mini",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Loa Bluetooth SoundBox S20 công suất 20W chống nước",
+    "slug": "loa-bluetooth-soundbox-s20-cong-suat-20w-chong-nuoc",
+    "description": "LOA BLUETOOTH SOUNDBOX S20 CÔNG SUẤT 20W CHỐNG NƯỚC\n\nĐIỂM NỔI BẬT\n• Hai driver toàn dải tổng công suất 20W\n• Kháng nước IPX7\n• Ghép đôi hai loa tạo âm thanh stereo\n• Pin nghe nhạc đến 16 giờ\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: SonicPeak\n• Phân loại: Đen, Xanh rêu, Cam\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "SonicPeak",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "maxPowerW": 20,
+      "waterResistance": "IPX7",
+      "weightGram": 680,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-speaker-s20/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-SPEAKER-S20-V1",
+        "name": "Đen",
+        "price": 1190000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1490000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-SPEAKER-S20-V2",
+        "name": "Xanh rêu",
+        "price": 1190000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1490000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xanh rêu",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-SPEAKER-S20-V3",
+        "name": "Cam",
+        "price": 1190000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1490000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Cam",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Máy chiếu mini Project P1 Full HD Android Wi-Fi",
+    "slug": "may-chieu-mini-project-p1-full-hd-android-wi-fi",
+    "description": "MÁY CHIẾU MINI PROJECT P1 FULL HD ANDROID WI-FI\n\nĐIỂM NỔI BẬT\n• Độ phân giải thực Full HD\n• Hệ điều hành Android tích hợp\n• Wi-Fi băng tần kép và Bluetooth\n• Tự chỉnh keystone bốn góc\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: LumiView\n• Phân loại: Bản tiêu chuẩn, Kèm màn chiếu 100 inch\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "LumiView",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "resolution": "1920x1080",
+      "brightnessAnsi": 450,
+      "weightGram": 1450,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-project-p1/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-PROJECT-P1-V1",
+        "name": "Bản tiêu chuẩn",
+        "price": 3290000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 3990000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Bản tiêu chuẩn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-PROJECT-P1-V2",
+        "name": "Kèm màn chiếu 100 inch",
+        "price": 3790000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 4490000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Kèm màn chiếu 100 inch",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Router Wi-Fi 6 AX3000 phủ sóng căn hộ",
+    "slug": "router-wi-fi-6-ax3000-phu-song-can-ho",
+    "description": "ROUTER WI-FI 6 AX3000 PHỦ SÓNG CĂN HỘ\n\nĐIỂM NỔI BẬT\n• Chuẩn Wi-Fi 6 tốc độ AX3000\n• Bốn anten độ lợi cao\n• Hỗ trợ mesh và roaming\n• Quản lý thiết bị bằng ứng dụng\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: NetFlow\n• Phân loại: 1 router, Bộ 2 router mesh\n• Bảo hành: 24 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "NetFlow",
+    "attributes": {
+      "warranty": "24 tháng",
+      "origin": "Trung Quốc",
+      "wifiStandard": "Wi-Fi 6 AX3000",
+      "lanPorts": 4,
+      "weightGram": 420,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-router-ax3/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-ROUTER-AX3-V1",
+        "name": "1 router",
+        "price": 1290000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1590000,
+        "isDefault": true,
+        "metadata": {
+          "option": "1 router",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-ROUTER-AX3-V2",
+        "name": "Bộ 2 router mesh",
+        "price": 2440000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 2740000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bộ 2 router mesh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Camera Wi-Fi trong nhà 2K xoay 360 độ",
+    "slug": "camera-wi-fi-trong-nha-2k-xoay-360-do",
+    "description": "CAMERA WI-FI TRONG NHÀ 2K XOAY 360 ĐỘ\n\nĐIỂM NỔI BẬT\n• Độ phân giải 2K\n• Xoay ngang 360 độ và theo dõi chuyển động\n• Đàm thoại hai chiều\n• Hỗ trợ thẻ nhớ và lưu trữ đám mây\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: SafeNest\n• Phân loại: Camera đơn, Camera + thẻ 64GB, Bộ 2 camera\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "SafeNest",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "resolution": "2K",
+      "nightVision": true,
+      "weightGram": 285,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-cam-c3/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-CAM-C3-V1",
+        "name": "Camera đơn",
+        "price": 699000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 899000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Camera đơn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-CAM-C3-V2",
+        "name": "Camera + thẻ 64GB",
+        "price": 919000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1119000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Camera + thẻ 64GB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-CAM-C3-V3",
+        "name": "Bộ 2 camera",
+        "price": 1319000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1519000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bộ 2 camera",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Ổ cắm thông minh Wi-Fi 16A đo điện năng",
+    "slug": "o-cam-thong-minh-wi-fi-16a-do-dien-nang",
+    "description": "Ổ CẮM THÔNG MINH WI-FI 16A ĐO ĐIỆN NĂNG\n\nĐIỂM NỔI BẬT\n• Điều khiển bật tắt từ xa\n• Theo dõi lượng điện tiêu thụ\n• Hẹn giờ và tạo ngữ cảnh tự động\n• Chịu tải tối đa 16A\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: HomeGrid\n• Phân loại: 1 ổ, Combo 2 ổ, Combo 4 ổ\n• Bảo hành: 12 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "HomeGrid",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "maxCurrentA": 16,
+      "connectivity": "Wi-Fi 2.4GHz",
+      "weightGram": 118,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-plug-p16/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-PLUG-P16-V1",
+        "name": "1 ổ",
+        "price": 249000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 329000,
+        "isDefault": true,
+        "metadata": {
+          "option": "1 ổ",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-PLUG-P16-V2",
+        "name": "Combo 2 ổ",
+        "price": 459000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 539000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 2 ổ",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-PLUG-P16-V3",
+        "name": "Combo 4 ổ",
+        "price": 839000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 919000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Combo 4 ổ",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Micro USB condenser M2 cho podcast và livestream",
+    "slug": "micro-usb-condenser-m2-cho-podcast-va-livestream",
+    "description": "MICRO USB CONDENSER M2 CHO PODCAST VÀ LIVESTREAM\n\nĐIỂM NỔI BẬT\n• Hướng thu cardioid hạn chế tiếng ồn phía sau\n• Độ phân giải âm thanh 24-bit/96kHz\n• Nút tắt tiếng cảm ứng\n• Cổng tai nghe kiểm âm trực tiếp\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: StreamOne\n• Phân loại: Micro + chân bàn, Bộ micro + arm kẹp bàn\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "StreamOne",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "sampleRate": "24-bit/96kHz",
+      "connection": "USB-C",
+      "weightGram": 720,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-mic-m2/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-MIC-M2-V1",
+        "name": "Micro + chân bàn",
+        "price": 1290000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1590000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Micro + chân bàn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-MIC-M2-V2",
+        "name": "Bộ micro + arm kẹp bàn",
+        "price": 1740000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 2040000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bộ micro + arm kẹp bàn",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tay cầm chơi game không dây G8 Hall Effect",
+    "slug": "tay-cam-choi-game-khong-day-g8-hall-effect",
+    "description": "TAY CẦM CHƠI GAME KHÔNG DÂY G8 HALL EFFECT\n\nĐIỂM NỔI BẬT\n• Cần analog Hall Effect chống trôi\n• Kết nối Bluetooth, 2.4GHz và USB\n• Rung kép và con quay hồi chuyển\n• Tương thích PC, Android và Nintendo Switch\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: GameNest\n• Phân loại: Đen, Trắng, Tím trong suốt\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "GameNest",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "connectivity": "Bluetooth/2.4GHz/USB-C",
+      "batteryMah": 1000,
+      "weightGram": 235,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-game-g8/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-GAME-G8-V1",
+        "name": "Đen",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1390000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GAME-G8-V2",
+        "name": "Trắng",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1390000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Trắng",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GAME-G8-V3",
+        "name": "Tím trong suốt",
+        "price": 1190000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1490000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Tím trong suốt",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đồng hồ thông minh FitWatch F5 AMOLED GPS",
+    "slug": "dong-ho-thong-minh-fitwatch-f5-amoled-gps",
+    "description": "ĐỒNG HỒ THÔNG MINH FITWATCH F5 AMOLED GPS\n\nĐIỂM NỔI BẬT\n• Màn hình AMOLED 1.43 inch\n• GPS độc lập và hơn 100 chế độ thể thao\n• Theo dõi nhịp tim và giấc ngủ\n• Kháng nước 5ATM\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: FitPulse\n• Phân loại: Đen, Bạc dây xám, Vàng hồng dây kem\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "FitPulse",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "screen": "1.43 inch AMOLED",
+      "waterResistance": "5ATM",
+      "weightGram": 48,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-watch-f5/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-WATCH-F5-V1",
+        "name": "Đen",
+        "price": 1990000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 2390000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-WATCH-F5-V2",
+        "name": "Bạc dây xám",
+        "price": 1990000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 2390000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bạc dây xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-WATCH-F5-V3",
+        "name": "Vàng hồng dây kem",
+        "price": 2090000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 2490000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Vàng hồng dây kem",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Máy đọc sách PaperView R6 màn hình mực điện tử 6 inch",
+    "slug": "may-doc-sach-paperview-r6-man-hinh-muc-dien-tu-6-inch",
+    "description": "MÁY ĐỌC SÁCH PAPERVIEW R6 MÀN HÌNH MỰC ĐIỆN TỬ 6 INCH\n\nĐIỂM NỔI BẬT\n• Màn hình E-Ink 6 inch 300ppi\n• Đèn nền điều chỉnh nhiệt màu\n• Chống nước IPX8\n• Pin sử dụng nhiều tuần\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: PaperView\n• Phân loại: 16GB - Đen, 32GB - Xanh\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "PaperView",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "screen": "6 inch E-Ink 300ppi",
+      "waterResistance": "IPX8",
+      "weightGram": 174,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-reader-r6/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-READER-R6-V1",
+        "name": "16GB - Đen",
+        "price": 3490000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 3990000,
+        "isDefault": true,
+        "metadata": {
+          "option": "16GB - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-READER-R6-V2",
+        "name": "32GB - Xanh",
+        "price": 4090000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 4590000,
+        "isDefault": false,
+        "metadata": {
+          "option": "32GB - Xanh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Bộ lưu điện mini 12V cho modem và router Wi-Fi",
+    "slug": "bo-luu-dien-mini-12v-cho-modem-va-router-wi-fi",
+    "description": "BỘ LƯU ĐIỆN MINI 12V CHO MODEM VÀ ROUTER WI-FI\n\nĐIỂM NỔI BẬT\n• Duy trì mạng khi mất điện\n• Ngõ ra 5V, 9V và 12V\n• Tự chuyển nguồn không gián đoạn\n• Có bảo vệ sạc và quá dòng\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: PowerSafe\n• Phân loại: Pin 10.000mAh, Pin 20.000mAh\n• Bảo hành: 12 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "thiet-bi-dien-tu",
+    "brand": "PowerSafe",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "outputs": "5V/9V/12V",
+      "weightGram": 420,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-ups-u12/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-UPS-U12-V1",
+        "name": "Pin 10.000mAh",
+        "price": 549000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 699000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Pin 10.000mAh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-UPS-U12-V2",
+        "name": "Pin 20.000mAh",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1049000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Pin 20.000mAh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Camera hành trình thể thao Action X4 quay 4K",
+    "slug": "camera-hanh-trinh-the-thao-action-x4-quay-4k",
+    "description": "CAMERA HÀNH TRÌNH THỂ THAO ACTION X4 QUAY 4K\n\nĐIỂM NỔI BẬT\n• Quay video 4K 30fps\n• Chống rung điện tử sáu trục\n• Vỏ chống nước đến 30 mét\n• Màn hình kép trước và sau\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: AdventureCam\n• Phân loại: Camera + bộ phụ kiện cơ bản, Camera + pin dự phòng + thẻ 64GB\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "AdventureCam",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "resolution": "4K 30fps",
+      "waterDepthM": 30,
+      "weightGram": 128,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-action-x4/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-ACTION-X4-V1",
+        "name": "Camera + bộ phụ kiện cơ bản",
+        "price": 2490000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 2990000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Camera + bộ phụ kiện cơ bản",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-ACTION-X4-V2",
+        "name": "Camera + pin dự phòng + thẻ 64GB",
+        "price": 3040000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 3540000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Camera + pin dự phòng + thẻ 64GB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Camera hành trình ô tô Dash D2 ghi hình trước sau 2K",
+    "slug": "camera-hanh-trinh-o-to-dash-d2-ghi-hinh-truoc-sau-2k",
+    "description": "CAMERA HÀNH TRÌNH Ô TÔ DASH D2 GHI HÌNH TRƯỚC SAU 2K\n\nĐIỂM NỔI BẬT\n• Camera trước 2K và camera sau Full HD\n• Cảm biến va chạm khóa video\n• Ghi hình vòng lặp\n• Kết nối Wi-Fi xem video trên điện thoại\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: RoadVision\n• Phân loại: Camera trước + sau, Bộ camera + thẻ 128GB\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "RoadVision",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "resolution": "2K + 1080p",
+      "fieldOfView": "150 độ",
+      "weightGram": 390,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-dash-d2/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-DASH-D2-V1",
+        "name": "Camera trước + sau",
+        "price": 2190000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 2690000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Camera trước + sau",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-DASH-D2-V2",
+        "name": "Bộ camera + thẻ 128GB",
+        "price": 2610000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 3110000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bộ camera + thẻ 128GB",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Gimbal chống rung điện thoại G3 theo dõi khuôn mặt",
+    "slug": "gimbal-chong-rung-dien-thoai-g3-theo-doi-khuon-mat",
+    "description": "GIMBAL CHỐNG RUNG ĐIỆN THOẠI G3 THEO DÕI KHUÔN MẶT\n\nĐIỂM NỔI BẬT\n• Chống rung ba trục\n• Theo dõi khuôn mặt bằng AI\n• Điều khiển cử chỉ\n• Gấp gọn, có tripod tích hợp\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: MotionPro\n• Phân loại: Đen, Xám\n• Bảo hành: 18 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "MotionPro",
+    "attributes": {
+      "warranty": "18 tháng",
+      "origin": "Trung Quốc",
+      "payloadGram": 300,
+      "batteryHours": 10,
+      "weightGram": 355,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-gimbal-g3/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-GIMBAL-G3-V1",
+        "name": "Đen",
+        "price": 1790000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 2190000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-GIMBAL-G3-V2",
+        "name": "Xám",
+        "price": 1790000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 2190000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Tripod nhôm T6 cao 1m7 đầu bi xoay linh hoạt",
+    "slug": "tripod-nhom-t6-cao-1m7-dau-bi-xoay-linh-hoat",
+    "description": "TRIPOD NHÔM T6 CAO 1M7 ĐẦU BI XOAY LINH HOẠT\n\nĐIỂM NỔI BẬT\n• Chiều cao tối đa 170cm\n• Đầu bi xoay 360 độ\n• Một chân tháo rời dùng làm monopod\n• Móc treo tăng độ ổn định\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: FocusGear\n• Phân loại: Tripod + túi, Tripod + remote Bluetooth\n• Bảo hành: 12 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "FocusGear",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "maxHeightCm": 170,
+      "maxLoadKg": 6,
+      "weightGram": 1520,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-tripod-t6/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-TRIPOD-T6-V1",
+        "name": "Tripod + túi",
+        "price": 899000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1190000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Tripod + túi",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-TRIPOD-T6-V2",
+        "name": "Tripod + remote Bluetooth",
+        "price": 999000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1290000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Tripod + remote Bluetooth",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Đèn LED quay phim L60 RGB chỉnh nhiệt màu",
+    "slug": "den-led-quay-phim-l60-rgb-chinh-nhiet-mau",
+    "description": "ĐÈN LED QUAY PHIM L60 RGB CHỈNH NHIỆT MÀU\n\nĐIỂM NỔI BẬT\n• Điều chỉnh nhiệt màu 2.500K–8.500K\n• Chế độ RGB và hiệu ứng ánh sáng\n• CRI trên 95 cho màu da tự nhiên\n• Pin tích hợp sạc qua USB-C\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: GlowFrame\n• Phân loại: Đèn + ngàm máy ảnh, Bộ đèn + chân 2 mét\n• Bảo hành: 12 tháng\n• Xuất xứ: Trung Quốc\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "GlowFrame",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Trung Quốc",
+      "colorTemperature": "2500K-8500K",
+      "cri": "95+",
+      "weightGram": 410,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-light-l60/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-LIGHT-L60-V1",
+        "name": "Đèn + ngàm máy ảnh",
+        "price": 1190000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1490000,
+        "isDefault": true,
+        "metadata": {
+          "option": "Đèn + ngàm máy ảnh",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-LIGHT-L60-V2",
+        "name": "Bộ đèn + chân 2 mét",
+        "price": 1640000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1940000,
+        "isDefault": false,
+        "metadata": {
+          "option": "Bộ đèn + chân 2 mét",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  },
+  {
+    "name": "Balo máy ảnh PhotoPack B20 chống nước nhiều ngăn",
+    "slug": "balo-may-anh-photopack-b20-chong-nuoc-nhieu-ngan",
+    "description": "BALO MÁY ẢNH PHOTOPACK B20 CHỐNG NƯỚC NHIỀU NGĂN\n\nĐIỂM NỔI BẬT\n• Vách ngăn đệm mút tùy chỉnh\n• Ngăn riêng cho laptop 15 inch\n• Khóa kéo hông lấy máy nhanh\n• Kèm áo mưa và dây gắn tripod\n\nTHÔNG SỐ VÀ PHÂN LOẠI\n• Thương hiệu: PhotoPack\n• Phân loại: 20 lít - Đen, 20 lít - Xám, 25 lít - Đen\n• Bảo hành: 12 tháng\n• Xuất xứ: Việt Nam\n\nCHÍNH SÁCH CỦA SHOP\n• Sản phẩm mới, được kiểm tra ngoại quan và chức năng trước khi đóng gói.\n• Số serial và tình trạng sản phẩm được lưu để hỗ trợ bảo hành.\n• Hỗ trợ đổi nếu giao sai phân loại hoặc sản phẩm phát sinh lỗi từ nhà sản xuất.",
+    "categoryId": "may-anh-may-quay-phim",
+    "brand": "PhotoPack",
+    "attributes": {
+      "warranty": "12 tháng",
+      "origin": "Việt Nam",
+      "material": "Polyester phủ chống nước",
+      "capacityLiter": 20,
+      "weightGram": 980,
+      "condition": "Mới",
+      "dispatchFrom": "TP. Hồ Chí Minh",
+      "demoSeed": "ducktrong-technology-catalog-2026"
+    },
+    "images": [
+      "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=900&q=80",
+      "https://picsum.photos/seed/dtech-bag-b20/900/900"
+    ],
+    "variants": [
+      {
+        "sku": "DTECH-BAG-B20-V1",
+        "name": "20 lít - Đen",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 45,
+        "compareAtPrice": 1390000,
+        "isDefault": true,
+        "metadata": {
+          "option": "20 lít - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-BAG-B20-V2",
+        "name": "20 lít - Xám",
+        "price": 1090000,
+        "currency": "VND",
+        "initialStock": 38,
+        "compareAtPrice": 1390000,
+        "isDefault": false,
+        "metadata": {
+          "option": "20 lít - Xám",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      },
+      {
+        "sku": "DTECH-BAG-B20-V3",
+        "name": "25 lít - Đen",
+        "price": 1390000,
+        "currency": "VND",
+        "initialStock": 31,
+        "compareAtPrice": 1690000,
+        "isDefault": false,
+        "metadata": {
+          "option": "25 lít - Đen",
+          "demoSeed": true,
+          "catalog": "technology-2026"
+        }
+      }
+    ],
+    "status": "DRAFT"
+  }
+]

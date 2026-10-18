@@ -112,7 +112,7 @@ func TestAdminServicePreparesManualVietQRAndConfirmsReference(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if transfer.AccountNumber != "0123456789" || transfer.TransferContent != "EMALL BBBBBBBBBBBB" || transfer.QRCodeURL == "" {
+	if transfer.AccountNumber != "0123456789" || transfer.TransferContent != "EMALLBBBBBBBBBBBB" || transfer.QRCodeURL == "" {
 		t.Fatalf("unexpected transfer: %+v", transfer)
 	}
 	_, err = service.CompleteManualPayout(context.Background(), admin, store.manualData.PayoutID, "CONFIRM", "FT-12345", "Bank transfer completed")

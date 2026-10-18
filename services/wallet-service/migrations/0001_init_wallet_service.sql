@@ -187,6 +187,7 @@ CREATE TABLE IF NOT EXISTS payouts (
   status varchar(32) NOT NULL DEFAULT 'REQUESTED',
   provider varchar(64),
   provider_reference varchar(128),
+  transfer_code varchar(32),
   failure_code varchar(128),
   failure_message varchar(500),
   bank_code varchar(32) NOT NULL,
@@ -213,6 +214,30 @@ CREATE INDEX IF NOT EXISTS idx_payouts_dispatch
 CREATE UNIQUE INDEX IF NOT EXISTS ux_payouts_provider_reference
   ON payouts(provider, provider_reference)
   WHERE provider_reference IS NOT NULL;
+CREATE TABLE IF NOT EXISTS sepay_payout_webhook_events (
+  transaction_id varchar(128) PRIMARY KEY,
+  payout_id uuid REFERENCES payouts(id) ON DELETE RESTRICT,
+  gateway varchar(64),
+  source_account_number varchar(128) NOT NULL,
+  transfer_amount_minor bigint NOT NULL,
+  transfer_content text,
+  reference_code varchar(128),
+  transaction_at timestamptz,
+  process_status varchar(32) NOT NULL,
+  failure_reason varchar(500),
+  raw_payload jsonb NOT NULL,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  processed_at timestamptz,
+  CONSTRAINT chk_sepay_payout_webhook_amount CHECK (transfer_amount_minor > 0),
+  CONSTRAINT chk_sepay_payout_webhook_status CHECK (
+    process_status IN ('RECEIVED', 'MATCHED', 'UNMATCHED', 'REVIEW_REQUIRED', 'ALREADY_COMPLETED')
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_sepay_payout_webhook_payout
+  ON sepay_payout_webhook_events(payout_id, received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sepay_payout_webhook_status
+  ON sepay_payout_webhook_events(process_status, received_at DESC);
 
 CREATE TABLE IF NOT EXISTS idempotency_records (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -290,6 +315,7 @@ ALTER TABLE payouts ADD COLUMN IF NOT EXISTS attempt_count integer NOT NULL DEFA
 ALTER TABLE payouts ADD COLUMN IF NOT EXISTS next_attempt_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE payouts ADD COLUMN IF NOT EXISTS processing_started_at timestamptz;
 ALTER TABLE payouts ADD COLUMN IF NOT EXISTS last_reconciled_at timestamptz;
+ALTER TABLE payouts ADD COLUMN IF NOT EXISTS transfer_code varchar(32);
 UPDATE payouts p
 SET bank_code = COALESCE(p.bank_code, b.bank_code),
     account_holder_name = COALESCE(p.account_holder_name, b.account_holder_name),
@@ -306,6 +332,10 @@ ALTER TABLE payouts ALTER COLUMN encryption_nonce SET NOT NULL;
 ALTER TABLE payouts ALTER COLUMN account_number_last4 SET NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_payouts_dispatch ON payouts(status, next_attempt_at, requested_at);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_payouts_provider_reference ON payouts(provider, provider_reference) WHERE provider_reference IS NOT NULL;
+UPDATE payouts
+SET transfer_code = 'EMALL' || upper(substr(replace(id::text, '-', ''), 1, 12))
+WHERE transfer_code IS NULL AND provider = 'manual_vietqr';
+CREATE UNIQUE INDEX IF NOT EXISTS ux_payouts_transfer_code ON payouts(transfer_code) WHERE transfer_code IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS wallet_admin_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

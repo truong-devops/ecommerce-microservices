@@ -67,6 +67,9 @@ export default function WalletAdministrationPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
+  const activePayoutId = payoutTransfer?.payoutId ?? '';
+  const hasProcessingPayouts = payouts.some((payout) => payout.status === 'PROCESSING');
+
   const loadOverview = useCallback(async () => {
     if (!accessToken || !isAdmin) return;
     setLoading(true);
@@ -125,6 +128,38 @@ export default function WalletAdministrationPage() {
     if (selectedWallet?.id && accessToken && isAdmin) void loadWalletDetail(selectedWallet.id);
   }, [accessToken, isAdmin, loadWalletDetail, selectedWallet?.id]);
 
+  useEffect(() => {
+    if (!accessToken || !isAdmin || !selectedWallet?.id || (!activePayoutId && !hasProcessingPayouts)) return;
+    let stopped = false;
+    const pollPayouts = async () => {
+      try {
+        const page = await listAdminPayouts(accessToken, selectedWallet.id);
+        if (stopped) return;
+        setPayouts(page.items);
+        if (!activePayoutId) return;
+        const current = page.items.find((item) => item.id === activePayoutId);
+        if (current?.status === 'SUCCEEDED') {
+          setNotice('SePay đã xác nhận giao dịch tiền ra. Yêu cầu rút đã hoàn tất tự động.');
+          setPayoutTransfer(null);
+          setBankReference('');
+          setPayoutReason('');
+          await Promise.all([loadOverview(), loadWalletDetail(selectedWallet.id)]);
+        } else if (current && ['FAILED', 'CANCELLED'].includes(current.status)) {
+          setNotice(`Yêu cầu rút đã chuyển sang trạng thái ${current.status}.`);
+          setPayoutTransfer(null);
+        }
+      } catch {
+        // Keep the dialog usable when a transient polling request fails.
+      }
+    };
+    void pollPayouts();
+    const timer = window.setInterval(() => void pollPayouts(), 4000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [accessToken, activePayoutId, hasProcessingPayouts, isAdmin, loadOverview, loadWalletDetail, selectedWallet?.id]);
+
   const runWalletAction = useCallback(async (action: 'freeze' | 'unfreeze' | BankAccountStatus) => {
     if (!accessToken || !selectedWallet) return;
     const labels: Record<typeof action, string> = {
@@ -177,7 +212,9 @@ export default function WalletAdministrationPage() {
 
   const finishManualPayout = useCallback(async (action: 'CONFIRM' | 'REJECT') => {
     if (!accessToken || !payoutTransfer || !selectedWallet) return;
-    const reason = payoutReason.trim();
+    const reason = action === 'REJECT' && payoutReason.trim().length < 3
+      ? window.prompt('Nhập lý do từ chối và hoàn số dư cho Seller:')?.trim() ?? ''
+      : payoutReason.trim();
     const providerReference = bankReference.trim();
     if (reason.length < 3) {
       setError('Vui lòng nhập lý do hoặc ghi chú có ít nhất 3 ký tự.');
@@ -384,7 +421,7 @@ function ManualPayoutDialog({ transfer, bankReference, reason, error, loading, o
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="manual-payout-title">
       <div className="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Manual VietQR payout</p><h2 id="manual-payout-title" className="mt-1 text-xl font-semibold">Chuyển tiền cho Seller</h2><p className="mt-1 text-sm text-slate-500">Chỉ xác nhận sau khi ứng dụng ngân hàng báo giao dịch thành công.</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">VietQR payout · SePay reconciliation</p><h2 id="manual-payout-title" className="mt-1 text-xl font-semibold">Chuyển tiền cho Seller</h2><p className="mt-1 text-sm text-slate-500">Sau khi ngân hàng báo thành công, SePay sẽ tự đối soát và hoàn tất yêu cầu rút.</p></div>
           <button type="button" disabled={loading} onClick={onClose} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold disabled:opacity-50">Đóng</button>
         </div>
         <div className="grid gap-5 p-5 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
@@ -406,16 +443,26 @@ function ManualPayoutDialog({ transfer, bankReference, reason, error, loading, o
                 <TransferRow label="Nội dung" value={transfer.transferContent} onCopy={() => copyValue(transfer.transferContent)} />
               </div>
             </div>
-            <label className="block text-sm font-medium text-slate-700">Mã giao dịch ngân hàng
-              <input value={bankReference} onChange={(event) => onBankReferenceChange(event.target.value)} placeholder="Ví dụ: FT26300123456789" maxLength={128} className="mt-1.5 h-11 w-full rounded-md border border-slate-300 px-3 font-mono text-sm" />
-            </label>
-            <label className="block text-sm font-medium text-slate-700">Ghi chú xử lý
-              <textarea value={reason} onChange={(event) => onReasonChange(event.target.value)} placeholder="Ví dụ: Đã đối chiếu tên người nhận và chuyển khoản" maxLength={500} rows={3} className="mt-1.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            </label>
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">Không bấm xác nhận nếu giao dịch ngân hàng còn chờ xử lý hoặc thất bại. Xác nhận sai sẽ ghi nhận tiền đã rời khỏi ví Seller.</div>
+            <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-3 text-sm leading-6 text-sky-800">
+              <p className="font-semibold">Đang chờ SePay xác nhận giao dịch tiền ra</p>
+              <p>Giữ nguyên số tiền và nội dung chuyển khoản. Trang này tự kiểm tra mỗi 4 giây; Admin không cần bấm xác nhận lần hai.</p>
+            </div>
+            <details className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-slate-700">Xác nhận thủ công dự phòng</summary>
+              <div className="mt-3 space-y-3">
+                <p className="text-xs leading-5 text-amber-800">Chỉ dùng khi ứng dụng ngân hàng đã báo thành công nhưng SePay không gửi trạng thái sau vài phút.</p>
+                <label className="block text-sm font-medium text-slate-700">Mã giao dịch ngân hàng
+                  <input value={bankReference} onChange={(event) => onBankReferenceChange(event.target.value)} placeholder="Ví dụ: FT26300123456789" maxLength={128} className="mt-1.5 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-mono text-sm" />
+                </label>
+                <label className="block text-sm font-medium text-slate-700">Ghi chú xử lý
+                  <textarea value={reason} onChange={(event) => onReasonChange(event.target.value)} placeholder="Ví dụ: Đã kiểm tra giao dịch thành công trên ứng dụng ngân hàng" maxLength={500} rows={3} className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                </label>
+                <button type="button" disabled={loading} onClick={() => void onComplete('CONFIRM')} className="w-full rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{loading ? 'Đang cập nhật...' : 'Xác nhận thủ công'}</button>
+              </div>
+            </details>
             <div className="flex flex-wrap justify-end gap-2">
               <button type="button" disabled={loading} onClick={() => void onComplete('REJECT')} className="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50">Từ chối & hoàn số dư</button>
-              <button type="button" disabled={loading} onClick={() => void onComplete('CONFIRM')} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{loading ? 'Đang cập nhật...' : 'Xác nhận đã chuyển'}</button>
+              <button type="button" disabled={loading} onClick={onClose} className="rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Đóng & theo dõi danh sách</button>
             </div>
           </div>
         </div>

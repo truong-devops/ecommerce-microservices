@@ -11,7 +11,7 @@ The service currently supports:
 - seller balance and ledger transaction read APIs.
 - encrypted seller bank account storage with masked API responses;
 - idempotent payout requests with wallet-level database locking;
-- manual VietQR payout preparation with administrator confirmation or rejection;
+- manual VietQR payout preparation with automatic SePay outgoing-transaction confirmation;
 - optional automatic mock payout processing and reconciliation for tests;
 - balanced success and failure ledger postings;
 - Prometheus-compatible payout metrics at `/metrics`.
@@ -47,17 +47,41 @@ PATCH /api/v1/admin/wallets/{walletID}/status
 PATCH /api/v1/admin/wallets/{walletID}/bank-account/status
 ```
 
+Public SePay callback (authenticated by API key or HMAC):
+
+```text
+POST /api/v1/wallets/webhooks/sepay/payouts
+```
+
 State-changing operations require a human-readable `reason` and are recorded
 in `wallet_admin_audit_logs`. The Moderator frontend exposes these operations
 at `/wallets` for administrators.
 
-`PAYOUT_PROVIDER=manual_vietqr` keeps new requests in `REQUESTED`, moves them
-to `PROCESSING` when an administrator opens the transfer dialog, and only
-posts the final ledger entry after the administrator confirms the bank
-transfer. Rejecting a request returns the pending amount to the seller's
-available balance. The generated QR uses the payout's encrypted bank-account
-snapshot and VietQR Quick Link; the administrator must still authorize the
-transfer in a banking application.
+`PAYOUT_PROVIDER=manual_vietqr` keeps new requests in `REQUESTED` and moves
+them to `PROCESSING` when an administrator opens the transfer dialog. The
+generated QR includes a unique `EMALL...` transfer code. After the
+administrator authorizes the transfer in a banking application, an
+authenticated SePay webhook with `transferType=out` automatically marks the
+payout `SUCCEEDED` only when source account, transfer code, amount, currency,
+and state all match. Duplicate webhook deliveries are idempotent. Manual
+confirmation remains available as a fallback; rejecting a request returns the
+pending amount to the seller's available balance.
+
+To enable automatic confirmation, create a SePay webhook filtered to outgoing
+transactions with URL
+`https://api.example.com/api/v1/wallets/webhooks/sepay/payouts`, configure its
+HMAC-SHA256 secret, and set:
+
+```text
+SEPAY_PAYOUT_WEBHOOK_ENABLED=true
+SEPAY_PAYOUT_SOURCE_ACCOUNT_NUMBER=<platform bank account>
+SEPAY_PAYOUT_WEBHOOK_AUTH_MODE=hmac
+SEPAY_PAYOUT_WEBHOOK_SECRET=<same random secret configured in SePay>
+```
+
+In SePay, configure payment-code prefix `EMALL` with a 12-character
+alphanumeric suffix and select the outgoing-only event. Outgoing webhooks are
+subject to SePay's supported-bank/account-mode requirements.
 
 `PAYOUT_PROVIDER=mock` remains available for automated local tests. Bank
 account numbers are encrypted with `BANK_ACCOUNT_ENCRYPTION_KEY`; never reuse

@@ -71,3 +71,38 @@ func TestLoadAcceptsManualVietQRAndRejectsUnknownProvider(t *testing.T) {
 		t.Fatal("expected unknown payout provider to fail")
 	}
 }
+
+func TestLoadAcceptsSePayPayoutWebhook(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/wallet")
+	t.Setenv("JWT_ACCESS_SECRET", "dev-shared-jwt-access-secret-min-32-chars")
+	t.Setenv("BANK_ACCOUNT_ENCRYPTION_KEY", "dev-bank-account-encryption-key-32-chars")
+	t.Setenv("PAYOUT_PROVIDER", "manual_vietqr")
+	t.Setenv("SEPAY_PAYOUT_WEBHOOK_ENABLED", "true")
+	t.Setenv("SEPAY_PAYOUT_SOURCE_ACCOUNT_NUMBER", "10004262634")
+	t.Setenv("SEPAY_PAYOUT_WEBHOOK_AUTH_MODE", "apikey")
+	t.Setenv("SEPAY_PAYOUT_WEBHOOK_API_KEY", "test-payout-webhook-key")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if !cfg.SePayPayoutWebhook.Enabled || cfg.SePayPayoutWebhook.SourceAccountNumber != "10004262634" {
+		t.Fatalf("unexpected payout webhook config: %+v", cfg.SePayPayoutWebhook)
+	}
+}
+
+func TestLoadRejectsEnabledSePayPayoutWebhookWithoutAPIKey(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/wallet")
+	t.Setenv("JWT_ACCESS_SECRET", "dev-shared-jwt-access-secret-min-32-chars")
+	t.Setenv("BANK_ACCOUNT_ENCRYPTION_KEY", "dev-bank-account-encryption-key-32-chars")
+	t.Setenv("PAYOUT_PROVIDER", "manual_vietqr")
+	t.Setenv("SEPAY_PAYOUT_WEBHOOK_ENABLED", "true")
+	t.Setenv("SEPAY_PAYOUT_SOURCE_ACCOUNT_NUMBER", "10004262634")
+	t.Setenv("SEPAY_PAYOUT_WEBHOOK_AUTH_MODE", "apikey")
+	t.Setenv("SEPAY_PAYOUT_WEBHOOK_API_KEY", "")
+	t.Setenv("SEPAY_WEBHOOK_API_KEY", "")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("expected missing payout webhook API key to fail")
+	}
+}

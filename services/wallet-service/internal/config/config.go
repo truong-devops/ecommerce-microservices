@@ -31,6 +31,7 @@ type Config struct {
 	PayoutReconcileInterval time.Duration
 	PayoutStaleAfter        time.Duration
 	PayoutIdempotencyTTL    time.Duration
+	SePayPayoutWebhook      SePayPayoutWebhookConfig
 
 	KafkaEnabled           bool
 	KafkaClientID          string
@@ -49,6 +50,16 @@ type Config struct {
 	MigrationFile string
 }
 
+type SePayPayoutWebhookConfig struct {
+	Enabled                   bool
+	SourceAccountNumber       string
+	AuthMode                  string
+	Secret                    string
+	Secrets                   []string
+	APIKey                    string
+	TimestampToleranceSeconds int
+}
+
 func Load() (Config, error) {
 	cfg := Config{
 		AppName:           getEnv("APP_NAME", "wallet-service"),
@@ -60,6 +71,17 @@ func Load() (Config, error) {
 		PayoutEnabled:     parseBool(getEnv("PAYOUT_ENABLED", "false")),
 		PayoutProvider:    strings.ToLower(getEnv("PAYOUT_PROVIDER", "manual_vietqr")),
 		MockPayoutMode:    strings.ToLower(getEnv("MOCK_PAYOUT_MODE", "success")),
+		SePayPayoutWebhook: SePayPayoutWebhookConfig{
+			Enabled:             parseBool(getEnv("SEPAY_PAYOUT_WEBHOOK_ENABLED", "false")),
+			SourceAccountNumber: strings.TrimSpace(getEnv("SEPAY_PAYOUT_SOURCE_ACCOUNT_NUMBER", os.Getenv("SEPAY_BANK_ACCOUNT_NUMBER"))),
+			AuthMode:            strings.ToLower(strings.TrimSpace(getEnv("SEPAY_PAYOUT_WEBHOOK_AUTH_MODE", getEnv("SEPAY_WEBHOOK_AUTH_MODE", "hmac")))),
+			Secret:              strings.TrimSpace(getEnv("SEPAY_PAYOUT_WEBHOOK_SECRET", os.Getenv("SEPAY_WEBHOOK_SECRET"))),
+			Secrets: parseCSV(getEnv(
+				"SEPAY_PAYOUT_WEBHOOK_SECRETS",
+				getEnv("SEPAY_WEBHOOK_SECRETS", getEnv("SEPAY_PAYOUT_WEBHOOK_SECRET", os.Getenv("SEPAY_WEBHOOK_SECRET"))),
+			)),
+			APIKey: strings.TrimSpace(getEnv("SEPAY_PAYOUT_WEBHOOK_API_KEY", os.Getenv("SEPAY_WEBHOOK_API_KEY"))),
+		},
 
 		KafkaEnabled:         parseBool(getEnv("KAFKA_ENABLED", "false")),
 		KafkaClientID:        getEnv("KAFKA_CLIENT_ID", "wallet-service"),
@@ -89,6 +111,34 @@ func Load() (Config, error) {
 	}
 	if cfg.MockPayoutMode != "success" && cfg.MockPayoutMode != "failure" && cfg.MockPayoutMode != "pending" {
 		return Config{}, fmt.Errorf("MOCK_PAYOUT_MODE must be success, failure, or pending")
+	}
+	if cfg.SePayPayoutWebhook.Enabled {
+		if cfg.PayoutProvider != "manual_vietqr" {
+			return Config{}, fmt.Errorf("SEPAY_PAYOUT_WEBHOOK_ENABLED requires PAYOUT_PROVIDER=manual_vietqr")
+		}
+		if cfg.SePayPayoutWebhook.SourceAccountNumber == "" {
+			return Config{}, fmt.Errorf("SEPAY_PAYOUT_SOURCE_ACCOUNT_NUMBER is required when payout webhook is enabled")
+		}
+		switch cfg.SePayPayoutWebhook.AuthMode {
+		case "hmac":
+			if len(cfg.SePayPayoutWebhook.Secrets) == 0 && cfg.SePayPayoutWebhook.Secret == "" {
+				return Config{}, fmt.Errorf("SEPAY_PAYOUT_WEBHOOK_SECRET is required for hmac authentication")
+			}
+		case "apikey":
+			if cfg.SePayPayoutWebhook.APIKey == "" {
+				return Config{}, fmt.Errorf("SEPAY_PAYOUT_WEBHOOK_API_KEY is required for apikey authentication")
+			}
+		case "auto":
+			if cfg.SePayPayoutWebhook.APIKey == "" && len(cfg.SePayPayoutWebhook.Secrets) == 0 && cfg.SePayPayoutWebhook.Secret == "" {
+				return Config{}, fmt.Errorf("SePay payout webhook auto authentication requires an API key or HMAC secret")
+			}
+		case "none":
+			if strings.EqualFold(cfg.AppEnv, "production") {
+				return Config{}, fmt.Errorf("SEPAY_PAYOUT_WEBHOOK_AUTH_MODE=none is not allowed in production")
+			}
+		default:
+			return Config{}, fmt.Errorf("SEPAY_PAYOUT_WEBHOOK_AUTH_MODE must be hmac, apikey, auto, or none")
+		}
 	}
 	if cfg.APIPrefix == "" {
 		cfg.APIPrefix = "api/v1"
@@ -153,6 +203,11 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg.PayoutIdempotencyTTL = time.Duration(idempotencyHours) * time.Hour
+	sePayToleranceSeconds, err := parseInt("SEPAY_PAYOUT_TIMESTAMP_TOLERANCE_SECONDS", 300, 1, 86_400)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.SePayPayoutWebhook.TimestampToleranceSeconds = sePayToleranceSeconds
 	cfg.OutboxDispatchInterval = time.Duration(3000) * time.Millisecond
 	if value, parseErr := parseInt("OUTBOX_DISPATCH_INTERVAL_MS", 3000, 500, 3_600_000); parseErr != nil {
 		return Config{}, parseErr

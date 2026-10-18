@@ -23,8 +23,12 @@ fail() {
 usage() {
   cat <<'EOF'
 Usage:
-  ./scripts/demo-complete-order-wallet.sh <ORDER_ID>
+  ./scripts/demo-complete-order-wallet.sh <ORDER_CODE_OR_ID>
   ./scripts/demo-complete-order-wallet.sh
+
+Examples:
+  ./scripts/demo-complete-order-wallet.sh EMX6000003
+  ./scripts/demo-complete-order-wallet.sh d246a5e6-374b-4090-99d8-5cf221c4254c
 
 Environment variables:
   WAIT_TIMEOUT_SECONDS   Maximum time to wait for wallet release (default: 120)
@@ -59,14 +63,26 @@ if [[ $# -gt 1 ]]; then
   exit 1
 fi
 
-ORDER_ID="${1:-}"
-if [[ -z "$ORDER_ID" ]]; then
-  read -r -p "Paste order ID: " ORDER_ID
+ORDER_REFERENCE="${1:-}"
+if [[ -z "$ORDER_REFERENCE" ]]; then
+  read -r -p "Paste order code (for example EMX6000003): " ORDER_REFERENCE
 fi
-ORDER_ID="${ORDER_ID//[[:space:]]/}"
+ORDER_REFERENCE="${ORDER_REFERENCE//[[:space:]]/}"
 
 UUID_PATTERN='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
-[[ "$ORDER_ID" =~ $UUID_PATTERN ]] || fail "ORDER_ID is not a valid UUID: $ORDER_ID"
+ORDER_CODE_PATTERN='^[Ee][Mm][Xx][0-9]{7}$'
+ORDER_NUMBER_PATTERN='^ORD-[0-9]{8}-[0-9]{10}-[0-9]{6}$'
+
+if [[ "$ORDER_REFERENCE" =~ $UUID_PATTERN ]]; then
+  ORDER_REFERENCE_TYPE="uuid"
+elif [[ "$ORDER_REFERENCE" =~ $ORDER_CODE_PATTERN ]]; then
+  ORDER_REFERENCE_TYPE="display-code"
+elif [[ "$ORDER_REFERENCE" =~ $ORDER_NUMBER_PATTERN ]]; then
+  ORDER_REFERENCE_TYPE="order-number"
+else
+  fail "Use a display code such as EMX6000003, an ORD order number, or an order UUID"
+fi
+
 [[ "$WAIT_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] || fail "WAIT_TIMEOUT_SECONDS must be a positive integer"
 [[ "$POLL_INTERVAL_SECONDS" =~ ^[1-9][0-9]*$ ]] || fail "POLL_INTERVAL_SECONDS must be a positive integer"
 
@@ -76,11 +92,45 @@ cd "$REPO_ROOT"
 POSTGRES_CONTAINER="$(docker compose ps -q postgres)"
 [[ -n "$POSTGRES_CONTAINER" ]] || fail "The postgres Compose service is not running"
 
+if [[ "$ORDER_REFERENCE_TYPE" == "uuid" ]]; then
+  ORDER_ID="$ORDER_REFERENCE"
+elif [[ "$ORDER_REFERENCE_TYPE" == "display-code" ]]; then
+  ORDER_CODE="$(printf '%s' "$ORDER_REFERENCE" | tr '[:lower:]' '[:upper:]')"
+  MATCHING_ORDERS="$(psql_value eorder ecommerce_order "
+SELECT id::text
+FROM orders
+WHERE 'EMX' || RIGHT(REGEXP_REPLACE(UPPER(order_number), '[^0-9]', '', 'g'), 7) = '$ORDER_CODE'
+ORDER BY created_at DESC;
+")"
+  [[ -n "$MATCHING_ORDERS" ]] || fail "Order code not found: $ORDER_CODE"
+
+  MATCH_COUNT="$(printf '%s\n' "$MATCHING_ORDERS" | sed '/^$/d' | wc -l | tr -d '[:space:]')"
+  if [[ "$MATCH_COUNT" != "1" ]]; then
+    echo "Order code $ORDER_CODE matches more than one order:" >&2
+    psql_value eorder ecommerce_order "
+SELECT id::text || '  ' || order_number || '  ' || status::text || '  ' || created_at::text
+FROM orders
+WHERE 'EMX' || RIGHT(REGEXP_REPLACE(UPPER(order_number), '[^0-9]', '', 'g'), 7) = '$ORDER_CODE'
+ORDER BY created_at DESC;
+" >&2
+    fail "Use the UUID shown above to select the exact order"
+  fi
+  ORDER_ID="$MATCHING_ORDERS"
+else
+  ORDER_ID="$(psql_value eorder ecommerce_order "
+SELECT id::text
+FROM orders
+WHERE order_number = '$ORDER_REFERENCE';
+")"
+  [[ -n "$ORDER_ID" ]] || fail "Order number not found: $ORDER_REFERENCE"
+fi
+
 print_step "Load order"
 ORDER_INFO="$(psql_value eorder ecommerce_order "
 SELECT
   id::text,
   order_number,
+  'EMX' || RIGHT(REGEXP_REPLACE(UPPER(order_number), '[^0-9]', '', 'g'), 7),
   status::text,
   payment_method,
   seller_id::text,
@@ -92,14 +142,15 @@ WHERE id = '$ORDER_ID'::uuid;
 [[ -n "$ORDER_INFO" ]] || fail "Order not found: $ORDER_ID"
 
 IFS=$'\t' read -r \
-  FOUND_ORDER_ID ORDER_NUMBER ORDER_STATUS PAYMENT_METHOD SELLER_ID ORDER_AMOUNT ORDER_CURRENCY \
+  FOUND_ORDER_ID ORDER_NUMBER DISPLAY_ORDER_CODE ORDER_STATUS PAYMENT_METHOD SELLER_ID ORDER_AMOUNT ORDER_CURRENCY \
   <<< "$ORDER_INFO"
 
 [[ -n "$SELLER_ID" ]] || fail "Order does not have a seller_id"
 NORMALIZED_PAYMENT_METHOD="$(printf '%s' "$PAYMENT_METHOD" | tr '[:lower:]' '[:upper:]')"
 [[ "$NORMALIZED_PAYMENT_METHOD" == "ONLINE" ]] || fail "Order payment_method is $PAYMENT_METHOD; choose an ONLINE order"
 
-printf 'Order:   %s (%s)\n' "$ORDER_NUMBER" "$FOUND_ORDER_ID"
+printf 'Order:   %s (%s)\n' "$DISPLAY_ORDER_CODE" "$FOUND_ORDER_ID"
+printf 'Number:  %s\n' "$ORDER_NUMBER"
 printf 'Status:  %s\n' "$ORDER_STATUS"
 printf 'Seller:  %s\n' "$SELLER_ID"
 printf 'Amount:  %s %s\n' "$ORDER_AMOUNT" "$ORDER_CURRENCY"
@@ -437,4 +488,4 @@ ORDER BY a.account_type;
 "
 
 echo
-echo "Done. Order $ORDER_NUMBER is DELIVERED and its funds are available to seller $SELLER_ID."
+echo "Done. Order $DISPLAY_ORDER_CODE is DELIVERED and its funds are available to seller $SELLER_ID."

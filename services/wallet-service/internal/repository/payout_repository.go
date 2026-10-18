@@ -19,6 +19,7 @@ var (
 	ErrPayoutNotFound         = errors.New("payout not found")
 	ErrInsufficientBalance    = errors.New("insufficient available balance")
 	ErrIdempotencyConflict    = errors.New("idempotency key was used for another request")
+	ErrPayoutStateConflict    = errors.New("payout state does not allow this action")
 )
 
 type UpsertBankAccountInput struct {

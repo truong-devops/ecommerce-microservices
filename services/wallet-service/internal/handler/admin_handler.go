@@ -30,6 +30,12 @@ type updateBankAccountStatusRequest struct {
 	Reason string `json:"reason"`
 }
 
+type completeManualPayoutRequest struct {
+	Action            string `json:"action"`
+	ProviderReference string `json:"providerReference"`
+	Reason            string `json:"reason"`
+}
+
 func (h *AdminHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	user, ok := adminUser(w, r)
 	if !ok {
@@ -128,6 +134,33 @@ func (h *AdminHandler) ListPayouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteSuccess(w, r, http.StatusOK, paginated(result.Items, page, pageSize, result.TotalItems))
+}
+
+func (h *AdminHandler) PrepareManualPayout(w http.ResponseWriter, r *http.Request) {
+	user, ok := adminUser(w, r)
+	if !ok {
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	result, err := h.admin.PrepareManualPayout(r.Context(), user, chi.URLParam(r, "payoutID"))
+	writeAdminResult(w, r, result, err)
+}
+
+func (h *AdminHandler) CompleteManualPayout(w http.ResponseWriter, r *http.Request) {
+	user, ok := adminUser(w, r)
+	if !ok {
+		return
+	}
+	var request completeManualPayoutRequest
+	if err := decodeJSON(r, &request); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Invalid JSON body", nil)
+		return
+	}
+	result, err := h.admin.CompleteManualPayout(
+		r.Context(), user, chi.URLParam(r, "payoutID"), request.Action,
+		request.ProviderReference, request.Reason,
+	)
+	writeAdminResult(w, r, result, err)
 }
 
 func (h *AdminHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {

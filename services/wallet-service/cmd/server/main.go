@@ -61,12 +61,17 @@ func main() {
 		logger.Fatal("init bank account encryption failed", zap.Error(err))
 	}
 	payoutService := service.NewPayoutService(walletRepository, bankCipher, cfg.PayoutEnabled, cfg.PayoutMinAmount, cfg.PayoutMaxAmount, cfg.PayoutIdempotencyTTL)
-	adminService := service.NewAdminService(walletRepository)
-	payoutProvider := service.NewMockPayoutProvider(cfg.MockPayoutMode)
-	payoutWorker := service.NewPayoutWorker(walletRepository, payoutProvider, bankCipher, logger, cfg.PayoutInterval, cfg.PayoutReconcileInterval, cfg.PayoutStaleAfter, cfg.PayoutBatch)
+	adminService := service.NewAdminService(walletRepository, bankCipher, cfg.PayoutEnabled, cfg.PayoutProvider)
+	var payoutWorker *service.PayoutWorker
+	if cfg.PayoutProvider == "mock" {
+		payoutProvider := service.NewMockPayoutProvider(cfg.MockPayoutMode)
+		payoutWorker = service.NewPayoutWorker(walletRepository, payoutProvider, bankCipher, logger, cfg.PayoutInterval, cfg.PayoutReconcileInterval, cfg.PayoutStaleAfter, cfg.PayoutBatch)
+	}
 	metrics := observability.NewMetrics()
 	payoutService.SetMetrics(metrics)
-	payoutWorker.SetMetrics(metrics)
+	if payoutWorker != nil {
+		payoutWorker.SetMetrics(metrics)
+	}
 	healthService := service.NewHealthService(cfg.AppName, walletRepository)
 	walletHandler := handler.NewWalletHandler(walletService)
 	payoutHandler := handler.NewPayoutHandler(payoutService)
@@ -88,7 +93,7 @@ func main() {
 		go consumer.Run(runCtx)
 	}
 	go releaseWorker.Run(runCtx)
-	if cfg.PayoutEnabled {
+	if cfg.PayoutEnabled && payoutWorker != nil {
 		go payoutWorker.Run(runCtx)
 	}
 

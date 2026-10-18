@@ -12,7 +12,6 @@ import (
 	"wallet-service/internal/service"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 )
 
 func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
@@ -87,13 +86,32 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 		t.Fatalf("create payout: replay=%v err=%v", replay, err)
 	}
 
-	worker := service.NewPayoutWorker(repo, service.NewMockPayoutProvider("success"), cipher, zap.NewNop(), time.Second, time.Second, time.Second, 10)
-	if processed, err := worker.Process(ctx); err != nil || processed != 1 {
-		t.Fatalf("process payout: count=%d err=%v", processed, err)
+	adminService := service.NewAdminService(repo, cipher, true, "manual_vietqr")
+	admin := domain.UserContext{UserID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Email: "admin@example.com", Role: domain.RoleAdmin}
+	transfer, err := adminService.PrepareManualPayout(ctx, admin, payout.ID)
+	if err != nil || transfer.AccountNumber != "0123456789" || transfer.Status != domain.PayoutStatusProcessing {
+		t.Fatalf("prepare manual payout: transfer=%+v err=%v", transfer, err)
+	}
+	if _, err := adminService.CompleteManualPayout(ctx, admin, payout.ID, "CONFIRM", "E2E-BANK-REFERENCE", "E2E bank transfer completed"); err != nil {
+		t.Fatalf("complete manual payout: %v", err)
 	}
 	result, err := payoutService.GetMyPayout(ctx, user, payout.ID)
 	if err != nil || result.Status != domain.PayoutStatusSucceeded {
 		t.Fatalf("payout=%+v err=%v", result, err)
+	}
+	rejected, replay, err := payoutService.CreateMyPayout(ctx, user, "e2e-payout-key-002", 20_000, "VND")
+	if err != nil || replay {
+		t.Fatalf("create payout for rejection: replay=%v err=%v", replay, err)
+	}
+	if _, err := adminService.PrepareManualPayout(ctx, admin, rejected.ID); err != nil {
+		t.Fatalf("prepare rejected payout: %v", err)
+	}
+	if _, err := adminService.CompleteManualPayout(ctx, admin, rejected.ID, "REJECT", "", "Recipient details require review"); err != nil {
+		t.Fatalf("reject manual payout: %v", err)
+	}
+	rejectedResult, err := payoutService.GetMyPayout(ctx, user, rejected.ID)
+	if err != nil || rejectedResult.Status != domain.PayoutStatusCancelled {
+		t.Fatalf("rejected payout=%+v err=%v", rejectedResult, err)
 	}
 	balance, err := repo.GetBalance(ctx, sellerID, "VND")
 	if err != nil || balance.HeldAmount != 0 || balance.AvailableAmount != 40_000 || balance.PayoutPendingAmount != 0 || balance.TotalPaidOut != 60_000 {

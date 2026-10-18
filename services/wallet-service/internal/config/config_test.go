@@ -55,3 +55,19 @@ func TestLoadRequiresJWTSecret(t *testing.T) {
 		t.Fatal("expected short JWT secret to fail")
 	}
 }
+
+func TestLoadAcceptsManualVietQRAndRejectsUnknownProvider(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgresql://user:pass@localhost:5432/wallet")
+	t.Setenv("JWT_ACCESS_SECRET", "dev-shared-jwt-access-secret-min-32-chars")
+	t.Setenv("BANK_ACCOUNT_ENCRYPTION_KEY", "dev-bank-account-encryption-key-32-chars")
+	t.Setenv("PAYOUT_PROVIDER", "manual_vietqr")
+
+	cfg, err := Load()
+	if err != nil || cfg.PayoutProvider != "manual_vietqr" {
+		t.Fatalf("manual provider config=%+v err=%v", cfg, err)
+	}
+	t.Setenv("PAYOUT_PROVIDER", "unknown")
+	if _, err := Load(); err == nil {
+		t.Fatal("expected unknown payout provider to fail")
+	}
+}

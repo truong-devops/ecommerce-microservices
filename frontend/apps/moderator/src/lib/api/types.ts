@@ -238,6 +238,20 @@ export interface AdminPayout {
   updatedAt: string;
 }
 
+export interface AdminPayoutTransfer {
+  payoutId: string;
+  walletId: string;
+  sellerId: string;
+  amount: number;
+  currency: string;
+  status: PayoutStatus;
+  bankCode: string;
+  accountNumber: string;
+  accountHolderName: string;
+  transferContent: string;
+  qrCodeUrl: string;
+}
+
 export interface WalletAuditLog {
   id: string;
   actorId: string;

@@ -42,6 +42,8 @@ func New(cfg config.Config, logger *zap.Logger, revocationChecker auth.RevokedTo
 		adminRoles := auth.RequireRoles(domain.RoleAdmin, domain.RoleSuperAdmin)
 		private.With(adminRoles).Get(base+"/admin/wallets/summary", adminHandler.GetSummary)
 		private.With(adminRoles).Get(base+"/admin/wallets/payouts", adminHandler.ListPayouts)
+		private.With(adminRoles).Post(base+"/admin/wallets/payouts/{payoutID}/prepare", adminHandler.PrepareManualPayout)
+		private.With(adminRoles).Patch(base+"/admin/wallets/payouts/{payoutID}", adminHandler.CompleteManualPayout)
 		private.With(adminRoles).Get(base+"/admin/wallets/audit-logs", adminHandler.ListAuditLogs)
 		private.With(adminRoles).Get(base+"/admin/wallets", adminHandler.ListWallets)
 		private.With(adminRoles).Get(base+"/admin/wallets/{walletID}", adminHandler.GetWallet)

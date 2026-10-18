@@ -58,7 +58,7 @@ func Load() (Config, error) {
 		JWTAccessSecret:   strings.TrimSpace(os.Getenv("JWT_ACCESS_SECRET")),
 		BankEncryptionKey: strings.TrimSpace(os.Getenv("BANK_ACCOUNT_ENCRYPTION_KEY")),
 		PayoutEnabled:     parseBool(getEnv("PAYOUT_ENABLED", "false")),
-		PayoutProvider:    strings.ToLower(getEnv("PAYOUT_PROVIDER", "mock")),
+		PayoutProvider:    strings.ToLower(getEnv("PAYOUT_PROVIDER", "manual_vietqr")),
 		MockPayoutMode:    strings.ToLower(getEnv("MOCK_PAYOUT_MODE", "success")),
 
 		KafkaEnabled:         parseBool(getEnv("KAFKA_ENABLED", "false")),
@@ -84,8 +84,8 @@ func Load() (Config, error) {
 	if len(cfg.BankEncryptionKey) < 32 {
 		return Config{}, fmt.Errorf("BANK_ACCOUNT_ENCRYPTION_KEY must be at least 32 characters")
 	}
-	if cfg.PayoutProvider != "mock" {
-		return Config{}, fmt.Errorf("PAYOUT_PROVIDER must be mock in phase 2")
+	if cfg.PayoutProvider != "mock" && cfg.PayoutProvider != "manual_vietqr" {
+		return Config{}, fmt.Errorf("PAYOUT_PROVIDER must be mock or manual_vietqr")
 	}
 	if cfg.MockPayoutMode != "success" && cfg.MockPayoutMode != "failure" && cfg.MockPayoutMode != "pending" {
 		return Config{}, fmt.Errorf("MOCK_PAYOUT_MODE must be success, failure, or pending")

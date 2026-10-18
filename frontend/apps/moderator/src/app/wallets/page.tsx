@@ -8,6 +8,7 @@ import { ModeratorTopbar } from '@/components/layout/moderator-topbar';
 import { ModeratorApiClientError } from '@/lib/api/client';
 import type {
   AdminPayout,
+  AdminPayoutTransfer,
   AdminWallet,
   AdminWalletSummary,
   BankAccountStatus,
@@ -16,11 +17,13 @@ import type {
 } from '@/lib/api/types';
 import {
   getAdminWallet,
+  completeManualPayout,
   getWalletSummary,
   listAdminPayouts,
   listAdminWallets,
   listWalletAuditLogs,
   listWalletTransactions,
+  prepareManualPayout,
   updateBankAccountStatus,
   updateWalletFrozen
 } from '@/lib/api/wallets';
@@ -58,6 +61,9 @@ export default function WalletAdministrationPage() {
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState('');
+  const [payoutTransfer, setPayoutTransfer] = useState<AdminPayoutTransfer | null>(null);
+  const [bankReference, setBankReference] = useState('');
+  const [payoutReason, setPayoutReason] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
@@ -151,8 +157,54 @@ export default function WalletAdministrationPage() {
     }
   }, [accessToken, loadOverview, loadWalletDetail, selectedWallet]);
 
+  const openManualPayout = useCallback(async (payout: AdminPayout) => {
+    if (!accessToken) return;
+    setActionLoading(`prepare:${payout.id}`);
+    setError('');
+    setNotice('');
+    try {
+      const transfer = await prepareManualPayout(accessToken, payout.id);
+      setPayoutTransfer(transfer);
+      setBankReference('');
+      setPayoutReason('');
+      if (selectedWallet) await loadWalletDetail(selectedWallet.id);
+    } catch (actionError) {
+      setError(toMessage(actionError, 'Không thể chuẩn bị lệnh chuyển khoản.'));
+    } finally {
+      setActionLoading('');
+    }
+  }, [accessToken, loadWalletDetail, selectedWallet]);
+
+  const finishManualPayout = useCallback(async (action: 'CONFIRM' | 'REJECT') => {
+    if (!accessToken || !payoutTransfer || !selectedWallet) return;
+    const reason = payoutReason.trim();
+    const providerReference = bankReference.trim();
+    if (reason.length < 3) {
+      setError('Vui lòng nhập lý do hoặc ghi chú có ít nhất 3 ký tự.');
+      return;
+    }
+    if (action === 'CONFIRM' && providerReference.length < 3) {
+      setError('Vui lòng nhập mã giao dịch ngân hàng để xác nhận đã chuyển tiền.');
+      return;
+    }
+    setActionLoading(`complete:${payoutTransfer.payoutId}`);
+    setError('');
+    try {
+      await completeManualPayout(accessToken, payoutTransfer.payoutId, { action, providerReference, reason });
+      setNotice(action === 'CONFIRM' ? 'Đã xác nhận chuyển khoản cho Seller.' : 'Đã từ chối yêu cầu và hoàn tiền về số dư khả dụng.');
+      setPayoutTransfer(null);
+      setBankReference('');
+      setPayoutReason('');
+      await Promise.all([loadOverview(), loadWalletDetail(selectedWallet.id)]);
+    } catch (actionError) {
+      setError(toMessage(actionError, 'Không thể cập nhật yêu cầu rút tiền.'));
+    } finally {
+      setActionLoading('');
+    }
+  }, [accessToken, bankReference, loadOverview, loadWalletDetail, payoutReason, payoutTransfer, selectedWallet]);
+
   const bankStatusCounts = useMemo(() => ({
-    attention: summary.unverifiedBankAccounts + summary.disabledBankAccounts,
+    attention: summary.unverifiedBankAccounts + summary.disabledBankAccounts + summary.pendingPayouts,
     operational: Math.max(0, summary.totalWallets - summary.frozenWallets)
   }), [summary]);
 
@@ -179,7 +231,7 @@ export default function WalletAdministrationPage() {
           <div className="mt-4 rounded-lg border border-orange-100 bg-orange-50 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-700">Cần xử lý</p>
             <p className="mt-1 text-3xl font-semibold text-slate-950">{bankStatusCounts.attention}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-600">Tài khoản ngân hàng chờ xác minh hoặc đã bị khóa.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">Tài khoản ngân hàng cần xử lý hoặc payout đang chờ chuyển.</p>
           </div>
         </aside>
 
@@ -257,17 +309,31 @@ export default function WalletAdministrationPage() {
                   loading={detailLoading}
                   actionLoading={actionLoading}
                   onAction={runWalletAction}
+                  onOpenPayout={openManualPayout}
                 />
               ) : null}
             </>
           )}
         </main>
       </div>
+      {payoutTransfer ? (
+        <ManualPayoutDialog
+          transfer={payoutTransfer}
+          bankReference={bankReference}
+          reason={payoutReason}
+          error={error}
+          loading={actionLoading.startsWith('complete:')}
+          onBankReferenceChange={setBankReference}
+          onReasonChange={setPayoutReason}
+          onClose={() => { setPayoutTransfer(null); setError(''); }}
+          onComplete={finishManualPayout}
+        />
+      ) : null}
     </div>
   );
 }
 
-function WalletDetail({ wallet, transactions, payouts, auditLogs, loading, actionLoading, onAction }: {
+function WalletDetail({ wallet, transactions, payouts, auditLogs, loading, actionLoading, onAction, onOpenPayout }: {
   wallet: AdminWallet;
   transactions: WalletTransaction[];
   payouts: AdminPayout[];
@@ -275,6 +341,7 @@ function WalletDetail({ wallet, transactions, payouts, auditLogs, loading, actio
   loading: boolean;
   actionLoading: string;
   onAction: (action: 'freeze' | 'unfreeze' | BankAccountStatus) => Promise<void>;
+  onOpenPayout: (payout: AdminPayout) => Promise<void>;
 }) {
   const bank = wallet.bankAccount;
   return (
@@ -291,7 +358,7 @@ function WalletDetail({ wallet, transactions, payouts, auditLogs, loading, actio
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><MetricCard label="Tạm giữ" value={formatMoney(wallet.heldAmount)} /><MetricCard label="Khả dụng" value={formatMoney(wallet.availableAmount)} /><MetricCard label="Đang payout" value={formatMoney(wallet.payoutPendingAmount)} /><MetricCard label="Đã payout" value={formatMoney(wallet.totalPaidOut)} /></div>
       <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.2fr)]">
         <div className="rounded-lg border border-slate-200 p-4"><h3 className="font-semibold">Tài khoản nhận tiền</h3>{bank ? <div className="mt-3 space-y-2 text-sm"><InfoRow label="Ngân hàng" value={bank.bankCode} /><InfoRow label="Số tài khoản" value={bank.maskedAccountNumber} /><InfoRow label="Chủ tài khoản" value={bank.accountHolderName} /><InfoRow label="Trạng thái" value={<StatusBadge value={bank.status} />} /><InfoRow label="Cập nhật" value={formatDate(bank.updatedAt)} /></div> : <p className="mt-3 text-sm text-slate-500">Seller chưa thiết lập tài khoản ngân hàng.</p>}</div>
-        <DataTable title="Yêu cầu rút tiền" empty="Chưa có payout." loading={loading} headers={['Thời gian', 'Số tiền', 'Ngân hàng', 'Trạng thái']} rows={payouts.map((item) => [formatDate(item.requestedAt), formatMoney(item.amount), `${item.bankCode} ${item.maskedAccountNumber}`, <StatusBadge key={item.id} value={item.status} />])} />
+        <DataTable title="Yêu cầu rút tiền" empty="Chưa có payout." loading={loading} headers={['Thời gian', 'Số tiền', 'Ngân hàng', 'Trạng thái', 'Thao tác']} rows={payouts.map((item) => [formatDate(item.requestedAt), formatMoney(item.amount), `${item.bankCode} ${item.maskedAccountNumber}`, <StatusBadge key={item.id} value={item.status} />, item.status === 'REQUESTED' || item.status === 'PROCESSING' ? <button key={`action-${item.id}`} type="button" disabled={Boolean(actionLoading)} onClick={() => void onOpenPayout(item)} className="whitespace-nowrap rounded-md bg-brand-600 px-2.5 py-1.5 font-semibold text-white disabled:opacity-50">{actionLoading === `prepare:${item.id}` ? 'Đang mở...' : 'Chuyển tiền'}</button> : <span key={`done-${item.id}`} className="text-slate-400">Hoàn tất</span>])} />
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <DataTable title="Giao dịch ví" empty="Chưa có giao dịch." loading={loading} headers={['Thời gian', 'Loại', 'Tham chiếu', 'Số tiền']} rows={transactions.map((item) => [formatDate(item.occurredAt), item.type, shortId(item.referenceId), formatSignedMoney(item.amount)])} />
@@ -299,6 +366,66 @@ function WalletDetail({ wallet, transactions, payouts, auditLogs, loading, actio
       </div>
     </section>
   );
+}
+
+function ManualPayoutDialog({ transfer, bankReference, reason, error, loading, onBankReferenceChange, onReasonChange, onClose, onComplete }: {
+  transfer: AdminPayoutTransfer;
+  bankReference: string;
+  reason: string;
+  error: string;
+  loading: boolean;
+  onBankReferenceChange: (value: string) => void;
+  onReasonChange: (value: string) => void;
+  onClose: () => void;
+  onComplete: (action: 'CONFIRM' | 'REJECT') => Promise<void>;
+}) {
+  const copyValue = (value: string) => void navigator.clipboard?.writeText(value);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="manual-payout-title">
+      <div className="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Manual VietQR payout</p><h2 id="manual-payout-title" className="mt-1 text-xl font-semibold">Chuyển tiền cho Seller</h2><p className="mt-1 text-sm text-slate-500">Chỉ xác nhận sau khi ứng dụng ngân hàng báo giao dịch thành công.</p></div>
+          <button type="button" disabled={loading} onClick={onClose} className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold disabled:opacity-50">Đóng</button>
+        </div>
+        <div className="grid gap-5 p-5 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+            {/* VietQR Quick Link generates this image from the payout's immutable bank-account snapshot. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={transfer.qrCodeUrl} alt={`VietQR chuyển ${formatMoney(transfer.amount)} đến ${transfer.accountHolderName}`} className="mx-auto w-full max-w-[360px] rounded-lg bg-white" />
+            <p className="mt-3 text-xs leading-5 text-slate-500">Dùng ứng dụng ngân hàng của tài khoản Admin để quét QR. Hãy đối chiếu tên người nhận trước khi xác nhận.</p>
+          </div>
+          <div className="space-y-4">
+            {error ? <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
+            <div className="rounded-xl border border-slate-200 p-4 text-sm">
+              <h3 className="font-semibold text-slate-900">Thông tin chuyển khoản</h3>
+              <div className="mt-3 space-y-3">
+                <TransferRow label="Ngân hàng" value={transfer.bankCode} />
+                <TransferRow label="Chủ tài khoản" value={transfer.accountHolderName} />
+                <TransferRow label="Số tài khoản" value={transfer.accountNumber} onCopy={() => copyValue(transfer.accountNumber)} />
+                <TransferRow label="Số tiền" value={formatMoney(transfer.amount)} onCopy={() => copyValue(String(transfer.amount))} emphasize />
+                <TransferRow label="Nội dung" value={transfer.transferContent} onCopy={() => copyValue(transfer.transferContent)} />
+              </div>
+            </div>
+            <label className="block text-sm font-medium text-slate-700">Mã giao dịch ngân hàng
+              <input value={bankReference} onChange={(event) => onBankReferenceChange(event.target.value)} placeholder="Ví dụ: FT26300123456789" maxLength={128} className="mt-1.5 h-11 w-full rounded-md border border-slate-300 px-3 font-mono text-sm" />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">Ghi chú xử lý
+              <textarea value={reason} onChange={(event) => onReasonChange(event.target.value)} placeholder="Ví dụ: Đã đối chiếu tên người nhận và chuyển khoản" maxLength={500} rows={3} className="mt-1.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
+            </label>
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">Không bấm xác nhận nếu giao dịch ngân hàng còn chờ xử lý hoặc thất bại. Xác nhận sai sẽ ghi nhận tiền đã rời khỏi ví Seller.</div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button type="button" disabled={loading} onClick={() => void onComplete('REJECT')} className="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50">Từ chối & hoàn số dư</button>
+              <button type="button" disabled={loading} onClick={() => void onComplete('CONFIRM')} className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{loading ? 'Đang cập nhật...' : 'Xác nhận đã chuyển'}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TransferRow({ label, value, onCopy, emphasize = false }: { label: string; value: string; onCopy?: () => void; emphasize?: boolean }) {
+  return <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2"><span className="text-slate-500">{label}</span><span className="flex items-center gap-2 text-right"><strong className={emphasize ? 'text-lg text-brand-700' : 'font-semibold text-slate-900'}>{value}</strong>{onCopy ? <button type="button" onClick={onCopy} className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-600">Sao chép</button> : null}</span></div>;
 }
 
 function SidebarLink({ href, label, active = false }: { href: string; label: string; active?: boolean }) { return <Link href={href} className={`block rounded-md px-2.5 py-2 text-sm ${active ? 'border-l-2 border-brand-600 bg-brand-50 font-semibold text-brand-700' : 'text-slate-700 hover:bg-slate-50'}`}>{label}</Link>; }

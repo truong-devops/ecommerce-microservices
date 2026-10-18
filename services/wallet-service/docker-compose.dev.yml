@@ -27,7 +27,7 @@ services:
       KAFKA_ENABLED: 'false'
       KAFKA_START_OFFSET: first
       PAYOUT_ENABLED: 'true'
-      PAYOUT_PROVIDER: mock
+      PAYOUT_PROVIDER: ${WALLET_PAYOUT_PROVIDER:-manual_vietqr}
       MOCK_PAYOUT_MODE: ${MOCK_PAYOUT_MODE:-success}
     ports:
       - '3015:3015'

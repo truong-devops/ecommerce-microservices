@@ -12,6 +12,8 @@ type fakeAdminStore struct {
 	actionInput repository.AdminActionInput
 	bankStatus  domain.BankAccountStatus
 	frozen      bool
+	manualData  repository.ManualPayoutData
+	manualInput repository.CompleteManualPayoutInput
 }
 
 func (f *fakeAdminStore) GetAdminWalletSummary(context.Context, string) (domain.AdminWalletSummary, error) {
@@ -42,9 +44,16 @@ func (f *fakeAdminStore) ListAdminPayouts(context.Context, repository.ListAdminP
 func (f *fakeAdminStore) ListAdminAuditLogs(context.Context, repository.ListAdminAuditLogsInput) (domain.AdminAuditLogPage, error) {
 	return domain.AdminAuditLogPage{}, nil
 }
+func (f *fakeAdminStore) PrepareManualPayout(context.Context, repository.PrepareManualPayoutInput) (repository.ManualPayoutData, error) {
+	return f.manualData, nil
+}
+func (f *fakeAdminStore) CompleteManualPayout(_ context.Context, input repository.CompleteManualPayoutInput) (domain.AdminPayout, bool, error) {
+	f.manualInput = input
+	return domain.AdminPayout{Payout: domain.Payout{ID: input.PayoutID, Status: input.Status}}, true, nil
+}
 
 func TestAdminServiceRestrictsModerator(t *testing.T) {
-	service := NewAdminService(&fakeAdminStore{})
+	service := NewAdminService(&fakeAdminStore{}, testCipher(t), true, "manual_vietqr")
 	_, err := service.GetSummary(context.Background(), domain.UserContext{
 		UserID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Role: domain.RoleModerator,
 	})
@@ -55,7 +64,7 @@ func TestAdminServiceRestrictsModerator(t *testing.T) {
 
 func TestAdminServiceRecordsActorAndReasonForBankVerification(t *testing.T) {
 	store := &fakeAdminStore{}
-	service := NewAdminService(store)
+	service := NewAdminService(store, testCipher(t), true, "manual_vietqr")
 	admin := domain.UserContext{
 		UserID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
 		Email:  "admin@example.com",
@@ -75,10 +84,42 @@ func TestAdminServiceRecordsActorAndReasonForBankVerification(t *testing.T) {
 
 func TestAdminServiceRequiresActionReason(t *testing.T) {
 	store := &fakeAdminStore{}
-	service := NewAdminService(store)
+	service := NewAdminService(store, testCipher(t), true, "manual_vietqr")
 	admin := domain.UserContext{UserID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Role: domain.RoleSuperAdmin}
 	_, err := service.SetWalletFrozen(context.Background(), admin, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", true, " ")
 	if err == nil {
 		t.Fatal("expected missing reason to fail")
+	}
+}
+
+func TestAdminServicePreparesManualVietQRAndConfirmsReference(t *testing.T) {
+	cipher := testCipher(t)
+	encrypted, nonce, err := cipher.Encrypt("0123456789")
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &fakeAdminStore{manualData: repository.ManualPayoutData{
+		PayoutID:    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+		WalletID:    "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+		SellerID:    "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+		AmountMinor: 125_000, Currency: "VND", Status: domain.PayoutStatusProcessing,
+		BankCode: "VCB", AccountHolderName: "TEST SELLER",
+		EncryptedAccountNumber: encrypted, EncryptionNonce: nonce,
+	}}
+	service := NewAdminService(store, cipher, true, "manual_vietqr")
+	admin := domain.UserContext{UserID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", Email: "admin@example.com", Role: domain.RoleAdmin}
+	transfer, err := service.PrepareManualPayout(context.Background(), admin, store.manualData.PayoutID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if transfer.AccountNumber != "0123456789" || transfer.TransferContent != "EMALL BBBBBBBBBBBB" || transfer.QRCodeURL == "" {
+		t.Fatalf("unexpected transfer: %+v", transfer)
+	}
+	_, err = service.CompleteManualPayout(context.Background(), admin, store.manualData.PayoutID, "CONFIRM", "FT-12345", "Bank transfer completed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if store.manualInput.Status != domain.PayoutStatusSucceeded || store.manualInput.ProviderReference != "FT-12345" {
+		t.Fatalf("unexpected completion: %+v", store.manualInput)
 	}
 }

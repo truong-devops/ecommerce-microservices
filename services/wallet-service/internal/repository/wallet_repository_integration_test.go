@@ -23,9 +23,7 @@ func TestPayoutIdempotencyAndLedgerLifecycleIntegration(t *testing.T) {
 	repo := NewWalletRepository(pool)
 	sellerID := "10111111-1111-4111-8111-111111111111"
 	seedAvailableBalance(t, ctx, repo, sellerID, "20222222-2222-4222-8222-222222222222", "30333333-3333-4333-8333-333333333333", 100_000)
-	if _, err := repo.UpsertBankAccount(ctx, UpsertBankAccountInput{SellerID: sellerID, Currency: "VND", BankCode: "VCB", AccountHolderName: "TEST SELLER", Last4: "6789", EncryptedAccountNumber: []byte("encrypted"), EncryptionNonce: []byte("nonce")}); err != nil {
-		t.Fatalf("upsert bank account: %v", err)
-	}
+	seedVerifiedBankAccount(t, ctx, repo, sellerID)
 	now := time.Now().UTC()
 	input := CreatePayoutInput{SellerID: sellerID, Currency: "VND", AmountMinor: 60_000, IdempotencyKey: "payout-key-0001", RequestHash: "hash-1", IdempotencyExpiresAt: now.Add(time.Hour)}
 	created, replay, err := repo.CreatePayout(ctx, input)
@@ -100,9 +98,7 @@ func TestExpiredIdempotencyKeyCanBeReusedIntegration(t *testing.T) {
 	repo := NewWalletRepository(pool)
 	sellerID := "12111111-1111-4111-8111-111111111111"
 	seedAvailableBalance(t, ctx, repo, sellerID, "12222222-2222-4222-8222-222222222222", "12333333-3333-4333-8333-333333333333", 100_000)
-	if _, err := repo.UpsertBankAccount(ctx, UpsertBankAccountInput{SellerID: sellerID, Currency: "VND", BankCode: "VCB", AccountHolderName: "TEST SELLER", Last4: "6789", EncryptedAccountNumber: []byte("encrypted"), EncryptionNonce: []byte("nonce")}); err != nil {
-		t.Fatal(err)
-	}
+	seedVerifiedBankAccount(t, ctx, repo, sellerID)
 	key := "expired-key-0001"
 	first, _, err := repo.CreatePayout(ctx, CreatePayoutInput{SellerID: sellerID, Currency: "VND", AmountMinor: 20_000, IdempotencyKey: key, RequestHash: "first", IdempotencyExpiresAt: time.Now().Add(-time.Minute)})
 	if err != nil {
@@ -123,9 +119,7 @@ func TestPayoutSummaryAndDeadOutboxIntegration(t *testing.T) {
 	repo := NewWalletRepository(pool)
 	sellerID := "13111111-1111-4111-8111-111111111111"
 	seedAvailableBalance(t, ctx, repo, sellerID, "13222222-2222-4222-8222-222222222222", "13333333-3333-4333-8333-333333333333", 100_000)
-	if _, err := repo.UpsertBankAccount(ctx, UpsertBankAccountInput{SellerID: sellerID, Currency: "VND", BankCode: "VCB", AccountHolderName: "TEST SELLER", Last4: "6789", EncryptedAccountNumber: []byte("encrypted"), EncryptionNonce: []byte("nonce")}); err != nil {
-		t.Fatal(err)
-	}
+	seedVerifiedBankAccount(t, ctx, repo, sellerID)
 	now := time.Now().UTC()
 	payout, _, err := repo.CreatePayout(ctx, CreatePayoutInput{SellerID: sellerID, Currency: "VND", AmountMinor: 40_000, IdempotencyKey: "summary-key-0001", RequestHash: "summary", IdempotencyExpiresAt: now.Add(time.Hour)})
 	if err != nil {
@@ -172,9 +166,7 @@ func TestConcurrentPayoutsNeverMakeBalanceNegativeIntegration(t *testing.T) {
 	repo := NewWalletRepository(pool)
 	sellerID := "40111111-1111-4111-8111-111111111111"
 	seedAvailableBalance(t, ctx, repo, sellerID, "50222222-2222-4222-8222-222222222222", "60333333-3333-4333-8333-333333333333", 100_000)
-	if _, err := repo.UpsertBankAccount(ctx, UpsertBankAccountInput{SellerID: sellerID, Currency: "VND", BankCode: "VCB", AccountHolderName: "TEST SELLER", Last4: "6789", EncryptedAccountNumber: []byte("encrypted"), EncryptionNonce: []byte("nonce")}); err != nil {
-		t.Fatal(err)
-	}
+	seedVerifiedBankAccount(t, ctx, repo, sellerID)
 
 	start := make(chan struct{})
 	errorsChannel := make(chan error, 2)
@@ -223,6 +215,26 @@ func seedAvailableBalance(t *testing.T, ctx context.Context, repo *WalletReposit
 	}
 	if released, err := repo.ReleaseDueHolds(ctx, time.Now().UTC(), 10); err != nil || released != 1 {
 		t.Fatalf("seed release: released=%d err=%v", released, err)
+	}
+}
+
+func seedVerifiedBankAccount(t *testing.T, ctx context.Context, repo *WalletRepository, sellerID string) {
+	t.Helper()
+	if _, err := repo.UpsertBankAccount(ctx, UpsertBankAccountInput{
+		SellerID: sellerID, Currency: "VND", BankCode: "VCB", AccountHolderName: "TEST SELLER",
+		Last4: "6789", EncryptedAccountNumber: []byte("encrypted"), EncryptionNonce: []byte("nonce"),
+	}); err != nil {
+		t.Fatalf("upsert bank account: %v", err)
+	}
+	var walletID string
+	if err := repo.pool.QueryRow(ctx, `SELECT id FROM wallets WHERE seller_id=$1 AND currency='VND'`, sellerID).Scan(&walletID); err != nil {
+		t.Fatalf("find wallet for bank verification: %v", err)
+	}
+	if _, err := repo.SetAdminBankAccountStatus(ctx, AdminActionInput{
+		WalletID: walletID, ActorID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+		ActorEmail: "test-admin@example.com", Reason: "Integration test verification",
+	}, domain.BankAccountStatusAllowlisted); err != nil {
+		t.Fatalf("verify bank account: %v", err)
 	}
 }
 

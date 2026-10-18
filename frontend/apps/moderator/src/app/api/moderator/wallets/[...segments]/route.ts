@@ -13,7 +13,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ segme
   return proxyWalletRequest(request, context, 'PATCH');
 }
 
-async function proxyWalletRequest(request: Request, context: { params: Promise<{ segments: string[] }> }, method: 'GET' | 'PATCH') {
+export async function POST(request: Request, context: { params: Promise<{ segments: string[] }> }) {
+  return proxyWalletRequest(request, context, 'POST');
+}
+
+async function proxyWalletRequest(request: Request, context: { params: Promise<{ segments: string[] }> }, method: 'GET' | 'PATCH' | 'POST') {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) return fail(401, 'UNAUTHORIZED', 'Missing bearer token');
 
@@ -37,19 +41,26 @@ async function proxyWalletRequest(request: Request, context: { params: Promise<{
       body: method === 'PATCH' ? await request.text() : undefined
     });
     const pagination = envelope.meta?.pagination;
-    return ok(pagination && Array.isArray(envelope.data) ? { items: envelope.data, pagination } : envelope.data);
+    const response = ok(pagination && Array.isArray(envelope.data) ? { items: envelope.data, pagination } : envelope.data);
+    if (method === 'POST' && segments[0] === 'payouts') response.headers.set('Cache-Control', 'no-store');
+    return response;
   } catch (error) {
     return toErrorResponse(error);
   }
 }
 
-function isAllowedPath(segments: string[], method: 'GET' | 'PATCH'): boolean {
+function isAllowedPath(segments: string[], method: 'GET' | 'PATCH' | 'POST'): boolean {
   if (method === 'GET') {
     if (segments.length === 1 && ['summary', 'payouts', 'audit-logs'].includes(segments[0])) return true;
     if (segments.length === 1) return isUuid(segments[0]);
     return segments.length === 2 && isUuid(segments[0]) && segments[1] === 'transactions';
   }
 
+  if (method === 'POST') {
+    return segments.length === 3 && segments[0] === 'payouts' && isUuid(segments[1]) && segments[2] === 'prepare';
+  }
+
+  if (segments.length === 2 && segments[0] === 'payouts') return isUuid(segments[1]);
   if (segments.length === 2) return isUuid(segments[0]) && segments[1] === 'status';
   return segments.length === 3 && isUuid(segments[0]) && segments[1] === 'bank-account' && segments[2] === 'status';
 }

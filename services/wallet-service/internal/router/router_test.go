@@ -106,6 +106,12 @@ func (s *routerStore) ListAdminPayouts(context.Context, repository.ListAdminPayo
 func (s *routerStore) ListAdminAuditLogs(context.Context, repository.ListAdminAuditLogsInput) (domain.AdminAuditLogPage, error) {
 	return domain.AdminAuditLogPage{}, nil
 }
+func (s *routerStore) PrepareManualPayout(context.Context, repository.PrepareManualPayoutInput) (repository.ManualPayoutData, error) {
+	return repository.ManualPayoutData{}, nil
+}
+func (s *routerStore) CompleteManualPayout(context.Context, repository.CompleteManualPayoutInput) (domain.AdminPayout, bool, error) {
+	return domain.AdminPayout{}, true, nil
+}
 
 func TestWalletRouteRequiresAuthentication(t *testing.T) {
 	router, _ := testRouter()
@@ -183,7 +189,7 @@ func testRouter() (http.Handler, *routerStore) {
 	walletService := service.NewWalletService(store, zap.NewNop(), time.Minute, 100)
 	cipher, _ := service.NewBankAccountCipher("dev-bank-account-encryption-key-32-chars")
 	payoutService := service.NewPayoutService(store, cipher, true, 10_000, 10_000_000, 24*time.Hour)
-	adminService := service.NewAdminService(store)
+	adminService := service.NewAdminService(store, cipher, true, "manual_vietqr")
 	healthService := service.NewHealthService("wallet-service", store)
 	return New(
 		config.Config{AppName: "wallet-service", APIPrefix: "api/v1", JWTAccessSecret: routerTestSecret},

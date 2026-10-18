@@ -63,6 +63,7 @@ const (
 	TransactionTypePayoutRequest TransactionType = "PAYOUT_REQUESTED"
 	TransactionTypePayoutSuccess TransactionType = "PAYOUT_SUCCEEDED"
 	TransactionTypePayoutFailure TransactionType = "PAYOUT_FAILED"
+	TransactionTypePayoutCancel  TransactionType = "PAYOUT_CANCELLED"
 )
 
 type BankAccountStatus string
@@ -234,6 +235,20 @@ type AdminPayoutPage struct {
 	Page       int
 	PageSize   int
 	TotalItems int64
+}
+
+type AdminPayoutTransfer struct {
+	PayoutID          string       `json:"payoutId"`
+	WalletID          string       `json:"walletId"`
+	SellerID          string       `json:"sellerId"`
+	AmountMinor       int64        `json:"amount"`
+	Currency          string       `json:"currency"`
+	Status            PayoutStatus `json:"status"`
+	BankCode          string       `json:"bankCode"`
+	AccountNumber     string       `json:"accountNumber"`
+	AccountHolderName string       `json:"accountHolderName"`
+	TransferContent   string       `json:"transferContent"`
+	QRCodeURL         string       `json:"qrCodeUrl"`
 }
 
 type AdminAuditLog struct {

@@ -19,4 +19,6 @@ const (
 	ErrorCodePayoutDisabled         = "PAYOUT_DISABLED"
 	ErrorCodeInsufficientBalance    = "INSUFFICIENT_AVAILABLE_BALANCE"
 	ErrorCodeIdempotencyConflict    = "IDEMPOTENCY_CONFLICT"
+	ErrorCodePayoutStateConflict    = "PAYOUT_STATE_CONFLICT"
+	ErrorCodePayoutProviderInvalid  = "PAYOUT_PROVIDER_INVALID"
 )

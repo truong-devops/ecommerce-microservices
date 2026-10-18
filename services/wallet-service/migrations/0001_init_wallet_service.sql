@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS ledger_transactions (
   occurred_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT chk_ledger_transactions_type CHECK (
-    transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED')
+    transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
   ),
   CONSTRAINT chk_ledger_transactions_currency_upper CHECK (currency = upper(currency))
 );
@@ -273,7 +273,7 @@ ALTER TABLE ledger_accounts ADD CONSTRAINT chk_ledger_accounts_scope CHECK (
 );
 ALTER TABLE ledger_transactions DROP CONSTRAINT IF EXISTS chk_ledger_transactions_type;
 ALTER TABLE ledger_transactions ADD CONSTRAINT chk_ledger_transactions_type CHECK (
-  transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED')
+  transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
 );
 
 ALTER TABLE outbox_events DROP CONSTRAINT IF EXISTS chk_outbox_events_status;

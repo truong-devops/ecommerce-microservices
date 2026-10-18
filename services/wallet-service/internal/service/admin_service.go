@@ -3,8 +3,11 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
+	"time"
 
 	"wallet-service/internal/domain"
 	"wallet-service/internal/httpx"
@@ -22,14 +25,24 @@ type AdminWalletStore interface {
 	ListAdminTransactions(context.Context, string, int, int) (domain.TransactionPage, error)
 	ListAdminPayouts(context.Context, repository.ListAdminPayoutsInput) (domain.AdminPayoutPage, error)
 	ListAdminAuditLogs(context.Context, repository.ListAdminAuditLogsInput) (domain.AdminAuditLogPage, error)
+	PrepareManualPayout(context.Context, repository.PrepareManualPayoutInput) (repository.ManualPayoutData, error)
+	CompleteManualPayout(context.Context, repository.CompleteManualPayoutInput) (domain.AdminPayout, bool, error)
 }
 
 type AdminService struct {
-	store AdminWalletStore
+	store          AdminWalletStore
+	cipher         *BankAccountCipher
+	payoutEnabled  bool
+	payoutProvider string
+	now            func() time.Time
 }
 
-func NewAdminService(store AdminWalletStore) *AdminService {
-	return &AdminService{store: store}
+func NewAdminService(store AdminWalletStore, cipher *BankAccountCipher, payoutEnabled bool, payoutProvider string) *AdminService {
+	return &AdminService{
+		store: store, cipher: cipher, payoutEnabled: payoutEnabled,
+		payoutProvider: strings.ToLower(strings.TrimSpace(payoutProvider)),
+		now:            func() time.Time { return time.Now().UTC() },
+	}
 }
 
 func (s *AdminService) GetSummary(ctx context.Context, user domain.UserContext) (domain.AdminWalletSummary, error) {
@@ -129,6 +142,93 @@ func (s *AdminService) ListAuditLogs(ctx context.Context, user domain.UserContex
 	return s.store.ListAdminAuditLogs(ctx, repository.ListAdminAuditLogsInput{WalletID: walletID, Page: page, PageSize: pageSize})
 }
 
+func (s *AdminService) PrepareManualPayout(ctx context.Context, user domain.UserContext, payoutID string) (domain.AdminPayoutTransfer, error) {
+	if err := s.validateManualPayout(user, payoutID); err != nil {
+		return domain.AdminPayoutTransfer{}, err
+	}
+	data, err := s.store.PrepareManualPayout(ctx, repository.PrepareManualPayoutInput{
+		PayoutID: payoutID, ActorID: user.UserID, ActorEmail: user.Email,
+		Reason: "Prepared manual VietQR bank transfer",
+	})
+	if err != nil {
+		return domain.AdminPayoutTransfer{}, mapAdminError(err)
+	}
+	accountNumber, err := s.cipher.Decrypt(data.EncryptedAccountNumber, data.EncryptionNonce)
+	if err != nil {
+		return domain.AdminPayoutTransfer{}, err
+	}
+	defer func() { accountNumber = "" }()
+	compactID := strings.ToUpper(strings.ReplaceAll(data.PayoutID, "-", ""))
+	if len(compactID) > 12 {
+		compactID = compactID[:12]
+	}
+	transferContent := "EMALL " + compactID
+	qrCodeURL := fmt.Sprintf(
+		"https://img.vietqr.io/image/%s-%s-compact2.svg?amount=%d&addInfo=%s&accountName=%s",
+		url.PathEscape(vietQRBankID(data.BankCode)), url.PathEscape(accountNumber), data.AmountMinor,
+		url.QueryEscape(transferContent), url.QueryEscape(data.AccountHolderName),
+	)
+	return domain.AdminPayoutTransfer{
+		PayoutID: data.PayoutID, WalletID: data.WalletID, SellerID: data.SellerID,
+		AmountMinor: data.AmountMinor, Currency: data.Currency, Status: data.Status,
+		BankCode: data.BankCode, AccountNumber: accountNumber, AccountHolderName: data.AccountHolderName,
+		TransferContent: transferContent, QRCodeURL: qrCodeURL,
+	}, nil
+}
+
+func vietQRBankID(bankCode string) string {
+	// eMall stores VTB for VietinBank while VietQR/NAPAS uses ICB.
+	if strings.EqualFold(strings.TrimSpace(bankCode), "VTB") {
+		return "ICB"
+	}
+	return strings.ToUpper(strings.TrimSpace(bankCode))
+}
+
+func (s *AdminService) CompleteManualPayout(ctx context.Context, user domain.UserContext, payoutID, action, providerReference, reason string) (domain.AdminPayout, error) {
+	if err := s.validateManualPayout(user, payoutID); err != nil {
+		return domain.AdminPayout{}, err
+	}
+	action = strings.ToUpper(strings.TrimSpace(action))
+	reason = strings.TrimSpace(reason)
+	if len(reason) < 3 || len(reason) > 500 {
+		return domain.AdminPayout{}, validationError("reason must contain 3-500 characters")
+	}
+	status := domain.PayoutStatusCancelled
+	providerReference = strings.TrimSpace(providerReference)
+	switch action {
+	case "CONFIRM":
+		status = domain.PayoutStatusSucceeded
+		if len(providerReference) < 3 || len(providerReference) > 128 {
+			return domain.AdminPayout{}, validationError("providerReference must contain 3-128 characters when confirming a payout")
+		}
+	case "REJECT":
+		providerReference = ""
+	default:
+		return domain.AdminPayout{}, validationError("action must be CONFIRM or REJECT")
+	}
+	result, _, err := s.store.CompleteManualPayout(ctx, repository.CompleteManualPayoutInput{
+		PayoutID: payoutID, ActorID: user.UserID, ActorEmail: user.Email,
+		Reason: reason, ProviderReference: providerReference, Status: status, ProcessedAt: s.now(),
+	})
+	return result, mapAdminError(err)
+}
+
+func (s *AdminService) validateManualPayout(user domain.UserContext, payoutID string) error {
+	if err := validateAdmin(user); err != nil {
+		return err
+	}
+	if err := validateUUID("payoutId", payoutID); err != nil {
+		return err
+	}
+	if !s.payoutEnabled || s.payoutProvider != "manual_vietqr" {
+		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodePayoutProviderInvalid, "Manual VietQR payouts are not enabled", nil)
+	}
+	if s.cipher == nil {
+		return httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Bank account encryption is unavailable", nil)
+	}
+	return nil
+}
+
 func validateAdmin(user domain.UserContext) error {
 	if user.Role != domain.RoleAdmin && user.Role != domain.RoleSuperAdmin {
 		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Only administrators can manage wallets", nil)
@@ -168,6 +268,10 @@ func mapAdminError(err error) error {
 		return httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeWalletNotFound, "Wallet not found", nil)
 	case errors.Is(err, repository.ErrBankAccountNotFound):
 		return httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeBankAccountNotFound, "Bank account not found", nil)
+	case errors.Is(err, repository.ErrPayoutNotFound):
+		return httpx.NewAppError(http.StatusNotFound, domain.ErrorCodePayoutNotFound, "Payout not found", nil)
+	case errors.Is(err, repository.ErrPayoutStateConflict):
+		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodePayoutStateConflict, "Payout is no longer available for this action", nil)
 	default:
 		return err
 	}

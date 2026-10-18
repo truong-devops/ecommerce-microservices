@@ -1,6 +1,7 @@
 import { requestModeratorApi } from './client';
 import type {
   AdminPayout,
+  AdminPayoutTransfer,
   AdminWallet,
   AdminWalletSummary,
   BankAccountStatus,
@@ -80,5 +81,24 @@ export async function updateBankAccountStatus(accessToken: string, walletId: str
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ status, reason })
+  });
+}
+
+export async function prepareManualPayout(accessToken: string, payoutId: string): Promise<AdminPayoutTransfer> {
+  return requestModeratorApi<AdminPayoutTransfer>(`/api/moderator/wallets/payouts/${payoutId}/prepare`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+}
+
+export async function completeManualPayout(
+  accessToken: string,
+  payoutId: string,
+  input: { action: 'CONFIRM' | 'REJECT'; providerReference?: string; reason: string }
+): Promise<AdminPayout> {
+  return requestModeratorApi<AdminPayout>(`/api/moderator/wallets/payouts/${payoutId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(input)
   });
 }

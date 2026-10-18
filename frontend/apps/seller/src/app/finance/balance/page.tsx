@@ -243,7 +243,7 @@ function BalanceContent({ accessToken }: { accessToken: string }) {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <BalanceCard label="Đang tạm giữ" value={wallet?.heldAmount ?? 0} note="Chờ đơn giao và hết thời gian giữ" tone="amber" />
         <BalanceCard label="Có thể rút" value={wallet?.availableAmount ?? 0} note="Sẵn sàng tạo yêu cầu rút" tone="green" />
-        <BalanceCard label="Đang chuyển" value={wallet?.payoutPendingAmount ?? 0} note="Đối tác thanh toán đang xử lý" tone="blue" />
+        <BalanceCard label="Đang chuyển" value={wallet?.payoutPendingAmount ?? 0} note="Admin đang xử lý yêu cầu rút" tone="blue" />
         <BalanceCard label="Đã thanh toán" value={wallet?.totalPaidOut ?? 0} note="Tổng tiền đã rút thành công" tone="slate" />
       </div>
 

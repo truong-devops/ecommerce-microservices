@@ -101,7 +101,9 @@ func TestAdminServicePreparesManualVietQRAndConfirmsReference(t *testing.T) {
 	store := &fakeAdminStore{manualData: repository.ManualPayoutData{
 		PayoutID:    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
 		WalletID:    "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-		SellerID:    "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+		OwnerID:     "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+		OwnerType:   domain.WalletOwnerSeller,
+		PayoutType:  "SELLER_WITHDRAWAL",
 		AmountMinor: 125_000, Currency: "VND", Status: domain.PayoutStatusProcessing,
 		BankCode: "VCB", AccountHolderName: "TEST SELLER",
 		EncryptedAccountNumber: encrypted, EncryptionNonce: nonce,

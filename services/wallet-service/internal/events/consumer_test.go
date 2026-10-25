@@ -79,6 +79,7 @@ func TestHandlePaymentRefundEvent(t *testing.T) {
 		"payload": map[string]any{
 			"paymentId": "22222222-2222-4222-8222-222222222222",
 			"orderId":   "33333333-3333-4333-8333-333333333333",
+			"userId":    "44444444-4444-4444-8444-444444444444",
 			"sellerId":  "11111111-1111-4111-8111-111111111111",
 			"amount":    125000, "refundedAmount": 25000, "currency": "VND",
 		},
@@ -87,7 +88,7 @@ func TestHandlePaymentRefundEvent(t *testing.T) {
 	if err := consumer.handlePaymentMessage(context.Background(), message); err != nil {
 		t.Fatalf("handle refund message: %v", err)
 	}
-	if handler.reversedCalls != 1 || handler.reversed.RefundedAmount != 25000 || handler.reversed.IsChargeback {
+	if handler.reversedCalls != 1 || handler.reversed.CustomerID != "44444444-4444-4444-8444-444444444444" || handler.reversed.RefundedAmount != 25000 || handler.reversed.IsChargeback {
 		t.Fatalf("unexpected reversed event: %+v", handler.reversed)
 	}
 }

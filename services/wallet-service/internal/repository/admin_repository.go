@@ -15,6 +15,7 @@ type ListAdminWalletsInput struct {
 	Search     string
 	State      string
 	BankStatus string
+	OwnerType  domain.WalletOwnerType
 	Page       int
 	PageSize   int
 }
@@ -49,7 +50,7 @@ func (r *WalletRepository) GetAdminWalletSummary(ctx context.Context, currency s
 		WITH balances AS (
 		  SELECT w.id, w.is_frozen,
 		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_HELD'), 0) AS held_amount,
-		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_AVAILABLE'), 0) AS available_amount,
+		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type IN ('SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE')), 0) AS available_amount,
 		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'PAYOUT_PENDING'), 0) AS payout_pending_amount
 		  FROM wallets w
 		  LEFT JOIN ledger_accounts a ON a.wallet_id = w.id
@@ -91,20 +92,20 @@ func (r *WalletRepository) ListAdminWallets(ctx context.Context, input ListAdmin
 	offset := (input.Page - 1) * input.PageSize
 	rows, err := r.pool.Query(ctx, `
 		WITH balances AS (
-		  SELECT w.id, w.seller_id, w.currency, w.is_frozen, w.created_at, w.updated_at,
+		  SELECT w.id, w.seller_id, w.owner_type, w.currency, w.is_frozen, w.created_at, w.updated_at,
 		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_HELD'), 0) AS held_amount,
-		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_AVAILABLE'), 0) AS available_amount,
+		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type IN ('SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE')), 0) AS available_amount,
 		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'PAYOUT_PENDING'), 0) AS payout_pending_amount
 		  FROM wallets w
 		  LEFT JOIN ledger_accounts a ON a.wallet_id = w.id
 		  LEFT JOIN ledger_entries e ON e.account_id = a.id
-		  WHERE w.currency = $1
+		  WHERE w.currency = $1 AND ($5 = '' OR w.owner_type = $5)
 		  GROUP BY w.id
 		), paid AS (
 		  SELECT wallet_id, COALESCE(SUM(amount_minor), 0) AS total_paid_out
 		  FROM payouts WHERE status = 'SUCCEEDED' AND currency = $1 GROUP BY wallet_id
 		)
-		SELECT balances.id, balances.seller_id, balances.currency,
+		SELECT balances.id, balances.seller_id, balances.owner_type, balances.currency,
 		       balances.held_amount, balances.available_amount, balances.payout_pending_amount,
 		       COALESCE(paid.total_paid_out, 0), balances.is_frozen,
 		       COALESCE(bank.id::text, ''), COALESCE(bank.bank_code, ''),
@@ -119,8 +120,8 @@ func (r *WalletRepository) ListAdminWallets(ctx context.Context, input ListAdmin
 		  AND ($3 = '' OR ($3 = 'FROZEN' AND balances.is_frozen) OR ($3 = 'ACTIVE' AND NOT balances.is_frozen))
 		  AND ($4 = '' OR ($4 = 'MISSING' AND bank.id IS NULL) OR bank.status = $4)
 		ORDER BY balances.updated_at DESC, balances.id DESC
-		LIMIT $5 OFFSET $6
-	`, input.Currency, input.Search, input.State, input.BankStatus, input.PageSize, offset)
+		LIMIT $6 OFFSET $7
+	`, input.Currency, input.Search, input.State, input.BankStatus, input.OwnerType, input.PageSize, offset)
 	if err != nil {
 		return domain.AdminWalletPage{}, err
 	}
@@ -138,9 +139,9 @@ func (r *WalletRepository) ListAdminWallets(ctx context.Context, input ListAdmin
 func (r *WalletRepository) GetAdminWallet(ctx context.Context, walletID string) (domain.AdminWallet, error) {
 	row := r.pool.QueryRow(ctx, `
 		WITH balance AS (
-		  SELECT w.id, w.seller_id, w.currency, w.is_frozen, w.created_at, w.updated_at,
+		  SELECT w.id, w.seller_id, w.owner_type, w.currency, w.is_frozen, w.created_at, w.updated_at,
 		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_HELD'), 0) AS held_amount,
-		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_AVAILABLE'), 0) AS available_amount,
+		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type IN ('SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE')), 0) AS available_amount,
 		         COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'PAYOUT_PENDING'), 0) AS payout_pending_amount
 		  FROM wallets w
 		  LEFT JOIN ledger_accounts a ON a.wallet_id = w.id
@@ -148,7 +149,7 @@ func (r *WalletRepository) GetAdminWallet(ctx context.Context, walletID string) 
 		  WHERE w.id = $1
 		  GROUP BY w.id
 		)
-		SELECT balance.id, balance.seller_id, balance.currency,
+		SELECT balance.id, balance.seller_id, balance.owner_type, balance.currency,
 		       balance.held_amount, balance.available_amount, balance.payout_pending_amount,
 		       COALESCE((SELECT SUM(amount_minor) FROM payouts WHERE wallet_id = balance.id AND status = 'SUCCEEDED'), 0),
 		       balance.is_frozen,
@@ -173,7 +174,7 @@ func scanAdminWallet(row scanRow, totalItems *int64) (domain.AdminWallet, error)
 	var bankDefault bool
 	var bankCreatedAt, bankUpdatedAt time.Time
 	dest := []any{
-		&item.ID, &item.SellerID, &item.Currency,
+		&item.ID, &item.OwnerID, &item.OwnerType, &item.Currency,
 		&item.HeldAmount, &item.AvailableAmount, &item.PayoutPendingAmount,
 		&item.TotalPaidOut, &item.IsFrozen,
 		&bankID, &bankCode, &holderName, &last4, &bankStatus, &bankDefault,
@@ -184,6 +185,9 @@ func scanAdminWallet(row scanRow, totalItems *int64) (domain.AdminWallet, error)
 	}
 	if err := row.Scan(dest...); err != nil {
 		return domain.AdminWallet{}, err
+	}
+	if item.OwnerType == domain.WalletOwnerSeller {
+		item.SellerID = item.OwnerID
 	}
 	if bankID != "" {
 		item.BankAccount = &domain.BankAccount{
@@ -326,7 +330,7 @@ func (r *WalletRepository) ListAdminPayouts(ctx context.Context, input ListAdmin
 		SELECT p.id, p.amount_minor, p.currency, p.status, p.bank_code, p.account_holder_name,
 		       p.account_number_last4, p.provider, p.provider_reference, p.failure_code, p.failure_message,
 		       p.requested_at, p.processed_at, p.created_at, p.updated_at,
-		       w.id, w.seller_id, COUNT(*) OVER()
+		       w.id, w.seller_id, w.owner_type, p.payout_type, COUNT(*) OVER()
 		FROM payouts p JOIN wallets w ON w.id = p.wallet_id
 		WHERE ($1 = '' OR w.id::text = $1) AND ($2 = '' OR p.status = $2)
 		ORDER BY p.requested_at DESC, p.id DESC LIMIT $3 OFFSET $4
@@ -342,11 +346,14 @@ func (r *WalletRepository) ListAdminPayouts(ctx context.Context, input ListAdmin
 			&item.ID, &item.AmountMinor, &item.Currency, &item.Status, &item.BankCode, &item.AccountHolderName,
 			&last4, &item.Provider, &item.ProviderReference, &item.FailureCode, &item.FailureMessage,
 			&item.RequestedAt, &item.ProcessedAt, &item.CreatedAt, &item.UpdatedAt,
-			&item.WalletID, &item.SellerID, &result.TotalItems,
+			&item.WalletID, &item.OwnerID, &item.OwnerType, &item.PayoutType, &result.TotalItems,
 		); err != nil {
 			return domain.AdminPayoutPage{}, err
 		}
 		item.MaskedAccountNumber = maskLast4(last4)
+		if item.OwnerType == domain.WalletOwnerSeller {
+			item.SellerID = item.OwnerID
+		}
 		result.Items = append(result.Items, item)
 	}
 	return result, rows.Err()

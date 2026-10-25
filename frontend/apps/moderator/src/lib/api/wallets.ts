@@ -21,6 +21,7 @@ export interface ListAdminWalletsQuery extends AuthenticatedQuery {
   search?: string;
   state?: '' | 'ACTIVE' | 'FROZEN';
   bankStatus?: '' | BankAccountStatus | 'MISSING';
+  ownerType?: '' | 'SELLER' | 'CUSTOMER';
 }
 
 export async function getWalletSummary(accessToken: string): Promise<AdminWalletSummary> {
@@ -34,6 +35,7 @@ export async function listAdminWallets(query: ListAdminWalletsQuery): Promise<Pa
   if (query.search) params.set('search', query.search);
   if (query.state) params.set('state', query.state);
   if (query.bankStatus) params.set('bankStatus', query.bankStatus);
+  if (query.ownerType) params.set('ownerType', query.ownerType);
   return requestModeratorApi<PaginatedOutput<AdminWallet>>(`/api/moderator/wallets?${params.toString()}`, {
     headers: { Authorization: `Bearer ${query.accessToken}` }
   });
@@ -76,7 +78,12 @@ export async function updateWalletFrozen(accessToken: string, walletId: string, 
   });
 }
 
-export async function updateBankAccountStatus(accessToken: string, walletId: string, status: BankAccountStatus, reason: string): Promise<AdminWallet> {
+export async function updateBankAccountStatus(
+  accessToken: string,
+  walletId: string,
+  status: BankAccountStatus,
+  reason: string
+): Promise<AdminWallet> {
   return requestModeratorApi<AdminWallet>(`/api/moderator/wallets/${walletId}/bank-account/status`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}` },

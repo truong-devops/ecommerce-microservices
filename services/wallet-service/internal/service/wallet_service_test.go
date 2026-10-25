@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	testSellerID  = "11111111-1111-4111-8111-111111111111"
-	testPaymentID = "22222222-2222-4222-8222-222222222222"
-	testOrderID   = "33333333-3333-4333-8333-333333333333"
+	testSellerID   = "11111111-1111-4111-8111-111111111111"
+	testPaymentID  = "22222222-2222-4222-8222-222222222222"
+	testOrderID    = "33333333-3333-4333-8333-333333333333"
+	testCustomerID = "44444444-4444-4444-8444-444444444444"
 )
 
 type fakeWalletStore struct {
@@ -48,7 +49,7 @@ func (f *fakeWalletStore) ReleaseDueHolds(_ context.Context, _ time.Time, _ int)
 	return 2, nil
 }
 
-func (f *fakeWalletStore) GetBalance(_ context.Context, sellerID, _ string) (domain.WalletBalance, error) {
+func (f *fakeWalletStore) GetBalance(_ context.Context, sellerID string, _ domain.WalletOwnerType, _ string) (domain.WalletBalance, error) {
 	f.balanceSeller = sellerID
 	return f.balance, nil
 }
@@ -139,6 +140,30 @@ func TestChargebackUsesPaymentAmountWhenRefundedAmountMissing(t *testing.T) {
 	}
 }
 
+func TestRefundRequiresCustomerAndCreditsAuthenticatedOwner(t *testing.T) {
+	store := &fakeWalletStore{}
+	service := newTestWalletService(store)
+
+	_, err := service.HandlePaymentReversed(context.Background(), domain.PaymentReversedEvent{
+		PaymentID: testPaymentID, OrderID: testOrderID, SellerID: testSellerID,
+		RefundedAmount: 25000, Currency: "VND",
+	}, domain.EventMeta{EventType: "payment.refunded"})
+	if err == nil {
+		t.Fatal("expected refund without customer id to fail")
+	}
+
+	_, err = service.HandlePaymentReversed(context.Background(), domain.PaymentReversedEvent{
+		PaymentID: testPaymentID, OrderID: testOrderID, CustomerID: testCustomerID, SellerID: testSellerID,
+		RefundedAmount: 25000, Currency: "VND",
+	}, domain.EventMeta{EventType: "payment.refunded"})
+	if err != nil {
+		t.Fatalf("handle customer refund: %v", err)
+	}
+	if store.reversalInput.CustomerID != testCustomerID || store.reversalInput.CumulativeAmountMinor != 25000 {
+		t.Fatalf("unexpected refund input: %+v", store.reversalInput)
+	}
+}
+
 func TestGetMyWalletUsesAuthenticatedSellerID(t *testing.T) {
 	store := &fakeWalletStore{balance: domain.WalletBalance{SellerID: testSellerID, Currency: "VND", AvailableAmount: 50000}}
 	service := newTestWalletService(store)
@@ -152,11 +177,27 @@ func TestGetMyWalletUsesAuthenticatedSellerID(t *testing.T) {
 	}
 }
 
-func TestNonSellerCannotReadWallet(t *testing.T) {
+func TestGetMyWalletUsesCustomerOwnerType(t *testing.T) {
+	store := &fakeWalletStore{balance: domain.WalletBalance{
+		OwnerID: testCustomerID, OwnerType: domain.WalletOwnerCustomer,
+		Currency: "VND", AvailableAmount: 25000,
+	}}
+	service := newTestWalletService(store)
+
+	result, err := service.GetMyWallet(context.Background(), domain.UserContext{UserID: testCustomerID, Role: domain.RoleCustomer}, "VND")
+	if err != nil {
+		t.Fatalf("get customer wallet: %v", err)
+	}
+	if store.balanceSeller != testCustomerID || result["ownerType"] != domain.WalletOwnerCustomer || result["availableAmount"] != int64(25000) {
+		t.Fatalf("unexpected customer wallet result: %+v", result)
+	}
+}
+
+func TestAdminCannotReadPersonalWalletEndpoint(t *testing.T) {
 	service := newTestWalletService(&fakeWalletStore{})
 	_, err := service.GetMyWallet(context.Background(), domain.UserContext{UserID: testSellerID, Role: domain.RoleAdmin}, "VND")
 	if err == nil {
-		t.Fatal("expected admin to be denied seller wallet endpoint")
+		t.Fatal("expected admin to be denied personal wallet endpoint")
 	}
 }
 
@@ -171,7 +212,7 @@ func TestListMyTransactionsBuildsPagination(t *testing.T) {
 	if !ok || pagination["totalPages"] != 3 {
 		t.Fatalf("unexpected pagination: %+v", result["pagination"])
 	}
-	if store.listInput.SellerID != testSellerID || store.listInput.Page != 2 {
+	if store.listInput.OwnerID != testSellerID || store.listInput.OwnerType != domain.WalletOwnerSeller || store.listInput.Page != 2 {
 		t.Fatalf("unexpected list input: %+v", store.listInput)
 	}
 }

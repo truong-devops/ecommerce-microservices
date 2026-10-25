@@ -182,7 +182,9 @@ export interface AdminBankAccount {
 
 export interface AdminWallet {
   id: string;
-  sellerId: string;
+  ownerId: string;
+  ownerType: 'SELLER' | 'CUSTOMER';
+  sellerId?: string;
   currency: string;
   heldAmount: number;
   availableAmount: number;
@@ -221,7 +223,10 @@ export interface WalletTransaction {
 export interface AdminPayout {
   id: string;
   walletId: string;
-  sellerId: string;
+  ownerId: string;
+  ownerType: 'SELLER' | 'CUSTOMER';
+  payoutType: 'SELLER_WITHDRAWAL' | 'CUSTOMER_REFUND';
+  sellerId?: string;
   amount: number;
   currency: string;
   status: PayoutStatus;
@@ -241,7 +246,10 @@ export interface AdminPayout {
 export interface AdminPayoutTransfer {
   payoutId: string;
   walletId: string;
-  sellerId: string;
+  ownerId: string;
+  ownerType: 'SELLER' | 'CUSTOMER';
+  payoutType: 'SELLER_WITHDRAWAL' | 'CUSTOMER_REFUND';
+  sellerId?: string;
   amount: number;
   currency: string;
   status: PayoutStatus;

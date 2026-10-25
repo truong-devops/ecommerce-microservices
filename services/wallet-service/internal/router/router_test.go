@@ -40,9 +40,9 @@ func (s *routerStore) ReleaseDueHolds(context.Context, time.Time, int) (int, err
 	return 0, nil
 }
 
-func (s *routerStore) GetBalance(_ context.Context, sellerID, currency string) (domain.WalletBalance, error) {
+func (s *routerStore) GetBalance(_ context.Context, sellerID string, ownerType domain.WalletOwnerType, currency string) (domain.WalletBalance, error) {
 	s.sellerID = sellerID
-	return domain.WalletBalance{SellerID: sellerID, Currency: currency, UpdatedAt: time.Now().UTC()}, nil
+	return domain.WalletBalance{OwnerID: sellerID, OwnerType: ownerType, SellerID: sellerID, Currency: currency, UpdatedAt: time.Now().UTC()}, nil
 }
 
 func (s *routerStore) ListTransactions(context.Context, repository.ListTransactionsInput) (domain.TransactionPage, error) {
@@ -54,13 +54,13 @@ func (s *routerStore) Ping(context.Context) error { return nil }
 func (s *routerStore) UpsertBankAccount(context.Context, repository.UpsertBankAccountInput) (domain.BankAccount, error) {
 	return domain.BankAccount{}, nil
 }
-func (s *routerStore) GetBankAccount(context.Context, string, string) (domain.BankAccount, error) {
+func (s *routerStore) GetBankAccount(context.Context, string, domain.WalletOwnerType, string) (domain.BankAccount, error) {
 	return domain.BankAccount{}, nil
 }
 func (s *routerStore) CreatePayout(context.Context, repository.CreatePayoutInput) (domain.Payout, bool, error) {
 	return domain.Payout{}, false, nil
 }
-func (s *routerStore) GetPayout(context.Context, string, string) (domain.Payout, error) {
+func (s *routerStore) GetPayout(context.Context, string, domain.WalletOwnerType, string) (domain.Payout, error) {
 	return domain.Payout{}, nil
 }
 func (s *routerStore) ListPayouts(context.Context, repository.ListPayoutsInput) (domain.PayoutPage, error) {
@@ -127,15 +127,15 @@ func TestWalletRouteRequiresAuthentication(t *testing.T) {
 	}
 }
 
-func TestWalletRouteRejectsNonSeller(t *testing.T) {
+func TestWalletRouteAllowsBuyer(t *testing.T) {
 	router, _ := testRouter()
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/wallets/me", nil)
 	request.Header.Set("Authorization", "Bearer "+signedToken(t, domain.RoleBuyer))
 	response := httptest.NewRecorder()
 
 	router.ServeHTTP(response, request)
-	if response.Code != http.StatusForbidden {
-		t.Fatalf("status=%d, want %d", response.Code, http.StatusForbidden)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
 	}
 }
 

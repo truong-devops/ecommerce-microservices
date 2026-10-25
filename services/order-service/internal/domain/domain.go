@@ -62,6 +62,7 @@ var OrderStatusTransitions = map[OrderStatus]map[OrderStatus]struct{}{
 	},
 	OrderStatusConfirmed: {
 		OrderStatusProcessing: {},
+		OrderStatusCancelled:  {},
 		OrderStatusFailed:     {},
 	},
 	OrderStatusProcessing: {

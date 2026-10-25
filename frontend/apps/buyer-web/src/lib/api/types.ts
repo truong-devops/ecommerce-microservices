@@ -219,6 +219,58 @@ export interface BuyerApiMeta {
   timestamp: string;
 }
 
+export interface BuyerWalletBalance {
+  walletId: string | null;
+  ownerId: string;
+  ownerType: 'CUSTOMER';
+  currency: string;
+  availableAmount: number;
+  payoutPendingAmount: number;
+  totalPaidOut: number;
+  isFrozen: boolean;
+  updatedAt: string;
+}
+
+export interface BuyerWalletTransaction {
+  id: string;
+  type: string;
+  referenceType: string;
+  referenceId: string;
+  amount: number;
+  currency: string;
+  description?: string;
+  occurredAt: string;
+  createdAt: string;
+}
+
+export interface BuyerWalletBankAccount {
+  id: string;
+  bankCode: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  status: 'UNVERIFIED' | 'ALLOWLISTED' | 'DISABLED';
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuyerRefundPayout {
+  id: string;
+  amount: number;
+  currency: string;
+  status: 'REQUESTED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+  bankCode: string;
+  accountHolderName: string;
+  maskedAccountNumber: string;
+  requestedAt: string;
+  processedAt?: string;
+}
+
+export interface BuyerWalletPage<T> {
+  items: T[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
 export interface BuyerApiSuccess<T> {
   success: true;
   data: T;
@@ -443,15 +495,7 @@ export interface OrderStatusHistoryOutput {
 }
 
 export type PaymentStatus =
-  | 'PENDING'
-  | 'REQUIRES_ACTION'
-  | 'AUTHORIZED'
-  | 'CAPTURED'
-  | 'FAILED'
-  | 'CANCELLED'
-  | 'PARTIALLY_REFUNDED'
-  | 'REFUNDED'
-  | 'CHARGEBACK';
+  'PENDING' | 'REQUIRES_ACTION' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'CANCELLED' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'CHARGEBACK';
 
 export interface Payment {
   id: string;
@@ -530,15 +574,7 @@ export interface PaymentGroup {
 }
 
 export type ShipmentStatus =
-  | 'PENDING'
-  | 'AWB_CREATED'
-  | 'PICKED_UP'
-  | 'IN_TRANSIT'
-  | 'OUT_FOR_DELIVERY'
-  | 'DELIVERED'
-  | 'CANCELLED'
-  | 'FAILED'
-  | 'RETURNED';
+  'PENDING' | 'AWB_CREATED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURNED';
 
 export interface Shipment {
   id: string;

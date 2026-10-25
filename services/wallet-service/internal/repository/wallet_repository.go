@@ -42,6 +42,7 @@ type DeliveryInput struct {
 type ReversalInput struct {
 	PaymentID             string
 	OrderID               string
+	CustomerID            string
 	SellerID              string
 	CumulativeAmountMinor int64
 	Currency              string
@@ -50,10 +51,11 @@ type ReversalInput struct {
 }
 
 type ListTransactionsInput struct {
-	SellerID string
-	Currency string
-	Page     int
-	PageSize int
+	OwnerID   string
+	OwnerType domain.WalletOwnerType
+	Currency  string
+	Page      int
+	PageSize  int
 }
 
 type OutboxEvent struct {
@@ -199,7 +201,11 @@ func (r *WalletRepository) ApplyCapture(ctx context.Context, input CaptureInput)
 			ID: holdID, WalletID: walletID, PaymentID: input.PaymentID, OrderID: input.OrderID,
 			SellerID: input.SellerID, Currency: input.Currency, CapturedAmount: input.AmountMinor,
 		}
-		if err := applyReversalToHold(ctx, tx, hold, minInt64(pendingAmount, input.AmountMinor), pendingChargeback, pendingOccurredAt); err != nil {
+		var pendingCustomerID string
+		if scanErr := tx.QueryRow(ctx, `SELECT COALESCE(customer_id::text, '') FROM pending_payment_reversals WHERE payment_id = $1`, input.PaymentID).Scan(&pendingCustomerID); scanErr != nil {
+			return false, scanErr
+		}
+		if err := applyReversalToHold(ctx, tx, hold, pendingCustomerID, minInt64(pendingAmount, input.AmountMinor), pendingChargeback, pendingOccurredAt); err != nil {
 			return false, err
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM pending_payment_reversals WHERE payment_id = $1`, input.PaymentID); err != nil {
@@ -295,19 +301,20 @@ func (r *WalletRepository) ApplyReversal(ctx context.Context, input ReversalInpu
 		var paymentID string
 		err = tx.QueryRow(ctx, `
 			INSERT INTO pending_payment_reversals (
-			  payment_id, order_id, seller_id, currency, cumulative_amount_minor, is_chargeback, occurred_at
+			  payment_id, order_id, seller_id, customer_id, currency, cumulative_amount_minor, is_chargeback, occurred_at
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			VALUES ($1, $2, $3, NULLIF($4, '')::uuid, $5, $6, $7, $8)
 			ON CONFLICT (payment_id) DO UPDATE
 			SET cumulative_amount_minor = GREATEST(pending_payment_reversals.cumulative_amount_minor, EXCLUDED.cumulative_amount_minor),
 			    is_chargeback = pending_payment_reversals.is_chargeback OR EXCLUDED.is_chargeback,
+			    customer_id = COALESCE(pending_payment_reversals.customer_id, EXCLUDED.customer_id),
 			    occurred_at = GREATEST(pending_payment_reversals.occurred_at, EXCLUDED.occurred_at),
 			    updated_at = now()
 			WHERE pending_payment_reversals.order_id = EXCLUDED.order_id
 			  AND pending_payment_reversals.seller_id = EXCLUDED.seller_id
 			  AND pending_payment_reversals.currency = EXCLUDED.currency
 			RETURNING payment_id
-		`, input.PaymentID, input.OrderID, input.SellerID, input.Currency, input.CumulativeAmountMinor, input.IsChargeback, input.Meta.OccurredAt).Scan(&paymentID)
+		`, input.PaymentID, input.OrderID, input.SellerID, input.CustomerID, input.Currency, input.CumulativeAmountMinor, input.IsChargeback, input.Meta.OccurredAt).Scan(&paymentID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, fmt.Errorf("pending reversal identity mismatch for payment %s", input.PaymentID)
 		}
@@ -328,7 +335,7 @@ func (r *WalletRepository) ApplyReversal(ctx context.Context, input ReversalInpu
 
 	targetAmount := minInt64(input.CumulativeAmountMinor, hold.CapturedAmount)
 	if targetAmount > hold.RefundedAmount {
-		if err := applyReversalToHold(ctx, tx, hold, targetAmount, input.IsChargeback, input.Meta.OccurredAt); err != nil {
+		if err := applyReversalToHold(ctx, tx, hold, input.CustomerID, targetAmount, input.IsChargeback, input.Meta.OccurredAt); err != nil {
 			return false, err
 		}
 	}
@@ -436,20 +443,23 @@ func (r *WalletRepository) ReleaseDueHolds(ctx context.Context, now time.Time, l
 	return releasedCount, nil
 }
 
-func (r *WalletRepository) GetBalance(ctx context.Context, sellerID, currency string) (domain.WalletBalance, error) {
+func (r *WalletRepository) GetBalance(ctx context.Context, ownerID string, ownerType domain.WalletOwnerType, currency string) (domain.WalletBalance, error) {
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return domain.WalletBalance{}, err
 	}
 	defer tx.Rollback(ctx)
 
-	balance := domain.WalletBalance{SellerID: sellerID, Currency: currency, UpdatedAt: time.Now().UTC()}
+	balance := domain.WalletBalance{OwnerID: ownerID, OwnerType: ownerType, Currency: currency, UpdatedAt: time.Now().UTC()}
+	if ownerType == domain.WalletOwnerSeller {
+		balance.SellerID = ownerID
+	}
 	var walletID string
 	err = tx.QueryRow(ctx, `
 		SELECT id, is_frozen, updated_at
 		FROM wallets
-		WHERE seller_id = $1 AND currency = $2
-	`, sellerID, currency).Scan(&walletID, &balance.IsFrozen, &balance.UpdatedAt)
+		WHERE seller_id = $1 AND owner_type = $2 AND currency = $3
+	`, ownerID, ownerType, currency).Scan(&walletID, &balance.IsFrozen, &balance.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		if err := tx.Commit(ctx); err != nil {
 			return domain.WalletBalance{}, err
@@ -464,7 +474,7 @@ func (r *WalletRepository) GetBalance(ctx context.Context, sellerID, currency st
 	err = tx.QueryRow(ctx, `
 		SELECT
 		  COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_HELD'), 0),
-		  COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'SELLER_AVAILABLE'), 0),
+		  COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type IN ('SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE')), 0),
 		  COALESCE(SUM(e.amount_minor) FILTER (WHERE a.account_type = 'PAYOUT_PENDING'), 0)
 		FROM ledger_accounts a
 		LEFT JOIN ledger_entries e ON e.account_id = a.id
@@ -485,7 +495,7 @@ func (r *WalletRepository) GetBalance(ctx context.Context, sellerID, currency st
 func (r *WalletRepository) ListTransactions(ctx context.Context, input ListTransactionsInput) (domain.TransactionPage, error) {
 	result := domain.TransactionPage{Items: []domain.LedgerTransaction{}, Page: input.Page, PageSize: input.PageSize}
 	var walletID string
-	err := r.pool.QueryRow(ctx, `SELECT id FROM wallets WHERE seller_id = $1 AND currency = $2`, input.SellerID, input.Currency).Scan(&walletID)
+	err := r.pool.QueryRow(ctx, `SELECT id FROM wallets WHERE seller_id = $1 AND owner_type = $2 AND currency = $3`, input.OwnerID, input.OwnerType, input.Currency).Scan(&walletID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return result, nil
 	}
@@ -597,13 +607,17 @@ func finishDuplicate(ctx context.Context, tx pgx.Tx, inserted bool, processErr e
 }
 
 func ensureWallet(ctx context.Context, tx pgx.Tx, sellerID, currency string) (string, error) {
+	return ensureOwnerWallet(ctx, tx, sellerID, domain.WalletOwnerSeller, currency)
+}
+
+func ensureOwnerWallet(ctx context.Context, tx pgx.Tx, ownerID string, ownerType domain.WalletOwnerType, currency string) (string, error) {
 	var walletID string
 	err := tx.QueryRow(ctx, `
-		INSERT INTO wallets (seller_id, currency)
-		VALUES ($1, $2)
-		ON CONFLICT (seller_id, currency) DO UPDATE SET updated_at = wallets.updated_at
+		INSERT INTO wallets (seller_id, owner_type, currency)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (owner_type, seller_id, currency) DO UPDATE SET updated_at = wallets.updated_at
 		RETURNING id
-	`, sellerID, currency).Scan(&walletID)
+	`, ownerID, ownerType, currency).Scan(&walletID)
 	return walletID, err
 }
 
@@ -685,7 +699,7 @@ func findHoldForUpdate(ctx context.Context, tx pgx.Tx, paymentID string) (holdRe
 	return hold, err
 }
 
-func applyReversalToHold(ctx context.Context, tx pgx.Tx, hold holdRecord, targetAmount int64, chargeback bool, occurredAt time.Time) error {
+func applyReversalToHold(ctx context.Context, tx pgx.Tx, hold holdRecord, customerID string, targetAmount int64, chargeback bool, occurredAt time.Time) error {
 	delta := targetAmount - hold.RefundedAmount
 	if delta <= 0 {
 		return nil
@@ -734,6 +748,45 @@ func applyReversalToHold(ctx context.Context, tx pgx.Tx, hold holdRecord, target
 	if err := insertLedgerEntries(ctx, tx, transactionID, entries); err != nil {
 		return err
 	}
+	if !chargeback {
+		if strings.TrimSpace(customerID) == "" {
+			return fmt.Errorf("customer id is required for payment refund %s", hold.PaymentID)
+		}
+		customerWalletID, err := ensureOwnerWallet(ctx, tx, customerID, domain.WalletOwnerCustomer, hold.Currency)
+		if err != nil {
+			return err
+		}
+		customerAvailableID, err := ensureLedgerAccount(ctx, tx, &customerWalletID, domain.AccountTypeCustomerAvailable, hold.Currency)
+		if err != nil {
+			return err
+		}
+		if _, err := ensureLedgerAccount(ctx, tx, &customerWalletID, domain.AccountTypePayoutPending, hold.Currency); err != nil {
+			return err
+		}
+		creditTransactionID, err := insertLedgerTransaction(
+			ctx, tx, domain.TransactionTypeCustomerRefundCredit, "payment", hold.PaymentID,
+			"customer-refund-credit:"+hold.PaymentID+":"+strconv.FormatInt(targetAmount, 10),
+			hold.Currency, "Payment refund credited to customer wallet", occurredAt,
+		)
+		if err != nil {
+			return err
+		}
+		if err := insertLedgerEntries(ctx, tx, creditTransactionID, map[string]int64{
+			platformAccountID: -delta, customerAvailableID: delta,
+		}); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE wallets SET updated_at = now() WHERE id = $1`, customerWalletID); err != nil {
+			return err
+		}
+		if err := insertOutboxEvent(ctx, tx, "wallet", customerWalletID, "wallet.customer-refund-credited", map[string]any{
+			"walletId": customerWalletID, "ownerId": customerID, "ownerType": domain.WalletOwnerCustomer,
+			"customerId": customerID, "paymentId": hold.PaymentID, "orderId": hold.OrderID,
+			"amount": delta, "refundedAmount": targetAmount, "currency": hold.Currency,
+		}); err != nil {
+			return err
+		}
+	}
 
 	status := domain.HoldStatusPartiallyRefunded
 	if targetAmount >= hold.CapturedAmount {
@@ -768,7 +821,7 @@ func refreshWalletFrozenState(ctx context.Context, tx pgx.Tx, walletID string) e
 		      SELECT SUM(e.amount_minor) < 0
 		      FROM ledger_accounts a
 		      LEFT JOIN ledger_entries e ON e.account_id = a.id
-		      WHERE a.wallet_id = w.id AND a.account_type = 'SELLER_AVAILABLE'
+		      WHERE a.wallet_id = w.id AND a.account_type IN ('SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE')
 		      GROUP BY a.id
 		    ), false),
 		    updated_at = now()

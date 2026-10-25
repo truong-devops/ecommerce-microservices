@@ -355,4 +355,31 @@ CREATE INDEX IF NOT EXISTS idx_wallet_admin_audit_wallet_created
 CREATE INDEX IF NOT EXISTS idx_wallet_admin_audit_actor_created
   ON wallet_admin_audit_logs(actor_id, created_at DESC);
 
+-- Customer refund wallets. The historical seller_id column stores the wallet owner id;
+-- owner_type keeps seller revenue and customer refunds strictly separated.
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS owner_type varchar(16) NOT NULL DEFAULT 'SELLER';
+ALTER TABLE wallets DROP CONSTRAINT IF EXISTS ux_wallets_seller_currency;
+DROP INDEX IF EXISTS ux_wallets_seller_currency;
+ALTER TABLE wallets DROP CONSTRAINT IF EXISTS chk_wallets_owner_type;
+ALTER TABLE wallets ADD CONSTRAINT chk_wallets_owner_type CHECK (owner_type IN ('SELLER', 'CUSTOMER'));
+CREATE UNIQUE INDEX IF NOT EXISTS ux_wallets_owner_currency
+  ON wallets(owner_type, seller_id, currency);
+CREATE INDEX IF NOT EXISTS idx_wallets_owner ON wallets(owner_type, seller_id);
+
+ALTER TABLE ledger_accounts DROP CONSTRAINT IF EXISTS chk_ledger_accounts_type;
+ALTER TABLE ledger_accounts ADD CONSTRAINT chk_ledger_accounts_type CHECK (
+  account_type IN ('PLATFORM_CLEARING', 'PLATFORM_PAYOUT_CLEARING', 'SELLER_HELD', 'SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE', 'PAYOUT_PENDING')
+);
+ALTER TABLE ledger_transactions DROP CONSTRAINT IF EXISTS chk_ledger_transactions_type;
+ALTER TABLE ledger_transactions ADD CONSTRAINT chk_ledger_transactions_type CHECK (
+  transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CUSTOMER_REFUND_CREDIT', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
+);
+
+ALTER TABLE pending_payment_reversals ADD COLUMN IF NOT EXISTS customer_id uuid;
+ALTER TABLE payouts ADD COLUMN IF NOT EXISTS payout_type varchar(32) NOT NULL DEFAULT 'SELLER_WITHDRAWAL';
+ALTER TABLE payouts DROP CONSTRAINT IF EXISTS chk_payouts_type;
+ALTER TABLE payouts ADD CONSTRAINT chk_payouts_type CHECK (
+  payout_type IN ('SELLER_WITHDRAWAL', 'CUSTOMER_REFUND')
+);
+
 SELECT pg_advisory_unlock(77002601);

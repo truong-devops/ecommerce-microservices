@@ -22,7 +22,7 @@ type WalletStore interface {
 	ApplyDelivery(ctx context.Context, input repository.DeliveryInput) (bool, error)
 	ApplyReversal(ctx context.Context, input repository.ReversalInput) (bool, error)
 	ReleaseDueHolds(ctx context.Context, now time.Time, limit int) (int, error)
-	GetBalance(ctx context.Context, sellerID, currency string) (domain.WalletBalance, error)
+	GetBalance(ctx context.Context, ownerID string, ownerType domain.WalletOwnerType, currency string) (domain.WalletBalance, error)
 	ListTransactions(ctx context.Context, input repository.ListTransactionsInput) (domain.TransactionPage, error)
 }
 
@@ -98,8 +98,13 @@ func (s *WalletService) HandlePaymentReversed(ctx context.Context, event domain.
 		return false, err
 	}
 	meta = normalizeEventMeta(meta, s.now())
+	if !event.IsChargeback {
+		if _, err := uuid.Parse(strings.TrimSpace(event.CustomerID)); err != nil {
+			return false, invalidEvent("userId must be UUID for a refund")
+		}
+	}
 	return s.store.ApplyReversal(ctx, repository.ReversalInput{
-		PaymentID: event.PaymentID, OrderID: event.OrderID, SellerID: event.SellerID,
+		PaymentID: event.PaymentID, OrderID: event.OrderID, CustomerID: event.CustomerID, SellerID: event.SellerID,
 		CumulativeAmountMinor: amountMinor, Currency: currency, IsChargeback: event.IsChargeback, Meta: meta,
 	})
 }
@@ -109,8 +114,9 @@ func (s *WalletService) ReleaseDueFunds(ctx context.Context) (int, error) {
 }
 
 func (s *WalletService) GetMyWallet(ctx context.Context, user domain.UserContext, currency string) (map[string]any, error) {
-	if user.Role != domain.RoleSeller {
-		return nil, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Only sellers can access a seller wallet", nil)
+	ownerType, err := walletOwnerTypeForRole(user.Role)
+	if err != nil {
+		return nil, err
 	}
 	if _, err := uuid.Parse(strings.TrimSpace(user.UserID)); err != nil {
 		return nil, httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Invalid authenticated user", nil)
@@ -119,12 +125,13 @@ func (s *WalletService) GetMyWallet(ctx context.Context, user domain.UserContext
 	if err != nil {
 		return nil, err
 	}
-	balance, err := s.store.GetBalance(ctx, user.UserID, normalizedCurrency)
+	balance, err := s.store.GetBalance(ctx, user.UserID, ownerType, normalizedCurrency)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]any{
-		"walletId": balance.WalletID, "sellerId": balance.SellerID, "currency": balance.Currency,
+		"walletId": balance.WalletID, "ownerId": balance.OwnerID, "ownerType": balance.OwnerType,
+		"sellerId": balance.SellerID, "currency": balance.Currency,
 		"heldAmount": balance.HeldAmount, "availableAmount": balance.AvailableAmount,
 		"payoutPendingAmount": balance.PayoutPendingAmount, "totalPaidOut": balance.TotalPaidOut,
 		"isFrozen": balance.IsFrozen, "updatedAt": balance.UpdatedAt,
@@ -132,8 +139,9 @@ func (s *WalletService) GetMyWallet(ctx context.Context, user domain.UserContext
 }
 
 func (s *WalletService) ListMyTransactions(ctx context.Context, user domain.UserContext, currency string, page, pageSize int) (map[string]any, error) {
-	if user.Role != domain.RoleSeller {
-		return nil, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Only sellers can access seller transactions", nil)
+	ownerType, err := walletOwnerTypeForRole(user.Role)
+	if err != nil {
+		return nil, err
 	}
 	if _, err := uuid.Parse(strings.TrimSpace(user.UserID)); err != nil {
 		return nil, httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Invalid authenticated user", nil)
@@ -143,7 +151,7 @@ func (s *WalletService) ListMyTransactions(ctx context.Context, user domain.User
 		return nil, err
 	}
 	result, err := s.store.ListTransactions(ctx, repository.ListTransactionsInput{
-		SellerID: user.UserID, Currency: normalizedCurrency, Page: page, PageSize: pageSize,
+		OwnerID: user.UserID, OwnerType: ownerType, Currency: normalizedCurrency, Page: page, PageSize: pageSize,
 	})
 	if err != nil {
 		return nil, err
@@ -158,6 +166,17 @@ func (s *WalletService) ListMyTransactions(ctx context.Context, user domain.User
 			"page": page, "pageSize": pageSize, "totalItems": result.TotalItems, "totalPages": totalPages,
 		},
 	}, nil
+}
+
+func walletOwnerTypeForRole(role domain.Role) (domain.WalletOwnerType, error) {
+	switch role {
+	case domain.RoleSeller:
+		return domain.WalletOwnerSeller, nil
+	case domain.RoleCustomer, domain.RoleBuyer:
+		return domain.WalletOwnerCustomer, nil
+	default:
+		return "", httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Role cannot access a wallet", nil)
+	}
 }
 
 func validateEventIdentity(paymentID, orderID, sellerID string) error {

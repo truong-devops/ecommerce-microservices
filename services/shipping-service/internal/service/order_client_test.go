@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -90,15 +91,90 @@ func TestHandleNexusWebhookPing(t *testing.T) {
 	}
 }
 
+func TestNexusWebhookContractStatusFallbacks(t *testing.T) {
+	tests := []struct {
+		name  string
+		event nexus.WebhookEvent
+		want  string
+	}{
+		{
+			name: "prefer current status from data",
+			event: nexus.WebhookEvent{
+				Status:      "PICKED_UP",
+				NexusStatus: "PICKUP_COMPLETED",
+				Data:        map[string]any{"currentStatus": "OUT_FOR_DELIVERY"},
+			},
+			want: "OUT_FOR_DELIVERY",
+		},
+		{
+			name:  "use top-level Nexus status when data is absent",
+			event: nexus.WebhookEvent{Status: "PICKED_UP", NexusStatus: "PICKUP_COMPLETED"},
+			want:  "PICKUP_COMPLETED",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := firstNonEmpty(asString(tt.event.Data["currentStatus"]), tt.event.NexusStatus, tt.event.Status)
+			if got != tt.want {
+				t.Fatalf("Nexus webhook status = %q, want %q", got, tt.want)
+			}
+			if _, ok := nexusShipmentStatus(got); !ok {
+				t.Fatalf("Nexus webhook status %q is not supported", got)
+			}
+		})
+	}
+}
+
+func TestNexusWebhookPayloadMatchesCurrentProviderContract(t *testing.T) {
+	rawBody := []byte(`{
+		"eventId":"a7b3c2d1-0000-4000-8000-123456789abc",
+		"eventType":"shipment.status_changed",
+		"occurredAt":"2026-10-25T19:05:00Z",
+		"partnerCode":"DT_COMMERCE",
+		"shipmentCode":"111000123456",
+		"status":"PICKED_UP",
+		"nexusStatus":"PICKUP_COMPLETED",
+		"trackingUrl":"https://tracking.nexus-ex.site/111000123456",
+		"data":{
+			"externalOrderId":"d246a5e6-374b-4090-99d8-5cf221c4254c",
+			"shipmentCode":"111000123456",
+			"currentStatus":"PICKUP_COMPLETED",
+			"location":{"hubCode":"001001B001","hubName":null}
+		}
+	}`)
+
+	var event nexus.WebhookEvent
+	if err := json.Unmarshal(rawBody, &event); err != nil {
+		t.Fatal(err)
+	}
+	if event.PartnerCode != "DT_COMMERCE" {
+		t.Fatalf("unexpected partner code %q", event.PartnerCode)
+	}
+	statusValue := firstNonEmpty(asString(event.Data["currentStatus"]), event.NexusStatus, event.Status)
+	status, ok := nexusShipmentStatus(statusValue)
+	if !ok || status != domain.ShipmentStatusPickedUp {
+		t.Fatalf("unexpected status mapping for %q: %q", statusValue, status)
+	}
+	shipmentCode := firstNonEmpty(asString(event.Data["shipmentCode"]), event.ShipmentCode)
+	if shipmentCode != "111000123456" {
+		t.Fatalf("unexpected shipment code %q", shipmentCode)
+	}
+}
+
 func TestNexusShipmentStatusMapping(t *testing.T) {
 	cases := map[string]domain.ShipmentStatus{
 		"CREATED":          domain.ShipmentStatusAWBCreated,
+		"AWB_CREATED":      domain.ShipmentStatusAWBCreated,
 		"PICKUP_COMPLETED": domain.ShipmentStatusPickedUp,
+		"PICKED_UP":        domain.ShipmentStatusPickedUp,
 		"IN_TRANSIT":       domain.ShipmentStatusInTransit,
 		"OUT_FOR_DELIVERY": domain.ShipmentStatusOutForDelivery,
 		"DELIVERED":        domain.ShipmentStatusDelivered,
 		"DELIVERY_FAILED":  domain.ShipmentStatusFailed,
+		"FAILED":           domain.ShipmentStatusFailed,
 		"RETURN_COMPLETED": domain.ShipmentStatusReturned,
+		"RETURNED":         domain.ShipmentStatusReturned,
 		"CANCELLED":        domain.ShipmentStatusCancelled,
 	}
 	for raw, expected := range cases {

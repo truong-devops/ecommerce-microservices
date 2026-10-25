@@ -573,20 +573,27 @@ services:
       API_PREFIX: api/v1
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-shared-jwt-access-secret-min-32-chars}
       ORDER_SERVICE_BASE_URL: http://order-service:8080/api/v1
+      USER_SERVICE_BASE_URL: http://user-service:8080/api/v1
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-dev-internal-service-token}
       DEPENDENCY_TIMEOUT_MS: 5000
       SHIPPING_WEBHOOK_SIGNING_SECRET: ${SHIPPING_WEBHOOK_SIGNING_SECRET:-dev-shipping-webhook-signing-secret}
-      NEXUS_ENABLED: 'false'
-      NEXUS_WEBHOOK_ENABLED: 'false'
-      NEXUS_BASE_URL: https://ops.nexus-ex.site
-      NEXUS_AUTO_CREATE_PICKUP: 'false'
-      NEXUS_DEFAULT_SERVICE_TYPE: STANDARD
-      NEXUS_DEFAULT_PICKUP_TYPE: PICKUP
-      NEXUS_DEFAULT_PAYER: RECEIVER
-      NEXUS_DEFAULT_WEIGHT_GRAM: 500
-      NEXUS_DEFAULT_LENGTH_CM: 20
-      NEXUS_DEFAULT_WIDTH_CM: 15
-      NEXUS_DEFAULT_HEIGHT_CM: 10
-      NEXUS_REQUEST_TIMEOUT_MS: 10000
+      NEXUS_ENABLED: ${NEXUS_ENABLED:-false}
+      NEXUS_WEBHOOK_ENABLED: ${NEXUS_WEBHOOK_ENABLED:-false}
+      NEXUS_BASE_URL: ${NEXUS_BASE_URL:-https://ops.nexus-ex.site}
+      NEXUS_PARTNER_CODE: ${NEXUS_PARTNER_CODE:-}
+      NEXUS_API_KEY: ${NEXUS_API_KEY:-}
+      NEXUS_API_SECRET: ${NEXUS_API_SECRET:-}
+      NEXUS_WEBHOOK_SECRET: ${NEXUS_WEBHOOK_SECRET:-}
+      NEXUS_MERCHANT_MAPPING_FILE: /run/config/nexus-merchants.json
+      NEXUS_AUTO_CREATE_PICKUP: ${NEXUS_AUTO_CREATE_PICKUP:-false}
+      NEXUS_DEFAULT_SERVICE_TYPE: ${NEXUS_DEFAULT_SERVICE_TYPE:-STANDARD}
+      NEXUS_DEFAULT_PICKUP_TYPE: ${NEXUS_DEFAULT_PICKUP_TYPE:-PICKUP}
+      NEXUS_DEFAULT_PAYER: ${NEXUS_DEFAULT_PAYER:-RECEIVER}
+      NEXUS_DEFAULT_WEIGHT_GRAM: ${NEXUS_DEFAULT_WEIGHT_GRAM:-500}
+      NEXUS_DEFAULT_LENGTH_CM: ${NEXUS_DEFAULT_LENGTH_CM:-20}
+      NEXUS_DEFAULT_WIDTH_CM: ${NEXUS_DEFAULT_WIDTH_CM:-15}
+      NEXUS_DEFAULT_HEIGHT_CM: ${NEXUS_DEFAULT_HEIGHT_CM:-10}
+      NEXUS_REQUEST_TIMEOUT_MS: ${NEXUS_REQUEST_TIMEOUT_MS:-10000}
       DATABASE_URL: postgresql://eshipping:eshipping@postgres:5432/ecommerce_shipping
       DB_SSL: 'false'
       REDIS_ENABLED: 'true'
@@ -605,6 +612,8 @@ services:
       ANALYTICS_EVENTS_TOPIC: analytics.events
       DB_MIGRATIONS_RUN: 'true'
       MIGRATION_FILE: /migrations/0001_init_shipping_service.sql
+    volumes:
+      - ${NEXUS_MERCHANT_MAPPING_FILE_HOST:-./services/shipping-service/config/nexus-merchant-mappings.example.json}:/run/config/nexus-merchants.json:ro
     ports:
       - '12018:8080'
     depends_on:

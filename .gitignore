@@ -19,6 +19,9 @@ coverage/
 .env.local
 .env.*.local
 
+# Runtime Nexus seller allowlist/mapping; copy from the tracked example.
+services/shipping-service/config/nexus-merchant-mappings.json
+
 # IDE/OS
 .DS_Store
 .vscode/

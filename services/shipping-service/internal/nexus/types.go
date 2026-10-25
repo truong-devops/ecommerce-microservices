@@ -98,8 +98,13 @@ type CreateOrderResponse struct {
 }
 
 type WebhookEvent struct {
-	EventID    string         `json:"eventId"`
-	EventType  string         `json:"eventType"`
-	OccurredAt string         `json:"occurredAt"`
-	Data       map[string]any `json:"data"`
+	EventID      string         `json:"eventId"`
+	EventType    string         `json:"eventType"`
+	OccurredAt   string         `json:"occurredAt"`
+	PartnerCode  string         `json:"partnerCode"`
+	ShipmentCode string         `json:"shipmentCode"`
+	Status       string         `json:"status"`
+	NexusStatus  string         `json:"nexusStatus"`
+	TrackingURL  string         `json:"trackingUrl"`
+	Data         map[string]any `json:"data"`
 }

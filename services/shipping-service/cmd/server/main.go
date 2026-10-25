@@ -79,6 +79,9 @@ func main() {
 			if mappingErr != nil {
 				logger.Fatal("failed to load Nexus merchant mapping", zap.Error(mappingErr))
 			}
+			if len(mappings) == 0 {
+				logger.Fatal("Nexus outbound is enabled without any active seller mapping")
+			}
 		}
 		nexusIntegration = service.NexusIntegration{
 			Enabled: cfg.NexusEnabled, WebhookEnabled: cfg.NexusWebhookEnabled,
@@ -90,6 +93,12 @@ func main() {
 			WidthCM: cfg.NexusDefaultWidthCM, HeightCM: cfg.NexusDefaultHeightCM,
 		}
 	}
+	logger.Info("Nexus integration configured",
+		zap.Bool("outboundEnabled", cfg.NexusEnabled),
+		zap.Bool("webhookEnabled", cfg.NexusWebhookEnabled),
+		zap.Bool("autoCreatePickup", cfg.NexusAutoCreatePickup),
+		zap.Int("mappedSellers", len(nexusIntegration.Mappings)),
+	)
 	shippingService := service.NewShippingService(repo, orderClient, cfg.WebhookSigningSecret, cfg.WebhookIdempotencyTTLMinutes, nexusIntegration)
 	healthService := service.NewHealthService(cfg.AppName, repo, redisService)
 

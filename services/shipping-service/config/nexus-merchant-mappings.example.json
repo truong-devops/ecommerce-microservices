@@ -4,9 +4,5 @@
   "activeSellerIds": [
     "<sellerId UUID duoc phep gui Nexus>"
   ],
-  "provinceHubMappings": {
-    "79": "HCM-001",
-    "01": "HN-001"
-  },
   "active": true
 }

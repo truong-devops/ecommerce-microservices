@@ -15,8 +15,18 @@ import {
 import type { BuyerRefundPayout, BuyerWalletBalance, BuyerWalletBankAccount, BuyerWalletTransaction } from '@/lib/api/types';
 
 const keywords = ['Ví eMall', 'Hoàn tiền', 'Đơn mua'];
-const money = (value: number) => new Intl.NumberFormat('vi-VN').format(value) + 'đ';
-const date = (value: string) => new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+const money = (value: number | null | undefined) => new Intl.NumberFormat('vi-VN').format(Number.isFinite(Number(value)) ? Number(value) : 0) + 'đ';
+
+const date = (value: string | null | undefined) => {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '—';
+  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(parsed);
+};
+
+const shortReference = (value: string | null | undefined) => (typeof value === 'string' && value ? value.slice(0, 8) : '—');
+
+const itemsOf = <T,>(page: { items?: T[] } | null | undefined): T[] => (Array.isArray(page?.items) ? page.items : []);
 
 export default function BuyerWalletPage() {
   const router = useRouter();
@@ -42,8 +52,8 @@ export default function BuyerWalletPage() {
         listBuyerRefundPayouts(accessToken)
       ]);
       setWallet(nextWallet);
-      setTransactions(transactionPage.items);
-      setPayouts(payoutPage.items);
+      setTransactions(itemsOf(transactionPage));
+      setPayouts(itemsOf(payoutPage));
       try {
         const account = await getBuyerWalletBankAccount(accessToken);
         setBank(account);
@@ -165,13 +175,13 @@ export default function BuyerWalletPage() {
               <Table
                 title="Yêu cầu chuyển tiền"
                 empty="Chưa có yêu cầu."
-                rows={payouts.map((p) => [date(p.requestedAt), money(p.amount), p.status])}
+                rows={payouts.map((p) => [date(p?.requestedAt), money(p?.amount), p?.status ?? '—'])}
               />
             </section>
             <Table
               title="Lịch sử ví"
               empty="Chưa có khoản hoàn tiền."
-              rows={transactions.map((t) => [date(t.occurredAt), t.type, t.referenceId.slice(0, 8), money(t.amount)])}
+              rows={transactions.map((t) => [date(t?.occurredAt), t?.type ?? '—', shortReference(t?.referenceId), money(t?.amount)])}
             />
           </>
         )}

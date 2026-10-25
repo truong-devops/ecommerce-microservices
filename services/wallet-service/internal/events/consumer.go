@@ -207,7 +207,8 @@ func parsePaymentReversed(eventType string, payload map[string]any) (domain.Paym
 	}
 	return domain.PaymentReversedEvent{
 		PaymentID: asString(payload["paymentId"]), OrderID: asString(payload["orderId"]),
-		SellerID: asString(payload["sellerId"]), Amount: amount, RefundedAmount: refundedAmount,
+		CustomerID: asString(payload["userId"]),
+		SellerID:   asString(payload["sellerId"]), Amount: amount, RefundedAmount: refundedAmount,
 		Currency: strings.ToUpper(asString(payload["currency"])), IsChargeback: eventType == "payment.chargeback",
 	}, nil
 }

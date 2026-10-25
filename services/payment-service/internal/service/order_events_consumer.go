@@ -19,15 +19,20 @@ type KafkaEnvelope struct {
 	Payload   map[string]any `json:"payload"`
 }
 
+type orderEventHandler interface {
+	HandleOrderCreatedEvent(context.Context, string, string, string, float64, string, *string, string, string, string, string, int, int64) error
+	HandleOrderCancelledEvent(context.Context, string, string, string, string, int, int64) error
+}
+
 type OrderEventsConsumer struct {
 	enabled bool
 	topic   string
 	reader  *kafka.Reader
 	logger  *zap.Logger
-	service *PaymentService
+	service orderEventHandler
 }
 
-func NewOrderEventsConsumer(cfg config.Config, logger *zap.Logger, service *PaymentService) *OrderEventsConsumer {
+func NewOrderEventsConsumer(cfg config.Config, logger *zap.Logger, service orderEventHandler) *OrderEventsConsumer {
 	if !cfg.KafkaEnabled || len(cfg.KafkaBrokers) == 0 {
 		return &OrderEventsConsumer{enabled: false, topic: cfg.OrderEventsTopic, logger: logger, service: service}
 	}
@@ -67,8 +72,17 @@ func (c *OrderEventsConsumer) Run(ctx context.Context) {
 			continue
 		}
 
-		if err := c.handleMessage(ctx, msg); err != nil {
-			c.logger.Error("failed to process order event", zap.Error(err), zap.Int("partition", msg.Partition), zap.Int64("offset", msg.Offset))
+		for {
+			if err := c.handleMessage(ctx, msg); err == nil {
+				break
+			} else {
+				c.logger.Error("failed to process order event; retrying", zap.Error(err), zap.Int("partition", msg.Partition), zap.Int64("offset", msg.Offset))
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Second):
+			}
 		}
 
 		if err := c.reader.CommitMessages(ctx, msg); err != nil {
@@ -94,25 +108,13 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 		return nil
 	}
 
-	if strings.TrimSpace(envelope.EventType) != "order.created" {
+	eventType := strings.TrimSpace(envelope.EventType)
+	if eventType != "order.created" && eventType != "order.cancelled" {
 		return nil
 	}
 
 	payload := envelope.Payload
 	orderID := asString(payload["orderId"])
-	userID := asString(payload["userId"])
-	sellerID := asString(payload["sellerId"])
-	orderNumber := asStringPtr(payload["orderNumber"])
-	paymentMethod := strings.ToUpper(asString(payload["paymentMethod"]))
-	currency := strings.ToUpper(asString(payload["currency"]))
-	totalAmount, ok := asNumber(payload["totalAmount"])
-	if !ok {
-		return nil
-	}
-	if totalAmount < 0 {
-		return nil
-	}
-
 	requestID := ""
 	if metadata, ok := payload["metadata"].(map[string]any); ok {
 		requestID = asString(metadata["requestId"])
@@ -125,15 +127,28 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 	if strings.TrimSpace(topic) == "" {
 		topic = c.topic
 	}
-	c.logger.Info("checkout saga order event received",
+	c.logger.Info("payment order event received",
 		zap.String("requestId", requestID),
 		zap.String("eventId", strings.TrimSpace(envelope.EventID)),
-		zap.String("eventType", strings.TrimSpace(envelope.EventType)),
+		zap.String("eventType", eventType),
 		zap.String("orderId", orderID),
 		zap.String("topic", topic),
 		zap.Int("partition", msg.Partition),
 		zap.Int64("offset", msg.Offset),
 	)
+	if eventType == "order.cancelled" {
+		return c.service.HandleOrderCancelledEvent(ctx, orderID, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
+	}
+
+	userID := asString(payload["userId"])
+	sellerID := asString(payload["sellerId"])
+	orderNumber := asStringPtr(payload["orderNumber"])
+	paymentMethod := strings.ToUpper(asString(payload["paymentMethod"]))
+	currency := strings.ToUpper(asString(payload["currency"]))
+	totalAmount, ok := asNumber(payload["totalAmount"])
+	if !ok || totalAmount < 0 {
+		return nil
+	}
 	return c.service.HandleOrderCreatedEvent(ctx, orderID, userID, sellerID, totalAmount, currency, orderNumber, paymentMethod, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
 }
 

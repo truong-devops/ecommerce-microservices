@@ -52,7 +52,7 @@ func (s *AdminService) GetSummary(ctx context.Context, user domain.UserContext) 
 	return s.store.GetAdminWalletSummary(ctx, supportedCurrency)
 }
 
-func (s *AdminService) ListWallets(ctx context.Context, user domain.UserContext, search, state, bankStatus string, page, pageSize int) (domain.AdminWalletPage, error) {
+func (s *AdminService) ListWallets(ctx context.Context, user domain.UserContext, search, state, bankStatus, rawOwnerType string, page, pageSize int) (domain.AdminWalletPage, error) {
 	if err := validateAdmin(user); err != nil {
 		return domain.AdminWalletPage{}, err
 	}
@@ -64,9 +64,13 @@ func (s *AdminService) ListWallets(ctx context.Context, user domain.UserContext,
 	if bankStatus != "" && bankStatus != "MISSING" && bankStatus != string(domain.BankAccountStatusUnverified) && bankStatus != string(domain.BankAccountStatusAllowlisted) && bankStatus != string(domain.BankAccountStatusDisabled) {
 		return domain.AdminWalletPage{}, validationError("invalid bank account status")
 	}
+	ownerType := domain.WalletOwnerType(strings.ToUpper(strings.TrimSpace(rawOwnerType)))
+	if ownerType != "" && ownerType != domain.WalletOwnerSeller && ownerType != domain.WalletOwnerCustomer {
+		return domain.AdminWalletPage{}, validationError("ownerType must be SELLER or CUSTOMER")
+	}
 	return s.store.ListAdminWallets(ctx, repository.ListAdminWalletsInput{
 		Currency: supportedCurrency, Search: strings.TrimSpace(search), State: state,
-		BankStatus: bankStatus, Page: page, PageSize: pageSize,
+		BankStatus: bankStatus, OwnerType: ownerType, Page: page, PageSize: pageSize,
 	})
 }
 
@@ -165,12 +169,17 @@ func (s *AdminService) PrepareManualPayout(ctx context.Context, user domain.User
 		url.PathEscape(vietQRBankID(data.BankCode)), url.PathEscape(accountNumber), data.AmountMinor,
 		url.QueryEscape(transferContent), url.QueryEscape(data.AccountHolderName),
 	)
-	return domain.AdminPayoutTransfer{
-		PayoutID: data.PayoutID, WalletID: data.WalletID, SellerID: data.SellerID,
+	result := domain.AdminPayoutTransfer{
+		PayoutID: data.PayoutID, WalletID: data.WalletID, OwnerID: data.OwnerID,
+		OwnerType: data.OwnerType, PayoutType: data.PayoutType,
 		AmountMinor: data.AmountMinor, Currency: data.Currency, Status: data.Status,
 		BankCode: data.BankCode, AccountNumber: accountNumber, AccountHolderName: data.AccountHolderName,
 		TransferContent: transferContent, QRCodeURL: qrCodeURL,
-	}, nil
+	}
+	if data.OwnerType == domain.WalletOwnerSeller {
+		result.SellerID = data.OwnerID
+	}
+	return result, nil
 }
 
 func buildPayoutTransferCode(payoutID string) string {

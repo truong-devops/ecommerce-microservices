@@ -36,12 +36,20 @@ func IsValidRole(role Role) bool {
 
 type AccountType string
 
+type WalletOwnerType string
+
 const (
-	AccountTypePlatformClearing AccountType = "PLATFORM_CLEARING"
-	AccountTypePlatformPayout   AccountType = "PLATFORM_PAYOUT_CLEARING"
-	AccountTypeSellerHeld       AccountType = "SELLER_HELD"
-	AccountTypeSellerAvailable  AccountType = "SELLER_AVAILABLE"
-	AccountTypePayoutPending    AccountType = "PAYOUT_PENDING"
+	WalletOwnerSeller   WalletOwnerType = "SELLER"
+	WalletOwnerCustomer WalletOwnerType = "CUSTOMER"
+)
+
+const (
+	AccountTypePlatformClearing  AccountType = "PLATFORM_CLEARING"
+	AccountTypePlatformPayout    AccountType = "PLATFORM_PAYOUT_CLEARING"
+	AccountTypeSellerHeld        AccountType = "SELLER_HELD"
+	AccountTypeSellerAvailable   AccountType = "SELLER_AVAILABLE"
+	AccountTypeCustomerAvailable AccountType = "CUSTOMER_AVAILABLE"
+	AccountTypePayoutPending     AccountType = "PAYOUT_PENDING"
 )
 
 type HoldStatus string
@@ -56,14 +64,15 @@ const (
 type TransactionType string
 
 const (
-	TransactionTypePaymentHeld   TransactionType = "PAYMENT_HELD"
-	TransactionTypeFundsReleased TransactionType = "FUNDS_RELEASED"
-	TransactionTypePaymentRefund TransactionType = "PAYMENT_REFUND"
-	TransactionTypeChargeback    TransactionType = "CHARGEBACK"
-	TransactionTypePayoutRequest TransactionType = "PAYOUT_REQUESTED"
-	TransactionTypePayoutSuccess TransactionType = "PAYOUT_SUCCEEDED"
-	TransactionTypePayoutFailure TransactionType = "PAYOUT_FAILED"
-	TransactionTypePayoutCancel  TransactionType = "PAYOUT_CANCELLED"
+	TransactionTypePaymentHeld          TransactionType = "PAYMENT_HELD"
+	TransactionTypeFundsReleased        TransactionType = "FUNDS_RELEASED"
+	TransactionTypePaymentRefund        TransactionType = "PAYMENT_REFUND"
+	TransactionTypeCustomerRefundCredit TransactionType = "CUSTOMER_REFUND_CREDIT"
+	TransactionTypeChargeback           TransactionType = "CHARGEBACK"
+	TransactionTypePayoutRequest        TransactionType = "PAYOUT_REQUESTED"
+	TransactionTypePayoutSuccess        TransactionType = "PAYOUT_SUCCEEDED"
+	TransactionTypePayoutFailure        TransactionType = "PAYOUT_FAILED"
+	TransactionTypePayoutCancel         TransactionType = "PAYOUT_CANCELLED"
 )
 
 type BankAccountStatus string
@@ -147,6 +156,7 @@ type PaymentCapturedEvent struct {
 type PaymentReversedEvent struct {
 	PaymentID      string
 	OrderID        string
+	CustomerID     string
 	SellerID       string
 	Amount         float64
 	RefundedAmount float64
@@ -161,15 +171,17 @@ type OrderDeliveredEvent struct {
 }
 
 type WalletBalance struct {
-	WalletID            *string   `json:"walletId"`
-	SellerID            string    `json:"sellerId"`
-	Currency            string    `json:"currency"`
-	HeldAmount          int64     `json:"heldAmount"`
-	AvailableAmount     int64     `json:"availableAmount"`
-	PayoutPendingAmount int64     `json:"payoutPendingAmount"`
-	TotalPaidOut        int64     `json:"totalPaidOut"`
-	IsFrozen            bool      `json:"isFrozen"`
-	UpdatedAt           time.Time `json:"updatedAt"`
+	WalletID            *string         `json:"walletId"`
+	OwnerID             string          `json:"ownerId"`
+	OwnerType           WalletOwnerType `json:"ownerType"`
+	SellerID            string          `json:"sellerId,omitempty"`
+	Currency            string          `json:"currency"`
+	HeldAmount          int64           `json:"heldAmount"`
+	AvailableAmount     int64           `json:"availableAmount"`
+	PayoutPendingAmount int64           `json:"payoutPendingAmount"`
+	TotalPaidOut        int64           `json:"totalPaidOut"`
+	IsFrozen            bool            `json:"isFrozen"`
+	UpdatedAt           time.Time       `json:"updatedAt"`
 }
 
 type LedgerTransaction struct {
@@ -192,17 +204,19 @@ type TransactionPage struct {
 }
 
 type AdminWallet struct {
-	ID                  string       `json:"id"`
-	SellerID            string       `json:"sellerId"`
-	Currency            string       `json:"currency"`
-	HeldAmount          int64        `json:"heldAmount"`
-	AvailableAmount     int64        `json:"availableAmount"`
-	PayoutPendingAmount int64        `json:"payoutPendingAmount"`
-	TotalPaidOut        int64        `json:"totalPaidOut"`
-	IsFrozen            bool         `json:"isFrozen"`
-	BankAccount         *BankAccount `json:"bankAccount,omitempty"`
-	CreatedAt           time.Time    `json:"createdAt"`
-	UpdatedAt           time.Time    `json:"updatedAt"`
+	ID                  string          `json:"id"`
+	OwnerID             string          `json:"ownerId"`
+	OwnerType           WalletOwnerType `json:"ownerType"`
+	SellerID            string          `json:"sellerId,omitempty"`
+	Currency            string          `json:"currency"`
+	HeldAmount          int64           `json:"heldAmount"`
+	AvailableAmount     int64           `json:"availableAmount"`
+	PayoutPendingAmount int64           `json:"payoutPendingAmount"`
+	TotalPaidOut        int64           `json:"totalPaidOut"`
+	IsFrozen            bool            `json:"isFrozen"`
+	BankAccount         *BankAccount    `json:"bankAccount,omitempty"`
+	CreatedAt           time.Time       `json:"createdAt"`
+	UpdatedAt           time.Time       `json:"updatedAt"`
 }
 
 type AdminWalletPage struct {
@@ -226,8 +240,11 @@ type AdminWalletSummary struct {
 
 type AdminPayout struct {
 	Payout
-	WalletID string `json:"walletId"`
-	SellerID string `json:"sellerId"`
+	WalletID   string          `json:"walletId"`
+	OwnerID    string          `json:"ownerId"`
+	OwnerType  WalletOwnerType `json:"ownerType"`
+	PayoutType string          `json:"payoutType"`
+	SellerID   string          `json:"sellerId,omitempty"`
 }
 
 type AdminPayoutPage struct {
@@ -238,17 +255,20 @@ type AdminPayoutPage struct {
 }
 
 type AdminPayoutTransfer struct {
-	PayoutID          string       `json:"payoutId"`
-	WalletID          string       `json:"walletId"`
-	SellerID          string       `json:"sellerId"`
-	AmountMinor       int64        `json:"amount"`
-	Currency          string       `json:"currency"`
-	Status            PayoutStatus `json:"status"`
-	BankCode          string       `json:"bankCode"`
-	AccountNumber     string       `json:"accountNumber"`
-	AccountHolderName string       `json:"accountHolderName"`
-	TransferContent   string       `json:"transferContent"`
-	QRCodeURL         string       `json:"qrCodeUrl"`
+	PayoutID          string          `json:"payoutId"`
+	WalletID          string          `json:"walletId"`
+	OwnerID           string          `json:"ownerId"`
+	OwnerType         WalletOwnerType `json:"ownerType"`
+	PayoutType        string          `json:"payoutType"`
+	SellerID          string          `json:"sellerId,omitempty"`
+	AmountMinor       int64           `json:"amount"`
+	Currency          string          `json:"currency"`
+	Status            PayoutStatus    `json:"status"`
+	BankCode          string          `json:"bankCode"`
+	AccountNumber     string          `json:"accountNumber"`
+	AccountHolderName string          `json:"accountHolderName"`
+	TransferContent   string          `json:"transferContent"`
+	QRCodeURL         string          `json:"qrCodeUrl"`
 }
 
 type AdminAuditLog struct {

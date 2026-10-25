@@ -56,7 +56,7 @@ func (h *AdminHandler) ListWallets(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := h.admin.ListWallets(
 		r.Context(), user, r.URL.Query().Get("search"), r.URL.Query().Get("state"),
-		r.URL.Query().Get("bankStatus"), page, pageSize,
+		r.URL.Query().Get("bankStatus"), r.URL.Query().Get("ownerType"), page, pageSize,
 	)
 	if err != nil {
 		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)

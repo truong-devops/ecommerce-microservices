@@ -20,7 +20,7 @@ import { useAuth } from '@/providers/AppProvider';
 
 const statusTransitionMap: Partial<Record<SellerOrderStatus, SellerOrderStatus[]>> = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
-  CONFIRMED: [],
+  CONFIRMED: ['CANCELLED'],
   PROCESSING: [],
   SHIPPED: [],
   DELIVERED: [],
@@ -173,7 +173,10 @@ export default function SellerOrderDetailPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-orange-500">eMall Seller</p>
           <h1 className="mt-2 text-2xl font-semibold text-slate-900">Bạn chưa đăng nhập</h1>
           <p className="mt-2 text-sm text-slate-600">Đăng nhập để truy cập Seller Center.</p>
-          <Link href="/login" className="mt-5 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600">
+          <Link
+            href="/login"
+            className="mt-5 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
+          >
             Đi đến trang đăng nhập
           </Link>
         </section>
@@ -204,7 +207,9 @@ export default function SellerOrderDetailPage() {
           {error ? <section className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</section> : null}
 
           {loading ? (
-            <section className="rounded-md border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">Đang tải chi tiết đơn hàng...</section>
+            <section className="rounded-md border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
+              Đang tải chi tiết đơn hàng...
+            </section>
           ) : !order ? (
             <section className="space-y-3">
               <article className="rounded-md border border-slate-200 bg-white p-4">

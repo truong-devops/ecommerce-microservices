@@ -34,19 +34,23 @@ func TestSellerCanOnlyAccessOwnOrder(t *testing.T) {
 	}
 }
 
-func TestSellerCanOnlyUpdatePendingOrderBeforeDispatch(t *testing.T) {
+func TestSellerCanCancelConfirmedOrderBeforeFulfillment(t *testing.T) {
 	seller := domain.UserContext{UserID: "seller-1", Role: domain.RoleSeller}
 
-	for _, next := range []domain.OrderStatus{domain.OrderStatusConfirmed, domain.OrderStatusCancelled} {
-		if err := assertCanManuallyUpdateOrderStatus(seller, domain.OrderStatusPending, next); err != nil {
-			t.Fatalf("expected pending order transition to %s to be allowed: %v", next, err)
+	for _, transition := range [][2]domain.OrderStatus{
+		{domain.OrderStatusPending, domain.OrderStatusConfirmed},
+		{domain.OrderStatusPending, domain.OrderStatusCancelled},
+		{domain.OrderStatusConfirmed, domain.OrderStatusCancelled},
+	} {
+		if err := assertCanManuallyUpdateOrderStatus(seller, transition[0], transition[1]); err != nil {
+			t.Fatalf("expected seller transition from %s to %s to be allowed: %v", transition[0], transition[1], err)
 		}
 	}
 
 	for _, transition := range [][2]domain.OrderStatus{
-		{domain.OrderStatusConfirmed, domain.OrderStatusCancelled},
 		{domain.OrderStatusConfirmed, domain.OrderStatusFailed},
 		{domain.OrderStatusProcessing, domain.OrderStatusFailed},
+		{domain.OrderStatusProcessing, domain.OrderStatusCancelled},
 	} {
 		if err := assertCanManuallyUpdateOrderStatus(seller, transition[0], transition[1]); err == nil {
 			t.Fatalf("expected seller transition from %s to %s to be rejected", transition[0], transition[1])
@@ -54,8 +58,11 @@ func TestSellerCanOnlyUpdatePendingOrderBeforeDispatch(t *testing.T) {
 	}
 }
 
-func TestConfirmedOrderCannotBeCancelledAfterDispatchStarts(t *testing.T) {
-	if err := assertCanTransition(domain.OrderStatusConfirmed, domain.OrderStatusCancelled); err == nil {
-		t.Fatalf("expected confirmed order cancellation to be rejected after dispatch starts")
+func TestOrderCanOnlyBeCancelledBeforeProcessingStarts(t *testing.T) {
+	if err := assertCanTransition(domain.OrderStatusConfirmed, domain.OrderStatusCancelled); err != nil {
+		t.Fatalf("expected confirmed order cancellation to be allowed: %v", err)
+	}
+	if err := assertCanTransition(domain.OrderStatusProcessing, domain.OrderStatusCancelled); err == nil {
+		t.Fatal("expected cancellation to be rejected after processing starts")
 	}
 }

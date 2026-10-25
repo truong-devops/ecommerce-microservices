@@ -594,6 +594,11 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, user domain.UserCo
 			return nil, err
 		}
 	}
+	if status == domain.OrderStatusCancelled {
+		if err := s.enqueueOrderEvent(ctx, tx, EventOrderCancelled, updatedOrder, user, requestID); err != nil {
+			return nil, err
+		}
+	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
@@ -878,8 +883,9 @@ func assertCanManuallyUpdateOrderStatus(user domain.UserContext, current, next d
 	if user.Role != domain.RoleSeller {
 		return nil
 	}
-	if current == domain.OrderStatusPending &&
-		(next == domain.OrderStatusConfirmed || next == domain.OrderStatusCancelled) {
+	if (current == domain.OrderStatusPending &&
+		(next == domain.OrderStatusConfirmed || next == domain.OrderStatusCancelled)) ||
+		(current == domain.OrderStatusConfirmed && next == domain.OrderStatusCancelled) {
 		return nil
 	}
 	return httpx.NewAppError(

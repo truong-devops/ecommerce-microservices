@@ -1904,6 +1904,115 @@ func (s *PaymentService) HandleOrderCreatedEvent(
 	return tx.Commit(ctx)
 }
 
+// HandleOrderCancelledEvent refunds captured bank payments into the customer's
+// eMall wallet. The actual bank transfer is a separate wallet payout, confirmed
+// by the outgoing SePay webhook.
+func (s *PaymentService) HandleOrderCancelledEvent(
+	ctx context.Context,
+	orderID, requestID, eventID, topic string,
+	partition int,
+	offset int64,
+) error {
+	if strings.TrimSpace(orderID) == "" {
+		return nil
+	}
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
+		EventID: eventID, EventType: "order.cancelled", Topic: topic,
+		Partition: partition, OffsetValue: offset,
+	})
+	if err != nil {
+		return err
+	}
+	if alreadyProcessed {
+		return tx.Commit(ctx)
+	}
+
+	payment, err := s.repo.FindPaymentByOrderIDForUpdate(ctx, tx, orderID)
+	if err != nil {
+		return err
+	}
+	if payment == nil {
+		return tx.Commit(ctx)
+	}
+	systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}
+
+	switch payment.Status {
+	case domain.PaymentStatusCaptured, domain.PaymentStatusPartiallyRefunded:
+		remaining := roundMoney(payment.Amount - payment.RefundedAmount)
+		if remaining <= 0 {
+			return tx.Commit(ctx)
+		}
+		providerRefundID := "wallet-refund:" + payment.ID + ":" + eventID
+		refund, err := s.repo.CreateRefund(ctx, tx, repository.CreateRefundInput{
+			PaymentID: payment.ID, ProviderRefundID: strPtr(providerRefundID),
+			Amount: remaining, Currency: payment.Currency, Status: domain.RefundStatusSucceeded,
+			Reason:      strPtr("Order cancelled; refund credited to customer wallet"),
+			Metadata:    map[string]any{"destination": "CUSTOMER_WALLET", "orderEventId": eventID},
+			RequestedBy: systemActorID, RequestedByRole: domain.RoleSupport,
+		})
+		if err != nil {
+			return err
+		}
+		if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
+			PaymentID: payment.ID, TransactionType: TransactionRefundSucceeded,
+			Amount: remaining, Currency: payment.Currency, Status: string(domain.RefundStatusSucceeded),
+			RequestID: requestID, RawPayload: map[string]any{"source": "order.cancelled", "destination": "CUSTOMER_WALLET", "refundId": refund.ID},
+		}); err != nil {
+			return err
+		}
+		previous := payment.Status
+		payment.RefundedAmount = payment.Amount
+		payment.Status = domain.PaymentStatusRefunded
+		updated, err := s.repo.SavePayment(ctx, tx, *payment)
+		if err != nil {
+			return err
+		}
+		if previous != updated.Status {
+			if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+				PaymentID: updated.ID, FromStatus: &previous, ToStatus: updated.Status,
+				ChangedBy: systemActorID, ChangedByRole: domain.RoleSupport,
+				Reason: strPtr("Order cancelled; refund credited to customer wallet"),
+			}); err != nil {
+				return err
+			}
+		}
+		if err := s.repo.CreatePaymentAuditLog(ctx, tx, repository.CreatePaymentAuditLogInput{
+			PaymentID: updated.ID, Action: "PAYMENT_REFUNDED_TO_CUSTOMER_WALLET",
+			ActorID: systemActorID, ActorRole: domain.RoleSupport, RequestID: requestID,
+			Metadata: map[string]any{"orderEventId": eventID, "refundId": refund.ID, "amount": remaining},
+		}); err != nil {
+			return err
+		}
+		if err := s.enqueueStatusEvent(ctx, tx, updated, systemActor, requestID); err != nil {
+			return err
+		}
+	case domain.PaymentStatusPending, domain.PaymentStatusRequiresAction, domain.PaymentStatusAuthorized:
+		previous := payment.Status
+		payment.Status = domain.PaymentStatusCancelled
+		updated, err := s.repo.SavePayment(ctx, tx, *payment)
+		if err != nil {
+			return err
+		}
+		if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+			PaymentID: updated.ID, FromStatus: &previous, ToStatus: updated.Status,
+			ChangedBy: systemActorID, ChangedByRole: domain.RoleSupport,
+			Reason: strPtr("Order cancelled before payment capture"),
+		}); err != nil {
+			return err
+		}
+		if err := s.enqueueStatusEvent(ctx, tx, updated, systemActor, requestID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 func (s *PaymentService) resolvePaymentForWebhook(
 	ctx context.Context,
 	tx pgx.Tx,

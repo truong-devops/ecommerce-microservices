@@ -45,7 +45,7 @@ func TestPayoutIdempotencyAndLedgerLifecycleIntegration(t *testing.T) {
 	if changed, err := repo.CompletePayout(ctx, CompletePayoutInput{PayoutID: created.ID, Provider: "mock", ProviderReference: "mock-failed", Status: domain.PayoutStatusFailed, FailureCode: "TEST", FailureMessage: "failure", ProcessedAt: now.Add(2 * time.Second)}); err != nil || !changed {
 		t.Fatalf("fail payout: changed=%v err=%v", changed, err)
 	}
-	balance, err := repo.GetBalance(ctx, sellerID, "VND")
+	balance, err := repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || balance.AvailableAmount != 100_000 || balance.PayoutPendingAmount != 0 {
 		t.Fatalf("balance after failure: %+v err=%v", balance, err)
 	}
@@ -61,17 +61,17 @@ func TestPayoutIdempotencyAndLedgerLifecycleIntegration(t *testing.T) {
 	if _, err := repo.CompletePayout(ctx, CompletePayoutInput{PayoutID: succeeded.ID, Provider: "mock", ProviderReference: "mock-success", Status: domain.PayoutStatusSucceeded, ProcessedAt: now.Add(4 * time.Second)}); err != nil {
 		t.Fatalf("complete payout: %v", err)
 	}
-	balance, err = repo.GetBalance(ctx, sellerID, "VND")
+	balance, err = repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || balance.AvailableAmount != 20_000 || balance.PayoutPendingAmount != 0 || balance.TotalPaidOut != 80_000 {
 		t.Fatalf("balance after success: %+v err=%v", balance, err)
 	}
-	if _, err := repo.GetPayout(ctx, "99999999-9999-4999-8999-999999999999", succeeded.ID); !errors.Is(err, ErrPayoutNotFound) {
+	if _, err := repo.GetPayout(ctx, "99999999-9999-4999-8999-999999999999", domain.WalletOwnerSeller, succeeded.ID); !errors.Is(err, ErrPayoutNotFound) {
 		t.Fatalf("another seller must not access payout, err=%v", err)
 	}
-	if _, err := repo.ApplyReversal(ctx, ReversalInput{PaymentID: "20222222-2222-4222-8222-222222222222", OrderID: "30333333-3333-4333-8333-333333333333", SellerID: sellerID, CumulativeAmountMinor: 50_000, Currency: "VND", Meta: domain.EventMeta{EventID: "refund-after-payout", EventType: "payment.refunded", Topic: "payment.events", OccurredAt: now.Add(5 * time.Second)}}); err != nil {
+	if _, err := repo.ApplyReversal(ctx, ReversalInput{PaymentID: "20222222-2222-4222-8222-222222222222", OrderID: "30333333-3333-4333-8333-333333333333", CustomerID: "88888888-8888-4888-8888-888888888888", SellerID: sellerID, CumulativeAmountMinor: 50_000, Currency: "VND", Meta: domain.EventMeta{EventID: "refund-after-payout", EventType: "payment.refunded", Topic: "payment.events", OccurredAt: now.Add(5 * time.Second)}}); err != nil {
 		t.Fatalf("refund after payout: %v", err)
 	}
-	balance, err = repo.GetBalance(ctx, sellerID, "VND")
+	balance, err = repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || balance.AvailableAmount != -30_000 || !balance.IsFrozen {
 		t.Fatalf("refund debt must freeze wallet: %+v err=%v", balance, err)
 	}
@@ -82,7 +82,7 @@ func TestPayoutIdempotencyAndLedgerLifecycleIntegration(t *testing.T) {
 		t.Fatalf("frozen wallet payout error=%v", err)
 	}
 	seedAvailableBalance(t, ctx, repo, sellerID, "21222222-2222-4222-8222-222222222222", "31333333-3333-4333-8333-333333333333", 50_000)
-	balance, err = repo.GetBalance(ctx, sellerID, "VND")
+	balance, err = repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || balance.AvailableAmount != 20_000 || balance.IsFrozen {
 		t.Fatalf("repaid wallet debt must unfreeze automatically: %+v err=%v", balance, err)
 	}
@@ -197,7 +197,7 @@ func TestConcurrentPayoutsNeverMakeBalanceNegativeIntegration(t *testing.T) {
 	if successes != 1 || insufficient != 1 {
 		t.Fatalf("success=%d insufficient=%d", successes, insufficient)
 	}
-	balance, err := repo.GetBalance(ctx, sellerID, "VND")
+	balance, err := repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || balance.AvailableAmount != 20_000 || balance.PayoutPendingAmount != 80_000 {
 		t.Fatalf("unexpected concurrent balance: %+v err=%v", balance, err)
 	}
@@ -285,7 +285,7 @@ func TestWalletLedgerLifecycleIntegration(t *testing.T) {
 		t.Fatal("expected conflicting capture payload for the same payment id to fail")
 	}
 
-	balance, err := repository.GetBalance(ctx, sellerID, "VND")
+	balance, err := repository.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil {
 		t.Fatalf("get held balance: %v", err)
 	}
@@ -297,7 +297,7 @@ func TestWalletLedgerLifecycleIntegration(t *testing.T) {
 	if err != nil || released != 1 {
 		t.Fatalf("release holds: count=%d err=%v", released, err)
 	}
-	balance, err = repository.GetBalance(ctx, sellerID, "VND")
+	balance, err = repository.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil {
 		t.Fatalf("get released balance: %v", err)
 	}
@@ -306,26 +306,56 @@ func TestWalletLedgerLifecycleIntegration(t *testing.T) {
 	}
 
 	processed, err = repository.ApplyReversal(ctx, ReversalInput{
-		PaymentID: paymentID, OrderID: orderID, SellerID: sellerID,
+		PaymentID: paymentID, OrderID: orderID, CustomerID: "88888888-8888-4888-8888-888888888888", SellerID: sellerID,
 		CumulativeAmountMinor: 25000, Currency: "VND",
 		Meta: domain.EventMeta{EventID: "evt-refund", EventType: "payment.partially-refunded", Topic: "payment.events", OffsetValue: 3, OccurredAt: time.Now().UTC()},
 	})
 	if err != nil || !processed {
 		t.Fatalf("apply refund: processed=%v err=%v", processed, err)
 	}
-	balance, err = repository.GetBalance(ctx, sellerID, "VND")
+	balance, err = repository.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil {
 		t.Fatalf("get refunded balance: %v", err)
 	}
 	if balance.HeldAmount != 0 || balance.AvailableAmount != 75000 {
 		t.Fatalf("unexpected refunded balance: %+v", balance)
 	}
+	customerID := "88888888-8888-4888-8888-888888888888"
+	customerBalance, err := repository.GetBalance(ctx, customerID, domain.WalletOwnerCustomer, "VND")
+	if err != nil || customerBalance.AvailableAmount != 25_000 || customerBalance.HeldAmount != 0 {
+		t.Fatalf("unexpected customer refund balance: %+v err=%v", customerBalance, err)
+	}
+	var refundOwnerID, refundOwnerType, refundCustomerID string
+	if err := pool.QueryRow(ctx, `
+		SELECT payload->>'ownerId', payload->>'ownerType', payload->>'customerId'
+		FROM outbox_events
+		WHERE event_type = 'wallet.customer-refund-credited'
+		ORDER BY created_at DESC
+		LIMIT 1
+	`).Scan(&refundOwnerID, &refundOwnerType, &refundCustomerID); err != nil {
+		t.Fatalf("load customer refund outbox event: %v", err)
+	}
+	if refundOwnerID != customerID || refundOwnerType != string(domain.WalletOwnerCustomer) || refundCustomerID != customerID {
+		t.Fatalf("unexpected customer refund outbox owner: owner=%s type=%s customer=%s", refundOwnerID, refundOwnerType, refundCustomerID)
+	}
+	duplicate, err = repository.ApplyReversal(ctx, ReversalInput{
+		PaymentID: paymentID, OrderID: orderID, CustomerID: customerID, SellerID: sellerID,
+		CumulativeAmountMinor: 25000, Currency: "VND",
+		Meta: domain.EventMeta{EventID: "evt-refund-redelivery", EventType: "payment.partially-refunded", Topic: "payment.events", OffsetValue: 4, OccurredAt: time.Now().UTC()},
+	})
+	if err != nil || !duplicate {
+		t.Fatalf("idempotent cumulative refund: processed=%v err=%v", duplicate, err)
+	}
+	customerBalance, err = repository.GetBalance(ctx, customerID, domain.WalletOwnerCustomer, "VND")
+	if err != nil || customerBalance.AvailableAmount != 25_000 {
+		t.Fatalf("duplicate refund changed customer balance: %+v err=%v", customerBalance, err)
+	}
 	var holdStatus domain.HoldStatus
 	if err := pool.QueryRow(ctx, `SELECT status FROM fund_holds WHERE payment_id = $1`, paymentID).Scan(&holdStatus); err != nil || holdStatus != domain.HoldStatusReleased {
 		t.Fatalf("partially refunded released hold status=%s err=%v", holdStatus, err)
 	}
 
-	page, err := repository.ListTransactions(ctx, ListTransactionsInput{SellerID: sellerID, Currency: "VND", Page: 1, PageSize: 20})
+	page, err := repository.ListTransactions(ctx, ListTransactionsInput{OwnerID: sellerID, OwnerType: domain.WalletOwnerSeller, Currency: "VND", Page: 1, PageSize: 20})
 	if err != nil {
 		t.Fatalf("list transactions: %v", err)
 	}
@@ -338,6 +368,52 @@ func TestWalletLedgerLifecycleIntegration(t *testing.T) {
 	}
 	if amounts[domain.TransactionTypePaymentHeld] != 100_000 || amounts[domain.TransactionTypeFundsReleased] != 0 || amounts[domain.TransactionTypePaymentRefund] != -25_000 {
 		t.Fatalf("unexpected net wallet transaction amounts: %+v", amounts)
+	}
+	customerPage, err := repository.ListTransactions(ctx, ListTransactionsInput{OwnerID: customerID, OwnerType: domain.WalletOwnerCustomer, Currency: "VND", Page: 1, PageSize: 20})
+	if err != nil || customerPage.TotalItems != 1 || customerPage.Items[0].TransactionType != domain.TransactionTypeCustomerRefundCredit || customerPage.Items[0].AmountMinor != 25_000 {
+		t.Fatalf("unexpected customer refund transactions: %+v err=%v", customerPage, err)
+	}
+	if _, err := repository.UpsertBankAccount(ctx, UpsertBankAccountInput{
+		OwnerID: customerID, OwnerType: domain.WalletOwnerCustomer, Currency: "VND",
+		BankCode: "VCB", AccountHolderName: "TEST CUSTOMER", Last4: "1234",
+		EncryptedAccountNumber: []byte("customer-encrypted"), EncryptionNonce: []byte("customer-nonce"),
+	}); err != nil {
+		t.Fatalf("upsert customer bank account: %v", err)
+	}
+	if _, err := repository.SetAdminBankAccountStatus(ctx, AdminActionInput{
+		WalletID: *customerBalance.WalletID, ActorID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+		ActorEmail: "test-admin@example.com", Reason: "Verify customer refund account",
+	}, domain.BankAccountStatusAllowlisted); err != nil {
+		t.Fatalf("verify customer bank account: %v", err)
+	}
+	customerPayout, replay, err := repository.CreatePayout(ctx, CreatePayoutInput{
+		OwnerID: customerID, OwnerType: domain.WalletOwnerCustomer, PayoutType: "CUSTOMER_REFUND",
+		Currency: "VND", AmountMinor: 20_000, IdempotencyKey: "customer-refund-payout",
+		RequestHash: "customer-refund-hash", IdempotencyExpiresAt: time.Now().UTC().Add(time.Hour),
+	})
+	if err != nil || replay {
+		t.Fatalf("create customer refund payout: replay=%v err=%v", replay, err)
+	}
+	transfer, err := repository.PrepareManualPayout(ctx, PrepareManualPayoutInput{
+		PayoutID: customerPayout.ID, ActorID: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+		ActorEmail: "test-admin@example.com", Reason: "Prepare customer refund",
+		TransferCode: "EMALLCUSTOMER1",
+	})
+	if err != nil || transfer.OwnerType != domain.WalletOwnerCustomer || transfer.PayoutType != "CUSTOMER_REFUND" {
+		t.Fatalf("prepare customer refund transfer: %+v err=%v", transfer, err)
+	}
+	webhookResult, err := repository.ProcessSePayPayoutWebhook(ctx, SePayPayoutWebhookInput{
+		TransactionID: "sepay-customer-refund-1", TransferCode: "EMALLCUSTOMER1",
+		Gateway: "VCB", SourceAccountNumber: "platform-account", AmountMinor: 20_000,
+		Content: "EMALLCUSTOMER1", ReferenceCode: "BANK-CUSTOMER-REFUND-1",
+		TransactionAt: time.Now().UTC(), RawPayload: []byte(`{"transferType":"out"}`),
+	})
+	if err != nil || webhookResult.Outcome != "MATCHED" {
+		t.Fatalf("reconcile customer refund payout: %+v err=%v", webhookResult, err)
+	}
+	customerBalance, err = repository.GetBalance(ctx, customerID, domain.WalletOwnerCustomer, "VND")
+	if err != nil || customerBalance.AvailableAmount != 5_000 || customerBalance.PayoutPendingAmount != 0 || customerBalance.TotalPaidOut != 20_000 {
+		t.Fatalf("unexpected customer balance after bank refund: %+v err=%v", customerBalance, err)
 	}
 
 	assertAllTransactionsBalanced(t, ctx, pool)
@@ -357,7 +433,7 @@ func TestPendingRefundIsAppliedAfterCaptureIntegration(t *testing.T) {
 	orderID := "66666666-6666-4666-8666-666666666666"
 
 	if _, err := repository.ApplyReversal(ctx, ReversalInput{
-		PaymentID: paymentID, OrderID: orderID, SellerID: sellerID,
+		PaymentID: paymentID, OrderID: orderID, CustomerID: "99999999-9999-4999-8999-999999999999", SellerID: sellerID,
 		CumulativeAmountMinor: 30000, Currency: "VND",
 		Meta: domain.EventMeta{EventID: "evt-refund-first", EventType: "payment.refunded", Topic: "payment.events", OffsetValue: 1, OccurredAt: time.Now().UTC()},
 	}); err != nil {
@@ -371,12 +447,16 @@ func TestPendingRefundIsAppliedAfterCaptureIntegration(t *testing.T) {
 		t.Fatalf("apply capture after pending reversal: %v", err)
 	}
 
-	balance, err := repository.GetBalance(ctx, sellerID, "VND")
+	balance, err := repository.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil {
 		t.Fatalf("get balance: %v", err)
 	}
 	if balance.HeldAmount != 70000 || balance.AvailableAmount != 0 {
 		t.Fatalf("unexpected balance after pending reversal: %+v", balance)
+	}
+	customerBalance, err := repository.GetBalance(ctx, "99999999-9999-4999-8999-999999999999", domain.WalletOwnerCustomer, "VND")
+	if err != nil || customerBalance.AvailableAmount != 30_000 {
+		t.Fatalf("pending refund was not credited after capture: %+v err=%v", customerBalance, err)
 	}
 	assertAllTransactionsBalanced(t, ctx, pool)
 }

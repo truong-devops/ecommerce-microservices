@@ -10,6 +10,7 @@ const SHIPPING_SERVICE_BASE_URL = process.env.SHIPPING_SERVICE_BASE_URL ?? API_G
 const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const LIVE_SERVICE_BASE_URL = process.env.LIVE_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const ANALYTICS_SERVICE_BASE_URL = process.env.ANALYTICS_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const WALLET_SERVICE_BASE_URL = process.env.WALLET_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 
 export const serviceBaseUrls = {
   gateway: API_GATEWAY_BASE_URL,
@@ -23,7 +24,8 @@ export const serviceBaseUrls = {
   shipping: SHIPPING_SERVICE_BASE_URL,
   chat: CHAT_SERVICE_BASE_URL,
   live: LIVE_SERVICE_BASE_URL,
-  analytics: ANALYTICS_SERVICE_BASE_URL
+  analytics: ANALYTICS_SERVICE_BASE_URL,
+  wallet: WALLET_SERVICE_BASE_URL
 };
 
 export class UpstreamHttpError extends Error {

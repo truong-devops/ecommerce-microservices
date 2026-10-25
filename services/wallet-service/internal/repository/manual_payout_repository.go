@@ -22,10 +22,12 @@ type PrepareManualPayoutInput struct {
 }
 
 type ManualPayoutData struct {
-	PayoutID, WalletID, SellerID, Currency, BankAccountID, BankCode, AccountHolderName string
-	AmountMinor                                                                        int64
-	Status                                                                             domain.PayoutStatus
-	EncryptedAccountNumber, EncryptionNonce                                            []byte
+	PayoutID, WalletID, OwnerID, Currency, BankAccountID, BankCode, AccountHolderName string
+	OwnerType                                                                         domain.WalletOwnerType
+	PayoutType                                                                        string
+	AmountMinor                                                                       int64
+	Status                                                                            domain.PayoutStatus
+	EncryptedAccountNumber, EncryptionNonce                                           []byte
 }
 
 type CompleteManualPayoutInput struct {
@@ -44,7 +46,7 @@ func (r *WalletRepository) PrepareManualPayout(ctx context.Context, input Prepar
 	var result ManualPayoutData
 	var provider *string
 	err = tx.QueryRow(ctx, `
-		SELECT p.id, p.wallet_id, w.seller_id, p.amount_minor, p.currency, p.status,
+		SELECT p.id, p.wallet_id, w.seller_id, w.owner_type, p.payout_type, p.amount_minor, p.currency, p.status,
 		       p.bank_account_id, p.bank_code, p.account_holder_name,
 		       p.encrypted_account_number, p.encryption_nonce, p.provider
 		FROM payouts p
@@ -52,7 +54,7 @@ func (r *WalletRepository) PrepareManualPayout(ctx context.Context, input Prepar
 		WHERE p.id = $1
 		FOR UPDATE OF p
 	`, input.PayoutID).Scan(
-		&result.PayoutID, &result.WalletID, &result.SellerID, &result.AmountMinor,
+		&result.PayoutID, &result.WalletID, &result.OwnerID, &result.OwnerType, &result.PayoutType, &result.AmountMinor,
 		&result.Currency, &result.Status, &result.BankAccountID, &result.BankCode,
 		&result.AccountHolderName, &result.EncryptedAccountNumber, &result.EncryptionNonce,
 		&provider,
@@ -104,15 +106,16 @@ func (r *WalletRepository) CompleteManualPayout(ctx context.Context, input Compl
 	}
 	defer tx.Rollback(ctx)
 
-	var walletID, sellerID, currency, bankAccountID string
+	var walletID, ownerID, currency, bankAccountID, payoutType string
+	var ownerType domain.WalletOwnerType
 	var amount int64
 	var current domain.PayoutStatus
 	var provider *string
 	err = tx.QueryRow(ctx, `
-		SELECT p.wallet_id, w.seller_id, p.amount_minor, p.currency, p.status, p.bank_account_id, p.provider
+		SELECT p.wallet_id, w.seller_id, w.owner_type, p.payout_type, p.amount_minor, p.currency, p.status, p.bank_account_id, p.provider
 		FROM payouts p JOIN wallets w ON w.id = p.wallet_id
 		WHERE p.id = $1 FOR UPDATE OF p
-	`, input.PayoutID).Scan(&walletID, &sellerID, &amount, &currency, &current, &bankAccountID, &provider)
+	`, input.PayoutID).Scan(&walletID, &ownerID, &ownerType, &payoutType, &amount, &currency, &current, &bankAccountID, &provider)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.AdminPayout{}, false, ErrPayoutNotFound
 	}
@@ -146,10 +149,10 @@ func (r *WalletRepository) CompleteManualPayout(ctx context.Context, input Compl
 	if input.Status == domain.PayoutStatusSucceeded {
 		targetID, err = ensureLedgerAccount(ctx, tx, nil, domain.AccountTypePlatformPayout, currency)
 	} else {
-		targetID, err = ensureLedgerAccount(ctx, tx, &walletID, domain.AccountTypeSellerAvailable, currency)
+		targetID, err = ensureLedgerAccount(ctx, tx, &walletID, availableAccountType(ownerType), currency)
 		transactionType = domain.TransactionTypePayoutCancel
 		eventType = "wallet.payout-cancelled"
-		description = "Rejected payout returned to seller balance"
+		description = "Rejected payout returned to wallet balance"
 		action = "PAYOUT_TRANSFER_REJECTED"
 		failureCode = "ADMIN_REJECTED"
 		failureMessage = input.Reason
@@ -178,10 +181,14 @@ func (r *WalletRepository) CompleteManualPayout(ctx context.Context, input Compl
 	if err = refreshWalletFrozenState(ctx, tx, walletID); err != nil {
 		return domain.AdminPayout{}, false, err
 	}
-	if err = insertOutboxEvent(ctx, tx, "payout", input.PayoutID, eventType, map[string]any{
-		"payoutId": input.PayoutID, "sellerId": sellerID, "amount": amount, "currency": currency,
-		"providerReference": input.ProviderReference, "failureCode": failureCode,
-	}); err != nil {
+	eventPayload := walletOwnerEventPayload(ownerID, ownerType)
+	eventPayload["payoutId"] = input.PayoutID
+	eventPayload["payoutType"] = payoutType
+	eventPayload["amount"] = amount
+	eventPayload["currency"] = currency
+	eventPayload["providerReference"] = input.ProviderReference
+	eventPayload["failureCode"] = failureCode
+	if err = insertOutboxEvent(ctx, tx, "payout", input.PayoutID, eventType, eventPayload); err != nil {
 		return domain.AdminPayout{}, false, err
 	}
 	if err = tx.Commit(ctx); err != nil {
@@ -197,13 +204,13 @@ func (r *WalletRepository) GetAdminPayout(ctx context.Context, payoutID string) 
 	err := r.pool.QueryRow(ctx, `
 		SELECT p.id, p.amount_minor, p.currency, p.status, p.bank_code, p.account_holder_name,
 		       p.account_number_last4, p.provider, p.provider_reference, p.failure_code, p.failure_message,
-		       p.requested_at, p.processed_at, p.created_at, p.updated_at, w.id, w.seller_id
+		       p.requested_at, p.processed_at, p.created_at, p.updated_at, w.id, w.seller_id, w.owner_type, p.payout_type
 		FROM payouts p JOIN wallets w ON w.id = p.wallet_id WHERE p.id = $1
 	`, payoutID).Scan(
 		&item.ID, &item.AmountMinor, &item.Currency, &item.Status, &item.BankCode,
 		&item.AccountHolderName, &last4, &item.Provider, &item.ProviderReference,
 		&item.FailureCode, &item.FailureMessage, &item.RequestedAt, &item.ProcessedAt,
-		&item.CreatedAt, &item.UpdatedAt, &item.WalletID, &item.SellerID,
+		&item.CreatedAt, &item.UpdatedAt, &item.WalletID, &item.OwnerID, &item.OwnerType, &item.PayoutType,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.AdminPayout{}, ErrPayoutNotFound
@@ -212,5 +219,8 @@ func (r *WalletRepository) GetAdminPayout(ctx context.Context, payoutID string) 
 		return domain.AdminPayout{}, err
 	}
 	item.MaskedAccountNumber = maskLast4(last4)
+	if item.OwnerType == domain.WalletOwnerSeller {
+		item.SellerID = item.OwnerID
+	}
 	return item, nil
 }

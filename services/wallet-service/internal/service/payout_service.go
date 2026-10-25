@@ -24,9 +24,9 @@ var (
 
 type PayoutStore interface {
 	UpsertBankAccount(context.Context, repository.UpsertBankAccountInput) (domain.BankAccount, error)
-	GetBankAccount(context.Context, string, string) (domain.BankAccount, error)
+	GetBankAccount(context.Context, string, domain.WalletOwnerType, string) (domain.BankAccount, error)
 	CreatePayout(context.Context, repository.CreatePayoutInput) (domain.Payout, bool, error)
-	GetPayout(context.Context, string, string) (domain.Payout, error)
+	GetPayout(context.Context, string, domain.WalletOwnerType, string) (domain.Payout, error)
 	ListPayouts(context.Context, repository.ListPayoutsInput) (domain.PayoutPage, error)
 	GetPayoutSummary(context.Context, repository.PayoutSummaryInput) (domain.PayoutSummary, error)
 	ClaimPayouts(context.Context, time.Time, int) ([]repository.PayoutJob, error)
@@ -70,7 +70,8 @@ func (s *PayoutService) SetMetrics(metrics PayoutMetrics) {
 }
 
 func (s *PayoutService) UpsertMyBankAccount(ctx context.Context, user domain.UserContext, bankCode, accountNumber, holderName string) (domain.BankAccount, error) {
-	if err := validateSeller(user); err != nil {
+	ownerType, err := validateWalletOwner(user)
+	if err != nil {
 		return domain.BankAccount{}, err
 	}
 	bankCode = strings.ToUpper(strings.TrimSpace(bankCode))
@@ -90,21 +91,23 @@ func (s *PayoutService) UpsertMyBankAccount(ctx context.Context, user domain.Use
 		return domain.BankAccount{}, err
 	}
 	return s.store.UpsertBankAccount(ctx, repository.UpsertBankAccountInput{
-		SellerID: user.UserID, Currency: supportedCurrency, BankCode: bankCode, AccountHolderName: holderName,
+		OwnerID: user.UserID, OwnerType: ownerType, Currency: supportedCurrency, BankCode: bankCode, AccountHolderName: holderName,
 		Last4: accountNumber[len(accountNumber)-4:], EncryptedAccountNumber: encrypted, EncryptionNonce: nonce,
 	})
 }
 
 func (s *PayoutService) GetMyBankAccount(ctx context.Context, user domain.UserContext) (domain.BankAccount, error) {
-	if err := validateSeller(user); err != nil {
+	ownerType, err := validateWalletOwner(user)
+	if err != nil {
 		return domain.BankAccount{}, err
 	}
-	account, err := s.store.GetBankAccount(ctx, user.UserID, supportedCurrency)
+	account, err := s.store.GetBankAccount(ctx, user.UserID, ownerType, supportedCurrency)
 	return account, mapPayoutError(err)
 }
 
 func (s *PayoutService) CreateMyPayout(ctx context.Context, user domain.UserContext, idempotencyKey string, amount int64, currency string) (domain.Payout, bool, error) {
-	if err := validateSeller(user); err != nil {
+	ownerType, err := validateWalletOwner(user)
+	if err != nil {
 		return domain.Payout{}, false, err
 	}
 	if !s.enabled {
@@ -118,12 +121,16 @@ func (s *PayoutService) CreateMyPayout(ctx context.Context, user domain.UserCont
 	if err != nil {
 		return domain.Payout{}, false, err
 	}
-	if amount < s.minAmount || amount > s.maxAmount {
+	minimumAmount := s.minAmount
+	if ownerType == domain.WalletOwnerCustomer {
+		minimumAmount = 1
+	}
+	if amount < minimumAmount || amount > s.maxAmount {
 		return domain.Payout{}, false, validationError("amount is outside the configured payout limits")
 	}
 	hash := sha256.Sum256([]byte(strings.Join([]string{user.UserID, normalizedCurrency, stringAmount(amount)}, ":")))
 	payout, replay, err := s.store.CreatePayout(ctx, repository.CreatePayoutInput{
-		SellerID: user.UserID, Currency: normalizedCurrency, AmountMinor: amount,
+		OwnerID: user.UserID, OwnerType: ownerType, PayoutType: payoutType(ownerType), Currency: normalizedCurrency, AmountMinor: amount,
 		IdempotencyKey: idempotencyKey, RequestHash: hex.EncodeToString(hash[:]), IdempotencyExpiresAt: s.now().Add(s.idempotencyTTL),
 	})
 	if err == nil && !replay {
@@ -133,48 +140,59 @@ func (s *PayoutService) CreateMyPayout(ctx context.Context, user domain.UserCont
 }
 
 func (s *PayoutService) GetMyPayout(ctx context.Context, user domain.UserContext, payoutID string) (domain.Payout, error) {
-	if err := validateSeller(user); err != nil {
+	ownerType, err := validateWalletOwner(user)
+	if err != nil {
 		return domain.Payout{}, err
 	}
 	if _, err := uuid.Parse(strings.TrimSpace(payoutID)); err != nil {
 		return domain.Payout{}, validationError("payout id must be UUID")
 	}
-	payout, err := s.store.GetPayout(ctx, user.UserID, payoutID)
+	payout, err := s.store.GetPayout(ctx, user.UserID, ownerType, payoutID)
 	return payout, mapPayoutError(err)
 }
 
 func (s *PayoutService) ListMyPayouts(ctx context.Context, user domain.UserContext, status string, page, pageSize int) (domain.PayoutPage, error) {
-	if err := validateSeller(user); err != nil {
+	ownerType, err := validateWalletOwner(user)
+	if err != nil {
 		return domain.PayoutPage{}, err
 	}
 	status = strings.ToUpper(strings.TrimSpace(status))
 	if status != "" && status != string(domain.PayoutStatusRequested) && status != string(domain.PayoutStatusProcessing) && status != string(domain.PayoutStatusSucceeded) && status != string(domain.PayoutStatusFailed) && status != string(domain.PayoutStatusCancelled) {
 		return domain.PayoutPage{}, validationError("status is invalid")
 	}
-	return s.store.ListPayouts(ctx, repository.ListPayoutsInput{SellerID: user.UserID, Currency: supportedCurrency, Status: domain.PayoutStatus(status), Page: page, PageSize: pageSize})
+	return s.store.ListPayouts(ctx, repository.ListPayoutsInput{OwnerID: user.UserID, OwnerType: ownerType, Currency: supportedCurrency, Status: domain.PayoutStatus(status), Page: page, PageSize: pageSize})
 }
 
 func (s *PayoutService) GetMyPayoutSummary(ctx context.Context, user domain.UserContext, weekStart, monthStart time.Time) (domain.PayoutSummary, error) {
-	if err := validateSeller(user); err != nil {
+	ownerType, err := validateWalletOwner(user)
+	if err != nil {
 		return domain.PayoutSummary{}, err
 	}
 	if weekStart.IsZero() || monthStart.IsZero() {
 		return domain.PayoutSummary{}, validationError("weekStart and monthStart are required")
 	}
 	return s.store.GetPayoutSummary(ctx, repository.PayoutSummaryInput{
-		SellerID: user.UserID, Currency: supportedCurrency,
+		OwnerID: user.UserID, OwnerType: ownerType, Currency: supportedCurrency,
 		WeekStart: weekStart.UTC(), MonthStart: monthStart.UTC(),
 	})
 }
 
-func validateSeller(user domain.UserContext) error {
-	if user.Role != domain.RoleSeller {
-		return httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Only sellers can access payouts", nil)
+func validateWalletOwner(user domain.UserContext) (domain.WalletOwnerType, error) {
+	ownerType, err := walletOwnerTypeForRole(user.Role)
+	if err != nil {
+		return "", err
 	}
 	if _, err := uuid.Parse(strings.TrimSpace(user.UserID)); err != nil {
-		return httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Invalid authenticated user", nil)
+		return "", httpx.NewAppError(http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Invalid authenticated user", nil)
 	}
-	return nil
+	return ownerType, nil
+}
+
+func payoutType(ownerType domain.WalletOwnerType) string {
+	if ownerType == domain.WalletOwnerCustomer {
+		return "CUSTOMER_REFUND"
+	}
+	return "SELLER_WITHDRAWAL"
 }
 
 func validationError(message string) error {

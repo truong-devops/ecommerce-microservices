@@ -74,7 +74,7 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 	if _, err := payoutService.UpsertMyBankAccount(ctx, user, "VCB", "0123456789", "DEMO SELLER"); err != nil {
 		t.Fatal(err)
 	}
-	wallet, err := repo.GetBalance(ctx, sellerID, "VND")
+	wallet, err := repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || wallet.WalletID == nil {
 		t.Fatalf("get wallet after bank account setup: wallet=%+v err=%v", wallet, err)
 	}
@@ -134,7 +134,7 @@ func TestPaymentToPayoutEndToEndIntegration(t *testing.T) {
 	if err != nil || rejectedResult.Status != domain.PayoutStatusCancelled {
 		t.Fatalf("rejected payout=%+v err=%v", rejectedResult, err)
 	}
-	balance, err := repo.GetBalance(ctx, sellerID, "VND")
+	balance, err := repo.GetBalance(ctx, sellerID, domain.WalletOwnerSeller, "VND")
 	if err != nil || balance.HeldAmount != 0 || balance.AvailableAmount != 40_000 || balance.PayoutPendingAmount != 0 || balance.TotalPaidOut != 60_000 {
 		t.Fatalf("unexpected final balance: %+v err=%v", balance, err)
 	}

@@ -124,6 +124,9 @@ export function Header({ keywords }: HeaderProps) {
                 <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/orders">
                   {text.header.orders}
                 </Link>
+                <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/wallet">
+                  Ví eMall
+                </Link>
                 <Link className="shrink-0 rounded-sm hover:text-white focus-visible:outline-white" href="/account">
                   {text.header.account}
                 </Link>

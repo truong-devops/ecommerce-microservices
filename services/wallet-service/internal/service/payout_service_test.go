@@ -32,14 +32,14 @@ func (f *fakePayoutStore) UpsertBankAccount(_ context.Context, input repository.
 	f.bankInput = input
 	return domain.BankAccount{BankCode: input.BankCode, MaskedAccountNumber: "****" + input.Last4}, nil
 }
-func (f *fakePayoutStore) GetBankAccount(context.Context, string, string) (domain.BankAccount, error) {
+func (f *fakePayoutStore) GetBankAccount(context.Context, string, domain.WalletOwnerType, string) (domain.BankAccount, error) {
 	return domain.BankAccount{}, nil
 }
 func (f *fakePayoutStore) CreatePayout(_ context.Context, input repository.CreatePayoutInput) (domain.Payout, bool, error) {
 	f.createInput = input
 	return f.createResult, f.createReplay, f.createErr
 }
-func (f *fakePayoutStore) GetPayout(context.Context, string, string) (domain.Payout, error) {
+func (f *fakePayoutStore) GetPayout(context.Context, string, domain.WalletOwnerType, string) (domain.Payout, error) {
 	return domain.Payout{}, nil
 }
 func (f *fakePayoutStore) ListPayouts(context.Context, repository.ListPayoutsInput) (domain.PayoutPage, error) {
@@ -123,7 +123,7 @@ func TestCreatePayoutValidatesFeatureFlagAndIdempotency(t *testing.T) {
 	if _, _, err := enabled.CreateMyPayout(context.Background(), user, "valid-key-0001", 20_000, "VND"); err != nil {
 		t.Fatal(err)
 	}
-	if store.createInput.SellerID != testSellerID || store.createInput.AmountMinor != 20_000 || store.createInput.RequestHash == "" {
+	if store.createInput.OwnerID != testSellerID || store.createInput.OwnerType != domain.WalletOwnerSeller || store.createInput.AmountMinor != 20_000 || store.createInput.RequestHash == "" {
 		t.Fatalf("unexpected create input: %+v", store.createInput)
 	}
 }
@@ -144,6 +144,25 @@ func TestCreatePayoutRequiresVerifiedBankAccount(t *testing.T) {
 	}
 }
 
+func TestCustomerRefundPayoutUsesCustomerWalletAndAllowsSmallAmount(t *testing.T) {
+	store := &fakePayoutStore{createResult: domain.Payout{ID: testPaymentID}}
+	service := NewPayoutService(store, testCipher(t), true, 10_000, 10_000_000, time.Hour)
+
+	_, _, err := service.CreateMyPayout(
+		context.Background(),
+		domain.UserContext{UserID: testCustomerID, Role: domain.RoleCustomer},
+		"customer-refund-key",
+		5_000,
+		"VND",
+	)
+	if err != nil {
+		t.Fatalf("create customer refund payout: %v", err)
+	}
+	if store.createInput.OwnerID != testCustomerID || store.createInput.OwnerType != domain.WalletOwnerCustomer || store.createInput.PayoutType != "CUSTOMER_REFUND" {
+		t.Fatalf("unexpected customer payout input: %+v", store.createInput)
+	}
+}
+
 func TestGetPayoutSummaryUsesAuthenticatedSeller(t *testing.T) {
 	store := &fakePayoutStore{summary: domain.PayoutSummary{PaidThisWeek: 20_000, PaidThisMonth: 50_000, TotalPaidOut: 90_000}}
 	service := NewPayoutService(store, testCipher(t), true, 10_000, 10_000_000, time.Hour)
@@ -153,7 +172,7 @@ func TestGetPayoutSummaryUsesAuthenticatedSeller(t *testing.T) {
 	if err != nil || summary.PaidThisMonth != 50_000 {
 		t.Fatalf("summary=%+v err=%v", summary, err)
 	}
-	if store.summaryInput.SellerID != testSellerID || !store.summaryInput.WeekStart.Equal(weekStart.UTC()) {
+	if store.summaryInput.OwnerID != testSellerID || store.summaryInput.OwnerType != domain.WalletOwnerSeller || !store.summaryInput.WeekStart.Equal(weekStart.UTC()) {
 		t.Fatalf("unexpected summary input: %+v", store.summaryInput)
 	}
 }

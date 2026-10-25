@@ -63,18 +63,19 @@ func (r *WalletRepository) ProcessSePayPayoutWebhook(ctx context.Context, input 
 		return finishSePayWebhook(ctx, tx, input.TransactionID, "UNMATCHED", "Payout transfer code was not found", "")
 	}
 
-	var payoutID, walletID, sellerID, currency, bankAccountID string
+	var payoutID, walletID, ownerID, currency, bankAccountID, payoutType string
+	var ownerType domain.WalletOwnerType
 	var amount int64
 	var status domain.PayoutStatus
 	var provider *string
 	err = tx.QueryRow(ctx, `
-		SELECT p.id, p.wallet_id, w.seller_id, p.amount_minor, p.currency,
+		SELECT p.id, p.wallet_id, w.seller_id, w.owner_type, p.payout_type, p.amount_minor, p.currency,
 		       p.status, p.bank_account_id, p.provider
 		FROM payouts p
 		JOIN wallets w ON w.id = p.wallet_id
 		WHERE p.transfer_code = $1
 		FOR UPDATE OF p
-	`, input.TransferCode).Scan(&payoutID, &walletID, &sellerID, &amount, &currency, &status, &bankAccountID, &provider)
+	`, input.TransferCode).Scan(&payoutID, &walletID, &ownerID, &ownerType, &payoutType, &amount, &currency, &status, &bankAccountID, &provider)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return finishSePayWebhook(ctx, tx, input.TransactionID, "UNMATCHED", "No payout matches the transfer code", "")
 	}
@@ -138,10 +139,14 @@ func (r *WalletRepository) ProcessSePayPayoutWebhook(ctx context.Context, input 
 	if err = refreshWalletFrozenState(ctx, tx, walletID); err != nil {
 		return SePayPayoutWebhookResult{}, err
 	}
-	if err = insertOutboxEvent(ctx, tx, "payout", payoutID, "wallet.payout-succeeded", map[string]any{
-		"payoutId": payoutID, "sellerId": sellerID, "amount": amount, "currency": currency,
-		"providerReference": providerReference, "confirmationSource": "sepay-outgoing-webhook",
-	}); err != nil {
+	eventPayload := walletOwnerEventPayload(ownerID, ownerType)
+	eventPayload["payoutId"] = payoutID
+	eventPayload["payoutType"] = payoutType
+	eventPayload["amount"] = amount
+	eventPayload["currency"] = currency
+	eventPayload["providerReference"] = providerReference
+	eventPayload["confirmationSource"] = "sepay-outgoing-webhook"
+	if err = insertOutboxEvent(ctx, tx, "payout", payoutID, "wallet.payout-succeeded", eventPayload); err != nil {
 		return SePayPayoutWebhookResult{}, err
 	}
 	return finishSePayWebhook(ctx, tx, input.TransactionID, "MATCHED", "", payoutID)

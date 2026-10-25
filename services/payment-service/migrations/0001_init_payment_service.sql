@@ -91,6 +91,38 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS captured_at timestamptz;
 CREATE INDEX IF NOT EXISTS idx_payments_expires_at ON payments(expires_at);
 CREATE INDEX IF NOT EXISTS idx_payments_provider_status_expires_at ON payments(provider, status, expires_at);
 
+-- A payment group exposes one provider payment code/QR for a checkout that
+-- contains orders from multiple sellers. Individual payments remain linked to
+-- their order and seller so downstream order and wallet events stay isolated.
+CREATE TABLE IF NOT EXISTS payment_groups (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  provider varchar(64) NOT NULL,
+  provider_payment_id varchar(128) NOT NULL UNIQUE,
+  status payment_status NOT NULL,
+  currency char(3) NOT NULL,
+  amount numeric(14, 2) NOT NULL,
+  metadata jsonb,
+  expires_at timestamptz,
+  captured_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_groups_user_id ON payment_groups(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_groups_status ON payment_groups(status);
+CREATE INDEX IF NOT EXISTS idx_payment_groups_provider_status_expires_at ON payment_groups(provider, status, expires_at);
+
+CREATE TABLE IF NOT EXISTS payment_group_items (
+  group_id uuid NOT NULL REFERENCES payment_groups(id) ON DELETE CASCADE,
+  payment_id uuid NOT NULL REFERENCES payments(id) ON DELETE RESTRICT,
+  amount numeric(14, 2) NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (group_id, payment_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_group_items_payment_id ON payment_group_items(payment_id);
+
 CREATE TABLE IF NOT EXISTS payment_transactions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   payment_id uuid NOT NULL REFERENCES payments(id) ON DELETE CASCADE,

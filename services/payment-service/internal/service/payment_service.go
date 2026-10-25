@@ -14,6 +14,7 @@ import (
 	"payment-service-go/internal/httpx"
 	"payment-service-go/internal/repository"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -46,6 +47,15 @@ type CreatePaymentIntentRequest struct {
 	SellerID        *string        `json:"sellerId,omitempty"`
 	Currency        string         `json:"currency"`
 	Amount          float64        `json:"amount"`
+	Provider        *string        `json:"provider,omitempty"`
+	Description     *string        `json:"description,omitempty"`
+	Metadata        map[string]any `json:"metadata,omitempty"`
+	AutoCapture     *bool          `json:"autoCapture,omitempty"`
+	SimulatedStatus *string        `json:"simulatedStatus,omitempty"`
+}
+
+type CreatePaymentGroupIntentRequest struct {
+	OrderIDs        []string       `json:"orderIds"`
 	Provider        *string        `json:"provider,omitempty"`
 	Description     *string        `json:"description,omitempty"`
 	Metadata        map[string]any `json:"metadata,omitempty"`
@@ -395,6 +405,266 @@ func (s *PaymentService) CreatePaymentIntent(
 	}
 
 	return response, http.StatusCreated, nil
+}
+
+func (s *PaymentService) CreatePaymentGroupIntent(
+	ctx context.Context,
+	user domain.UserContext,
+	accessToken string,
+	requestID, idempotencyKey string,
+	req CreatePaymentGroupIntentRequest,
+) (map[string]any, int, error) {
+	if strings.TrimSpace(idempotencyKey) == "" {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "Missing Idempotency-Key header", nil)
+	}
+
+	orderIDs := uniqueTrimmedStrings(req.OrderIDs)
+	if len(orderIDs) < 2 {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Payment group requires at least two orders", nil)
+	}
+	if len(orderIDs) > 20 {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Payment group supports at most 20 orders", nil)
+	}
+	sort.Strings(orderIDs)
+	req.OrderIDs = orderIDs
+
+	acquire, err := s.idempotency.AcquireForCreatePaymentIntent(ctx, user.UserID, idempotencyKey, req)
+	if err != nil {
+		return nil, 0, err
+	}
+	if acquire.Replay {
+		return acquire.ResponseBody, http.StatusCreated, nil
+	}
+	defer s.idempotency.ReleaseLock(ctx, acquire.LockKey)
+
+	if s.orderClient == nil {
+		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Order service dependency is unavailable", nil)
+	}
+
+	snapshots := make([]*OrderSnapshot, 0, len(orderIDs))
+	currency := ""
+	totalAmount := 0.0
+	for _, orderID := range orderIDs {
+		snapshot, err := s.orderClient.GetOrderByID(ctx, orderID, accessToken)
+		if err != nil {
+			return nil, 0, err
+		}
+		if snapshot.UserID == "" || snapshot.UserID != user.UserID {
+			return nil, 0, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Order does not belong to current user", map[string]any{"orderId": orderID})
+		}
+		if strings.TrimSpace(snapshot.SellerID) == "" {
+			return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodeServiceUnavailable, "Order service payload is missing sellerId", map[string]any{"orderId": orderID})
+		}
+		if !isPayableOrderStatus(snapshot.Status) {
+			return nil, 0, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Order status is not payable", map[string]any{"orderId": orderID, "status": snapshot.Status})
+		}
+		if currency == "" {
+			currency = snapshot.Currency
+		} else if currency != snapshot.Currency {
+			return nil, 0, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodePaymentCurrencyMismatch, "All grouped orders must use the same currency", nil)
+		}
+		totalAmount = roundMoney(totalAmount + snapshot.TotalAmount)
+		snapshots = append(snapshots, snapshot)
+	}
+
+	provider := s.gatewayActive
+	if req.Provider != nil && strings.TrimSpace(*req.Provider) != "" {
+		provider = strings.ToLower(strings.TrimSpace(*req.Provider))
+	}
+	if provider != s.gatewayActive {
+		return nil, 0, httpx.NewAppError(http.StatusBadRequest, domain.ErrorCodeBadRequest, "Gateway provider "+provider+" is not enabled. Active provider is "+s.gatewayActive, nil)
+	}
+	autoCapture := true
+	if req.AutoCapture != nil {
+		autoCapture = *req.AutoCapture
+	}
+	var simulatedStatus *domain.PaymentStatus
+	if req.SimulatedStatus != nil && strings.TrimSpace(*req.SimulatedStatus) != "" {
+		status := domain.PaymentStatus(strings.ToUpper(strings.TrimSpace(*req.SimulatedStatus)))
+		simulatedStatus = &status
+	}
+
+	groupID := uuid.NewString()
+	gatewayResult, err := s.gateway.CreatePaymentIntent(CreatePaymentIntentGatewayInput{
+		OrderID:         groupID,
+		Amount:          totalAmount,
+		Currency:        currency,
+		Provider:        provider,
+		AutoCapture:     autoCapture,
+		SimulatedStatus: simulatedStatus,
+		Metadata:        req.Metadata,
+		OrderNumber:     strPtr("GROUP-" + strings.ToUpper(strings.ReplaceAll(groupID[:8], "-", ""))),
+	})
+	if err != nil {
+		return nil, 0, httpx.NewAppError(http.StatusServiceUnavailable, domain.ErrorCodePaymentGatewayUnavailable, "Payment gateway unavailable", map[string]any{"error": err.Error()})
+	}
+
+	metadata := map[string]any{"orderIds": orderIDs}
+	for key, value := range req.Metadata {
+		metadata[key] = value
+	}
+	if gatewayResult.RequiresActionURL != nil {
+		metadata["requiresActionUrl"] = *gatewayResult.RequiresActionURL
+	}
+	if gatewayResult.Instructions != nil {
+		metadata["paymentInstructions"] = paymentInstructionsToMap(*gatewayResult.Instructions)
+	}
+	var expiresAt *time.Time
+	if gatewayResult.Instructions != nil && !gatewayResult.Instructions.ExpiresAt.IsZero() {
+		expiresAt = &gatewayResult.Instructions.ExpiresAt
+	}
+	var capturedAt *time.Time
+	if gatewayResult.Status == domain.PaymentStatusCaptured {
+		now := time.Now().UTC()
+		capturedAt = &now
+	}
+
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	group, err := s.repo.CreatePaymentGroup(ctx, tx, repository.CreatePaymentGroupInput{
+		ID: groupID, UserID: user.UserID, Provider: provider,
+		ProviderPaymentID: gatewayResult.ProviderPaymentID, Status: gatewayResult.Status,
+		Currency: currency, Amount: totalAmount, Metadata: metadata,
+		ExpiresAt: expiresAt, CapturedAt: capturedAt,
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+
+	items := make([]domain.PaymentGroupItem, 0, len(snapshots))
+	for _, snapshot := range snapshots {
+		payment, err := s.repo.FindPaymentByOrderIDForUpdate(ctx, tx, snapshot.ID)
+		if err != nil {
+			return nil, 0, err
+		}
+		childMetadata := map[string]any{"paymentGroupId": group.ID}
+		if payment != nil {
+			for key, value := range payment.Metadata {
+				childMetadata[key] = value
+			}
+			childMetadata["paymentGroupId"] = group.ID
+		}
+		sellerID := snapshot.SellerID
+		isNew := false
+		if payment == nil {
+			createdPayment, createErr := s.repo.CreatePaymentIfAbsent(ctx, tx, repository.CreatePaymentInput{
+				OrderID: snapshot.ID, UserID: user.UserID, SellerID: &sellerID,
+				Provider: provider, Status: gatewayResult.Status, Currency: currency,
+				Amount: snapshot.TotalAmount, Description: trimAndNilIfEmpty(req.Description),
+				Metadata: childMetadata, CapturedAt: capturedAt,
+			})
+			if createErr != nil {
+				return nil, 0, createErr
+			}
+			payment = createdPayment
+			isNew = payment != nil
+			if payment == nil {
+				payment, err = s.repo.FindPaymentByOrderIDForUpdate(ctx, tx, snapshot.ID)
+				if err != nil {
+					return nil, 0, err
+				}
+				if payment == nil {
+					return nil, 0, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Payment creation raced with order processing", map[string]any{"orderId": snapshot.ID})
+				}
+			}
+		}
+		if isNew {
+			if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+				PaymentID: payment.ID, ToStatus: payment.Status, ChangedBy: user.UserID,
+				ChangedByRole: user.Role, Reason: strPtr("Payment created for grouped intent"),
+			}); err != nil {
+				return nil, 0, err
+			}
+		} else {
+			if !canAttachIntentToExistingPayment(*payment) {
+				return nil, 0, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeConflict, "Payment already has an active intent", map[string]any{"orderId": snapshot.ID})
+			}
+			childMetadata = map[string]any{"paymentGroupId": group.ID}
+			for key, value := range payment.Metadata {
+				childMetadata[key] = value
+			}
+			childMetadata["paymentGroupId"] = group.ID
+			updated := *payment
+			previousStatus := updated.Status
+			updated.Provider = provider
+			updated.Status = gatewayResult.Status
+			updated.Currency = currency
+			updated.Amount = snapshot.TotalAmount
+			updated.SellerID = &sellerID
+			updated.Metadata = childMetadata
+			updated.CapturedAt = capturedAt
+			updatedPayment, saveErr := s.repo.SavePayment(ctx, tx, updated)
+			if saveErr != nil {
+				return nil, 0, saveErr
+			}
+			payment = &updatedPayment
+			if previousStatus != payment.Status {
+				if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+					PaymentID: payment.ID, FromStatus: &previousStatus, ToStatus: payment.Status,
+					ChangedBy: user.UserID, ChangedByRole: user.Role, Reason: strPtr("Payment attached to grouped intent"),
+				}); err != nil {
+					return nil, 0, err
+				}
+			}
+		}
+		if err := s.repo.AddPaymentGroupItem(ctx, tx, group.ID, payment.ID, snapshot.TotalAmount); err != nil {
+			return nil, 0, err
+		}
+		if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
+			PaymentID: payment.ID, TransactionType: mapStatusToTransactionType(payment.Status),
+			Amount: payment.Amount, Currency: payment.Currency, Status: string(payment.Status),
+			RequestID: requestID, RawPayload: map[string]any{"paymentGroupId": group.ID},
+		}); err != nil {
+			return nil, 0, err
+		}
+		if err := s.repo.CreatePaymentAuditLog(ctx, tx, repository.CreatePaymentAuditLogInput{
+			PaymentID: payment.ID, Action: "PAYMENT_GROUP_INTENT_CREATED", ActorID: user.UserID,
+			ActorRole: user.Role, RequestID: requestID,
+			Metadata: map[string]any{"paymentGroupId": group.ID, "isNewPayment": isNew},
+		}); err != nil {
+			return nil, 0, err
+		}
+		if isNew {
+			if err := s.enqueuePaymentEvent(ctx, tx, EventPaymentCreated, *payment, user, requestID); err != nil {
+				return nil, 0, err
+			}
+		}
+		if err := s.enqueueStatusEvent(ctx, tx, *payment, user, requestID); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, domain.PaymentGroupItem{GroupID: group.ID, Payment: *payment, Amount: snapshot.TotalAmount})
+	}
+
+	response := toPaymentGroupResponse(group, items)
+	if err := s.idempotency.PersistResult(ctx, tx, user.UserID, idempotencyKey, acquire.RequestHash, http.StatusCreated, response, group.ID); err != nil {
+		return nil, 0, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, 0, err
+	}
+	return response, http.StatusCreated, nil
+}
+
+func (s *PaymentService) GetPaymentGroupByID(ctx context.Context, user domain.UserContext, groupID string) (map[string]any, error) {
+	group, err := s.repo.FindPaymentGroupByID(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+	if group == nil {
+		return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodePaymentNotFound, "Payment group not found", nil)
+	}
+	if user.Role == domain.RoleCustomer && group.UserID != user.UserID {
+		return nil, httpx.NewAppError(http.StatusForbidden, domain.ErrorCodeForbidden, "Payment group does not belong to current user", nil)
+	}
+	items, err := s.repo.ListPaymentGroupItems(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+	return toPaymentGroupResponse(*group, items), nil
 }
 
 func (s *PaymentService) ListPayments(ctx context.Context, user domain.UserContext, req ListPaymentsRequest) (map[string]any, error) {
@@ -1002,6 +1272,128 @@ func (s *PaymentService) processSePayPayload(ctx context.Context, input sePayPro
 		return failAndCommit("UNKNOWN_PAYMENT_CODE", "SePay transaction has no recognized payment code", nil, "FAILED")
 	}
 
+	group, err := s.repo.FindPaymentGroupByProviderPaymentIDForUpdate(ctx, tx, providerPaymentID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if group != nil {
+		items, err := s.repo.ListPaymentGroupItemsForUpdate(ctx, tx, group.ID)
+		if err != nil {
+			return nil, 0, err
+		}
+		var representativePaymentID *string
+		if len(items) > 0 {
+			representativePaymentID = &items[0].Payment.ID
+		}
+		if group.Provider != normalizedProvider {
+			return failAndCommit("PROVIDER_MISMATCH", "Payment group provider does not match SePay", representativePaymentID, "FAILED")
+		}
+		if !strings.EqualFold(group.Currency, "VND") {
+			return failAndCommit("CURRENCY_MISMATCH", "SePay payment group must use VND", representativePaymentID, "FAILED")
+		}
+		if roundMoney(float64(payload.TransferAmount)) != group.Amount {
+			return failAndCommit("AMOUNT_MISMATCH", "SePay transfer amount does not match payment group amount", representativePaymentID, "FAILED")
+		}
+		now := time.Now().UTC()
+		transferTime := sePayTransferTime(payload, now)
+		if group.ExpiresAt != nil && transferTime.After(group.ExpiresAt.UTC()) {
+			return failAndCommit("EXPIRED_PAYMENT", "SePay transfer arrived after payment group expiry", representativePaymentID, "FAILED")
+		}
+		if group.Status == domain.PaymentStatusCaptured {
+			return failAndCommit("DUPLICATE_CAPTURED_PAYMENT", "Payment group is already captured", representativePaymentID, "IGNORED")
+		}
+		recoverExpiredGroup := group.Status == domain.PaymentStatusFailed && group.ExpiresAt != nil && !transferTime.After(group.ExpiresAt.UTC())
+		if group.Status != domain.PaymentStatusPending && group.Status != domain.PaymentStatusRequiresAction && !recoverExpiredGroup {
+			return failAndCommit("ORDER_NOT_PAYABLE", "Payment group is no longer payable", representativePaymentID, "FAILED")
+		}
+		if len(items) == 0 {
+			return failAndCommit("EMPTY_PAYMENT_GROUP", "Payment group has no child payments", nil, "FAILED")
+		}
+		for _, item := range items {
+			if item.Payment.Status != domain.PaymentStatusPending && item.Payment.Status != domain.PaymentStatusRequiresAction && !(recoverExpiredGroup && item.Payment.Status == domain.PaymentStatusFailed) {
+				paymentID := item.Payment.ID
+				return failAndCommit("ORDER_NOT_PAYABLE", "A child payment is no longer payable", &paymentID, "FAILED")
+			}
+		}
+
+		systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}
+		updatedItems := make([]domain.PaymentGroupItem, 0, len(items))
+		for index, item := range items {
+			payment := item.Payment
+			previousStatus := payment.Status
+			payment.Status = domain.PaymentStatusCaptured
+			payment.CapturedAt = &transferTime
+			updatedPayment, err := s.repo.SavePayment(ctx, tx, payment)
+			if err != nil {
+				return nil, 0, err
+			}
+			captureReason := "SePay grouped bank transfer captured"
+			if recoverExpiredGroup {
+				captureReason = "SePay grouped bank transfer captured after delayed reconciliation"
+			}
+			if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+				PaymentID: updatedPayment.ID, FromStatus: &previousStatus,
+				ToStatus: domain.PaymentStatusCaptured, ChangedBy: systemActorID,
+				ChangedByRole: domain.RoleSupport, Reason: strPtr(captureReason),
+			}); err != nil {
+				return nil, 0, err
+			}
+			var childGatewayTxnID *string
+			if index == 0 {
+				childGatewayTxnID = strPtr(gatewayTxnID)
+			}
+			if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
+				PaymentID: updatedPayment.ID, TransactionType: TransactionCaptured,
+				GatewayTransactionID: childGatewayTxnID, Amount: updatedPayment.Amount,
+				Currency: updatedPayment.Currency, Status: string(domain.PaymentStatusCaptured),
+				RequestID: strings.TrimSpace(input.RequestID), RawPayload: rawPayload,
+			}); err != nil && !repository.IsUniqueViolation(err) {
+				return nil, 0, err
+			}
+			if err := s.repo.CreatePaymentAuditLog(ctx, tx, repository.CreatePaymentAuditLogInput{
+				PaymentID: updatedPayment.ID, Action: "SEPAY_GROUP_WEBHOOK_CAPTURED",
+				ActorID: systemActorID, ActorRole: domain.RoleSupport,
+				RequestID: strings.TrimSpace(input.RequestID),
+				Metadata: map[string]any{
+					"paymentGroupId": group.ID, "providerEventId": providerEventID,
+					"gatewayTransactionId": gatewayTxnID, "paymentCode": providerPaymentID,
+					"groupAmount": payload.TransferAmount, "allocatedAmount": updatedPayment.Amount,
+				},
+			}); err != nil {
+				return nil, 0, err
+			}
+			if err := s.enqueueStatusEvent(ctx, tx, updatedPayment, systemActor, strings.TrimSpace(input.RequestID)); err != nil {
+				return nil, 0, err
+			}
+			item.Payment = updatedPayment
+			updatedItems = append(updatedItems, item)
+		}
+
+		group.Status = domain.PaymentStatusCaptured
+		group.CapturedAt = &transferTime
+		updatedGroup, err := s.repo.SavePaymentGroup(ctx, tx, *group)
+		if err != nil {
+			return nil, 0, err
+		}
+		if err := s.repo.UpdatePaymentProviderEventStatus(ctx, tx, normalizedProvider, providerEventID, representativePaymentID, "PROCESSED", nil, nil); err != nil {
+			return nil, 0, err
+		}
+		responseBody := map[string]any{
+			"success": true, "processed": true, "provider": normalizedProvider,
+			"providerEventId": providerEventID,
+			"paymentGroup":    toPaymentGroupResponse(updatedGroup, updatedItems),
+		}
+		if input.PersistWebhookResult {
+			if err := s.persistWebhookResult(ctx, tx, normalizedProvider, providerEventID, input.RequestHash, representativePaymentID, responseBody); err != nil {
+				return nil, 0, err
+			}
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return nil, 0, err
+		}
+		return responseBody, http.StatusOK, nil
+	}
+
 	payment, err := s.repo.FindPaymentByProviderPaymentIDForUpdate(ctx, tx, providerPaymentID)
 	if err != nil {
 		return nil, 0, err
@@ -1229,11 +1621,31 @@ func (s *PaymentService) FailExpiredPayments(ctx context.Context, batchSize int)
 	if s.gatewayActive == "" {
 		return 0, nil
 	}
-	ids, err := s.repo.FindExpiredPendingPaymentIDs(ctx, s.gatewayActive, batchSize)
+	if batchSize < 1 {
+		batchSize = 100
+	}
+	groupIDs, err := s.repo.FindExpiredPendingPaymentGroupIDs(ctx, s.gatewayActive, batchSize)
 	if err != nil {
 		return 0, err
 	}
 	failed := 0
+	for _, groupID := range groupIDs {
+		ok, err := s.failExpiredPaymentGroup(ctx, groupID)
+		if err != nil {
+			return failed, err
+		}
+		if ok {
+			failed++
+		}
+	}
+	remaining := batchSize - failed
+	if remaining < 1 {
+		return failed, nil
+	}
+	ids, err := s.repo.FindExpiredPendingPaymentIDs(ctx, s.gatewayActive, remaining)
+	if err != nil {
+		return failed, err
+	}
 	for _, id := range ids {
 		ok, err := s.failExpiredPayment(ctx, id)
 		if err != nil {
@@ -1244,6 +1656,66 @@ func (s *PaymentService) FailExpiredPayments(ctx context.Context, batchSize int)
 		}
 	}
 	return failed, nil
+}
+
+func (s *PaymentService) failExpiredPaymentGroup(ctx context.Context, groupID string) (bool, error) {
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer tx.Rollback(ctx)
+	group, err := s.repo.FindPaymentGroupByIDForUpdate(ctx, tx, groupID)
+	if err != nil {
+		return false, err
+	}
+	if group == nil || group.ExpiresAt == nil || time.Now().UTC().Before(group.ExpiresAt.UTC()) {
+		return false, tx.Commit(ctx)
+	}
+	if group.Status != domain.PaymentStatusPending && group.Status != domain.PaymentStatusRequiresAction {
+		return false, tx.Commit(ctx)
+	}
+	items, err := s.repo.ListPaymentGroupItemsForUpdate(ctx, tx, group.ID)
+	if err != nil {
+		return false, err
+	}
+	systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}
+	for _, item := range items {
+		payment := item.Payment
+		if payment.Status != domain.PaymentStatusPending && payment.Status != domain.PaymentStatusRequiresAction {
+			continue
+		}
+		previous := payment.Status
+		payment.Status = domain.PaymentStatusFailed
+		updated, err := s.repo.SavePayment(ctx, tx, payment)
+		if err != nil {
+			return false, err
+		}
+		if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
+			PaymentID: updated.ID, FromStatus: &previous, ToStatus: domain.PaymentStatusFailed,
+			ChangedBy: systemActorID, ChangedByRole: domain.RoleSupport,
+			Reason: strPtr("Grouped payment expired before capture"),
+		}); err != nil {
+			return false, err
+		}
+		if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
+			PaymentID: updated.ID, TransactionType: TransactionFailed, Amount: updated.Amount,
+			Currency: updated.Currency, Status: string(updated.Status), RequestID: "payment-expiry-worker",
+			RawPayload: map[string]any{"paymentGroupId": group.ID, "source": "payment-expiry-worker"},
+		}); err != nil {
+			return false, err
+		}
+		if err := s.enqueueStatusEvent(ctx, tx, updated, systemActor, "payment-expiry-worker"); err != nil {
+			return false, err
+		}
+	}
+	group.Status = domain.PaymentStatusFailed
+	if _, err := s.repo.SavePaymentGroup(ctx, tx, *group); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *PaymentService) failExpiredPayment(ctx context.Context, paymentID string) (bool, error) {
@@ -1548,6 +2020,46 @@ func toPaymentResponse(payment domain.Payment, requiresActionURL *string) map[st
 	return resp
 }
 
+func toPaymentGroupResponse(group domain.PaymentGroup, items []domain.PaymentGroupItem) map[string]any {
+	orderIDs := make([]string, 0, len(items))
+	payments := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		orderIDs = append(orderIDs, item.Payment.OrderID)
+		payments = append(payments, map[string]any{
+			"paymentId": item.Payment.ID,
+			"orderId":   item.Payment.OrderID,
+			"sellerId":  valueOrNil(item.Payment.SellerID),
+			"amount":    item.Amount,
+			"status":    item.Payment.Status,
+		})
+	}
+	response := map[string]any{
+		"id":                group.ID,
+		"userId":            group.UserID,
+		"provider":          group.Provider,
+		"providerPaymentId": valueOrNil(group.ProviderPaymentID),
+		"status":            group.Status,
+		"currency":          group.Currency,
+		"amount":            group.Amount,
+		"metadata":          group.Metadata,
+		"orderIds":          orderIDs,
+		"payments":          payments,
+		"expiresAt":         valueOrTime(group.ExpiresAt),
+		"capturedAt":        valueOrTime(group.CapturedAt),
+		"createdAt":         group.CreatedAt.UTC().Format(time.RFC3339Nano),
+		"updatedAt":         group.UpdatedAt.UTC().Format(time.RFC3339Nano),
+	}
+	if group.Metadata != nil {
+		if instructions, ok := group.Metadata["paymentInstructions"]; ok {
+			response["paymentInstructions"] = instructions
+		}
+		if actionURL, ok := group.Metadata["requiresActionUrl"].(string); ok && strings.TrimSpace(actionURL) != "" {
+			response["requiresActionUrl"] = actionURL
+		}
+	}
+	return response
+}
+
 func toRefundResponse(refund domain.Refund) map[string]any {
 	return map[string]any{
 		"id":               refund.ID,
@@ -1666,6 +2178,11 @@ func canAttachIntentToExistingPayment(payment domain.Payment) bool {
 	}
 	if payment.ProviderPaymentID != nil && strings.TrimSpace(*payment.ProviderPaymentID) != "" {
 		return false
+	}
+	if payment.Metadata != nil {
+		if groupID, ok := payment.Metadata["paymentGroupId"].(string); ok && strings.TrimSpace(groupID) != "" {
+			return false
+		}
 	}
 	return isAutoCreatedPayment(payment.Metadata)
 }
@@ -1795,6 +2312,23 @@ func roundMoney(value float64) float64 {
 		value = 0
 	}
 	return float64(int64((value+0.0000001)*100+0.5)) / 100
+}
+
+func uniqueTrimmedStrings(values []string) []string {
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		if _, exists := seen[trimmed]; exists {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+	return result
 }
 
 func valueOrNil(v *string) any {

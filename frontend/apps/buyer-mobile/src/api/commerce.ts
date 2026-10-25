@@ -5,6 +5,7 @@ import type {
   OrderListOutput,
   OrderStatus,
   Payment,
+  PaymentGroup,
   Shipment,
   ShippingQuotesOutput
 } from '@frontend/buyer-contracts';
@@ -74,6 +75,22 @@ export function createPaymentIntent(accessToken: string, order: Order, idempoten
     },
     accessToken
   );
+}
+
+export function createPaymentGroupIntent(accessToken: string, orderIds: string[], idempotencyKey: string): Promise<PaymentGroup> {
+  return requestBuyerApi<PaymentGroup>(
+    '/payments/groups/intents',
+    {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify({ orderIds, description: `Payment for ${orderIds.length} orders`, autoCapture: true })
+    },
+    accessToken
+  );
+}
+
+export function fetchPaymentGroup(accessToken: string, groupId: string): Promise<PaymentGroup> {
+  return requestBuyerApi<PaymentGroup>(`/payments/groups/${encodeURIComponent(groupId)}`, { method: 'GET' }, accessToken);
 }
 
 export async function fetchPaymentForOrder(accessToken: string, orderId: string): Promise<Payment | null> {

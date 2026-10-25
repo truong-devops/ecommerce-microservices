@@ -129,6 +129,31 @@ type Payment struct {
 	UpdatedAt         time.Time
 }
 
+// PaymentGroup represents one customer-facing payment instruction that can
+// settle multiple order payments. The child payments remain the accounting
+// source of truth for orders, sellers, refunds, and wallet events.
+type PaymentGroup struct {
+	ID                string
+	UserID            string
+	Provider          string
+	ProviderPaymentID *string
+	Status            PaymentStatus
+	Currency          string
+	Amount            float64
+	Metadata          map[string]any
+	ExpiresAt         *time.Time
+	CapturedAt        *time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+type PaymentGroupItem struct {
+	GroupID   string
+	Payment   Payment
+	Amount    float64
+	CreatedAt time.Time
+}
+
 type Refund struct {
 	ID               string
 	PaymentID        string

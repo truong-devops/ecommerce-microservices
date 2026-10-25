@@ -5,7 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { createOrder, createPaymentIntent, quoteShipping } from '@/api/commerce';
+import { createOrder, createPaymentGroupIntent, createPaymentIntent, quoteShipping } from '@/api/commerce';
 import { fetchProfile } from '@/api/profile';
 import { useAuth } from '@/auth/auth-context';
 import { useCart } from '@/cart/cart-context';
@@ -70,26 +70,34 @@ export default function CheckoutScreen() {
       for (const [index, input] of inputs.entries()) {
         const itemKey = selectedItems[index].key;
         const order = await createOrder(session.accessToken, input, getLineIdempotencyKey(orderKeys.current, itemKey, 'mobile-order'));
-        if (paymentMethod === 'ONLINE' && order.totalAmount > 0) {
-          try {
-            await createPaymentIntent(session.accessToken, order, getLineIdempotencyKey(paymentKeys.current, itemKey, 'mobile-payment'));
-          } catch {
-            paymentWarning = true;
-          }
-        }
         orders.push(order);
       }
-      return { orders, paymentWarning };
+      let paymentGroupId = '';
+      if (paymentMethod === 'ONLINE' && orders.length > 0) {
+        try {
+          if (orders.length === 1) {
+            await createPaymentIntent(session.accessToken, orders[0], getLineIdempotencyKey(paymentKeys.current, orders[0].id, 'mobile-payment'));
+          } else {
+            const group = await createPaymentGroupIntent(
+              session.accessToken,
+              orders.map((order) => order.id),
+              getLineIdempotencyKey(paymentKeys.current, orders.map((order) => order.id).join(':'), 'mobile-payment-group')
+            );
+            paymentGroupId = group.id;
+          }
+        } catch {
+          paymentWarning = true;
+        }
+      }
+      return { orders, paymentWarning, paymentGroupId };
     },
-    onSuccess: ({ orders, paymentWarning }) => {
+    onSuccess: ({ orders, paymentWarning, paymentGroupId }) => {
       dispatch({ type: 'clear-selected' });
       if (paymentMethod === 'ONLINE' && orders[0]) {
         if (paymentWarning) {
           Alert.alert('Đơn đã tạo', 'Chưa khởi tạo được QR tự động. Mở màn thanh toán để thử lại.');
-        } else if (orders.length > 1) {
-          Alert.alert('Đã tạo nhiều đơn', 'Ứng dụng sẽ mở mã QR của đơn đầu tiên.');
         }
-        router.replace(`/checkout/payment/${orders[0].id}`);
+        router.replace(paymentGroupId ? `/checkout/payment-group/${paymentGroupId}` : `/checkout/payment/${orders[0].id}`);
         return;
       }
       if (orders.length === 1) {

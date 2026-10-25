@@ -60,6 +60,53 @@ func (h *PaymentHandler) CreatePaymentIntent(w http.ResponseWriter, r *http.Requ
 	httpx.WriteSuccess(w, r, status, result)
 }
 
+func (h *PaymentHandler) CreatePaymentGroupIntent(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	var req service.CreatePaymentGroupIntentRequest
+	if err := httpx.DecodeJSONStrict(r, &req); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{"body": err.Error()})
+		return
+	}
+	if err := validateCreatePaymentGroupIntent(req); err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeValidationFailed)
+		return
+	}
+
+	result, status, err := h.paymentService.CreatePaymentGroupIntent(
+		r.Context(), user, httpx.ExtractBearerToken(r.Header.Get("Authorization")),
+		requestID(r), strings.TrimSpace(r.Header.Get("Idempotency-Key")), req,
+	)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, status, result)
+}
+
+func (h *PaymentHandler) GetPaymentGroupByID(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.UserFromContext(r.Context())
+	if !ok {
+		httpx.WriteError(w, r, http.StatusUnauthorized, domain.ErrorCodeUnauthorized, "Unauthorized", nil)
+		return
+	}
+	groupID := chi.URLParam(r, "groupId")
+	if _, err := uuid.Parse(strings.TrimSpace(groupID)); err != nil {
+		httpx.WriteError(w, r, http.StatusBadRequest, domain.ErrorCodeValidationFailed, "Validation failed", map[string]any{"groupId": "must be UUID"})
+		return
+	}
+	result, err := h.paymentService.GetPaymentGroupByID(r.Context(), user, groupID)
+	if err != nil {
+		httpx.WriteAppError(w, r, err, domain.ErrorCodeInternalServerError)
+		return
+	}
+	httpx.WriteSuccess(w, r, http.StatusOK, result)
+}
+
 func (h *PaymentHandler) ListPayments(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.UserFromContext(r.Context())
 	if !ok {
@@ -224,6 +271,36 @@ func validateCreatePaymentIntent(req service.CreatePaymentIntentRequest) error {
 		if len(v) > 64 {
 			return validationError("provider", "max length is 64")
 		}
+	}
+	if req.Description != nil && len(strings.TrimSpace(*req.Description)) > 500 {
+		return validationError("description", "max length is 500")
+	}
+	if req.SimulatedStatus != nil && strings.TrimSpace(*req.SimulatedStatus) != "" {
+		status := domain.PaymentStatus(strings.ToUpper(strings.TrimSpace(*req.SimulatedStatus)))
+		if !domain.IsValidPaymentStatus(status) {
+			return validationError("simulatedStatus", "invalid status")
+		}
+	}
+	return nil
+}
+
+func validateCreatePaymentGroupIntent(req service.CreatePaymentGroupIntentRequest) error {
+	if len(req.OrderIDs) < 2 || len(req.OrderIDs) > 20 {
+		return validationError("orderIds", "must contain between 2 and 20 orders")
+	}
+	seen := make(map[string]struct{}, len(req.OrderIDs))
+	for _, orderID := range req.OrderIDs {
+		trimmed := strings.TrimSpace(orderID)
+		if _, err := uuid.Parse(trimmed); err != nil {
+			return validationError("orderIds", "all values must be UUID")
+		}
+		if _, exists := seen[trimmed]; exists {
+			return validationError("orderIds", "must not contain duplicates")
+		}
+		seen[trimmed] = struct{}{}
+	}
+	if req.Provider != nil && len(strings.TrimSpace(*req.Provider)) > 64 {
+		return validationError("provider", "max length is 64")
 	}
 	if req.Description != nil && len(strings.TrimSpace(*req.Description)) > 500 {
 		return validationError("description", "max length is 500")

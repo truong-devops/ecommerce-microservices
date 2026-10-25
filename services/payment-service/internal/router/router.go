@@ -39,6 +39,8 @@ func New(
 
 		payments := "/" + cfg.APIPrefix + "/payments"
 		private.With(auth.RequireRoles(domain.RoleCustomer)).Post(payments+"/intents", paymentHandler.CreatePaymentIntent)
+		private.With(auth.RequireRoles(domain.RoleCustomer)).Post(payments+"/groups/intents", paymentHandler.CreatePaymentGroupIntent)
+		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Get(payments+"/groups/{groupId}", paymentHandler.GetPaymentGroupByID)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Get(payments, paymentHandler.ListPayments)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Get(payments+"/order/{orderId}", paymentHandler.GetPaymentByOrderID)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Get(payments+"/{id}", paymentHandler.GetPaymentByID)

@@ -303,6 +303,38 @@ export interface CreatePaymentIntentInput {
   autoCapture?: boolean;
 }
 
+export interface CreatePaymentGroupIntentInput {
+  orderIds: string[];
+  description?: string;
+  autoCapture?: boolean;
+}
+
+export interface PaymentGroupItem {
+  paymentId: string;
+  orderId: string;
+  sellerId: string | null;
+  amount: number;
+  status: PaymentStatus;
+}
+
+export interface PaymentGroup {
+  id: string;
+  userId: string;
+  provider: string;
+  providerPaymentId: string | null;
+  status: PaymentStatus;
+  currency: string;
+  amount: number;
+  metadata: Record<string, unknown> | null;
+  orderIds: string[];
+  payments: PaymentGroupItem[];
+  paymentInstructions?: PaymentInstructions;
+  expiresAt?: string | null;
+  capturedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ShippingQuote {
   sellerId: string;
   originProvince: string;

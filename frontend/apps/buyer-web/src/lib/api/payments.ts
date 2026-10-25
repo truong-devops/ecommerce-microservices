@@ -1,5 +1,5 @@
 import { requestBuyerApi } from './client';
-import type { CreatePaymentIntentInput, Payment } from './types';
+import type { CreatePaymentGroupIntentInput, CreatePaymentIntentInput, Payment, PaymentGroup } from './types';
 
 interface AuthRequestInit extends RequestInit {
   accessToken: string;
@@ -43,5 +43,28 @@ export function fetchBuyerPaymentByOrderId(input: AuthRequestInit & { orderId: s
       cache: 'no-store',
       ...init
     })
+  );
+}
+
+export function createBuyerPaymentGroupIntent(
+  input: AuthRequestInit & { payload: CreatePaymentGroupIntentInput; idempotencyKey: string }
+): Promise<PaymentGroup> {
+  const { accessToken, payload, idempotencyKey, ...init } = input;
+  return requestBuyerApi<PaymentGroup>(
+    '/api/buyer/payments/groups/intents',
+    withAuth(accessToken, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: JSON.stringify(payload),
+      ...init
+    })
+  );
+}
+
+export function fetchBuyerPaymentGroupById(input: AuthRequestInit & { groupId: string }): Promise<PaymentGroup> {
+  const { accessToken, groupId, ...init } = input;
+  return requestBuyerApi<PaymentGroup>(
+    `/api/buyer/payments/groups/${encodeURIComponent(groupId)}`,
+    withAuth(accessToken, { method: 'GET', cache: 'no-store', ...init })
   );
 }

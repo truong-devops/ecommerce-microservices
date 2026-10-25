@@ -83,6 +83,19 @@ type CreatePaymentInput struct {
 	CapturedAt        *time.Time
 }
 
+type CreatePaymentGroupInput struct {
+	ID                string
+	UserID            string
+	Provider          string
+	ProviderPaymentID string
+	Status            domain.PaymentStatus
+	Currency          string
+	Amount            float64
+	Metadata          map[string]any
+	ExpiresAt         *time.Time
+	CapturedAt        *time.Time
+}
+
 type CreatePaymentTransactionInput struct {
 	PaymentID            string
 	TransactionType      string
@@ -240,6 +253,37 @@ func (r *PaymentRepository) CreatePayment(ctx context.Context, tx pgx.Tx, input 
 	return payment, nil
 }
 
+// CreatePaymentIfAbsent is used by checkout flows that can race with the
+// order.created consumer. A conflict is returned as (nil, nil) without
+// aborting the transaction, allowing the caller to lock and attach to the
+// consumer-created pending payment.
+func (r *PaymentRepository) CreatePaymentIfAbsent(ctx context.Context, tx pgx.Tx, input CreatePaymentInput) (*domain.Payment, error) {
+	metadata, err := toJSONB(input.Metadata)
+	if err != nil {
+		return nil, queryFailed("marshal payment metadata failed", err)
+	}
+	row := tx.QueryRow(ctx, `
+		INSERT INTO payments (
+			order_id, user_id, seller_id, provider, provider_payment_id, status,
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+		ON CONFLICT (order_id) DO NOTHING
+		RETURNING id, order_id, user_id, seller_id, provider, provider_payment_id, status,
+			currency, amount, refunded_amount, description, metadata, expires_at, captured_at, created_at, updated_at
+	`, input.OrderID, input.UserID, input.SellerID, input.Provider, input.ProviderPaymentID,
+		input.Status, input.Currency, input.Amount, input.RefundedAmount, input.Description,
+		metadata, input.ExpiresAt, input.CapturedAt)
+	payment, err := scanPaymentRow(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, queryFailed("create payment if absent failed", err)
+	}
+	return &payment, nil
+}
+
 func (r *PaymentRepository) SavePayment(ctx context.Context, tx pgx.Tx, payment domain.Payment) (domain.Payment, error) {
 	metadata, err := toJSONB(payment.Metadata)
 	if err != nil {
@@ -283,6 +327,160 @@ func (r *PaymentRepository) SavePayment(ctx context.Context, tx pgx.Tx, payment 
 		return domain.Payment{}, queryFailed("update payment failed", err)
 	}
 	return updated, nil
+}
+
+func (r *PaymentRepository) CreatePaymentGroup(ctx context.Context, tx pgx.Tx, input CreatePaymentGroupInput) (domain.PaymentGroup, error) {
+	metadata, err := toJSONB(input.Metadata)
+	if err != nil {
+		return domain.PaymentGroup{}, queryFailed("marshal payment group metadata failed", err)
+	}
+
+	row := tx.QueryRow(ctx, `
+		INSERT INTO payment_groups (
+			id, user_id, provider, provider_payment_id, status, currency,
+			amount, metadata, expires_at, captured_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		RETURNING id, user_id, provider, provider_payment_id, status, currency,
+			amount, metadata, expires_at, captured_at, created_at, updated_at
+	`, input.ID, input.UserID, input.Provider, input.ProviderPaymentID, input.Status,
+		input.Currency, input.Amount, metadata, input.ExpiresAt, input.CapturedAt)
+
+	group, err := scanPaymentGroupRow(row)
+	if err != nil {
+		return domain.PaymentGroup{}, queryFailed("create payment group failed", err)
+	}
+	return group, nil
+}
+
+func (r *PaymentRepository) SavePaymentGroup(ctx context.Context, tx pgx.Tx, group domain.PaymentGroup) (domain.PaymentGroup, error) {
+	metadata, err := toJSONB(group.Metadata)
+	if err != nil {
+		return domain.PaymentGroup{}, queryFailed("marshal payment group metadata failed", err)
+	}
+
+	row := tx.QueryRow(ctx, `
+		UPDATE payment_groups
+		SET status=$2, metadata=$3, expires_at=$4, captured_at=$5, updated_at=now()
+		WHERE id=$1
+		RETURNING id, user_id, provider, provider_payment_id, status, currency,
+			amount, metadata, expires_at, captured_at, created_at, updated_at
+	`, group.ID, group.Status, metadata, group.ExpiresAt, group.CapturedAt)
+
+	updated, err := scanPaymentGroupRow(row)
+	if err != nil {
+		return domain.PaymentGroup{}, queryFailed("update payment group failed", err)
+	}
+	return updated, nil
+}
+
+func (r *PaymentRepository) FindPaymentGroupByID(ctx context.Context, id string) (*domain.PaymentGroup, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT id, user_id, provider, provider_payment_id, status, currency,
+			amount, metadata, expires_at, captured_at, created_at, updated_at
+		FROM payment_groups
+		WHERE id=$1
+	`, id)
+	group, err := scanPaymentGroupRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("get payment group failed", err)
+	}
+	return &group, nil
+}
+
+func (r *PaymentRepository) FindPaymentGroupByIDForUpdate(ctx context.Context, tx pgx.Tx, id string) (*domain.PaymentGroup, error) {
+	row := tx.QueryRow(ctx, `
+		SELECT id, user_id, provider, provider_payment_id, status, currency,
+			amount, metadata, expires_at, captured_at, created_at, updated_at
+		FROM payment_groups
+		WHERE id=$1
+		FOR UPDATE
+	`, id)
+	group, err := scanPaymentGroupRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("get payment group for update failed", err)
+	}
+	return &group, nil
+}
+
+func (r *PaymentRepository) FindPaymentGroupByProviderPaymentIDForUpdate(ctx context.Context, tx pgx.Tx, providerPaymentID string) (*domain.PaymentGroup, error) {
+	row := tx.QueryRow(ctx, `
+		SELECT id, user_id, provider, provider_payment_id, status, currency,
+			amount, metadata, expires_at, captured_at, created_at, updated_at
+		FROM payment_groups
+		WHERE provider_payment_id=$1
+		FOR UPDATE
+	`, providerPaymentID)
+	group, err := scanPaymentGroupRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("get payment group by provider payment id failed", err)
+	}
+	return &group, nil
+}
+
+func (r *PaymentRepository) AddPaymentGroupItem(ctx context.Context, tx pgx.Tx, groupID, paymentID string, amount float64) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO payment_group_items (group_id, payment_id, amount)
+		VALUES ($1,$2,$3)
+	`, groupID, paymentID, amount)
+	if err != nil {
+		return queryFailed("create payment group item failed", err)
+	}
+	return nil
+}
+
+func (r *PaymentRepository) ListPaymentGroupItems(ctx context.Context, groupID string) ([]domain.PaymentGroupItem, error) {
+	return r.listPaymentGroupItems(ctx, r.pool, groupID, false)
+}
+
+func (r *PaymentRepository) ListPaymentGroupItemsForUpdate(ctx context.Context, tx pgx.Tx, groupID string) ([]domain.PaymentGroupItem, error) {
+	return r.listPaymentGroupItems(ctx, tx, groupID, true)
+}
+
+type paymentGroupItemsQuerier interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}
+
+func (r *PaymentRepository) listPaymentGroupItems(ctx context.Context, q paymentGroupItemsQuerier, groupID string, forUpdate bool) ([]domain.PaymentGroupItem, error) {
+	query := `
+		SELECT i.group_id, i.amount, i.created_at,
+			p.id, p.order_id, p.user_id, p.seller_id, p.provider, p.provider_payment_id,
+			p.status, p.currency, p.amount, p.refunded_amount, p.description,
+			p.metadata, p.expires_at, p.captured_at, p.created_at, p.updated_at
+		FROM payment_group_items i
+		JOIN payments p ON p.id=i.payment_id
+		WHERE i.group_id=$1
+		ORDER BY i.created_at ASC, p.id ASC`
+	if forUpdate {
+		query += " FOR UPDATE OF p"
+	}
+	rows, err := q.Query(ctx, query, groupID)
+	if err != nil {
+		return nil, queryFailed("list payment group items failed", err)
+	}
+	defer rows.Close()
+
+	items := make([]domain.PaymentGroupItem, 0)
+	for rows.Next() {
+		item, err := scanPaymentGroupItemRows(rows)
+		if err != nil {
+			return nil, queryFailed("scan payment group item failed", err)
+		}
+		items = append(items, item)
+	}
+	if rows.Err() != nil {
+		return nil, queryFailed("iterate payment group items failed", rows.Err())
+	}
+	return items, nil
 }
 
 func (r *PaymentRepository) FindPaymentByID(ctx context.Context, id string) (*domain.Payment, error) {
@@ -981,6 +1179,38 @@ func (r *PaymentRepository) FindExpiredPendingPaymentIDs(ctx context.Context, pr
 	return ids, nil
 }
 
+func (r *PaymentRepository) FindExpiredPendingPaymentGroupIDs(ctx context.Context, provider string, limit int) ([]string, error) {
+	if limit < 1 {
+		limit = 100
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT id
+		FROM payment_groups
+		WHERE provider=$1
+			AND status IN ('PENDING','REQUIRES_ACTION')
+			AND expires_at IS NOT NULL
+			AND expires_at <= now()
+		ORDER BY expires_at ASC
+		LIMIT $2
+	`, strings.TrimSpace(provider), limit)
+	if err != nil {
+		return nil, queryFailed("list expired payment groups failed", err)
+	}
+	defer rows.Close()
+	ids := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, queryFailed("scan expired payment group id failed", err)
+		}
+		ids = append(ids, id)
+	}
+	if rows.Err() != nil {
+		return nil, queryFailed("iterate expired payment group ids failed", rows.Err())
+	}
+	return ids, nil
+}
+
 func (r *PaymentRepository) FindDispatchableOutboxEvents(ctx context.Context, limit int) ([]domain.OutboxEvent, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, aggregate_type, aggregate_id, event_type, payload, status, retry_count, next_retry_at, created_at, published_at
@@ -1159,6 +1389,111 @@ func scanPaymentRows(rows pgx.Rows) (domain.Payment, error) {
 	}
 
 	return payment, nil
+}
+
+func scanPaymentGroupRow(row pgx.Row) (domain.PaymentGroup, error) {
+	var (
+		group             domain.PaymentGroup
+		providerPaymentID pgtype.Text
+		status            string
+		metadataRaw       []byte
+		expiresAt         pgtype.Timestamptz
+		capturedAt        pgtype.Timestamptz
+	)
+	err := row.Scan(
+		&group.ID,
+		&group.UserID,
+		&group.Provider,
+		&providerPaymentID,
+		&status,
+		&group.Currency,
+		&group.Amount,
+		&metadataRaw,
+		&expiresAt,
+		&capturedAt,
+		&group.CreatedAt,
+		&group.UpdatedAt,
+	)
+	if err != nil {
+		return domain.PaymentGroup{}, err
+	}
+	if providerPaymentID.Valid {
+		v := providerPaymentID.String
+		group.ProviderPaymentID = &v
+	}
+	group.Status = domain.PaymentStatus(status)
+	group.Metadata = decodeJSONMap(metadataRaw)
+	if expiresAt.Valid {
+		t := expiresAt.Time
+		group.ExpiresAt = &t
+	}
+	if capturedAt.Valid {
+		t := capturedAt.Time
+		group.CapturedAt = &t
+	}
+	return group, nil
+}
+
+func scanPaymentGroupItemRows(rows pgx.Rows) (domain.PaymentGroupItem, error) {
+	var (
+		item              domain.PaymentGroupItem
+		payment           domain.Payment
+		sellerID          pgtype.Text
+		providerPaymentID pgtype.Text
+		description       pgtype.Text
+		status            string
+		metadataRaw       []byte
+		expiresAt         pgtype.Timestamptz
+		capturedAt        pgtype.Timestamptz
+	)
+	err := rows.Scan(
+		&item.GroupID,
+		&item.Amount,
+		&item.CreatedAt,
+		&payment.ID,
+		&payment.OrderID,
+		&payment.UserID,
+		&sellerID,
+		&payment.Provider,
+		&providerPaymentID,
+		&status,
+		&payment.Currency,
+		&payment.Amount,
+		&payment.RefundedAmount,
+		&description,
+		&metadataRaw,
+		&expiresAt,
+		&capturedAt,
+		&payment.CreatedAt,
+		&payment.UpdatedAt,
+	)
+	if err != nil {
+		return domain.PaymentGroupItem{}, err
+	}
+	if sellerID.Valid {
+		v := sellerID.String
+		payment.SellerID = &v
+	}
+	if providerPaymentID.Valid {
+		v := providerPaymentID.String
+		payment.ProviderPaymentID = &v
+	}
+	if description.Valid {
+		v := description.String
+		payment.Description = &v
+	}
+	payment.Status = domain.PaymentStatus(status)
+	payment.Metadata = decodeJSONMap(metadataRaw)
+	if expiresAt.Valid {
+		t := expiresAt.Time
+		payment.ExpiresAt = &t
+	}
+	if capturedAt.Valid {
+		t := capturedAt.Time
+		payment.CapturedAt = &t
+	}
+	item.Payment = payment
+	return item, nil
 }
 
 func scanPaymentTransactionRow(row pgx.Row) (domain.PaymentTransaction, error) {

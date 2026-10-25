@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { fetchBuyerRuntimeConfig } from '@/lib/api/config';
 import { createBuyerOrder, quoteBuyerShipping } from '@/lib/api/orders';
-import { createBuyerPaymentIntent } from '@/lib/api/payments';
+import { createBuyerPaymentGroupIntent, createBuyerPaymentIntent } from '@/lib/api/payments';
 import { BuyerApiClientError } from '@/lib/api/client';
 import { formatPrice } from '@/lib/price';
 import { isValidProductId } from '@/lib/product-id';
@@ -84,7 +84,10 @@ function getLineIdempotencyKey(keys: Map<string, string>, itemKey: string): stri
   return key;
 }
 
-function buildPaymentRedirectUrl(orderIds: string[]): string {
+function buildPaymentRedirectUrl(orderIds: string[], paymentGroupId?: string): string {
+  if (paymentGroupId) {
+    return `/checkout/payment/group/${encodeURIComponent(paymentGroupId)}`;
+  }
   if (orderIds.length === 1) {
     return `/checkout/payment/${encodeURIComponent(orderIds[0])}`;
   }
@@ -291,6 +294,8 @@ export default function CheckoutPage() {
       let nextFeedback = text.checkout.orderSuccess;
       let paymentIntentFailed = false;
       const createdOrderIds: string[] = [];
+      const createdOrders: Array<{ id: string; orderNumber: string; currency: string; totalAmount: number }> = [];
+      let paymentGroupId = '';
       for (const [index, orderItem] of orderItems.entries()) {
         const item = items[index];
         const itemKey = lineItemKey(item, index);
@@ -314,22 +319,36 @@ export default function CheckoutPage() {
           }
         });
         createdOrderIds.push(createdOrder.id);
+        createdOrders.push(createdOrder);
+      }
 
-        if (paymentMethod === 'online' && createdOrder.totalAmount > 0) {
-          try {
+      if (paymentMethod === 'online' && createdOrders.length > 0) {
+        try {
+          if (createdOrders.length === 1) {
+            const order = createdOrders[0];
             await createBuyerPaymentIntent({
               accessToken,
-              idempotencyKey: getLineIdempotencyKey(paymentKeys.current, itemKey),
+              idempotencyKey: getLineIdempotencyKey(paymentKeys.current, order.id),
               payload: {
-                orderId: createdOrder.id,
-                currency: createdOrder.currency,
-                amount: createdOrder.totalAmount,
-                description: `Payment for order ${createdOrder.orderNumber}`
+                orderId: order.id,
+                currency: order.currency,
+                amount: order.totalAmount,
+                description: `Payment for order ${order.orderNumber}`
               }
             });
-          } catch {
-            paymentIntentFailed = true;
+          } else {
+            const group = await createBuyerPaymentGroupIntent({
+              accessToken,
+              idempotencyKey: getLineIdempotencyKey(paymentKeys.current, createdOrderIds.join(':')),
+              payload: {
+                orderIds: createdOrderIds,
+                description: `Payment for ${createdOrderIds.length} orders`
+              }
+            });
+            paymentGroupId = group.id;
           }
+        } catch {
+          paymentIntentFailed = true;
         }
       }
       if (items.length > 1) {
@@ -342,8 +361,8 @@ export default function CheckoutPage() {
       }
 
       clearCart();
-      if (paymentMethod === 'online' && createdOrderIds.length > 0) {
-        router.push(buildPaymentRedirectUrl(createdOrderIds));
+      if (paymentMethod === 'online' && createdOrderIds.length > 0 && !paymentIntentFailed) {
+        router.push(buildPaymentRedirectUrl(createdOrderIds, paymentGroupId));
         return;
       }
 

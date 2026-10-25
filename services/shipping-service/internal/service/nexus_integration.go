@@ -270,13 +270,17 @@ func (s *ShippingService) HandleNexusWebhook(ctx context.Context, requestID stri
 	if strings.EqualFold(strings.TrimSpace(event.EventType), "webhook.ping") {
 		return map[string]any{"processed": true, "provider": "nexus", "eventId": eventID, "eventType": "webhook.ping"}, nil
 	}
+	if eventPartnerCode := strings.TrimSpace(event.PartnerCode); eventPartnerCode != "" && eventPartnerCode != strings.TrimSpace(headers.PartnerCode) {
+		return nil, fmt.Errorf("Nexus webhook partner code does not match payload")
+	}
 
-	status, ok := nexusShipmentStatus(asString(event.Data["currentStatus"]))
+	nexusStatus := firstNonEmpty(asString(event.Data["currentStatus"]), event.NexusStatus, event.Status)
+	status, ok := nexusShipmentStatus(nexusStatus)
 	if !ok {
 		return nil, fmt.Errorf("unsupported Nexus shipment status")
 	}
 	orderID := asString(event.Data["externalOrderId"])
-	shipmentCode := asString(event.Data["shipmentCode"])
+	shipmentCode := firstNonEmpty(asString(event.Data["shipmentCode"]), event.ShipmentCode)
 	description := asString(event.Data["statusDescription"])
 	if description == "" {
 		description = asString(event.Data["reason"])
@@ -292,7 +296,7 @@ func (s *ShippingService) HandleNexusWebhook(ctx context.Context, requestID stri
 		TrackingNumber:  strPtr(shipmentCode),
 		Status:          status,
 		OccurredAt:      strPtr(event.OccurredAt),
-		EventCode:       strPtr(asString(event.Data["currentStatus"])),
+		EventCode:       strPtr(nexusStatus),
 		Description:     strPtr(description),
 		Location:        strPtr(location),
 		RawPayload:      event.Data,
@@ -302,11 +306,11 @@ func (s *ShippingService) HandleNexusWebhook(ctx context.Context, requestID stri
 
 func nexusShipmentStatus(value string) (domain.ShipmentStatus, bool) {
 	switch strings.ToUpper(strings.TrimSpace(value)) {
-	case "CREATED":
+	case "CREATED", "AWB_CREATED":
 		return domain.ShipmentStatusAWBCreated, true
 	case "UPDATED", "TASK_ASSIGNED":
 		return domain.ShipmentStatusAWBCreated, true
-	case "PICKUP_COMPLETED":
+	case "PICKUP_COMPLETED", "PICKED_UP":
 		return domain.ShipmentStatusPickedUp, true
 	case "MANIFEST_SEALED", "SEND_GOODS", "IN_TRANSIT", "MANIFEST_RECEIVED", "MANIFEST_UNSEALED", "SCAN_INBOUND", "SCAN_OUTBOUND", "INVENTORY_CHECK":
 		return domain.ShipmentStatusInTransit, true
@@ -314,9 +318,9 @@ func nexusShipmentStatus(value string) (domain.ShipmentStatus, bool) {
 		return domain.ShipmentStatusOutForDelivery, true
 	case "DELIVERED":
 		return domain.ShipmentStatusDelivered, true
-	case "DELIVERY_FAILED", "NDR_CREATED", "EXCEPTION":
+	case "DELIVERY_FAILED", "NDR_CREATED", "EXCEPTION", "FAILED":
 		return domain.ShipmentStatusFailed, true
-	case "RETURN_STARTED", "RETURN_COMPLETED":
+	case "RETURN_STARTED", "RETURN_COMPLETED", "RETURNED":
 		return domain.ShipmentStatusReturned, true
 	case "CANCELLED":
 		return domain.ShipmentStatusCancelled, true

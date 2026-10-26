@@ -494,6 +494,49 @@ export interface OrderStatusHistoryOutput {
   histories: OrderStatusHistoryItem[];
 }
 
+export type ReturnRequestStatus = 'REQUESTED' | 'APPROVED' | 'RETURNING' | 'REJECTED' | 'REFUND_PENDING' | 'REFUNDED' | 'CANCELLED';
+
+export type ReturnReasonCode = 'DAMAGED' | 'WRONG_ITEM' | 'MISSING_PARTS' | 'NOT_AS_DESCRIBED' | 'QUALITY_ISSUE' | 'OTHER';
+
+export interface ReturnRequest {
+  id: string;
+  returnNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  sellerId: string;
+  status: ReturnRequestStatus;
+  reasonCode: ReturnReasonCode;
+  reasonDetail: string;
+  evidenceUrls: string[];
+  sellerNote: string | null;
+  refundAmount: number;
+  currency: string;
+  requestedAt: string;
+  respondedAt: string | null;
+  shippedAt: string | null;
+  receivedAt: string | null;
+  refundedAt: string | null;
+  updatedAt: string;
+  items: OrderItem[];
+}
+
+export interface CreateReturnRequestInput {
+  reasonCode: ReturnReasonCode;
+  reasonDetail: string;
+  evidenceUrls?: string[];
+}
+
+export interface ReturnRequestListOutput {
+  items: ReturnRequest[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
 export type PaymentStatus =
   'PENDING' | 'REQUIRES_ACTION' | 'AUTHORIZED' | 'CAPTURED' | 'FAILED' | 'CANCELLED' | 'PARTIALLY_REFUNDED' | 'REFUNDED' | 'CHARGEBACK';
 

@@ -1913,6 +1913,30 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 	partition int,
 	offset int64,
 ) error {
+	return s.handleOrderRefundEvent(ctx, orderID, requestID, eventID, topic, partition, offset,
+		"order.cancelled", "Order cancelled; refund credited to customer wallet")
+}
+
+// HandleOrderReturnRefundApprovedEvent completes an approved return by moving
+// the captured payment back to the customer's eMall wallet. Wallet Service
+// consumes the resulting payment.refunded event and applies the ledger reversal.
+func (s *PaymentService) HandleOrderReturnRefundApprovedEvent(
+	ctx context.Context,
+	orderID, requestID, eventID, topic string,
+	partition int,
+	offset int64,
+) error {
+	return s.handleOrderRefundEvent(ctx, orderID, requestID, eventID, topic, partition, offset,
+		"order.return-refund-approved", "Returned order approved; refund credited to customer wallet")
+}
+
+func (s *PaymentService) handleOrderRefundEvent(
+	ctx context.Context,
+	orderID, requestID, eventID, topic string,
+	partition int,
+	offset int64,
+	eventType, refundReason string,
+) error {
 	if strings.TrimSpace(orderID) == "" {
 		return nil
 	}
@@ -1923,7 +1947,7 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 	defer tx.Rollback(ctx)
 
 	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
-		EventID: eventID, EventType: "order.cancelled", Topic: topic,
+		EventID: eventID, EventType: eventType, Topic: topic,
 		Partition: partition, OffsetValue: offset,
 	})
 	if err != nil {
@@ -1952,7 +1976,7 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 		refund, err := s.repo.CreateRefund(ctx, tx, repository.CreateRefundInput{
 			PaymentID: payment.ID, ProviderRefundID: strPtr(providerRefundID),
 			Amount: remaining, Currency: payment.Currency, Status: domain.RefundStatusSucceeded,
-			Reason:      strPtr("Order cancelled; refund credited to customer wallet"),
+			Reason:      strPtr(refundReason),
 			Metadata:    map[string]any{"destination": "CUSTOMER_WALLET", "orderEventId": eventID},
 			RequestedBy: systemActorID, RequestedByRole: domain.RoleSupport,
 		})
@@ -1962,7 +1986,7 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 		if err := s.repo.CreatePaymentTransaction(ctx, tx, repository.CreatePaymentTransactionInput{
 			PaymentID: payment.ID, TransactionType: TransactionRefundSucceeded,
 			Amount: remaining, Currency: payment.Currency, Status: string(domain.RefundStatusSucceeded),
-			RequestID: requestID, RawPayload: map[string]any{"source": "order.cancelled", "destination": "CUSTOMER_WALLET", "refundId": refund.ID},
+			RequestID: requestID, RawPayload: map[string]any{"source": eventType, "destination": "CUSTOMER_WALLET", "refundId": refund.ID},
 		}); err != nil {
 			return err
 		}
@@ -1977,7 +2001,7 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 			if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
 				PaymentID: updated.ID, FromStatus: &previous, ToStatus: updated.Status,
 				ChangedBy: systemActorID, ChangedByRole: domain.RoleSupport,
-				Reason: strPtr("Order cancelled; refund credited to customer wallet"),
+				Reason: strPtr(refundReason),
 			}); err != nil {
 				return err
 			}
@@ -2002,12 +2026,21 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 		if err := s.repo.CreatePaymentStatusHistory(ctx, tx, repository.CreatePaymentStatusHistoryInput{
 			PaymentID: updated.ID, FromStatus: &previous, ToStatus: updated.Status,
 			ChangedBy: systemActorID, ChangedByRole: domain.RoleSupport,
-			Reason: strPtr("Order cancelled before payment capture"),
+			Reason: strPtr("Order refund requested before payment capture"),
 		}); err != nil {
 			return err
 		}
 		if err := s.enqueueStatusEvent(ctx, tx, updated, systemActor, requestID); err != nil {
 			return err
+		}
+	case domain.PaymentStatusRefunded:
+		// A previous cancellation or reconciliation may already have completed the
+		// financial refund. Re-emit the cumulative state so a later return workflow
+		// can converge to REFUNDED without crediting the wallet twice.
+		if eventType == "order.return-refund-approved" {
+			if err := s.enqueueStatusEvent(ctx, tx, *payment, systemActor, requestID); err != nil {
+				return err
+			}
 		}
 	}
 	return tx.Commit(ctx)

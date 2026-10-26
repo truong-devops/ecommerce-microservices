@@ -507,6 +507,36 @@ export interface SellerOrderStatusHistoryOutput {
   histories: SellerOrderStatusHistoryItem[];
 }
 
+export type SellerReturnStatus = 'REQUESTED' | 'APPROVED' | 'RETURNING' | 'REJECTED' | 'REFUND_PENDING' | 'REFUNDED' | 'CANCELLED';
+
+export interface SellerReturnRequest {
+  id: string;
+  returnNumber: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  sellerId: string;
+  status: SellerReturnStatus;
+  reasonCode: string;
+  reasonDetail: string;
+  evidenceUrls: string[];
+  sellerNote: string | null;
+  refundAmount: number;
+  currency: string;
+  requestedAt: string;
+  respondedAt: string | null;
+  shippedAt: string | null;
+  receivedAt: string | null;
+  refundedAt: string | null;
+  updatedAt: string;
+  items: SellerOrderItem[];
+}
+
+export interface SellerReturnListOutput {
+  items: SellerReturnRequest[];
+  pagination: SellerPagination;
+}
+
 export type SellerShipmentStatus =
   'PENDING' | 'AWB_CREATED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'FAILED' | 'RETURNED';
 

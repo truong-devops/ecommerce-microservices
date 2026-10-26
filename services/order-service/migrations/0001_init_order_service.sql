@@ -164,4 +164,36 @@ DROP INDEX IF EXISTS ux_processed_events_consumer_offset;
 CREATE INDEX IF NOT EXISTS idx_processed_events_type ON processed_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_processed_events_processed_at ON processed_events(processed_at);
 
+CREATE TABLE IF NOT EXISTS return_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  return_number varchar(32) NOT NULL UNIQUE,
+  order_id uuid NOT NULL UNIQUE REFERENCES orders(id) ON DELETE RESTRICT,
+  customer_id uuid NOT NULL,
+  seller_id uuid NOT NULL,
+  status varchar(32) NOT NULL CHECK (status IN ('REQUESTED', 'APPROVED', 'RETURNING', 'REJECTED', 'REFUND_PENDING', 'REFUNDED', 'CANCELLED')),
+  reason_code varchar(64) NOT NULL,
+  reason_detail varchar(1000) NOT NULL,
+  evidence_urls jsonb NOT NULL DEFAULT '[]'::jsonb,
+  seller_note varchar(1000),
+  refund_amount numeric(14, 2) NOT NULL CHECK (refund_amount > 0),
+  currency char(3) NOT NULL,
+  requested_at timestamptz NOT NULL DEFAULT now(),
+  responded_at timestamptz,
+  shipped_at timestamptz,
+  received_at timestamptz,
+  refunded_at timestamptz,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS shipped_at timestamptz;
+ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS received_at timestamptz;
+ALTER TABLE return_requests DROP CONSTRAINT IF EXISTS return_requests_status_check;
+ALTER TABLE return_requests ADD CONSTRAINT return_requests_status_check
+  CHECK (status IN ('REQUESTED', 'APPROVED', 'RETURNING', 'REJECTED', 'REFUND_PENDING', 'REFUNDED', 'CANCELLED'));
+
+CREATE INDEX IF NOT EXISTS idx_return_requests_customer_id ON return_requests(customer_id);
+CREATE INDEX IF NOT EXISTS idx_return_requests_seller_id ON return_requests(seller_id);
+CREATE INDEX IF NOT EXISTS idx_return_requests_status ON return_requests(status);
+CREATE INDEX IF NOT EXISTS idx_return_requests_requested_at ON return_requests(requested_at DESC);
+
 SELECT pg_advisory_unlock(77001601);

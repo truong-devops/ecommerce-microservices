@@ -156,6 +156,8 @@ func New(
 		mountPrefix(private, "/api/v1/cart", proxies[config.ServiceCart])
 		mountPrefix(private, "/api/orders", proxies[config.ServiceOrder])
 		mountPrefix(private, "/api/v1/orders", proxies[config.ServiceOrder])
+		mountPrefix(private, "/api/returns", proxies[config.ServiceOrder])
+		mountPrefix(private, "/api/v1/returns", proxies[config.ServiceOrder])
 		mountPrefix(private, "/api/payments", proxies[config.ServicePayment])
 		mountPrefix(private, "/api/v1/payments", proxies[config.ServicePayment])
 		mountPrefix(private, "/api/wallets", proxies[config.ServiceWallet])

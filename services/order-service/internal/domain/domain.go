@@ -182,6 +182,66 @@ type OrderStatusHistory struct {
 	CreatedAt     time.Time
 }
 
+type ReturnRequestStatus string
+
+const (
+	ReturnRequestStatusRequested     ReturnRequestStatus = "REQUESTED"
+	ReturnRequestStatusApproved      ReturnRequestStatus = "APPROVED"
+	ReturnRequestStatusReturning     ReturnRequestStatus = "RETURNING"
+	ReturnRequestStatusRejected      ReturnRequestStatus = "REJECTED"
+	ReturnRequestStatusRefundPending ReturnRequestStatus = "REFUND_PENDING"
+	ReturnRequestStatusRefunded      ReturnRequestStatus = "REFUNDED"
+	ReturnRequestStatusCancelled     ReturnRequestStatus = "CANCELLED"
+)
+
+func IsValidReturnRequestStatus(status ReturnRequestStatus) bool {
+	switch status {
+	case ReturnRequestStatusRequested, ReturnRequestStatusApproved, ReturnRequestStatusReturning, ReturnRequestStatusRejected,
+		ReturnRequestStatusRefundPending, ReturnRequestStatusRefunded, ReturnRequestStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+func CanTransitionReturnRequestStatus(from, to ReturnRequestStatus) bool {
+	switch from {
+	case ReturnRequestStatusRequested:
+		return to == ReturnRequestStatusApproved || to == ReturnRequestStatusRejected || to == ReturnRequestStatusCancelled
+	case ReturnRequestStatusApproved:
+		return to == ReturnRequestStatusReturning || to == ReturnRequestStatusCancelled
+	case ReturnRequestStatusReturning:
+		return to == ReturnRequestStatusRefundPending
+	case ReturnRequestStatusRefundPending:
+		return to == ReturnRequestStatusRefunded
+	default:
+		return false
+	}
+}
+
+type ReturnRequest struct {
+	ID           string
+	ReturnNumber string
+	OrderID      string
+	OrderNumber  string
+	CustomerID   string
+	SellerID     string
+	Status       ReturnRequestStatus
+	ReasonCode   string
+	ReasonDetail string
+	EvidenceURLs []string
+	SellerNote   *string
+	RefundAmount float64
+	Currency     string
+	RequestedAt  time.Time
+	RespondedAt  *time.Time
+	ShippedAt    *time.Time
+	ReceivedAt   *time.Time
+	RefundedAt   *time.Time
+	UpdatedAt    time.Time
+	OrderItems   []OrderItem
+}
+
 type CompletedOrder struct {
 	ID          string
 	UserID      string

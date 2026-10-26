@@ -2,59 +2,47 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/AppProvider';
 
 export default function SellerLoginPage() {
   const router = useRouter();
   const { ready, user, login } = useAuth();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOauthSubmitting, setIsOauthSubmitting] = useState(false);
   const [oauthError, setOauthError] = useState('');
 
   useEffect(() => {
-    if (ready && user) {
-      router.replace('/');
-    }
-  }, [ready, user, router]);
+    if (ready && user) router.replace('/');
+  }, [ready, router, user]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const message = params.get('oauthError');
-    if (message) {
-      setOauthError(message);
-    }
+    if (typeof window === 'undefined') return;
+    const message = new URLSearchParams(window.location.search).get('oauthError');
+    if (message) setOauthError(message);
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
-
+    setOauthError('');
     if (!email.trim() || !password.trim()) {
-      setError('Email và mật khẩu là bắt buộc.');
+      setError('Vui lòng nhập đầy đủ email và mật khẩu.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const result = await login({
-        email,
-        password
-      });
-
+      const result = await login({ email: email.trim(), password });
       if (!result.ok) {
-        setError(result.message ?? 'Đăng nhập thất bại.');
+        setError(result.message ?? 'Không thể đăng nhập. Vui lòng kiểm tra lại thông tin.');
         return;
       }
-
       router.push('/');
     } finally {
       setIsSubmitting(false);
@@ -62,170 +50,91 @@ export default function SellerLoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+    if (typeof window === 'undefined') return;
     setIsOauthSubmitting(true);
     window.location.href = '/api/seller/auth/google/start';
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-20 w-full max-w-[1200px] items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-2 text-[20px] font-semibold leading-none text-brand-500">
-              <span
-                aria-hidden="true"
-                className="block h-9 w-9 shrink-0 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-orange-100"
-                style={{ backgroundImage: "url('/icon.svg')" }}
-              />
-              <span className="text-[22px]">eMall</span>
-            </span>
-            <span className="text-[22px] font-medium text-slate-800">Kênh Người Bán</span>
-          </div>
-          <a href="#" className="text-sm text-brand-500 transition hover:text-brand-600">
-            Bạn cần giúp đỡ?
+    <div className="min-h-screen bg-[#f3f5f7] text-slate-950">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[72px] w-full max-w-[1240px] items-center justify-between px-5 sm:px-8">
+          <Link href="/" className="inline-flex items-center gap-3" aria-label="eMall Seller Center">
+            <BrandMark />
+            <span className="h-6 w-px bg-slate-200" />
+            <span className="hidden text-sm font-semibold text-slate-600 sm:inline">Seller Center</span>
+          </Link>
+          <a href="mailto:support@truongam.tech" className="text-sm font-semibold text-slate-600 transition hover:text-slate-950">
+            <span className="hidden sm:inline">Trung tâm hỗ trợ</span> <span aria-hidden="true">→</span>
           </a>
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 py-12 lg:grid-cols-[1fr_430px] lg:items-center">
-        <section className="hidden px-12 lg:block">
-          <h2 className="text-[28px] font-semibold leading-tight text-brand-500">Bán hàng chuyên nghiệp</h2>
-          <p className="mt-3 max-w-[560px] text-[16px] leading-snug text-slate-600">
-            Quản lý shop của bạn một cách hiệu quả hơn
-            <br />
-            trên eMall với eMall - Kênh Người bán
-          </p>
+      <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
+        <section className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-[#172033] p-12 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -right-20 top-10 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" />
+          <div className="relative">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-300">EMALL SELLER CENTER</p>
+            <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em]">Vận hành cửa hàng, tập trung tăng trưởng.</h1>
+            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-300">Quản lý sản phẩm, đơn hàng, doanh thu và số dư trên một không gian làm việc thống nhất.</p>
+          </div>
 
-          <div className="mt-8">
-            <svg
-              viewBox="0 0 480 300"
-              className="h-[300px] w-[480px]"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <rect x="82" y="170" width="140" height="58" rx="6" fill="#4bb3b8" />
-              <rect x="117" y="132" width="120" height="96" rx="4" fill="#2f8ea4" />
-              <rect x="248" y="95" width="170" height="132" rx="6" fill="#fef0ca" />
-              <rect x="255" y="145" width="60" height="62" fill="#fff" stroke="#9ca3af" strokeWidth="3" />
-              <rect x="340" y="145" width="62" height="62" fill="#fff" stroke="#9ca3af" strokeWidth="3" />
-              <rect x="315" y="156" width="26" height="68" fill="#455a64" />
-              <rect x="235" y="85" width="195" height="15" fill="#f27d32" />
-              <path d="M240 100h190l11 45H230z" fill="#f7d966" />
-              <path d="M248 100h26l-8 45h-30zM302 100h26l-1 45h-26zM356 100h26l8 45h-30zM410 100h20l11 45h-29z" fill="#ef4d2d" />
-              <circle cx="116" cy="232" r="15" fill="#3f3d56" />
-              <circle cx="197" cy="232" r="15" fill="#3f3d56" />
-              <circle cx="116" cy="232" r="7" fill="#fff" />
-              <circle cx="197" cy="232" r="7" fill="#fff" />
-              <rect x="300" y="216" width="42" height="18" fill="#374151" />
-              <ellipse cx="100" cy="130" rx="20" ry="14" fill="#c9e7f3" />
-              <ellipse cx="95" cy="124" rx="14" ry="12" fill="#b3dced" />
-              <ellipse cx="110" cy="126" rx="12" ry="10" fill="#b3dced" />
-            </svg>
+          <div className="relative grid grid-cols-2 gap-3">
+            <Metric value="24/7" label="Theo dõi vận hành" />
+            <Metric value="1 nơi" label="Quản lý toàn bộ shop" />
+            <div className="col-span-2 mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-4 text-sm font-medium text-slate-200">
+              <ShieldIcon />
+              Dữ liệu bán hàng và phiên đăng nhập được bảo vệ.
+            </div>
           </div>
         </section>
 
-        <section>
-          <div className="rounded-sm bg-white p-8 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-            <div className="flex items-start justify-between gap-3">
-              <h1 className="text-[18px] font-medium text-slate-800">Đăng nhập</h1>
-              <div className="relative border-2 border-[#f0b100] bg-[#fffbe6] px-3 py-1 text-[13px] font-semibold leading-tight text-[#f0a300]">
-                Đăng nhập
-                <br />
-                với mã QR
-                <span className="absolute -right-[11px] top-1/2 block h-4 w-4 -translate-y-1/2 rotate-45 border-r-2 border-t-2 border-[#f0b100] bg-[#fffbe6]" />
-              </div>
-            </div>
+        <section className="mx-auto w-full max-w-[460px]">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Seller access</p>
+            <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em]">Đăng nhập Kênh Người Bán</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản Seller đã được eMall xác minh.</p>
 
-            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="Email/Số điện thoại/Tên đăng nhập"
-                className="h-12 w-full rounded-sm border border-slate-300 px-4 text-base outline-none transition focus:border-brand-500"
-                required
-              />
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+              <Field label="Email" icon={<MailIcon />}>
+                <input id="seller-email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="seller@example.com" className="h-12 w-full bg-transparent pl-11 pr-4 text-[15px] outline-none placeholder:text-slate-400" required />
+              </Field>
+              <Field label="Mật khẩu" icon={<LockIcon />}>
+                <input id="seller-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Nhập mật khẩu" className="h-12 w-full bg-transparent pl-11 pr-12 text-[15px] outline-none placeholder:text-slate-400" required />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute bottom-0 right-0 grid h-12 w-12 place-items-center text-slate-400 transition hover:text-slate-700" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}><EyeIcon crossed={showPassword} /></button>
+              </Field>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Mật khẩu"
-                className="h-12 w-full rounded-sm border border-slate-300 px-4 text-base outline-none transition focus:border-brand-500"
-                required
-              />
+              {error || oauthError ? <div role="alert" aria-live="polite" className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700"><AlertIcon /><span>{error || oauthError}</span></div> : null}
 
-              {error ? <p className="rounded-sm bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p> : null}
-              {oauthError ? <p className="rounded-sm bg-rose-50 px-3 py-2 text-sm text-rose-600">{oauthError}</p> : null}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-12 w-full rounded-sm bg-[#ee826f] text-[14px] font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-80"
-              >
-                {isSubmitting ? 'Đang xử lí...' : 'ĐĂNG NHẬP'}
+              <button type="submit" disabled={isSubmitting || isOauthSubmitting} className="flex h-12 w-full items-center justify-center rounded-xl bg-brand-600 px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(220,63,23,0.22)] transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60">
+                {isSubmitting ? <><Spinner />Đang đăng nhập...</> : 'Đăng nhập'}
               </button>
-
-              <a href="#" className="inline-block text-[15px] text-[#0f5db6] hover:underline">
-                Quên mật khẩu
-              </a>
-
-              <div className="flex items-center gap-4 text-slate-400">
-                <span className="h-px flex-1 bg-slate-300" />
-                <span className="text-base">HOẶC</span>
-                <span className="h-px flex-1 bg-slate-300" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
-                  Facebook
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={isOauthSubmitting}
-                  className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isOauthSubmitting ? 'Google...' : 'Google'}
-                </button>
-              </div>
-
-              <p className="text-center text-sm leading-relaxed text-slate-500">
-                Bằng việc đăng nhập, bạn đồng ý với{' '}
-                <a href="#" className="text-brand-500 hover:underline">
-                  Điều khoản dịch vụ
-                </a>{' '}
-                &{' '}
-                <a href="#" className="text-brand-500 hover:underline">
-                  Chính sách bảo mật
-                </a>{' '}
-                của eMall
-              </p>
-
-              <p className="text-center text-base text-slate-400">
-                Bạn mới biết đến eMall?{' '}
-                <Link href="#" className="font-semibold text-brand-500 hover:underline">
-                  Đăng ký
-                </Link>
-              </p>
+              <Divider />
+              <button type="button" onClick={handleGoogleLogin} disabled={isSubmitting || isOauthSubmitting} className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+                {isOauthSubmitting ? <Spinner dark /> : <GoogleMark />}{isOauthSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục với Google'}
+              </button>
             </form>
-          </div>
 
-          <button
-            type="button"
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-sm bg-white text-base text-slate-700 shadow-[0_1px_8px_rgba(0,0,0,0.08)] hover:bg-slate-50"
-          >
-            Đăng nhập với tài khoản Chính/ Phụ
-            <span aria-hidden="true">›</span>
-          </button>
+            <div className="mt-7 rounded-xl bg-slate-50 px-4 py-3 text-center text-xs leading-5 text-slate-500">Chỉ tài khoản có vai trò Seller mới truy cập được hệ thống quản trị cửa hàng.</div>
+            <p className="mt-5 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-400">Khi tiếp tục, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của eMall.</p>
+          </div>
         </section>
       </main>
-
-      <footer className="pb-10 pt-16 text-center text-sm text-slate-500">(c) 2026 eMall. Tất cả các quyền được bảo lưu.</footer>
+      <footer className="px-5 pb-7 text-center text-xs text-slate-400">© 2026 eMall Seller Center</footer>
     </div>
   );
 }
+
+function Metric({ value, label }: { value: string; label: string }) {
+  return <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm"><strong className="block text-2xl font-semibold tracking-tight text-white">{value}</strong><span className="mt-1 block text-xs font-medium text-slate-400">{label}</span></div>;
+}
+function Field({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) { return <label className="block text-sm font-semibold text-slate-700"><span>{label}</span><span className="relative mt-2 block rounded-xl border border-slate-300 bg-white transition focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10"><span className="pointer-events-none absolute bottom-0 left-0 grid h-12 w-11 place-items-center text-slate-400">{icon}</span>{children}</span></label>; }
+function Divider() { return <div className="flex items-center gap-3 text-xs font-medium text-slate-400"><span className="h-px flex-1 bg-slate-200" /><span>hoặc tiếp tục với</span><span className="h-px flex-1 bg-slate-200" /></div>; }
+function BrandMark() { return <span className="inline-flex items-center gap-2.5"><span className="block h-10 w-10 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-orange-100" style={{ backgroundImage: "url('/icon.svg')" }} aria-hidden="true" /><span className="text-xl font-black tracking-[-0.03em] text-brand-600">eMall</span></span>; }
+function MailIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></svg>; }
+function LockIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="10" width="16" height="11" rx="3" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>; }
+function EyeIcon({ crossed }: { crossed: boolean }) { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" />{crossed ? <path d="m4 4 16 16" /> : null}</svg>; }
+function AlertIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>; }
+function ShieldIcon() { return <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange-400/15 text-orange-300"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg></span>; }
+function GoogleMark() { return <span aria-hidden="true" className="grid h-6 w-6 place-items-center rounded-full border border-slate-200 bg-white text-xs font-black text-[#4285f4]">G</span>; }
+function Spinner({ dark = false }: { dark?: boolean }) { return <span aria-hidden="true" className={`mr-2 h-4 w-4 animate-spin rounded-full border-2 ${dark ? 'border-slate-300 border-t-slate-700' : 'border-white/40 border-t-white'}`} />; }

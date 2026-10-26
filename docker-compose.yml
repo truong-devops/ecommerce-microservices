@@ -388,6 +388,8 @@ services:
       INVENTORY_EVENTS_CONSUMER_GROUP: order-service-inventory-events-group
       PAYMENT_EVENTS_TOPIC: payment.events
       PAYMENT_EVENTS_CONSUMER_GROUP: order-service-payment-events-group
+      WALLET_EVENTS_TOPIC: wallet.events
+      WALLET_EVENTS_CONSUMER_GROUP: order-service-wallet-events-group
       NOTIFICATION_EVENTS_TOPIC: notification.events
       ANALYTICS_EVENTS_TOPIC: analytics.events
       AUDIT_EVENTS_TOPIC: audit.events

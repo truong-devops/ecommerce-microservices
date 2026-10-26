@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	EventInventoryReserved          = "inventory.reserved"
-	EventInventoryReservationFailed = "inventory.reservation-failed"
-	EventInventoryExpired           = "inventory.expired"
-	EventPaymentCaptured            = "payment.captured"
-	EventPaymentFailed              = "payment.failed"
+	EventInventoryReserved            = "inventory.reserved"
+	EventInventoryReservationFailed   = "inventory.reservation-failed"
+	EventInventoryExpired             = "inventory.expired"
+	EventPaymentCaptured              = "payment.captured"
+	EventPaymentFailed                = "payment.failed"
+	EventWalletCustomerRefundCredited = "wallet.customer-refund-credited"
 
 	orderSagaSystemActorID = "00000000-0000-0000-0000-000000000000"
 )
@@ -47,6 +48,15 @@ type PaymentEvent struct {
 	OrderID   string
 	PaymentID string
 	Status    string
+}
+
+type CustomerRefundCreditedEvent struct {
+	OrderID        string
+	PaymentID      string
+	CustomerID     string
+	WalletID       string
+	Currency       string
+	RefundedAmount int64
 }
 
 type OrderSagaService struct {
@@ -141,6 +151,47 @@ func (s *OrderSagaService) HandlePaymentFailed(ctx context.Context, event Paymen
 		}
 		return "", nil
 	})
+}
+
+func (s *OrderSagaService) HandleCustomerRefundCredited(ctx context.Context, event CustomerRefundCreditedEvent, meta SagaEventMeta) error {
+	orderID := strings.TrimSpace(event.OrderID)
+	if orderID == "" {
+		return nil
+	}
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
+		ConsumerName: "order-service-return-wallet-credit", EventID: meta.EventID, EventType: meta.EventType,
+		Topic: meta.Topic, Partition: meta.Partition, OffsetValue: meta.OffsetValue,
+	})
+	if err != nil {
+		return err
+	}
+	if alreadyProcessed {
+		return tx.Commit(ctx)
+	}
+	request, err := s.repo.MarkReturnRequestRefundedByOrderID(ctx, tx, orderID)
+	if err != nil {
+		return err
+	}
+	if request != nil {
+		if request.CustomerID != strings.TrimSpace(event.CustomerID) {
+			return fmt.Errorf("customer refund credit owner mismatch for order %s", orderID)
+		}
+		if err := s.repo.InsertAuditLog(ctx, tx, repository.CreateAuditLogInput{
+			OrderID: orderID, Action: "RETURN_REFUNDED", ActorID: orderSagaSystemActorID,
+			ActorRole: domain.RoleSuperAdmin, RequestID: requestIDOrDefault(meta),
+			Metadata: map[string]any{"returnRequestId": request.ID, "paymentId": event.PaymentID,
+				"customerId": event.CustomerID, "walletId": event.WalletID, "refundedAmount": event.RefundedAmount, "currency": event.Currency},
+			OccurredAt: s.defaultStatusTime(),
+		}); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
 }
 
 func (s *OrderSagaService) FailStalePendingSagas(ctx context.Context, timeoutAfter time.Duration, batchSize int) (int, error) {

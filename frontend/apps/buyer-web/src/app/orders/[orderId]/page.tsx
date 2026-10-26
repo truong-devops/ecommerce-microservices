@@ -526,6 +526,14 @@ export default function OrderDetailPage() {
               >
                 {text.orders.backToOrders}
               </Link>
+              {order.status === 'DELIVERED' && order.paymentMethod === 'ONLINE' ? (
+                <Link
+                  href={`/orders/${encodeURIComponent(order.id)}/return`}
+                  className="inline-flex h-10 items-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+                >
+                  Trả hàng / Hoàn tiền
+                </Link>
+              ) : null}
             </div>
           </div>
 

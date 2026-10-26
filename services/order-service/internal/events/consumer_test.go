@@ -12,16 +12,18 @@ import (
 )
 
 type fakeSagaService struct {
-	inventoryReservedCalls int
-	inventoryFailureCalls  int
-	inventoryExpiredCalls  int
-	paymentCapturedCalls   int
-	paymentFailedCalls     int
-	shipmentStatusCalls    int
+	inventoryReservedCalls      int
+	inventoryFailureCalls       int
+	inventoryExpiredCalls       int
+	paymentCapturedCalls        int
+	paymentFailedCalls          int
+	customerRefundCreditedCalls int
+	shipmentStatusCalls         int
 
 	lastInventoryReserved service.InventoryReservedEvent
 	lastInventoryFailure  service.InventoryFailureEvent
 	lastPayment           service.PaymentEvent
+	lastCustomerRefund    service.CustomerRefundCreditedEvent
 	lastShipment          service.ShipmentEvent
 	lastMeta              service.SagaEventMeta
 }
@@ -57,6 +59,13 @@ func (f *fakeSagaService) HandlePaymentCaptured(ctx context.Context, event servi
 func (f *fakeSagaService) HandlePaymentFailed(ctx context.Context, event service.PaymentEvent, meta service.SagaEventMeta) error {
 	f.paymentFailedCalls++
 	f.lastPayment = event
+	f.lastMeta = meta
+	return nil
+}
+
+func (f *fakeSagaService) HandleCustomerRefundCredited(ctx context.Context, event service.CustomerRefundCreditedEvent, meta service.SagaEventMeta) error {
+	f.customerRefundCreditedCalls++
+	f.lastCustomerRefund = event
 	f.lastMeta = meta
 	return nil
 }
@@ -155,6 +164,45 @@ func TestSagaConsumerHandlePaymentEvents(t *testing.T) {
 				t.Fatalf("unexpected payment event: %+v", fake.lastPayment)
 			}
 		})
+	}
+}
+
+func TestSagaConsumerHandleCustomerRefundCredited(t *testing.T) {
+	fake := &fakeSagaService{}
+	consumer := &SagaConsumer{topic: "wallet.events", logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{Value: mustJSON(t, map[string]any{
+		"eventId": "evt-wallet-refund-1", "eventType": "wallet.customer-refund-credited",
+		"payload": map[string]any{
+			"orderId": "11111111-1111-4111-8111-111111111111", "paymentId": "22222222-2222-4222-8222-222222222222",
+			"customerId": "33333333-3333-4333-8333-333333333333", "walletId": "44444444-4444-4444-8444-444444444444",
+			"refundedAmount": 109000, "currency": "VND",
+		},
+	})}
+
+	if err := consumer.handleMessage(context.Background(), msg); err != nil {
+		t.Fatalf("handle message: %v", err)
+	}
+	if fake.customerRefundCreditedCalls != 1 {
+		t.Fatalf("expected customer refund credit call, got %d", fake.customerRefundCreditedCalls)
+	}
+	if fake.lastCustomerRefund.OrderID != "11111111-1111-4111-8111-111111111111" || fake.lastCustomerRefund.RefundedAmount != 109000 {
+		t.Fatalf("unexpected customer refund event: %+v", fake.lastCustomerRefund)
+	}
+}
+
+func TestSagaConsumerDoesNotCloseReturnOnPaymentRefunded(t *testing.T) {
+	fake := &fakeSagaService{}
+	consumer := &SagaConsumer{topic: "payment.events", logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{Value: mustJSON(t, map[string]any{
+		"eventId": "evt-payment-refund-1", "eventType": "payment.refunded",
+		"payload": map[string]any{"orderId": "11111111-1111-4111-8111-111111111111"},
+	})}
+
+	if err := consumer.handleMessage(context.Background(), msg); err != nil {
+		t.Fatalf("handle message: %v", err)
+	}
+	if fake.customerRefundCreditedCalls != 0 {
+		t.Fatal("payment.refunded must not close a return before wallet credit")
 	}
 }
 

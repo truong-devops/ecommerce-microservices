@@ -22,6 +22,7 @@ type KafkaEnvelope struct {
 type orderEventHandler interface {
 	HandleOrderCreatedEvent(context.Context, string, string, string, float64, string, *string, string, string, string, string, int, int64) error
 	HandleOrderCancelledEvent(context.Context, string, string, string, string, int, int64) error
+	HandleOrderReturnRefundApprovedEvent(context.Context, string, string, string, string, int, int64) error
 }
 
 type OrderEventsConsumer struct {
@@ -109,7 +110,7 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 	}
 
 	eventType := strings.TrimSpace(envelope.EventType)
-	if eventType != "order.created" && eventType != "order.cancelled" {
+	if eventType != "order.created" && eventType != "order.cancelled" && eventType != "order.return-refund-approved" {
 		return nil
 	}
 
@@ -138,6 +139,9 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 	)
 	if eventType == "order.cancelled" {
 		return c.service.HandleOrderCancelledEvent(ctx, orderID, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
+	}
+	if eventType == "order.return-refund-approved" {
+		return c.service.HandleOrderReturnRefundApprovedEvent(ctx, orderID, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
 	}
 
 	userID := asString(payload["userId"])

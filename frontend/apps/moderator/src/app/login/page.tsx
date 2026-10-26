@@ -1,55 +1,48 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import type { FormEvent, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/AppProvider';
 
 export default function ModeratorLoginPage() {
   const router = useRouter();
   const { ready, user, login } = useAuth();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOauthSubmitting, setIsOauthSubmitting] = useState(false);
   const [oauthError, setOauthError] = useState('');
 
   useEffect(() => {
-    if (ready && user) {
-      router.replace('/');
-    }
-  }, [ready, user, router]);
+    if (ready && user) router.replace('/');
+  }, [ready, router, user]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const message = params.get('oauthError');
-    if (message) {
-      setOauthError(message);
-    }
+    if (typeof window === 'undefined') return;
+    const message = new URLSearchParams(window.location.search).get('oauthError');
+    if (message) setOauthError(message);
   }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
-
+    setOauthError('');
     if (!email.trim() || !password.trim()) {
-      setError('Email và mật khẩu là bắt buộc.');
+      setError('Vui lòng nhập đầy đủ email và mật khẩu.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const result = await login({ email, password });
+      const result = await login({ email: email.trim(), password });
       if (!result.ok) {
-        setError(result.message ?? 'Đăng nhập thất bại.');
+        setError(result.message ?? 'Không thể xác thực tài khoản quản trị.');
         return;
       }
-
       router.push('/');
     } finally {
       setIsSubmitting(false);
@@ -57,140 +50,89 @@ export default function ModeratorLoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+    if (typeof window === 'undefined') return;
     setIsOauthSubmitting(true);
     window.location.href = '/api/moderator/auth/google/start';
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-20 w-full max-w-[1200px] items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <span className="inline-flex items-center gap-2 text-[20px] font-semibold leading-none text-brand-500">
-              <span
-                aria-hidden="true"
-                className="block h-9 w-9 shrink-0 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-slate-200"
-                style={{ backgroundImage: "url('/icon.svg')" }}
-              />
-              <span className="text-[22px]">eMall</span>
-            </span>
-            <span className="text-[22px] font-medium text-slate-800">Moderator Console</span>
-          </div>
-          <a href="#" className="text-sm text-brand-500 transition hover:text-brand-600">
-            Bạn cần giúp đỡ?
+    <div className="min-h-screen bg-[#f3f5f7] text-slate-950">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[72px] w-full max-w-[1240px] items-center justify-between px-5 sm:px-8">
+          <Link href="/" className="inline-flex items-center gap-3" aria-label="eMall Trust and Safety">
+            <BrandMark />
+            <span className="h-6 w-px bg-slate-200" />
+            <span className="hidden text-sm font-semibold text-slate-600 sm:inline">Trust & Safety</span>
+          </Link>
+          <a href="mailto:support@truongam.tech" className="text-sm font-semibold text-slate-600 transition hover:text-slate-950">
+            <span className="hidden sm:inline">Liên hệ hỗ trợ</span> <span aria-hidden="true">→</span>
           </a>
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-8 px-4 py-12 lg:grid-cols-[1fr_430px] lg:items-center">
-        <section className="hidden px-12 lg:block">
-          <h2 className="text-[28px] font-semibold leading-tight text-brand-500">Kiểm duyệt chuyên nghiệp</h2>
-          <p className="mt-3 max-w-[560px] text-[16px] leading-snug text-slate-600">
-            Quản lý chất lượng listing hiệu quả hơn
-            <br />
-            với eMall Trust & Safety Console
-          </p>
+      <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
+        <section className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-[#111827] p-12 text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)] lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -right-24 -top-20 h-80 w-80 rounded-full bg-indigo-500/15 blur-3xl" />
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-slate-300">
+              <LockMiniIcon /> Restricted workspace
+            </div>
+            <h1 className="mt-7 max-w-[570px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em]">Quyết định tin cậy bắt đầu từ dữ liệu rõ ràng.</h1>
+            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-300">Không gian kiểm duyệt dành riêng cho đội ngũ vận hành, hỗ trợ và quản trị eMall.</p>
+          </div>
 
-          <div className="mt-8">
-            <svg viewBox="0 0 520 300" className="h-[300px] w-[520px]" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="66" y="80" width="250" height="180" rx="14" fill="#ffffff" stroke="#cbd5e1" strokeWidth="4" />
-              <rect x="88" y="110" width="160" height="18" rx="8" fill="#e2e8f0" />
-              <rect x="88" y="146" width="180" height="14" rx="7" fill="#e2e8f0" />
-              <rect x="88" y="176" width="140" height="14" rx="7" fill="#e2e8f0" />
-              <rect x="88" y="206" width="125" height="14" rx="7" fill="#e2e8f0" />
-              <circle cx="278" cy="186" r="56" fill="#fff3ef" stroke="#ee4d2d" strokeWidth="4" />
-              <path d="M278 152l24 10v20c0 18-13 33-24 38-11-5-24-20-24-38v-20z" fill="#ee4d2d" />
-              <path d="M266 182l10 10 18-20" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              <circle cx="380" cy="120" r="40" fill="#ffffff" stroke="#94a3b8" strokeWidth="4" />
-              <circle cx="380" cy="120" r="16" fill="none" stroke="#475569" strokeWidth="4" />
-              <line x1="392" y1="132" x2="410" y2="150" stroke="#475569" strokeWidth="6" strokeLinecap="round" />
-              <circle cx="94" cy="74" r="18" fill="#bae6fd" />
-              <circle cx="116" cy="74" r="12" fill="#7dd3fc" />
-            </svg>
+          <div className="relative space-y-3">
+            <SecurityRow title="Kiểm soát theo vai trò" description="Chỉ tài khoản nội bộ được cấp quyền mới có thể truy cập." />
+            <SecurityRow title="Theo dõi hoạt động" description="Các thao tác quan trọng được ghi nhận phục vụ đối soát." />
           </div>
         </section>
 
-        <section>
-          <div className="rounded-sm bg-white p-8 shadow-[0_2px_12px_rgba(0,0,0,0.08)]">
-            <div className="flex items-start justify-between gap-3">
-              <h1 className="text-[18px] font-medium text-slate-800">Đăng nhập</h1>
-            </div>
+        <section className="mx-auto w-full max-w-[460px]">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Internal access</p>
+            <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em]">Đăng nhập quản trị</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản nội bộ đã được phân quyền.</p>
 
-            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="Email/Tên đăng nhập"
-                className="h-12 w-full rounded-sm border border-slate-300 px-4 text-base outline-none transition focus:border-brand-500"
-                required
-              />
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+              <Field label="Email công việc" icon={<MailIcon />}>
+                <input id="moderator-email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="admin@truongam.tech" className="h-12 w-full bg-transparent pl-11 pr-4 text-[15px] outline-none placeholder:text-slate-400" required />
+              </Field>
+              <Field label="Mật khẩu" icon={<LockIcon />}>
+                <input id="moderator-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Nhập mật khẩu" className="h-12 w-full bg-transparent pl-11 pr-12 text-[15px] outline-none placeholder:text-slate-400" required />
+                <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute bottom-0 right-0 grid h-12 w-12 place-items-center text-slate-400 transition hover:text-slate-700" aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}><EyeIcon crossed={showPassword} /></button>
+              </Field>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Mật khẩu"
-                className="h-12 w-full rounded-sm border border-slate-300 px-4 text-base outline-none transition focus:border-brand-500"
-                required
-              />
+              {error || oauthError ? <div role="alert" aria-live="polite" className="flex gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700"><AlertIcon /><span>{error || oauthError}</span></div> : null}
 
-              {error ? <p className="rounded-sm bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p> : null}
-              {oauthError ? <p className="rounded-sm bg-rose-50 px-3 py-2 text-sm text-rose-600">{oauthError}</p> : null}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-12 w-full rounded-sm bg-[#ee826f] text-[14px] font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-80"
-              >
-                {isSubmitting ? 'Đang xử lí...' : 'ĐĂNG NHẬP'}
+              <button type="submit" disabled={isSubmitting || isOauthSubmitting} className="flex h-12 w-full items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(15,23,42,0.18)] transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
+                {isSubmitting ? <><Spinner />Đang xác thực...</> : 'Đăng nhập an toàn'}
               </button>
-
-              <a href="#" className="inline-block text-[15px] text-[#0f5db6] hover:underline">
-                Quên mật khẩu
-              </a>
-
-              <div className="flex items-center gap-4 text-slate-400">
-                <span className="h-px flex-1 bg-slate-300" />
-                <span className="text-base">HOẶC</span>
-                <span className="h-px flex-1 bg-slate-300" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={handleGoogleLogin}
-                  disabled={isOauthSubmitting}
-                  className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isOauthSubmitting ? 'Google Workspace...' : 'Google Workspace'}
-                </button>
-                <button type="button" className="h-12 rounded-sm border border-slate-300 text-base font-medium text-slate-700 hover:bg-slate-50">
-                  Support Access
-                </button>
-              </div>
-
-              <p className="text-center text-sm leading-relaxed text-slate-500">
-                Bằng việc đăng nhập, bạn đồng ý với{' '}
-                <a href="#" className="text-brand-500 hover:underline">
-                  Điều khoản dịch vụ
-                </a>{' '}
-                &{' '}
-                <a href="#" className="text-brand-500 hover:underline">
-                  Chính sách bảo mật
-                </a>{' '}
-                của eMall
-              </p>
+              <Divider />
+              <button type="button" onClick={handleGoogleLogin} disabled={isSubmitting || isOauthSubmitting} className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+                {isOauthSubmitting ? <Spinner dark /> : <GoogleMark />}{isOauthSubmitting ? 'Đang kết nối Workspace...' : 'Tiếp tục với Google Workspace'}
+              </button>
             </form>
+
+            <div className="mt-7 flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-500"><InfoIcon /><span>Truy cập trái phép có thể bị ghi nhận và khóa tài khoản tự động.</span></div>
+            <p className="mt-5 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-400">Hệ thống nội bộ eMall · Phiên đăng nhập được mã hóa</p>
           </div>
         </section>
       </main>
-
-      <footer className="pb-10 pt-16 text-center text-sm text-slate-500">(c) 2026 eMall. Tất cả các quyền được bảo lưu.</footer>
+      <footer className="px-5 pb-7 text-center text-xs text-slate-400">© 2026 eMall Trust & Safety</footer>
     </div>
   );
 }
+
+function SecurityRow({ title, description }: { title: string; description: string }) { return <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-400/15 text-indigo-300"><ShieldIcon /></span><span><strong className="block text-sm font-semibold text-white">{title}</strong><span className="mt-1 block text-xs leading-5 text-slate-400">{description}</span></span></div>; }
+function Field({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) { return <label className="block text-sm font-semibold text-slate-700"><span>{label}</span><span className="relative mt-2 block rounded-xl border border-slate-300 bg-white transition focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10"><span className="pointer-events-none absolute bottom-0 left-0 grid h-12 w-11 place-items-center text-slate-400">{icon}</span>{children}</span></label>; }
+function Divider() { return <div className="flex items-center gap-3 text-xs font-medium text-slate-400"><span className="h-px flex-1 bg-slate-200" /><span>hoặc tiếp tục với</span><span className="h-px flex-1 bg-slate-200" /></div>; }
+function BrandMark() { return <span className="inline-flex items-center gap-2.5"><span className="block h-10 w-10 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-orange-100" style={{ backgroundImage: "url('/icon.svg')" }} aria-hidden="true" /><span className="text-xl font-black tracking-[-0.03em] text-brand-600">eMall</span></span>; }
+function MailIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></svg>; }
+function LockIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="10" width="16" height="11" rx="3" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>; }
+function LockMiniIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>; }
+function EyeIcon({ crossed }: { crossed: boolean }) { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" />{crossed ? <path d="m4 4 16 16" /> : null}</svg>; }
+function AlertIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>; }
+function ShieldIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg>; }
+function InfoIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>; }
+function GoogleMark() { return <span aria-hidden="true" className="grid h-6 w-6 place-items-center rounded-full border border-slate-200 bg-white text-xs font-black text-[#4285f4]">G</span>; }
+function Spinner({ dark = false }: { dark?: boolean }) { return <span aria-hidden="true" className={`mr-2 h-4 w-4 animate-spin rounded-full border-2 ${dark ? 'border-slate-300 border-t-slate-700' : 'border-white/40 border-t-white'}`} />; }

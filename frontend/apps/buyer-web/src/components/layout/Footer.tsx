@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useLanguage } from '@/providers/AppProvider';
 
 interface FooterCopy {
@@ -162,8 +163,11 @@ function QrCode() {
 }
 
 export function Footer() {
+  const pathname = usePathname();
   const { locale } = useLanguage();
   const copy = footerCopy[locale];
+
+  if (pathname === '/login') return null;
 
   return (
     <footer className="border-t border-brand-500 bg-slate-50 text-slate-700">

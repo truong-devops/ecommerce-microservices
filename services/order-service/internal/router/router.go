@@ -20,6 +20,7 @@ func New(
 	logger *zap.Logger,
 	revocationChecker auth.RevokedTokenChecker,
 	orderHandler *handler.OrderHandler,
+	returnHandler *handler.ReturnHandler,
 	healthHandler *handler.HealthHandler,
 	checkoutSagaMetrics *metrics.CheckoutSagaMetrics,
 ) http.Handler {
@@ -69,6 +70,15 @@ func New(
 		private.With(auth.RequireRoles(domain.RoleCustomer)).Patch(orders+"/{id}/confirm-received", orderHandler.ConfirmReceived)
 		private.With(auth.RequireRoles(domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Patch(orders+"/{id}/status", orderHandler.UpdateOrderStatus)
 		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleAdmin, domain.RoleSupport, domain.RoleWarehouse, domain.RoleSeller, domain.RoleSuperAdmin)).Get(orders+"/{id}/history", orderHandler.GetOrderStatusHistory)
+
+		returns := "/" + cfg.APIPrefix + "/returns"
+		private.With(auth.RequireRoles(domain.RoleCustomer)).Post(orders+"/{id}/returns", returnHandler.Create)
+		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleSeller, domain.RoleAdmin, domain.RoleModerator, domain.RoleSupport, domain.RoleSuperAdmin)).Get(orders+"/{id}/returns", returnHandler.GetByOrderID)
+		private.With(auth.RequireRoles(domain.RoleCustomer, domain.RoleSeller, domain.RoleAdmin, domain.RoleModerator, domain.RoleSupport, domain.RoleSuperAdmin)).Get(returns, returnHandler.List)
+		private.With(auth.RequireRoles(domain.RoleSeller, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Patch(returns+"/{returnId}/decision", returnHandler.Decide)
+		private.With(auth.RequireRoles(domain.RoleCustomer)).Patch(returns+"/{returnId}/ship", returnHandler.Ship)
+		private.With(auth.RequireRoles(domain.RoleSeller, domain.RoleAdmin, domain.RoleSupport, domain.RoleSuperAdmin)).Patch(returns+"/{returnId}/complete", returnHandler.Complete)
+		private.With(auth.RequireRoles(domain.RoleCustomer)).Patch(returns+"/{returnId}/cancel", returnHandler.Cancel)
 	})
 
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {

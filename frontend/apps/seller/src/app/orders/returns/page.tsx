@@ -2,555 +2,203 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SellerSidebar } from '@/components/layout/seller-sidebar';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { SellerApiClientError } from '@/lib/api/client';
-import { listSellerOrders } from '@/lib/api/orders';
-import type { SellerOrder, SellerOrderStatus } from '@/lib/api/types';
+import { completeSellerReturn, decideSellerReturn, listSellerReturns } from '@/lib/api/returns';
+import type { SellerReturnRequest, SellerReturnStatus } from '@/lib/api/types';
 import { formatOrderCode } from '@/lib/order-codes';
 import { useAuth } from '@/providers/AppProvider';
 
-type MainTabId = 'all' | 'refund' | 'cancel' | 'failed_delivery';
+type StatusFilter = 'ALL' | SellerReturnStatus;
 
-interface ActionLink {
-  label: string;
-}
-
-interface MainTabConfig {
-  id: MainTabId;
-  label: string;
-  secondaryTabs: string[];
-  priorityChips: string[];
-  importantActions: string[];
-  actionLinks: ActionLink[];
-  columns: string[];
-}
-
-const MAIN_TABS: MainTabConfig[] = [
-  {
-    id: 'all',
-    label: 'Tất cả',
-    secondaryTabs: [
-      'Tất cả',
-      'Shopee đang xem xét',
-      'Đang trả hàng cho Người bán',
-      'Đã hoàn tiền cho Người mua',
-      'Đã khiếu nại đến Shopee',
-      'Yêu cầu thêm'
-    ],
-    priorityChips: ['Tất cả', 'Hết hạn sau 1 ngày', 'Hết hạn sau 2 ngày'],
-    importantActions: [
-      'Thương lượng với Người mua',
-      'Cần cung cấp bằng chứng',
-      'Giữ lại kiện hàng',
-      'Kiểm tra hàng hoàn',
-      'Phản hồi quyết định hoàn tiền của Shopee'
-    ],
-    actionLinks: [{ label: 'Tỉ lệ đơn hàng không thành công' }],
-    columns: [
-      'Sản phẩm',
-      'Số tiền',
-      'Lý do',
-      'Lý do điều chỉnh bởi Shopee',
-      'Phương án cho Người mua',
-      'Trạng thái',
-      'Vận chuyển hàng hoàn',
-      'Thao tác'
-    ]
-  },
-  {
-    id: 'refund',
-    label: 'Đơn Trả hàng Hoàn tiền',
-    secondaryTabs: [
-      'Tất cả',
-      'Shopee đang xem xét',
-      'Đang trả hàng cho Người bán',
-      'Đã hoàn tiền cho Người mua',
-      'Đã khiếu nại đến Shopee',
-      'Yêu cầu thêm'
-    ],
-    priorityChips: ['Tất cả', 'Hết hạn sau 1 ngày', 'Hết hạn sau 2 ngày'],
-    importantActions: ['Cần cung cấp bằng chứng', 'Kiểm tra hàng hoàn', 'Phản hồi quyết định hoàn tiền của Shopee'],
-    actionLinks: [{ label: 'Quy trình trả hàng/hoàn tiền' }, { label: 'Tỉ lệ trả hàng/hoàn tiền' }],
-    columns: [
-      'Sản phẩm',
-      'Số tiền',
-      'Lý do',
-      'Lý do điều chỉnh bởi Shopee',
-      'Phương án cho Người mua',
-      'Trạng thái',
-      'Vận chuyển hàng hoàn',
-      'Thao tác'
-    ]
-  },
-  {
-    id: 'cancel',
-    label: 'Đơn Hủy',
-    secondaryTabs: ['Tất cả', 'Shopee đang xem xét', 'Đã hoàn tiền cho Người mua'],
-    priorityChips: ['Tất cả', 'Hết hạn sau 1 ngày', 'Hết hạn sau 2 ngày'],
-    importantActions: ['Thương lượng với Người mua', 'Giữ lại kiện hàng'],
-    actionLinks: [{ label: 'Tỉ lệ hủy đơn' }],
-    columns: ['Sản phẩm', 'Số tiền', 'Lý do', 'Phương án cho Người mua', 'Trạng thái', 'Vận chuyển hàng hoàn', 'Thao tác']
-  },
-  {
-    id: 'failed_delivery',
-    label: 'Đơn Giao hàng không thành công',
-    secondaryTabs: ['Tất cả', 'Đang trả hàng cho Người bán', 'Đã trả hàng cho Người bán', 'Trả hàng không thành công', 'Đã gửi yêu cầu khiếu nại'],
-    priorityChips: ['Tất cả', 'Hết hạn sau 1 ngày', 'Hết hạn sau 2 ngày'],
-    importantActions: ['Cần cung cấp bằng chứng', 'Kiểm tra hàng hoàn'],
-    actionLinks: [{ label: 'Quy trình trả hàng/hoàn tiền' }],
-    columns: ['Sản phẩm', 'Số tiền', 'Lý do', 'Phương án cho Người mua', 'Trạng thái', 'Vận chuyển chiều giao hàng', 'Vận chuyển hàng hoàn', 'Thao tác']
-  }
+const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
+  { value: 'ALL', label: 'Tất cả' },
+  { value: 'REQUESTED', label: 'Chờ phản hồi' },
+  { value: 'APPROVED', label: 'Chờ khách gửi' },
+  { value: 'RETURNING', label: 'Đang hoàn hàng' },
+  { value: 'REFUND_PENDING', label: 'Đang hoàn tiền' },
+  { value: 'REFUNDED', label: 'Đã hoàn tiền' },
+  { value: 'REJECTED', label: 'Đã từ chối' },
+  { value: 'CANCELLED', label: 'Người mua đã hủy' }
 ];
 
-export default function ReturnsAndCancellationsPage() {
+const STATUS_META: Record<SellerReturnStatus, { label: string; className: string; description: string }> = {
+  REQUESTED: { label: 'Chờ phản hồi', className: 'border-amber-200 bg-amber-50 text-amber-700', description: 'Người mua đang chờ shop duyệt yêu cầu.' },
+  APPROVED: { label: 'Chờ khách gửi', className: 'border-cyan-200 bg-cyan-50 text-cyan-700', description: 'Shop đã duyệt. Đang chờ người mua gửi kiện hàng hoàn.' },
+  RETURNING: { label: 'Đang hoàn hàng', className: 'border-blue-200 bg-blue-50 text-blue-700', description: 'Người mua đã gửi hàng, đang chờ shop nhận và kiểm tra.' },
+  REFUND_PENDING: { label: 'Đang hoàn tiền', className: 'border-violet-200 bg-violet-50 text-violet-700', description: 'Hệ thống đang xử lý hoàn tiền vào ví người mua.' },
+  REFUNDED: { label: 'Đã hoàn tiền', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', description: 'Tiền đã được hoàn vào ví eMall của người mua.' },
+  REJECTED: { label: 'Đã từ chối', className: 'border-rose-200 bg-rose-50 text-rose-700', description: 'Shop đã từ chối yêu cầu và ghi nhận lý do.' },
+  CANCELLED: { label: 'Đã hủy', className: 'border-slate-200 bg-slate-50 text-slate-600', description: 'Người mua đã hủy yêu cầu trước khi shop xử lý.' }
+};
+
+const REASON_LABELS: Record<string, string> = {
+  DAMAGED: 'Sản phẩm bị hư hỏng',
+  WRONG_ITEM: 'Giao sai sản phẩm',
+  MISSING_PARTS: 'Thiếu sản phẩm hoặc phụ kiện',
+  NOT_AS_DESCRIBED: 'Không đúng mô tả',
+  QUALITY_ISSUE: 'Vấn đề chất lượng',
+  OTHER: 'Lý do khác'
+};
+
+export default function ReturnsPage() {
   const router = useRouter();
   const { ready, user, accessToken, logout } = useAuth();
-
-  const [activeMainTab, setActiveMainTab] = useState<MainTabId>('all');
-  const [activeSecondaryTab, setActiveSecondaryTab] = useState('Tất cả');
-  const [activePriorityChip, setActivePriorityChip] = useState('Tất cả');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [searchDraft, setSearchDraft] = useState('');
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [search, setSearch] = useState('');
+  const [returns, setReturns] = useState<SellerReturnRequest[]>([]);
+  const [selected, setSelected] = useState<SellerReturnRequest | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState('');
-  const [orders, setOrders] = useState<SellerOrder[]>([]);
 
-  const currentTab = useMemo(() => MAIN_TABS.find((tab) => tab.id === activeMainTab) ?? MAIN_TABS[0], [activeMainTab]);
+  const loadReturns = useCallback(async () => {
+    if (!accessToken) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      const result = await listSellerReturns(accessToken, {
+        status: statusFilter === 'ALL' ? undefined : statusFilter,
+        search: search || undefined
+      });
+      setReturns(result.items);
+      setSelected((current) => current ? result.items.find((item) => item.id === current.id) ?? null : null);
+    } catch (loadError) {
+      setError(toErrorMessage(loadError, 'Không tải được danh sách trả hàng/hoàn tiền.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [accessToken, search, statusFilter]);
+
+  useEffect(() => {
+    if (ready && accessToken) void loadReturns();
+  }, [accessToken, loadReturns, ready]);
+
+  const summary = useMemo(() => ({
+    total: returns.length,
+    awaiting: returns.filter((item) => item.status === 'REQUESTED').length,
+    returning: returns.filter((item) => item.status === 'RETURNING').length,
+    refunding: returns.filter((item) => item.status === 'REFUND_PENDING').length,
+    refunded: returns.filter((item) => item.status === 'REFUNDED').reduce((sum, item) => sum + item.refundAmount, 0)
+  }), [returns]);
 
   const handleLogout = useCallback(async () => {
     await logout();
     router.push('/login');
   }, [logout, router]);
 
-  useEffect(() => {
-    if (!ready || !accessToken) {
-      return;
+  const mutate = async (action: () => Promise<SellerReturnRequest>, successMessage: string) => {
+    setIsMutating(true);
+    setError('');
+    try {
+      const updated = await action();
+      setSelected(updated);
+      await loadReturns();
+      window.alert(successMessage);
+    } catch (mutationError) {
+      setError(toErrorMessage(mutationError, 'Không thể xử lý yêu cầu.'));
+    } finally {
+      setIsMutating(false);
     }
-
-    let cancelled = false;
-
-    const load = async () => {
-      setIsLoading(true);
-      setError('');
-
-      try {
-        const status = toOrderStatusFilter(activeMainTab);
-        const result = await listSellerOrders(accessToken, {
-          page: 1,
-          pageSize: 100,
-          sortBy: 'createdAt',
-          sortOrder: 'DESC',
-          status: status ?? undefined,
-          search: searchKeyword || undefined
-        });
-
-        if (cancelled) {
-          return;
-        }
-
-        const normalizedItems = activeMainTab === 'all'
-          ? result.items.filter((item) => item.status === 'CANCELLED' || item.status === 'FAILED')
-          : result.items;
-
-        setOrders(normalizedItems);
-      } catch (loadError) {
-        if (cancelled) {
-          return;
-        }
-
-        if (loadError instanceof SellerApiClientError) {
-          setError(loadError.message);
-        } else {
-          setError('Không tải được yêu cầu trả hàng/hoàn tiền/hủy.');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [accessToken, activeMainTab, ready, searchKeyword]);
-
-  const activateMainTab = (tabId: MainTabId) => {
-    setActiveMainTab(tabId);
-    setActiveSecondaryTab('Tất cả');
-    setActivePriorityChip('Tất cả');
   };
 
-  if (!ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center text-sm text-slate-600">
-        Đang kiểm tra phiên đăng nhập...
-      </main>
-    );
-  }
+  const approve = (request: SellerReturnRequest) => {
+    if (!accessToken || !window.confirm(`Duyệt yêu cầu ${request.returnNumber}? Người mua sẽ tiến hành hoàn hàng.`)) return;
+    void mutate(() => decideSellerReturn(accessToken, request.id, 'APPROVE', 'Shop đồng ý nhận lại hàng'), 'Đã duyệt yêu cầu trả hàng.');
+  };
+
+  const reject = (request: SellerReturnRequest) => {
+    if (!accessToken) return;
+    const note = window.prompt('Nhập lý do từ chối để người mua biết:');
+    if (note === null) return;
+    if (note.trim().length < 3) {
+      setError('Vui lòng nhập lý do từ chối rõ ràng.');
+      return;
+    }
+    void mutate(() => decideSellerReturn(accessToken, request.id, 'REJECT', note), 'Đã từ chối yêu cầu trả hàng.');
+  };
+
+  const complete = (request: SellerReturnRequest) => {
+    if (!accessToken || !window.confirm('Xác nhận shop đã nhận và kiểm tra hàng hoàn? Thao tác này sẽ bắt đầu hoàn tiền cho người mua.')) return;
+    void mutate(() => completeSellerReturn(accessToken, request.id, 'Shop đã nhận lại và kiểm tra hàng'), 'Đã xác nhận nhận hàng. Hệ thống đang hoàn tiền cho người mua.');
+  };
+
+  if (!ready) return <main className="grid min-h-screen place-items-center text-sm text-slate-500">Đang kiểm tra phiên đăng nhập...</main>;
 
   if (!user || !accessToken) {
-    return (
-      <main className="flex min-h-screen items-center justify-center px-4">
-        <section className="w-full max-w-md rounded-md border border-slate-200 bg-white p-6 text-center">
-          <p className="text-xs uppercase tracking-[0.2em] text-orange-500">eMall Seller</p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Bạn chưa đăng nhập</h1>
-          <p className="mt-2 text-sm text-slate-600">Đăng nhập để truy cập Seller Center.</p>
-
-          <Link
-            href="/login"
-            className="mt-5 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
-          >
-            Đi đến trang đăng nhập
-          </Link>
-        </section>
-      </main>
-    );
+    return <main className="grid min-h-screen place-items-center px-4"><section className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm"><p className="text-xs font-bold uppercase tracking-[0.18em] text-[#ee4d2d]">eMall Seller Center</p><h1 className="mt-3 text-2xl font-semibold text-slate-900">Phiên đăng nhập đã hết hạn</h1><Link href="/login" className="mt-6 inline-flex rounded-lg bg-[#ee4d2d] px-5 py-2.5 text-sm font-semibold text-white">Đăng nhập lại</Link></section></main>;
   }
 
   return (
-    <div className="min-h-screen text-slate-900">
+    <div className="min-h-screen bg-[#f6f7f9] text-slate-900">
       <SellerTopbar email={user.email} role={user.role} onLogout={handleLogout} />
-
       <div className="flex">
         <SellerSidebar />
+        <main className="min-w-0 flex-1 px-4 py-5 xl:px-7">
+          <div className="mx-auto max-w-[1500px]">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+              <div><div className="mb-2 flex items-center gap-2 text-sm text-slate-500"><Link href="/" className="hover:text-[#ee4d2d]">Trang chủ</Link><span>›</span><span>Quản lý đơn hàng</span></div><p className="text-xs font-bold uppercase tracking-[0.16em] text-[#ee4d2d]">After-sales operations</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">Trả hàng &amp; hoàn tiền</h1><p className="mt-2 text-sm text-slate-600">Phản hồi yêu cầu, xác nhận hàng hoàn và theo dõi tiền hoàn vào ví khách hàng.</p></div>
+              <button type="button" onClick={() => void loadReturns()} disabled={isLoading} className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm hover:border-slate-400 disabled:opacity-50">{isLoading ? 'Đang tải...' : 'Làm mới dữ liệu'}</button>
+            </div>
 
-        <main className="min-w-0 flex-1 px-3 py-3 lg:px-4">
-          <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
-            <Link href="/" className="hover:text-[#ee4d2d]">
-              Trang chủ
-            </Link>
-            <span>›</span>
-            <span className="font-medium text-slate-700">Trả hàng/Hoàn tiền/Hủy</span>
+            {error ? <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+
+            <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <SummaryCard label="Tổng yêu cầu" value={String(summary.total)} note="Theo bộ lọc hiện tại" />
+              <SummaryCard label="Chờ phản hồi" value={String(summary.awaiting)} note="Cần shop xử lý" accent="amber" />
+              <SummaryCard label="Đang hoàn hàng" value={String(summary.returning)} note="Chờ nhận lại hàng" accent="blue" />
+              <SummaryCard label="Đang hoàn tiền" value={String(summary.refunding)} note="Hệ thống đang xử lý" accent="violet" />
+              <SummaryCard label="Đã hoàn" value={formatCurrency(summary.refunded, 'VND')} note="Tổng tiền theo bộ lọc" accent="emerald" />
+            </section>
+
+            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-200 p-4">
+                <div className="flex flex-wrap gap-2">{STATUS_FILTERS.map((filter) => <button key={filter.value} type="button" onClick={() => setStatusFilter(filter.value)} className={`rounded-full border px-3.5 py-2 text-sm font-semibold transition ${statusFilter === filter.value ? 'border-[#ee4d2d] bg-[#fff5f2] text-[#ee4d2d]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>{filter.label}</button>)}</div>
+                <form className="mt-4 flex max-w-2xl gap-2" onSubmit={(event) => { event.preventDefault(); setSearch(searchDraft.trim()); }}><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Tìm theo mã yêu cầu hoặc mã đơn hàng" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#ee4d2d] focus:ring-2 focus:ring-orange-100" /><button type="submit" className="rounded-lg bg-[#ee4d2d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#d94325]">Tìm kiếm</button></form>
+              </div>
+
+              <div className="overflow-x-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Yêu cầu / Đơn hàng</th><th className="px-5 py-3">Sản phẩm</th><th className="px-5 py-3">Lý do</th><th className="px-5 py-3">Tiền hoàn</th><th className="px-5 py-3">Trạng thái</th><th className="px-5 py-3 text-right">Thao tác</th></tr></thead><tbody className="divide-y divide-slate-100">
+                {isLoading ? <EmptyRow message="Đang tải yêu cầu..." /> : returns.length === 0 ? <EmptyRow message="Chưa có yêu cầu phù hợp với bộ lọc." /> : returns.map((request) => <tr key={request.id} className="align-top hover:bg-slate-50/70"><td className="px-5 py-4"><button type="button" onClick={() => setSelected(request)} className="font-semibold text-blue-700 hover:underline">{request.returnNumber}</button><p className="mt-1 text-xs text-slate-500">{formatOrderCode(request.orderNumber, request.orderId)}</p><p className="mt-1 text-xs text-slate-400">{formatDateTime(request.requestedAt)}</p></td><td className="max-w-[280px] px-5 py-4"><p className="font-medium text-slate-800">{productSummary(request)}</p><p className="mt-1 text-xs text-slate-500">{request.items.reduce((sum, item) => sum + item.quantity, 0)} sản phẩm</p></td><td className="max-w-[280px] px-5 py-4"><p className="font-medium">{REASON_LABELS[request.reasonCode] ?? request.reasonCode}</p><p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{request.reasonDetail}</p></td><td className="px-5 py-4 font-semibold text-slate-900">{formatCurrency(request.refundAmount, request.currency)}</td><td className="px-5 py-4"><StatusBadge status={request.status} /></td><td className="px-5 py-4 text-right"><RowActions request={request} disabled={isMutating} onView={setSelected} onApprove={approve} onReject={reject} onComplete={complete} /></td></tr>)}
+              </tbody></table></div>
+            </section>
           </div>
-
-          {error ? (
-            <section className="mb-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</section>
-          ) : null}
-
-          <section className="rounded-md border border-slate-200 bg-white p-4 text-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-2">
-              <div className="flex min-w-0 flex-1 items-end gap-5 overflow-x-auto whitespace-nowrap">
-                {MAIN_TABS.map((tab) => {
-                  const isActive = activeMainTab === tab.id;
-
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => {
-                        activateMainTab(tab.id);
-                      }}
-                      className={[
-                        'border-b-[3px] pb-2 font-semibold transition',
-                        isActive ? 'border-[#ee4d2d] text-[#ee4d2d]' : 'border-transparent text-slate-800'
-                      ].join(' ')}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center gap-4 whitespace-nowrap text-[#2563eb]">
-                {currentTab.actionLinks.map((actionLink, index) => (
-                  <button
-                    key={actionLink.label}
-                    type="button"
-                    className={[
-                      'text-sm font-medium hover:underline',
-                      index > 0 ? 'border-l border-slate-200 pl-4' : ''
-                    ].join(' ')}
-                  >
-                    {actionLink.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-md border border-slate-200 bg-white px-3 pb-3 pt-2">
-              <div className="flex items-center gap-4 overflow-x-auto border-b border-slate-200 pb-2 whitespace-nowrap">
-                {currentTab.secondaryTabs.map((tab) => {
-                  const isActive = activeSecondaryTab === tab;
-
-                  return (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => {
-                        setActiveSecondaryTab(tab);
-                      }}
-                      className={[
-                        'border-b-[3px] px-1 pb-2 text-sm transition',
-                        isActive ? 'border-[#ee4d2d] font-semibold text-[#ee4d2d]' : 'border-transparent font-medium text-slate-700'
-                      ].join(' ')}
-                    >
-                      {tab}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="mr-2 text-sm font-medium text-slate-700">Ưu tiên</p>
-                  {currentTab.priorityChips.map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => {
-                        setActivePriorityChip(chip);
-                      }}
-                      className={[
-                        'rounded-full border px-4 py-2 text-sm transition',
-                        activePriorityChip === chip
-                          ? 'border-[#ee4d2d] bg-[#fff5f2] font-semibold text-[#ee4d2d]'
-                          : 'border-slate-300 bg-white font-medium text-slate-700'
-                      ].join(' ')}
-                    >
-                      {chip}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <p className="mr-2 text-sm font-medium uppercase text-slate-700">Hành động quan trọng</p>
-                  {currentTab.importantActions.map((action) => (
-                    <button
-                      key={action}
-                      type="button"
-                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-                    >
-                      {action}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-5 border-t border-slate-200 pt-4">
-                <div className="grid gap-3 xl:grid-cols-[1fr_1fr]">
-                  <div className="flex min-w-0 items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
-                    <span className="mr-3 shrink-0 font-medium text-slate-700">Tìm yêu cầu</span>
-                    <input
-                      value={searchDraft}
-                      onChange={(event) => {
-                        setSearchDraft(event.target.value);
-                      }}
-                      placeholder="Điền Mã yêu cầu trả hàng/ Mã đơn hàng/ Mã vận đơn"
-                      className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                    />
-                  </div>
-
-                  <div className="flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
-                    <span className="mr-2 font-medium">Toàn bộ thao tác</span>
-                    <span className="mr-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[11px] text-slate-400">
-                      ?
-                    </span>
-                    <span className="text-slate-400">Vui lòng chọn</span>
-                    <span className="ml-auto text-slate-400">▾</span>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchKeyword(searchDraft.trim());
-                    }}
-                    className="rounded-md border border-[#ee4d2d] px-6 py-2 text-sm font-semibold text-[#ee4d2d]"
-                  >
-                    Tìm kiếm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchDraft('');
-                      setSearchKeyword('');
-                    }}
-                    className="rounded-md border border-slate-300 px-6 py-2 text-sm font-semibold text-slate-700"
-                  >
-                    Đặt lại
-                  </button>
-                  <button type="button" className="text-sm font-medium text-[#2563eb] hover:underline">
-                    Mở rộng ▾
-                  </button>
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold text-slate-900">{orders.length} Yêu cầu</h3>
-
-                  <div className="flex items-center gap-2">
-                    <button type="button" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">
-                      ⇅ Sắp xếp theo
-                    </button>
-                    <button type="button" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700">
-                      Export
-                    </button>
-                    <button type="button" className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700">
-                      ☰
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-3 overflow-hidden rounded-md border border-slate-200">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-[1100px] w-full border-collapse text-left text-sm text-slate-700">
-                      <thead className="bg-slate-50 text-sm font-medium text-slate-500">
-                        <tr>
-                          {currentTab.columns.map((column) => (
-                            <th key={column} className="px-4 py-3 align-top font-medium">
-                              <span>{column}</span>
-                              {column === 'Lý do điều chỉnh bởi Shopee' ? (
-                                <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-400">
-                                  !
-                                </span>
-                              ) : null}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {isLoading ? (
-                          <tr>
-                            <td colSpan={currentTab.columns.length} className="px-4 py-10 text-center text-sm text-slate-400">
-                              Đang tải dữ liệu yêu cầu...
-                            </td>
-                          </tr>
-                        ) : orders.length === 0 ? (
-                          <tr>
-                            <td colSpan={currentTab.columns.length} className="px-4 py-10 text-center text-sm text-slate-400">
-                              Không có yêu cầu phù hợp.
-                            </td>
-                          </tr>
-                        ) : (
-                          orders.map((order) => (
-                            <tr key={order.id} className="border-t border-slate-100">
-                              {currentTab.columns.map((column) => (
-                                <td key={`${order.id}-${column}`} className="px-4 py-3">
-                                  {renderOrderCell(order, column)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
         </main>
       </div>
+      {selected ? <ReturnDetail request={selected} disabled={isMutating} onClose={() => setSelected(null)} onApprove={approve} onReject={reject} onComplete={complete} /> : null}
     </div>
   );
 }
 
-function toOrderStatusFilter(tab: MainTabId): SellerOrderStatus | null {
-  if (tab === 'refund') {
-    return 'FAILED';
-  }
-
-  if (tab === 'cancel') {
-    return 'CANCELLED';
-  }
-
-  if (tab === 'failed_delivery') {
-    return 'FAILED';
-  }
-
-  return null;
+function SummaryCard({ label, value, note, accent = 'slate' }: { label: string; value: string; note: string; accent?: 'slate' | 'amber' | 'blue' | 'violet' | 'emerald' }) {
+  const accents = { slate: 'text-slate-900', amber: 'text-amber-700', blue: 'text-blue-700', violet: 'text-violet-700', emerald: 'text-emerald-700' };
+  return <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-2xl font-bold ${accents[accent]}`}>{value}</p><p className="mt-1 text-xs text-slate-500">{note}</p></article>;
 }
 
-function renderOrderCell(order: SellerOrder, column: string): ReactNode {
-  if (column === 'Sản phẩm') {
-    return buildProductLabel(order);
-  }
+function StatusBadge({ status }: { status: SellerReturnStatus }) { const meta = STATUS_META[status]; return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.className}`}>{meta.label}</span>; }
 
-  if (column === 'Số tiền') {
-    return formatCurrency(order.totalAmount, order.currency);
-  }
-
-  if (column === 'Lý do') {
-    return order.note?.trim() || 'Người mua yêu cầu xử lý';
-  }
-
-  if (column === 'Lý do điều chỉnh bởi Shopee') {
-    return '-';
-  }
-
-  if (column === 'Phương án cho Người mua') {
-    return order.status === 'CANCELLED' ? 'Hoàn tiền' : 'Xử lý hoàn trả';
-  }
-
-  if (column === 'Trạng thái') {
-    return toStatusLabel(order.status);
-  }
-
-  if (column === 'Vận chuyển hàng hoàn') {
-    return order.status === 'FAILED' ? 'Đang hoàn hàng' : 'Không áp dụng';
-  }
-
-  if (column === 'Vận chuyển chiều giao hàng') {
-    return order.status === 'FAILED' ? 'Giao hàng thất bại' : 'Không áp dụng';
-  }
-
-  if (column === 'Thao tác') {
-    return (
-      <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:underline">
-        Xem {formatOrderCode(order.orderNumber, order.id)}
-      </Link>
-    );
-  }
-
-  return '-';
+function RowActions({ request, disabled, onView, onApprove, onReject, onComplete, showView = true }: { request: SellerReturnRequest; disabled: boolean; onView: (request: SellerReturnRequest) => void; onApprove: (request: SellerReturnRequest) => void; onReject: (request: SellerReturnRequest) => void; onComplete: (request: SellerReturnRequest) => void; showView?: boolean }) {
+  return <div className="flex justify-end gap-2">{showView ? <button type="button" onClick={() => onView(request)} className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50">Chi tiết</button> : null}{request.status === 'REQUESTED' ? <><button type="button" disabled={disabled} onClick={() => onReject(request)} className="rounded-md border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50">Từ chối</button><button type="button" disabled={disabled} onClick={() => onApprove(request)} className="rounded-md bg-[#ee4d2d] px-3 py-2 text-xs font-semibold text-white hover:bg-[#d94325] disabled:opacity-50">Duyệt</button></> : null}{request.status === 'RETURNING' ? <button type="button" disabled={disabled} onClick={() => onComplete(request)} className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50">Đã nhận hàng</button> : null}</div>;
 }
 
-function buildProductLabel(order: SellerOrder): string {
-  if (order.items.length === 0) {
-    return 'N/A';
-  }
-
-  if (order.items.length === 1) {
-    return order.items[0].productName;
-  }
-
-  return `${order.items[0].productName} +${order.items.length - 1}`;
+function ReturnDetail({ request, disabled, onClose, onApprove, onReject, onComplete }: { request: SellerReturnRequest; disabled: boolean; onClose: () => void; onApprove: (request: SellerReturnRequest) => void; onReject: (request: SellerReturnRequest) => void; onComplete: (request: SellerReturnRequest) => void }) {
+  const meta = STATUS_META[request.status];
+  return <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40" role="dialog" aria-modal="true" aria-label="Chi tiết yêu cầu trả hàng"><button type="button" aria-label="Đóng" className="min-w-0 flex-1" onClick={onClose} /><aside className="h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl"><div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-[#ee4d2d]">Return request</p><h2 className="mt-1 text-2xl font-semibold">{request.returnNumber}</h2><p className="mt-1 text-sm text-slate-500">Đơn {formatOrderCode(request.orderNumber, request.orderId)}</p></div><button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold">Đóng</button></div><div className="space-y-5 p-6">
+    <section className={`rounded-xl border p-4 ${meta.className}`}><StatusBadge status={request.status} /><p className="mt-2 text-sm leading-6">{meta.description}</p></section>
+    <section className="grid grid-cols-2 gap-3"><Info label="Tiền hoàn" value={formatCurrency(request.refundAmount, request.currency)} /><Info label="Ngày yêu cầu" value={formatDateTime(request.requestedAt)} /></section>
+    <section><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Lý do trả hàng</h3><p className="mt-2 font-semibold">{REASON_LABELS[request.reasonCode] ?? request.reasonCode}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{request.reasonDetail}</p></section>
+    <section><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Sản phẩm</h3><div className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200">{request.items.map((item) => <div key={item.id} className="flex items-start justify-between gap-3 p-3 text-sm"><div><p className="font-medium">{item.productName}</p><p className="mt-1 text-xs text-slate-500">SKU {item.sku} · SL {item.quantity}</p></div><p className="shrink-0 font-semibold">{formatCurrency(item.totalPrice, request.currency)}</p></div>)}</div></section>
+    <section><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Bằng chứng người mua</h3>{request.evidenceUrls.length === 0 ? <p className="mt-2 text-sm text-slate-500">Không có tệp đính kèm.</p> : <ul className="mt-2 space-y-2">{request.evidenceUrls.map((url, index) => <li key={url}><a href={url} target="_blank" rel="noreferrer" className="block truncate rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">Bằng chứng {index + 1} ↗</a></li>)}</ul>}</section>
+    {request.sellerNote ? <section><h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Phản hồi của shop</h3><p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm leading-6 text-slate-600">{request.sellerNote}</p></section> : null}
+    <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-5"><RowActions request={request} disabled={disabled} onView={() => undefined} onApprove={onApprove} onReject={onReject} onComplete={onComplete} showView={false} /></div>
+  </div></aside></div>;
 }
 
-function toStatusLabel(status: SellerOrderStatus): string {
-  switch (status) {
-    case 'PENDING':
-      return 'Chờ xác nhận';
-    case 'CONFIRMED':
-      return 'Đã xác nhận';
-    case 'PROCESSING':
-      return 'Đang xử lý';
-    case 'SHIPPED':
-      return 'Đang giao';
-    case 'DELIVERED':
-      return 'Đã giao';
-    case 'CANCELLED':
-      return 'Đã hủy';
-    case 'FAILED':
-      return 'Giao thất bại';
-    default:
-      return status;
-  }
-}
-
-function formatCurrency(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 0
-    }).format(amount);
-  } catch {
-    return `${amount} ${currency}`;
-  }
-}
+function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-slate-200 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-1 text-sm font-semibold text-slate-900">{value}</p></div>; }
+function EmptyRow({ message }: { message: string }) { return <tr><td colSpan={6} className="px-5 py-14 text-center text-sm text-slate-500">{message}</td></tr>; }
+function productSummary(request: SellerReturnRequest) { if (request.items.length === 0) return 'Không có thông tin sản phẩm'; return request.items.length === 1 ? request.items[0].productName : `${request.items[0].productName} +${request.items.length - 1} sản phẩm`; }
+function formatDateTime(value: string) { const date = new Date(value); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(date); }
+function formatCurrency(amount: number, currency: string) { try { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount); } catch { return `${amount.toLocaleString('vi-VN')} ${currency}`; } }
+function toErrorMessage(error: unknown, fallback: string) { return error instanceof SellerApiClientError ? error.message : fallback; }

@@ -10,13 +10,14 @@ import (
 )
 
 type fakeOrderEventHandler struct {
-	createdCalls   int
-	cancelledCalls int
-	orderID        string
-	userID         string
-	sellerID       string
-	totalAmount    float64
-	eventID        string
+	createdCalls      int
+	cancelledCalls    int
+	returnRefundCalls int
+	orderID           string
+	userID            string
+	sellerID          string
+	totalAmount       float64
+	eventID           string
 }
 
 func (f *fakeOrderEventHandler) HandleOrderCreatedEvent(
@@ -48,6 +49,18 @@ func (f *fakeOrderEventHandler) HandleOrderCancelledEvent(
 	_ int64,
 ) error {
 	f.cancelledCalls++
+	f.orderID = orderID
+	f.eventID = eventID
+	return nil
+}
+
+func (f *fakeOrderEventHandler) HandleOrderReturnRefundApprovedEvent(
+	_ context.Context,
+	orderID, _ string, eventID, _ string,
+	_ int,
+	_ int64,
+) error {
+	f.returnRefundCalls++
 	f.orderID = orderID
 	f.eventID = eventID
 	return nil
@@ -92,6 +105,21 @@ func TestOrderCreatedEventKeepsPaymentFields(t *testing.T) {
 	}
 	if handler.createdCalls != 1 || handler.totalAmount != 109000 || handler.userID == "" || handler.sellerID == "" {
 		t.Fatalf("unexpected created event: %+v", handler)
+	}
+}
+
+func TestOrderReturnRefundApprovedEventIsForwarded(t *testing.T) {
+	handler := &fakeOrderEventHandler{}
+	consumer := &OrderEventsConsumer{topic: "order.events", logger: zap.NewNop(), service: handler}
+	message := kafka.Message{Topic: "order.events", Value: mustMarshalOrderEvent(t, KafkaEnvelope{
+		EventID: "evt-return-refund-1", EventType: "order.return-refund-approved",
+		Payload: map[string]any{"orderId": "11111111-1111-4111-8111-111111111111"},
+	})}
+	if err := consumer.handleMessage(context.Background(), message); err != nil {
+		t.Fatalf("handle return refund: %v", err)
+	}
+	if handler.returnRefundCalls != 1 || handler.cancelledCalls != 0 || handler.createdCalls != 0 {
+		t.Fatalf("unexpected handler calls: %+v", handler)
 	}
 }
 

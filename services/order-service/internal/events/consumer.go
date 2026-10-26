@@ -28,6 +28,7 @@ type sagaService interface {
 	HandleInventoryExpired(ctx context.Context, event service.InventoryFailureEvent, meta service.SagaEventMeta) error
 	HandlePaymentCaptured(ctx context.Context, event service.PaymentEvent, meta service.SagaEventMeta) error
 	HandlePaymentFailed(ctx context.Context, event service.PaymentEvent, meta service.SagaEventMeta) error
+	HandleCustomerRefundCredited(ctx context.Context, event service.CustomerRefundCreditedEvent, meta service.SagaEventMeta) error
 	HandleShipmentStatusUpdated(ctx context.Context, event service.ShipmentEvent, meta service.SagaEventMeta) error
 }
 
@@ -37,6 +38,10 @@ func NewInventorySagaConsumer(cfg config.Config, logger *zap.Logger, svc *servic
 
 func NewPaymentSagaConsumer(cfg config.Config, logger *zap.Logger, svc *service.OrderSagaService) *SagaConsumer {
 	return newSagaConsumer(cfg.KafkaEnabled, cfg.KafkaBrokers, cfg.PaymentEventsTopic, cfg.PaymentEventsConsumerGroup, logger, svc)
+}
+
+func NewWalletEventsConsumer(cfg config.Config, logger *zap.Logger, svc *service.OrderSagaService) *SagaConsumer {
+	return newSagaConsumer(cfg.KafkaEnabled, cfg.KafkaBrokers, cfg.WalletEventsTopic, cfg.WalletEventsConsumerGroup, logger, svc)
 }
 
 func NewShippingEventsConsumer(cfg config.Config, logger *zap.Logger, svc *service.OrderSagaService) *SagaConsumer {
@@ -168,6 +173,17 @@ func (c *SagaConsumer) handleMessage(ctx context.Context, msg kafka.Message) err
 			zap.Int64("offset", meta.OffsetValue),
 		)
 		return c.svc.HandlePaymentFailed(ctx, event, meta)
+	case service.EventWalletCustomerRefundCredited:
+		event := service.CustomerRefundCreditedEvent{
+			OrderID: asString(env.Payload["orderId"]), PaymentID: asString(env.Payload["paymentId"]),
+			CustomerID: asString(env.Payload["customerId"]), WalletID: asString(env.Payload["walletId"]),
+			Currency: asString(env.Payload["currency"]), RefundedAmount: asInt64(env.Payload["refundedAmount"]),
+		}
+		c.logger.Info("customer refund wallet credit received",
+			zap.String("requestId", meta.RequestID), zap.String("eventId", meta.EventID),
+			zap.String("orderId", event.OrderID), zap.String("paymentId", event.PaymentID), zap.String("walletId", event.WalletID),
+		)
+		return c.svc.HandleCustomerRefundCredited(ctx, event, meta)
 	case service.EventShipmentStatusUpdated, service.EventShipmentDelivered:
 		event := service.ShipmentEvent{
 			OrderID:        asString(env.Payload["orderId"]),
@@ -246,4 +262,18 @@ func asString(value any) string {
 		return ""
 	}
 	return strings.TrimSpace(s)
+}
+
+func asInt64(value any) int64 {
+	switch typed := value.(type) {
+	case float64:
+		return int64(typed)
+	case int64:
+		return typed
+	case json.Number:
+		parsed, _ := typed.Int64()
+		return parsed
+	default:
+		return 0
+	}
 }

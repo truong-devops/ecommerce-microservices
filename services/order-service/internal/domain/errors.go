@@ -11,4 +11,7 @@ const (
 	ErrorCodeIdempotencyConflict          = "IDEMPOTENCY_CONFLICT"
 	ErrorCodeInternalServerError          = "INTERNAL_SERVER_ERROR"
 	ErrorCodeServiceUnavailable           = "SERVICE_UNAVAILABLE"
+	ErrorCodeReturnWindowExpired          = "RETURN_WINDOW_EXPIRED"
+	ErrorCodeReturnAlreadyExists          = "RETURN_ALREADY_EXISTS"
+	ErrorCodeInvalidReturnStatus          = "INVALID_RETURN_STATUS"
 )

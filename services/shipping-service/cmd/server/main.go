@@ -55,6 +55,9 @@ func main() {
 		if err := ensureNexusProviderRequestSchema(ctx, pool); err != nil {
 			logger.Fatal("failed to ensure Nexus provider request schema", zap.Error(err))
 		}
+		if err := ensureReturnShipmentSchema(ctx, pool); err != nil {
+			logger.Fatal("failed to ensure return shipment schema", zap.Error(err))
+		}
 	}
 
 	redisService, err := service.NewRedisService(cfg.RedisEnabled, cfg.RedisURL)
@@ -231,6 +234,24 @@ func ensureNexusProviderRequestSchema(ctx context.Context, pool *pgxpool.Pool) e
 		);
 		CREATE INDEX IF NOT EXISTS idx_shipment_provider_requests_dispatch
 		  ON shipment_provider_requests(status, next_retry_at, created_at);
+	`)
+	return err
+}
+
+func ensureReturnShipmentSchema(ctx context.Context, pool *pgxpool.Pool) error {
+	_, err := pool.Exec(ctx, `
+		ALTER TABLE shipments ADD COLUMN IF NOT EXISTS shipment_type varchar(16) NOT NULL DEFAULT 'FORWARD';
+		ALTER TABLE shipments ADD COLUMN IF NOT EXISTS return_request_id uuid;
+		ALTER TABLE shipments DROP CONSTRAINT IF EXISTS shipments_order_id_key;
+		CREATE UNIQUE INDEX IF NOT EXISTS ux_shipments_forward_order
+		  ON shipments(order_id) WHERE shipment_type = 'FORWARD';
+		CREATE UNIQUE INDEX IF NOT EXISTS ux_shipments_return_request
+		  ON shipments(return_request_id) WHERE shipment_type = 'RETURN';
+		DO $$ BEGIN
+		  ALTER TABLE shipments ADD CONSTRAINT shipments_type_check
+		    CHECK (shipment_type IN ('FORWARD', 'RETURN'));
+		EXCEPTION WHEN duplicate_object THEN NULL;
+		END $$;
 	`)
 	return err
 }

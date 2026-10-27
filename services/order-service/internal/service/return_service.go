@@ -268,6 +268,13 @@ func (s *ReturnService) Ship(ctx context.Context, user domain.UserContext, reque
 	if request.Status != domain.ReturnRequestStatusApproved {
 		return nil, httpx.NewAppError(http.StatusConflict, domain.ErrorCodeInvalidReturnStatus, "Return request is not awaiting customer shipment", nil)
 	}
+	order, err := s.repo.FindOrderByIDForUpdate(ctx, tx, request.OrderID)
+	if err != nil {
+		return nil, err
+	}
+	if order == nil {
+		return nil, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeNotFound, "Order not found", nil)
+	}
 	now := s.now()
 	updated, err := s.repo.UpdateReturnRequestStatus(ctx, tx, repository.UpdateReturnRequestStatusInput{
 		ID: request.ID, Status: domain.ReturnRequestStatusReturning, ShippedAt: &now,
@@ -281,7 +288,7 @@ func (s *ReturnService) Ship(ctx context.Context, user domain.UserContext, reque
 	}); err != nil {
 		return nil, err
 	}
-	if err := s.enqueueReturnEvent(ctx, tx, EventOrderReturnShipped, updated, user, requestID); err != nil {
+	if err := s.enqueueReturnShipmentEvent(ctx, tx, updated, *order, user, requestID); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -385,6 +392,33 @@ func (s *ReturnService) enqueueReturnEvent(ctx context.Context, tx pgx.Tx, event
 	}})
 }
 
+func (s *ReturnService) enqueueReturnShipmentEvent(ctx context.Context, tx pgx.Tx, request domain.ReturnRequest, order domain.Order, actor domain.UserContext, requestID string) error {
+	items := make([]map[string]any, 0, len(order.Items))
+	for _, item := range order.Items {
+		items = append(items, map[string]any{
+			"sku": item.SKU, "productName": item.ProductNameSnapshot,
+			"quantity": item.Quantity, "unitPrice": item.UnitPrice,
+		})
+	}
+	return s.repo.InsertOutboxEvent(ctx, tx, repository.CreateOutboxEventInput{
+		AggregateType: "return_request", AggregateID: request.ID, EventType: EventOrderReturnShipped,
+		Payload: map[string]any{
+			"returnRequestId": request.ID, "returnNumber": request.ReturnNumber,
+			"orderId": request.OrderID, "orderNumber": order.OrderNumber,
+			"customerId": request.CustomerID, "sellerId": request.SellerID,
+			"status": request.Status, "refundAmount": request.RefundAmount, "currency": request.Currency,
+			"senderName": order.RecipientName, "senderPhone": order.RecipientPhone,
+			"senderAddress": order.RecipientAddress, "senderWard": order.RecipientWard,
+			"senderDistrict": order.RecipientDistrict, "senderProvince": order.RecipientProvince,
+			"items": items,
+			"metadata": map[string]any{
+				"requestId": requestID, "occurredAt": s.now().Format(time.RFC3339Nano),
+				"actorId": actor.UserID, "actorRole": actor.Role,
+			},
+		},
+	})
+}
+
 func validateCreateReturnRequest(req CreateReturnRequest) error {
 	reason := strings.ToUpper(strings.TrimSpace(req.ReasonCode))
 	if _, ok := validReturnReasons[reason]; !ok {
@@ -452,7 +486,7 @@ func toReturnRequestResponse(request domain.ReturnRequest) map[string]any {
 	for _, item := range request.OrderItems {
 		items = append(items, map[string]any{"id": item.ID, "productId": item.ProductID, "sku": item.SKU, "productName": item.ProductNameSnapshot, "quantity": item.Quantity, "unitPrice": item.UnitPrice, "totalPrice": item.TotalPrice})
 	}
-	return map[string]any{"id": request.ID, "returnNumber": request.ReturnNumber, "orderId": request.OrderID, "orderNumber": request.OrderNumber, "customerId": request.CustomerID, "sellerId": request.SellerID, "status": request.Status, "reasonCode": request.ReasonCode, "reasonDetail": request.ReasonDetail, "evidenceUrls": request.EvidenceURLs, "sellerNote": request.SellerNote, "refundAmount": request.RefundAmount, "currency": request.Currency, "requestedAt": request.RequestedAt.Format(time.RFC3339Nano), "respondedAt": formatOptionalTime(request.RespondedAt), "shippedAt": formatOptionalTime(request.ShippedAt), "receivedAt": formatOptionalTime(request.ReceivedAt), "refundedAt": formatOptionalTime(request.RefundedAt), "updatedAt": request.UpdatedAt.Format(time.RFC3339Nano), "items": items}
+	return map[string]any{"id": request.ID, "returnNumber": request.ReturnNumber, "orderId": request.OrderID, "orderNumber": request.OrderNumber, "customerId": request.CustomerID, "sellerId": request.SellerID, "status": request.Status, "reasonCode": request.ReasonCode, "reasonDetail": request.ReasonDetail, "evidenceUrls": request.EvidenceURLs, "sellerNote": request.SellerNote, "refundAmount": request.RefundAmount, "currency": request.Currency, "requestedAt": request.RequestedAt.Format(time.RFC3339Nano), "respondedAt": formatOptionalTime(request.RespondedAt), "shippedAt": formatOptionalTime(request.ShippedAt), "receivedAt": formatOptionalTime(request.ReceivedAt), "refundedAt": formatOptionalTime(request.RefundedAt), "returnShipmentId": request.ReturnShipmentID, "returnAwb": request.ReturnAWB, "returnTrackingNumber": request.ReturnTrackingNumber, "returnTrackingUrl": request.ReturnTrackingURL, "updatedAt": request.UpdatedAt.Format(time.RFC3339Nano), "items": items}
 }
 
 func formatOptionalTime(value *time.Time) any {

@@ -49,16 +49,17 @@ type CreateShipmentRequest struct {
 }
 
 type ListShipmentsRequest struct {
-	Page      int
-	PageSize  int
-	Status    *domain.ShipmentStatus
-	Provider  *string
-	OrderID   *string
-	BuyerID   *string
-	SellerID  *string
-	Search    *string
-	SortBy    string
-	SortOrder string
+	Page         int
+	PageSize     int
+	Status       *domain.ShipmentStatus
+	ShipmentType *domain.ShipmentType
+	Provider     *string
+	OrderID      *string
+	BuyerID      *string
+	SellerID     *string
+	Search       *string
+	SortBy       string
+	SortOrder    string
 }
 
 type UpdateShipmentStatusRequest struct {
@@ -268,16 +269,17 @@ func (s *ShippingService) ListShipments(ctx context.Context, user domain.UserCon
 	}
 
 	items, totalItems, err := s.repo.ListShipments(ctx, repository.ListShipmentsQuery{
-		Page:      req.Page,
-		PageSize:  req.PageSize,
-		Status:    req.Status,
-		Provider:  req.Provider,
-		OrderID:   req.OrderID,
-		BuyerID:   req.BuyerID,
-		SellerID:  req.SellerID,
-		Search:    req.Search,
-		SortBy:    req.SortBy,
-		SortOrder: req.SortOrder,
+		Page:         req.Page,
+		PageSize:     req.PageSize,
+		Status:       req.Status,
+		ShipmentType: req.ShipmentType,
+		Provider:     req.Provider,
+		OrderID:      req.OrderID,
+		BuyerID:      req.BuyerID,
+		SellerID:     req.SellerID,
+		Search:       req.Search,
+		SortBy:       req.SortBy,
+		SortOrder:    req.SortOrder,
 	})
 	if err != nil {
 		return nil, err
@@ -839,6 +841,88 @@ func (s *ShippingService) AutoCreateShipmentFromConfirmedOrderEvent(ctx context.
 	return tx.Commit(ctx)
 }
 
+func (s *ShippingService) AutoCreateReturnShipmentFromEvent(ctx context.Context, requestID string, payload map[string]any, kafkaPartition int, kafkaOffset string) error {
+	returnRequestID := asString(payload["returnRequestId"])
+	returnNumber := asString(payload["returnNumber"])
+	orderID := asString(payload["orderId"])
+	buyerID := asString(payload["customerId"])
+	sellerID := asString(payload["sellerId"])
+	currency := strings.ToUpper(asString(payload["currency"]))
+
+	if !isUUIDStrict(returnRequestID) || !isUUIDStrict(orderID) || !isUUIDStrict(buyerID) || !isUUIDStrict(sellerID) || !currencyRegex.MatchString(currency) {
+		return fmt.Errorf("return shipment event contains invalid identifiers or currency")
+	}
+	if s.nexus.SellerClient == nil {
+		return fmt.Errorf("seller pickup address client is not configured")
+	}
+	receiverProfile, err := s.nexus.SellerClient.GetPickupAddress(ctx, sellerID)
+	if err != nil {
+		return err
+	}
+	receiverName := firstNonEmpty(receiverProfile.SenderName, receiverProfile.ShopName)
+	if !inLen(receiverName, 1, 255) || !inLen(receiverProfile.Phone, 1, 32) || !inLen(receiverProfile.Address, 1, 500) {
+		return fmt.Errorf("seller return receiving address is incomplete for seller %s", sellerID)
+	}
+
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	existing, err := s.repo.FindReturnShipmentByReturnRequestID(ctx, returnRequestID, tx)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		return tx.Commit(ctx)
+	}
+
+	provider := "order-return-event-auto"
+	sendToNexus := s.nexusOutboundEnabledForSeller(sellerID)
+	if sendToNexus {
+		provider = "NEXUS"
+	}
+	shipment, err := s.repo.CreateShipment(ctx, tx, repository.CreateShipmentInput{
+		OrderID: orderID, ShipmentType: domain.ShipmentTypeReturn, ReturnRequestID: &returnRequestID,
+		BuyerID: buyerID, SellerID: sellerID, Provider: provider, Status: domain.ShipmentStatusPending,
+		Currency: currency, ShippingFee: 0, CODAmount: 0,
+		RecipientName: receiverName, RecipientPhone: receiverProfile.Phone, RecipientAddress: receiverProfile.Address,
+		Note: strPtr("Hoàn hàng " + returnNumber),
+		Metadata: map[string]any{
+			"source": "order.events", "eventType": "order.return-shipped", "autoCreated": true,
+			"returnRequestId": returnRequestID, "returnNumber": returnNumber, "requestId": requestID,
+		},
+	})
+	if err != nil {
+		if s.repo.IsUniqueViolation(err) {
+			return nil
+		}
+		return err
+	}
+	if err := s.repo.InsertStatusHistory(ctx, tx, repository.CreateStatusHistoryInput{
+		ShipmentID: shipment.ID, ToStatus: domain.ShipmentStatusPending, ChangedBy: systemActorID,
+		ChangedByRole: domain.RoleSuperAdmin, Reason: strPtr("Auto-created from approved return request"),
+	}); err != nil {
+		return err
+	}
+	if err := s.repo.InsertAuditLog(ctx, tx, repository.CreateAuditLogInput{
+		ShipmentID: shipment.ID, Action: "RETURN_SHIPMENT_AUTO_CREATED", ActorID: systemActorID,
+		ActorRole: domain.RoleSuperAdmin, RequestID: requestID,
+		Metadata: map[string]any{"returnRequestId": returnRequestID, "returnNumber": returnNumber, "kafkaPartition": kafkaPartition, "kafkaOffset": kafkaOffset},
+	}); err != nil {
+		return err
+	}
+	if err := s.enqueueShipmentEvent(ctx, tx, domain.EventShipmentCreated, shipment, domain.UserContext{UserID: systemActorID, Role: domain.RoleSuperAdmin}, requestID); err != nil {
+		return err
+	}
+	if sendToNexus {
+		if err := s.enqueueNexusCreateReturnOrder(ctx, tx, shipment, payload, receiverProfile); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 func (s *ShippingService) nexusOutboundEnabledForSeller(sellerID string) bool {
 	if !s.nexus.Enabled {
 		return false
@@ -875,17 +959,20 @@ func (s *ShippingService) enqueueTerminalStatusEvent(ctx context.Context, tx pgx
 
 func (s *ShippingService) enqueueShipmentEvent(ctx context.Context, tx pgx.Tx, eventType string, shipment domain.Shipment, actor domain.UserContext, requestID string) error {
 	payload := map[string]any{
-		"shipmentId":     shipment.ID,
-		"orderId":        shipment.OrderID,
-		"buyerId":        shipment.BuyerID,
-		"sellerId":       shipment.SellerID,
-		"provider":       shipment.Provider,
-		"status":         shipment.Status,
-		"awb":            shipment.AWB,
-		"trackingNumber": shipment.TrackingNumber,
-		"shippingFee":    shipment.ShippingFee,
-		"codAmount":      shipment.CODAmount,
-		"currency":       shipment.Currency,
+		"shipmentId":      shipment.ID,
+		"orderId":         shipment.OrderID,
+		"shipmentType":    shipment.ShipmentType,
+		"returnRequestId": shipment.ReturnRequestID,
+		"buyerId":         shipment.BuyerID,
+		"sellerId":        shipment.SellerID,
+		"provider":        shipment.Provider,
+		"status":          shipment.Status,
+		"awb":             shipment.AWB,
+		"trackingNumber":  shipment.TrackingNumber,
+		"trackingUrl":     shipmentTrackingURL(shipment.Metadata),
+		"shippingFee":     shipment.ShippingFee,
+		"codAmount":       shipment.CODAmount,
+		"currency":        shipment.Currency,
 		"metadata": map[string]any{
 			"requestId":  requestID,
 			"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
@@ -900,6 +987,17 @@ func (s *ShippingService) enqueueShipmentEvent(ctx context.Context, tx pgx.Tx, e
 		EventType:     eventType,
 		Payload:       payload,
 	})
+}
+
+func shipmentTrackingURL(metadata map[string]any) string {
+	if metadata == nil {
+		return ""
+	}
+	nexusMetadata, ok := metadata["nexus"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	return asString(nexusMetadata["trackingUrl"])
 }
 
 func validateCreateShipmentRequest(req CreateShipmentRequest) error {
@@ -997,6 +1095,8 @@ func shipmentResponse(shipment domain.Shipment) map[string]any {
 	return map[string]any{
 		"id":               shipment.ID,
 		"orderId":          shipment.OrderID,
+		"shipmentType":     shipment.ShipmentType,
+		"returnRequestId":  shipment.ReturnRequestID,
 		"buyerId":          shipment.BuyerID,
 		"sellerId":         shipment.SellerID,
 		"provider":         shipment.Provider,

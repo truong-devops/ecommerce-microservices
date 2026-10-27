@@ -40,3 +40,13 @@ func TestCODAmountForPaymentMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestShipmentTrackingURLFromNexusMetadata(t *testing.T) {
+	metadata := map[string]any{"nexus": map[string]any{"trackingUrl": "https://tracking.nexus.test/RET001"}}
+	if got := shipmentTrackingURL(metadata); got != "https://tracking.nexus.test/RET001" {
+		t.Fatalf("unexpected tracking URL: %s", got)
+	}
+	if got := shipmentTrackingURL(map[string]any{}); got != "" {
+		t.Fatalf("expected empty tracking URL, got %s", got)
+	}
+}

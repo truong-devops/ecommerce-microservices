@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	EventShipmentCreated       = "shipment.created"
 	EventShipmentStatusUpdated = "shipment.status-updated"
 	EventShipmentDelivered     = "shipment.delivered"
 
@@ -18,16 +19,22 @@ const (
 )
 
 type ShipmentEvent struct {
-	OrderID        string
-	ShipmentID     string
-	Status         string
-	AWB            string
-	TrackingNumber string
+	OrderID         string
+	ShipmentID      string
+	ShipmentType    string
+	ReturnRequestID string
+	Status          string
+	AWB             string
+	TrackingNumber  string
+	TrackingURL     string
 }
 
 // HandleShipmentStatusUpdated projects shipment progress onto the buyer-facing
 // order lifecycle while preserving the order transition rules.
 func (s *OrderSagaService) HandleShipmentStatusUpdated(ctx context.Context, event ShipmentEvent, meta SagaEventMeta) error {
+	if strings.EqualFold(strings.TrimSpace(event.ShipmentType), "RETURN") {
+		return s.handleReturnShipmentStatusUpdated(ctx, event, meta)
+	}
 	orderID := strings.TrimSpace(event.OrderID)
 	targetStatus, ok := targetOrderStatusForShipment(event.Status)
 	if orderID == "" || !ok {
@@ -125,6 +132,37 @@ func (s *OrderSagaService) HandleShipmentStatusUpdated(ctx context.Context, even
 		zap.String("orderStatus", string(current.Status)),
 	)
 	return nil
+}
+
+func (s *OrderSagaService) handleReturnShipmentStatusUpdated(ctx context.Context, event ShipmentEvent, meta SagaEventMeta) error {
+	returnRequestID := strings.TrimSpace(event.ReturnRequestID)
+	if returnRequestID == "" {
+		return nil
+	}
+	tx, err := s.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	alreadyProcessed, err := s.repo.TryMarkEventProcessed(ctx, tx, repository.ProcessedEventInput{
+		ConsumerName: shipmentEventsConsumerName, EventID: meta.EventID, EventType: meta.EventType,
+		Topic: meta.Topic, Partition: meta.Partition, OffsetValue: meta.OffsetValue,
+	})
+	if err != nil {
+		return err
+	}
+	if alreadyProcessed {
+		return tx.Commit(ctx)
+	}
+	trackingURL := strings.TrimSpace(event.TrackingURL)
+	var trackingURLPtr *string
+	if trackingURL != "" {
+		trackingURLPtr = &trackingURL
+	}
+	if err := s.repo.UpdateReturnShipmentTracking(ctx, tx, returnRequestID, strings.TrimSpace(event.ShipmentID), strings.TrimSpace(event.AWB), strings.TrimSpace(event.TrackingNumber), trackingURLPtr); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func targetOrderStatusForShipment(status string) (domain.OrderStatus, bool) {

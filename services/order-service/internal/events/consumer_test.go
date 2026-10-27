@@ -247,6 +247,29 @@ func TestSagaConsumerHandleShipmentDelivered(t *testing.T) {
 	}
 }
 
+func TestSagaConsumerHandleReturnShipmentCreated(t *testing.T) {
+	fake := &fakeSagaService{}
+	consumer := &SagaConsumer{topic: "shipping.events", logger: zap.NewNop(), svc: fake}
+	msg := kafka.Message{Value: mustJSON(t, map[string]any{
+		"eventType": "shipment.created",
+		"payload": map[string]any{
+			"orderId": "11111111-1111-4111-8111-111111111111", "shipmentId": "22222222-2222-4222-8222-222222222222",
+			"shipmentType": "RETURN", "returnRequestId": "33333333-3333-4333-8333-333333333333",
+			"status": "PENDING", "trackingUrl": "https://tracking.example/return-1",
+		},
+	})}
+
+	if err := consumer.handleMessage(context.Background(), msg); err != nil {
+		t.Fatalf("handle message: %v", err)
+	}
+	if fake.shipmentStatusCalls != 1 {
+		t.Fatalf("expected shipment status call, got %d", fake.shipmentStatusCalls)
+	}
+	if fake.lastShipment.ShipmentType != "RETURN" || fake.lastShipment.ReturnRequestID != "33333333-3333-4333-8333-333333333333" {
+		t.Fatalf("unexpected return shipment event: %+v", fake.lastShipment)
+	}
+}
+
 func mustJSON(t *testing.T, value any) []byte {
 	t.Helper()
 	out, err := json.Marshal(value)

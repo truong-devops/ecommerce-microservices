@@ -23,6 +23,13 @@ var StaffRoles = map[Role]struct{}{
 
 type ShipmentStatus string
 
+type ShipmentType string
+
+const (
+	ShipmentTypeForward ShipmentType = "FORWARD"
+	ShipmentTypeReturn  ShipmentType = "RETURN"
+)
+
 const (
 	ShipmentStatusPending        ShipmentStatus = "PENDING"
 	ShipmentStatusAWBCreated     ShipmentStatus = "AWB_CREATED"
@@ -94,6 +101,8 @@ type UserContext struct {
 type Shipment struct {
 	ID               string
 	OrderID          string
+	ShipmentType     ShipmentType
+	ReturnRequestID  *string
 	BuyerID          string
 	SellerID         string
 	Provider         string
@@ -218,4 +227,8 @@ func IsValidShipmentStatus(status ShipmentStatus) bool {
 	default:
 		return false
 	}
+}
+
+func IsValidShipmentType(shipmentType ShipmentType) bool {
+	return shipmentType == ShipmentTypeForward || shipmentType == ShipmentTypeReturn
 }

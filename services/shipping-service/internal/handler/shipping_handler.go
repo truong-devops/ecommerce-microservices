@@ -246,6 +246,14 @@ func parseListQuery(r *http.Request) (service.ListShipmentsRequest, error) {
 		}
 		status = &st
 	}
+	shipmentTypeValue := domain.ShipmentTypeForward
+	if raw := strings.TrimSpace(q.Get("shipmentType")); raw != "" {
+		shipmentTypeValue = domain.ShipmentType(strings.ToUpper(raw))
+		if !domain.IsValidShipmentType(shipmentTypeValue) {
+			return service.ListShipmentsRequest{}, validationError("shipmentType must be FORWARD or RETURN")
+		}
+	}
+	shipmentType := &shipmentTypeValue
 
 	var provider *string
 	if raw := strings.TrimSpace(q.Get("provider")); raw != "" {
@@ -298,16 +306,17 @@ func parseListQuery(r *http.Request) (service.ListShipmentsRequest, error) {
 	}
 
 	return service.ListShipmentsRequest{
-		Page:      page,
-		PageSize:  pageSize,
-		Status:    status,
-		Provider:  provider,
-		OrderID:   orderID,
-		BuyerID:   buyerID,
-		SellerID:  sellerID,
-		Search:    search,
-		SortBy:    sortBy,
-		SortOrder: sortOrder,
+		Page:         page,
+		PageSize:     pageSize,
+		Status:       status,
+		ShipmentType: shipmentType,
+		Provider:     provider,
+		OrderID:      orderID,
+		BuyerID:      buyerID,
+		SellerID:     sellerID,
+		Search:       search,
+		SortBy:       sortBy,
+		SortOrder:    sortOrder,
 	}, nil
 }
 

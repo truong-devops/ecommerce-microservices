@@ -83,7 +83,8 @@ func (r *OrderRepository) CreateReturnRequest(ctx context.Context, tx pgx.Tx, in
 		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		RETURNING id, return_number, order_id, '', customer_id, seller_id, status,
 			reason_code, reason_detail, evidence_urls, seller_note, refund_amount,
-			currency, requested_at, responded_at, shipped_at, received_at, refunded_at, updated_at
+			currency, requested_at, responded_at, shipped_at, received_at, refunded_at,
+			return_shipment_id, return_awb, return_tracking_number, return_tracking_url, updated_at
 	`, input.ReturnNumber, input.OrderID, input.CustomerID, input.SellerID,
 		domain.ReturnRequestStatusRequested, input.ReasonCode, input.ReasonDetail,
 		evidence, input.RefundAmount, input.Currency)
@@ -141,7 +142,8 @@ func (r *OrderRepository) UpdateReturnRequestStatus(ctx context.Context, tx pgx.
 		WHERE id = $1
 		RETURNING id, return_number, order_id, '', customer_id, seller_id, status,
 			reason_code, reason_detail, evidence_urls, seller_note, refund_amount,
-			currency, requested_at, responded_at, shipped_at, received_at, refunded_at, updated_at
+			currency, requested_at, responded_at, shipped_at, received_at, refunded_at,
+			return_shipment_id, return_awb, return_tracking_number, return_tracking_url, updated_at
 	`, input.ID, input.Status, input.SellerNote, input.RespondedAt, input.ShippedAt, input.ReceivedAt, input.RefundedAt)
 	request, err := scanReturnRequestRow(row)
 	if err != nil {
@@ -163,7 +165,8 @@ func (r *OrderRepository) MarkReturnRequestRefundedByOrderID(ctx context.Context
 		WHERE order_id = $1 AND status = $4
 		RETURNING id, return_number, order_id, '', customer_id, seller_id, status,
 			reason_code, reason_detail, evidence_urls, seller_note, refund_amount,
-			currency, requested_at, responded_at, shipped_at, received_at, refunded_at, updated_at
+			currency, requested_at, responded_at, shipped_at, received_at, refunded_at,
+			return_shipment_id, return_awb, return_tracking_number, return_tracking_url, updated_at
 	`, orderID, domain.ReturnRequestStatusRefunded, now, domain.ReturnRequestStatusRefundPending)
 	request, err := scanReturnRequestRow(row)
 	if err != nil {
@@ -173,6 +176,25 @@ func (r *OrderRepository) MarkReturnRequestRefundedByOrderID(ctx context.Context
 		return nil, queryFailed("mark return request refunded failed", err)
 	}
 	return &request, nil
+}
+
+func (r *OrderRepository) UpdateReturnShipmentTracking(ctx context.Context, tx pgx.Tx, returnRequestID, shipmentID, awb, trackingNumber string, trackingURL *string) error {
+	command, err := tx.Exec(ctx, `
+		UPDATE return_requests
+		SET return_shipment_id = NULLIF($2::text, '')::uuid,
+			return_awb = NULLIF($3::text, ''),
+			return_tracking_number = NULLIF($4::text, ''),
+			return_tracking_url = COALESCE(NULLIF($5::text, ''), return_tracking_url),
+			updated_at = now()
+		WHERE id = $1
+	`, returnRequestID, shipmentID, awb, trackingNumber, trackingURL)
+	if err != nil {
+		return queryFailed("update return shipment tracking failed", err)
+	}
+	if command.RowsAffected() == 0 {
+		return fmt.Errorf("return request %s not found while updating shipment tracking", returnRequestID)
+	}
+	return nil
 }
 
 func (r *OrderRepository) ListReturnRequests(ctx context.Context, query ListReturnRequestsQuery) ([]domain.ReturnRequest, int, error) {
@@ -230,7 +252,8 @@ const returnRequestSelect = `
 	SELECT rr.id, rr.return_number, rr.order_id, o.order_number, rr.customer_id,
 		rr.seller_id, rr.status, rr.reason_code, rr.reason_detail, rr.evidence_urls,
 		rr.seller_note, rr.refund_amount, rr.currency, rr.requested_at,
-		rr.responded_at, rr.shipped_at, rr.received_at, rr.refunded_at, rr.updated_at
+		rr.responded_at, rr.shipped_at, rr.received_at, rr.refunded_at,
+		rr.return_shipment_id, rr.return_awb, rr.return_tracking_number, rr.return_tracking_url, rr.updated_at
 	FROM return_requests rr
 	JOIN orders o ON o.id = rr.order_id`
 
@@ -244,7 +267,8 @@ func scanReturnRequestRow(row interface{ Scan(dest ...any) error }) (domain.Retu
 		&request.CustomerID, &request.SellerID, &status, &request.ReasonCode,
 		&request.ReasonDetail, &evidence, &request.SellerNote, &refundAmount,
 		&request.Currency, &request.RequestedAt, &request.RespondedAt,
-		&request.ShippedAt, &request.ReceivedAt, &request.RefundedAt, &request.UpdatedAt,
+		&request.ShippedAt, &request.ReceivedAt, &request.RefundedAt,
+		&request.ReturnShipmentID, &request.ReturnAWB, &request.ReturnTrackingNumber, &request.ReturnTrackingURL, &request.UpdatedAt,
 	); err != nil {
 		return domain.ReturnRequest{}, err
 	}

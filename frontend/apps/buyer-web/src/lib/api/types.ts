@@ -517,6 +517,10 @@ export interface ReturnRequest {
   shippedAt: string | null;
   receivedAt: string | null;
   refundedAt: string | null;
+  returnShipmentId: string | null;
+  returnAwb: string | null;
+  returnTrackingNumber: string | null;
+  returnTrackingUrl: string | null;
   updatedAt: string;
   items: OrderItem[];
 }

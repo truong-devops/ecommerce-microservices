@@ -73,8 +73,8 @@ export default function SellerLoginPage() {
       <main className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('/images/auth/seller-login-hero.jpg')" }}>
         <div className="absolute inset-0 bg-white/35" />
         <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/45" />
-        <div className="relative mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
-        <section className="relative hidden min-h-[620px] p-12 lg:flex lg:flex-col lg:justify-between">
+        <div className="relative mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-[1240px] items-start gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-10">
+        <section className="relative hidden min-h-[620px] px-12 py-9 lg:flex lg:flex-col lg:justify-between">
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-600">EMALL SELLER CENTER</p>
             <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950">Vận hành cửa hàng, tập trung tăng trưởng.</h1>

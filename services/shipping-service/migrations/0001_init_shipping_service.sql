@@ -17,7 +17,9 @@ CREATE TYPE outbox_status AS ENUM ('PENDING', 'PUBLISHED', 'FAILED');
 
 CREATE TABLE shipments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id uuid NOT NULL UNIQUE,
+  order_id uuid NOT NULL,
+  shipment_type varchar(16) NOT NULL DEFAULT 'FORWARD' CHECK (shipment_type IN ('FORWARD', 'RETURN')),
+  return_request_id uuid,
   buyer_id uuid NOT NULL,
   seller_id uuid NOT NULL,
   provider varchar(64) NOT NULL,
@@ -37,6 +39,8 @@ CREATE TABLE shipments (
 );
 
 CREATE INDEX idx_shipments_order_id ON shipments(order_id);
+CREATE UNIQUE INDEX ux_shipments_forward_order ON shipments(order_id) WHERE shipment_type = 'FORWARD';
+CREATE UNIQUE INDEX ux_shipments_return_request ON shipments(return_request_id) WHERE shipment_type = 'RETURN';
 CREATE INDEX idx_shipments_buyer_id ON shipments(buyer_id);
 CREATE INDEX idx_shipments_seller_id ON shipments(seller_id);
 CREATE INDEX idx_shipments_status ON shipments(status);

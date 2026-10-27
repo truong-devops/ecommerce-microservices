@@ -184,13 +184,16 @@ func (c *SagaConsumer) handleMessage(ctx context.Context, msg kafka.Message) err
 			zap.String("orderId", event.OrderID), zap.String("paymentId", event.PaymentID), zap.String("walletId", event.WalletID),
 		)
 		return c.svc.HandleCustomerRefundCredited(ctx, event, meta)
-	case service.EventShipmentStatusUpdated, service.EventShipmentDelivered:
+	case service.EventShipmentCreated, service.EventShipmentStatusUpdated, service.EventShipmentDelivered:
 		event := service.ShipmentEvent{
-			OrderID:        asString(env.Payload["orderId"]),
-			ShipmentID:     asString(env.Payload["shipmentId"]),
-			Status:         asString(env.Payload["status"]),
-			AWB:            asString(env.Payload["awb"]),
-			TrackingNumber: asString(env.Payload["trackingNumber"]),
+			OrderID:         asString(env.Payload["orderId"]),
+			ShipmentID:      asString(env.Payload["shipmentId"]),
+			ShipmentType:    asString(env.Payload["shipmentType"]),
+			ReturnRequestID: asString(env.Payload["returnRequestId"]),
+			Status:          asString(env.Payload["status"]),
+			AWB:             asString(env.Payload["awb"]),
+			TrackingNumber:  asString(env.Payload["trackingNumber"]),
+			TrackingURL:     asString(env.Payload["trackingUrl"]),
 		}
 		c.logger.Info("shipment status event received",
 			zap.String("requestId", meta.RequestID),

@@ -182,11 +182,19 @@ CREATE TABLE IF NOT EXISTS return_requests (
   shipped_at timestamptz,
   received_at timestamptz,
   refunded_at timestamptz,
+  return_shipment_id uuid,
+  return_awb varchar(64),
+  return_tracking_number varchar(64),
+  return_tracking_url varchar(1000),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS shipped_at timestamptz;
 ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS received_at timestamptz;
+ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS return_shipment_id uuid;
+ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS return_awb varchar(64);
+ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS return_tracking_number varchar(64);
+ALTER TABLE return_requests ADD COLUMN IF NOT EXISTS return_tracking_url varchar(1000);
 ALTER TABLE return_requests DROP CONSTRAINT IF EXISTS return_requests_status_check;
 ALTER TABLE return_requests ADD CONSTRAINT return_requests_status_check
   CHECK (status IN ('REQUESTED', 'APPROVED', 'RETURNING', 'REJECTED', 'REFUND_PENDING', 'REFUNDED', 'CANCELLED'));

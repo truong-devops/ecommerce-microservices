@@ -125,6 +125,58 @@ func (s *ShippingService) enqueueNexusCreateOrder(ctx context.Context, tx pgx.Tx
 	})
 }
 
+func (s *ShippingService) enqueueNexusCreateReturnOrder(ctx context.Context, tx pgx.Tx, shipment domain.Shipment, payload map[string]any, seller *SellerPickupAddress) error {
+	if s.nexus.Client == nil {
+		return fmt.Errorf("Nexus client is not configured")
+	}
+	mapping, ok := s.nexus.Mappings[shipment.SellerID]
+	if !ok {
+		return fmt.Errorf("Nexus merchant mapping is missing for seller %s", shipment.SellerID)
+	}
+	if seller == nil {
+		return fmt.Errorf("seller return receiving address is missing")
+	}
+	items, declaredValue, err := nexusItemsFromOrderEvent(payload["items"])
+	if err != nil {
+		return err
+	}
+	sender := nexus.AddressContact{
+		Name: asString(payload["senderName"]), Phone: asString(payload["senderPhone"]),
+		Address: asString(payload["senderAddress"]), Ward: asString(payload["senderWard"]),
+		District: asString(payload["senderDistrict"]), Province: asString(payload["senderProvince"]),
+	}
+	if !nexusSenderIsComplete(sender) || strings.TrimSpace(sender.Ward) == "" {
+		return fmt.Errorf("customer return pickup address is incomplete")
+	}
+	receiver := nexus.Receiver{
+		Name: firstNonEmpty(seller.SenderName, seller.ShopName), Phone: seller.Phone,
+		Address: seller.Address, Ward: seller.Ward, Province: seller.Province,
+		Note: "Nhận hàng hoàn " + asString(payload["returnNumber"]),
+	}
+	input := nexus.CreateOrderRequest{
+		External: nexus.ExternalOrder{
+			Platform: s.nexus.Client.PartnerCode(), ShopID: shipment.SellerID,
+			ExternalOrderID: shipment.ID, ExternalOrderCode: asString(payload["returnNumber"]),
+			OrderCreatedAt: shipment.CreatedAt.UTC().Format(time.RFC3339), OrderStatus: "READY_TO_SHIP",
+		},
+		Merchant: nexus.Merchant{MerchantID: mapping.MerchantID, ShopName: mapping.ShopName},
+		Sender:   sender, Receiver: receiver,
+		Parcel:  nexus.Parcel{Items: items, WeightGram: s.nexus.WeightGram, LengthCM: s.nexus.LengthCM, WidthCM: s.nexus.WidthCM, HeightCM: s.nexus.HeightCM, DeclaredValue: roundMoney(declaredValue)},
+		Service: nexus.DeliveryService{ServiceType: s.nexus.ServiceType, PickupType: s.nexus.PickupType},
+		Payment: nexus.Payment{CODAmount: 0, ShippingFee: 0, Payer: s.nexus.PaymentPayer, CODIncludesShippingFee: false},
+		Options: nexus.CreateOptions{AutoCreatePickup: s.nexus.AutoCreatePickup, PrintLabelFormat: "A6"},
+	}
+	requestPayload, err := structToMap(input)
+	if err != nil {
+		return err
+	}
+	return s.repo.CreateProviderRequest(ctx, tx, repository.CreateProviderRequestInput{
+		ShipmentID: shipment.ID, Provider: "NEXUS", Action: "CREATE_RETURN_ORDER",
+		IdempotencyKey: s.nexus.Client.PartnerCode() + ":" + shipment.SellerID + ":return:" + firstNonEmpty(asString(payload["returnRequestId"]), shipment.ID),
+		RequestPayload: requestPayload,
+	})
+}
+
 func nexusExternalOrderCode(orderPayload map[string]any) string {
 	if orderCode := asString(orderPayload["orderCode"]); orderCode != "" {
 		return orderCode
@@ -289,9 +341,13 @@ func (s *ShippingService) HandleNexusWebhook(ctx context.Context, requestID stri
 	if locationData, ok := event.Data["location"].(map[string]any); ok {
 		location = asString(locationData["hubName"])
 	}
+	var externalOrderID *string
+	if shipmentCode == "" {
+		externalOrderID = strPtr(orderID)
+	}
 	req := ShippingWebhookRequest{
 		ProviderEventID: eventID,
-		OrderID:         strPtr(orderID),
+		OrderID:         externalOrderID,
 		AWB:             strPtr(shipmentCode),
 		TrackingNumber:  strPtr(shipmentCode),
 		Status:          status,

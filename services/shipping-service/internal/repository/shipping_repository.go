@@ -24,12 +24,13 @@ type ListShipmentsQuery struct {
 	Page     int
 	PageSize int
 
-	Status   *domain.ShipmentStatus
-	Provider *string
-	OrderID  *string
-	BuyerID  *string
-	SellerID *string
-	Search   *string
+	Status       *domain.ShipmentStatus
+	ShipmentType *domain.ShipmentType
+	Provider     *string
+	OrderID      *string
+	BuyerID      *string
+	SellerID     *string
+	Search       *string
 
 	SortBy    string
 	SortOrder string
@@ -37,6 +38,8 @@ type ListShipmentsQuery struct {
 
 type CreateShipmentInput struct {
 	OrderID          string
+	ShipmentType     domain.ShipmentType
+	ReturnRequestID  *string
 	BuyerID          string
 	SellerID         string
 	Provider         string
@@ -143,13 +146,25 @@ func (r *ShippingRepository) FindShipmentByIDForUpdate(ctx context.Context, tx p
 }
 
 func (r *ShippingRepository) FindShipmentByOrderID(ctx context.Context, orderID string, tx pgx.Tx) (*domain.Shipment, error) {
-	row := pickQuerier(r.pool, tx).QueryRow(ctx, shipmentSelect+" WHERE order_id = $1", orderID)
+	row := pickQuerier(r.pool, tx).QueryRow(ctx, shipmentSelect+" WHERE order_id = $1 AND shipment_type = 'FORWARD'", orderID)
 	shipment, err := scanShipmentRow(row)
 	if err != nil {
 		if isNoRows(err) {
 			return nil, nil
 		}
 		return nil, queryFailed("find shipment by order id failed", err)
+	}
+	return &shipment, nil
+}
+
+func (r *ShippingRepository) FindReturnShipmentByReturnRequestID(ctx context.Context, returnRequestID string, tx pgx.Tx) (*domain.Shipment, error) {
+	row := pickQuerier(r.pool, tx).QueryRow(ctx, shipmentSelect+" WHERE return_request_id = $1 AND shipment_type = 'RETURN'", returnRequestID)
+	shipment, err := scanShipmentRow(row)
+	if err != nil {
+		if isNoRows(err) {
+			return nil, nil
+		}
+		return nil, queryFailed("find return shipment by return request id failed", err)
 	}
 	return &shipment, nil
 }
@@ -179,6 +194,9 @@ func (r *ShippingRepository) FindShipmentByTrackingNumber(ctx context.Context, t
 }
 
 func (r *ShippingRepository) CreateShipment(ctx context.Context, tx pgx.Tx, input CreateShipmentInput) (domain.Shipment, error) {
+	if input.ShipmentType == "" {
+		input.ShipmentType = domain.ShipmentTypeForward
+	}
 	metadataJSON, err := toJSONB(input.Metadata)
 	if err != nil {
 		return domain.Shipment{}, queryFailed("marshal shipment metadata failed", err)
@@ -186,16 +204,16 @@ func (r *ShippingRepository) CreateShipment(ctx context.Context, tx pgx.Tx, inpu
 
 	row := tx.QueryRow(ctx, `
 		INSERT INTO shipments (
-			order_id, buyer_id, seller_id, provider, awb, tracking_number,
+			order_id, shipment_type, return_request_id, buyer_id, seller_id, provider, awb, tracking_number,
 			status, currency, shipping_fee, cod_amount,
 			recipient_name, recipient_phone, recipient_address, note, metadata
 		)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-		RETURNING id, order_id, buyer_id, seller_id, provider, awb, tracking_number,
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		RETURNING id, order_id, shipment_type, return_request_id, buyer_id, seller_id, provider, awb, tracking_number,
 			status, currency, shipping_fee, cod_amount,
 			recipient_name, recipient_phone, recipient_address, note, metadata,
 			created_at, updated_at
-	`, input.OrderID, input.BuyerID, input.SellerID, input.Provider, input.AWB, input.TrackingNumber, input.Status,
+	`, input.OrderID, input.ShipmentType, input.ReturnRequestID, input.BuyerID, input.SellerID, input.Provider, input.AWB, input.TrackingNumber, input.Status,
 		input.Currency, input.ShippingFee, input.CODAmount,
 		input.RecipientName, input.RecipientPhone, input.RecipientAddress, input.Note, metadataJSON)
 
@@ -211,7 +229,7 @@ func (r *ShippingRepository) UpdateShipmentStatus(ctx context.Context, tx pgx.Tx
 		UPDATE shipments
 		SET status = $2, updated_at = now()
 		WHERE id = $1
-		RETURNING id, order_id, buyer_id, seller_id, provider, awb, tracking_number,
+		RETURNING id, order_id, shipment_type, return_request_id, buyer_id, seller_id, provider, awb, tracking_number,
 			status, currency, shipping_fee, cod_amount,
 			recipient_name, recipient_phone, recipient_address, note, metadata,
 			created_at, updated_at
@@ -237,7 +255,7 @@ func (r *ShippingRepository) UpdateShipmentProviderResult(ctx context.Context, t
 		UPDATE shipments
 		SET awb = $2, tracking_number = $3, status = $4, metadata = $5, updated_at = now()
 		WHERE id = $1
-		RETURNING id, order_id, buyer_id, seller_id, provider, awb, tracking_number,
+		RETURNING id, order_id, shipment_type, return_request_id, buyer_id, seller_id, provider, awb, tracking_number,
 			status, currency, shipping_fee, cod_amount,
 			recipient_name, recipient_phone, recipient_address, note, metadata,
 			created_at, updated_at
@@ -264,6 +282,11 @@ func (r *ShippingRepository) ListShipments(ctx context.Context, q ListShipmentsQ
 	if q.Status != nil {
 		where = append(where, fmt.Sprintf("status = $%d", idx))
 		args = append(args, *q.Status)
+		idx++
+	}
+	if q.ShipmentType != nil {
+		where = append(where, fmt.Sprintf("shipment_type = $%d", idx))
+		args = append(args, *q.ShipmentType)
 		idx++
 	}
 	if q.Provider != nil {
@@ -658,7 +681,7 @@ func pickQuerier(pool *pgxpool.Pool, tx pgx.Tx) querier {
 }
 
 const shipmentSelect = `
-	SELECT id, order_id, buyer_id, seller_id, provider, awb, tracking_number,
+	SELECT id, order_id, shipment_type, return_request_id, buyer_id, seller_id, provider, awb, tracking_number,
 		status, currency, shipping_fee, cod_amount,
 		recipient_name, recipient_phone, recipient_address, note, metadata,
 		created_at, updated_at
@@ -687,6 +710,8 @@ func scanShipment(scanFn func(dest ...any) error) (domain.Shipment, error) {
 	err := scanFn(
 		&s.ID,
 		&s.OrderID,
+		&s.ShipmentType,
+		&s.ReturnRequestID,
 		&s.BuyerID,
 		&s.SellerID,
 		&s.Provider,

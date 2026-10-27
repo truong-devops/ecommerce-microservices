@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"shipping-service/internal/config"
 	"shipping-service/internal/service"
@@ -54,7 +55,7 @@ func (c *OrderEventsConsumer) Run(ctx context.Context) {
 
 	c.logger.Info("order events consumer started", zap.String("topic", c.topic))
 	for {
-		msg, err := c.reader.ReadMessage(ctx)
+		msg, err := c.reader.FetchMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return
@@ -63,40 +64,63 @@ func (c *OrderEventsConsumer) Run(ctx context.Context) {
 			continue
 		}
 
-		if len(msg.Value) == 0 {
-			continue
-		}
-
-		var envelope orderEventEnvelope
-		if err := json.Unmarshal(msg.Value, &envelope); err != nil {
-			c.logger.Warn("skip invalid order event payload", zap.Error(err))
-			continue
-		}
-
-		eventType := strings.TrimSpace(envelope.EventType)
-		if eventType == "" {
-			eventType = strings.TrimSpace(string(msg.Key))
-		}
-		if eventType != "order.status-updated" || !strings.EqualFold(strings.TrimSpace(fmt.Sprint(envelope.Payload["status"])), "CONFIRMED") {
-			continue
-		}
-
-		payload := envelope.Payload
-		if payload == nil {
-			payload = map[string]any{}
-		}
-
-		metadata, _ := payload["metadata"].(map[string]any)
-		requestID := fmt.Sprintf("kafka-%d-%d", msg.Partition, msg.Offset)
-		if metadata != nil {
-			if rid, ok := metadata["requestId"].(string); ok && strings.TrimSpace(rid) != "" {
-				requestID = strings.TrimSpace(rid)
+		for {
+			if err := c.handleMessage(ctx, msg); err == nil {
+				break
+			} else {
+				c.logger.Error("order event processing failed; retrying",
+					zap.Int("partition", msg.Partition),
+					zap.Int64("offset", msg.Offset),
+					zap.Error(err),
+				)
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(2 * time.Second):
+				}
 			}
 		}
-
-		if err := c.service.AutoCreateShipmentFromConfirmedOrderEvent(ctx, requestID, payload, msg.Partition, fmt.Sprintf("%d", msg.Offset)); err != nil {
-			c.logger.Error("auto-create shipment from confirmed order failed", zap.Error(err))
+		if err := c.reader.CommitMessages(ctx, msg); err != nil {
+			c.logger.Error("order event commit failed", zap.Int("partition", msg.Partition), zap.Int64("offset", msg.Offset), zap.Error(err))
 		}
+	}
+}
+
+func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Message) error {
+	if len(msg.Value) == 0 {
+		return nil
+	}
+
+	var envelope orderEventEnvelope
+	if err := json.Unmarshal(msg.Value, &envelope); err != nil {
+		c.logger.Warn("skip invalid order event payload", zap.Error(err))
+		return nil
+	}
+
+	eventType := strings.TrimSpace(envelope.EventType)
+	if eventType == "" {
+		eventType = strings.TrimSpace(string(msg.Key))
+	}
+	payload := envelope.Payload
+	if payload == nil {
+		payload = map[string]any{}
+	}
+
+	metadata, _ := payload["metadata"].(map[string]any)
+	requestID := fmt.Sprintf("kafka-%d-%d", msg.Partition, msg.Offset)
+	if metadata != nil {
+		if rid, ok := metadata["requestId"].(string); ok && strings.TrimSpace(rid) != "" {
+			requestID = strings.TrimSpace(rid)
+		}
+	}
+
+	switch {
+	case eventType == "order.status-updated" && strings.EqualFold(strings.TrimSpace(fmt.Sprint(payload["status"])), "CONFIRMED"):
+		return c.service.AutoCreateShipmentFromConfirmedOrderEvent(ctx, requestID, payload, msg.Partition, fmt.Sprintf("%d", msg.Offset))
+	case eventType == "order.return-shipped":
+		return c.service.AutoCreateReturnShipmentFromEvent(ctx, requestID, payload, msg.Partition, fmt.Sprintf("%d", msg.Offset))
+	default:
+		return nil
 	}
 }
 

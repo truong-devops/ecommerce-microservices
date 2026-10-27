@@ -220,26 +220,30 @@ func CanTransitionReturnRequestStatus(from, to ReturnRequestStatus) bool {
 }
 
 type ReturnRequest struct {
-	ID           string
-	ReturnNumber string
-	OrderID      string
-	OrderNumber  string
-	CustomerID   string
-	SellerID     string
-	Status       ReturnRequestStatus
-	ReasonCode   string
-	ReasonDetail string
-	EvidenceURLs []string
-	SellerNote   *string
-	RefundAmount float64
-	Currency     string
-	RequestedAt  time.Time
-	RespondedAt  *time.Time
-	ShippedAt    *time.Time
-	ReceivedAt   *time.Time
-	RefundedAt   *time.Time
-	UpdatedAt    time.Time
-	OrderItems   []OrderItem
+	ID                   string
+	ReturnNumber         string
+	OrderID              string
+	OrderNumber          string
+	CustomerID           string
+	SellerID             string
+	Status               ReturnRequestStatus
+	ReasonCode           string
+	ReasonDetail         string
+	EvidenceURLs         []string
+	SellerNote           *string
+	RefundAmount         float64
+	Currency             string
+	RequestedAt          time.Time
+	RespondedAt          *time.Time
+	ShippedAt            *time.Time
+	ReceivedAt           *time.Time
+	RefundedAt           *time.Time
+	ReturnShipmentID     *string
+	ReturnAWB            *string
+	ReturnTrackingNumber *string
+	ReturnTrackingURL    *string
+	UpdatedAt            time.Time
+	OrderItems           []OrderItem
 }
 
 type CompletedOrder struct {

@@ -71,24 +71,32 @@ export default function ModeratorLoginPage() {
       </header>
 
       <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
-        <section className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-[#111827] p-12 text-white shadow-[0_24px_70px_rgba(15,23,42,0.2)] lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-24 -top-20 h-80 w-80 rounded-full bg-indigo-500/15 blur-3xl" />
-          <div className="relative">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-slate-300">
+        <section
+          className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-cover bg-center p-12 shadow-[0_24px_70px_rgba(15,23,42,0.14)] lg:flex lg:flex-col lg:justify-between"
+          style={{ backgroundImage: "url('/images/auth/moderator-login-hero.jpg')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/20" />
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/70" />
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-indigo-700 shadow-sm backdrop-blur-md">
               <LockMiniIcon /> Restricted workspace
             </div>
-            <h1 className="mt-7 max-w-[570px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em]">Quyết định tin cậy bắt đầu từ dữ liệu rõ ràng.</h1>
-            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-300">Không gian kiểm duyệt dành riêng cho đội ngũ vận hành, hỗ trợ và quản trị eMall.</p>
+            <h1 className="mt-7 max-w-[570px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950">Quyết định tin cậy bắt đầu từ dữ liệu rõ ràng.</h1>
+            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-700">Không gian kiểm duyệt dành riêng cho đội ngũ vận hành, hỗ trợ và quản trị eMall.</p>
           </div>
 
-          <div className="relative space-y-3">
+          <div className="relative z-10 space-y-3">
             <SecurityRow title="Kiểm soát theo vai trò" description="Chỉ tài khoản nội bộ được cấp quyền mới có thể truy cập." />
             <SecurityRow title="Theo dõi hoạt động" description="Các thao tác quan trọng được ghi nhận phục vụ đối soát." />
           </div>
         </section>
 
         <section className="mx-auto w-full max-w-[460px]">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+            <div className="relative -mx-6 -mt-6 mb-6 h-32 bg-cover bg-center sm:-mx-9 sm:-mt-9 lg:hidden" style={{ backgroundImage: "url('/images/auth/moderator-login-hero.jpg')" }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-transparent" />
+            </div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Internal access</p>
             <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em]">Đăng nhập quản trị</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản nội bộ đã được phân quyền.</p>
@@ -123,7 +131,7 @@ export default function ModeratorLoginPage() {
   );
 }
 
-function SecurityRow({ title, description }: { title: string; description: string }) { return <div className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-400/15 text-indigo-300"><ShieldIcon /></span><span><strong className="block text-sm font-semibold text-white">{title}</strong><span className="mt-1 block text-xs leading-5 text-slate-400">{description}</span></span></div>; }
+function SecurityRow({ title, description }: { title: string; description: string }) { return <div className="flex gap-4 rounded-2xl border border-white/80 bg-white/75 p-4 shadow-sm backdrop-blur-md"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-indigo-100 text-indigo-700"><ShieldIcon /></span><span><strong className="block text-sm font-semibold text-slate-950">{title}</strong><span className="mt-1 block text-xs leading-5 text-slate-600">{description}</span></span></div>; }
 function Field({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) { return <label className="block text-sm font-semibold text-slate-700"><span>{label}</span><span className="relative mt-2 block rounded-xl border border-slate-300 bg-white transition focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10"><span className="pointer-events-none absolute bottom-0 left-0 grid h-12 w-11 place-items-center text-slate-400">{icon}</span>{children}</span></label>; }
 function Divider() { return <div className="flex items-center gap-3 text-xs font-medium text-slate-400"><span className="h-px flex-1 bg-slate-200" /><span>hoặc tiếp tục với</span><span className="h-px flex-1 bg-slate-200" /></div>; }
 function BrandMark() { return <span className="inline-flex items-center gap-2.5"><span className="block h-10 w-10 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-orange-100" style={{ backgroundImage: "url('/icon.svg')" }} aria-hidden="true" /><span className="text-xl font-black tracking-[-0.03em] text-brand-600">eMall</span></span>; }

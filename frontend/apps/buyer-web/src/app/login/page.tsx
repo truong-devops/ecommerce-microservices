@@ -75,27 +75,34 @@ export default function LoginPage() {
       </header>
 
       <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
-        <section className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-[#172033] p-12 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-28 -top-28 h-80 w-80 rounded-full bg-brand-500/20 blur-3xl" />
-          <div className="absolute -bottom-36 left-20 h-72 w-72 rounded-full bg-orange-300/10 blur-3xl" />
-          <div className="relative">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-300">{copy.eyebrow}</p>
-            <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em]">{copy.introTitle}</h1>
-            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-300">{copy.introDescription}</p>
+        <section
+          className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-cover bg-center p-12 shadow-[0_24px_70px_rgba(15,23,42,0.14)] lg:flex lg:flex-col lg:justify-between"
+          style={{ backgroundImage: "url('/images/auth/buyer-login-hero.jpg')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/20" />
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/70" />
+          <div className="relative z-10">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-600">{copy.eyebrow}</p>
+            <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950">{copy.introTitle}</h1>
+            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-700">{copy.introDescription}</p>
           </div>
-          <div className="relative space-y-3">
+          <div className="relative z-10 space-y-3">
             {copy.benefits.map((benefit) => (
-              <div key={benefit} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3.5 backdrop-blur-sm">
+              <div key={benefit} className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/75 px-4 py-3.5 shadow-sm backdrop-blur-md">
                 <CheckIcon />
-                <span className="text-sm font-medium text-slate-100">{benefit}</span>
+                <span className="text-sm font-semibold text-slate-800">{benefit}</span>
               </div>
             ))}
-            <div className="flex items-center gap-2 pt-5 text-xs font-medium text-slate-400"><ShieldIcon />{copy.secure}</div>
+            <div className="flex items-center gap-2 pt-5 text-xs font-semibold text-slate-600"><ShieldIcon />{copy.secure}</div>
           </div>
         </section>
 
         <section className="mx-auto w-full max-w-[460px]">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+            <div className="relative -mx-6 -mt-6 mb-6 h-32 bg-cover bg-center sm:-mx-9 sm:-mt-9 lg:hidden" style={{ backgroundImage: "url('/images/auth/buyer-login-hero.jpg')" }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-transparent" />
+            </div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">eMall account</p>
             <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em] text-slate-950">{copy.title}</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">{copy.subtitle}</p>

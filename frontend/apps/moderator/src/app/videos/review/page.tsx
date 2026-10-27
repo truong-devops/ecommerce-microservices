@@ -29,7 +29,7 @@ export default function VideoReviewPage() {
       const response = await listModerationVideos({ accessToken, page: 1, pageSize: 50, status: 'review_pending' });
       const nextItems = response.items ?? [];
       setItems(nextItems);
-      setSelectedVideoId((current) => (current && nextItems.some((item) => item.videoId === current) ? current : nextItems[0]?.videoId ?? null));
+      setSelectedVideoId((current) => (current && nextItems.some((item) => item.videoId === current) ? current : (nextItems[0]?.videoId ?? null)));
     } catch (loadError) {
       setError(loadError instanceof ModeratorApiClientError ? loadError.message : 'Không tải được review queue video.');
     } finally {
@@ -57,21 +57,24 @@ export default function VideoReviewPage() {
     return { open: items.length, productCount, missingMediaCount };
   }, [items]);
 
-  const handleApprove = useCallback(async (videoId: string) => {
-    if (!accessToken) return;
-    setError('');
-    setNotice('');
-    setActionLoadingId(videoId);
-    try {
-      await approveModerationVideo(accessToken, videoId);
-      setNotice('Đã approve video. Video sẽ được publish cho buyer nếu backend xử lý thành công.');
-      await loadVideos();
-    } catch (approveError) {
-      setError(approveError instanceof ModeratorApiClientError ? approveError.message : 'Approve video thất bại.');
-    } finally {
-      setActionLoadingId(null);
-    }
-  }, [accessToken, loadVideos]);
+  const handleApprove = useCallback(
+    async (videoId: string) => {
+      if (!accessToken) return;
+      setError('');
+      setNotice('');
+      setActionLoadingId(videoId);
+      try {
+        await approveModerationVideo(accessToken, videoId);
+        setNotice('Đã approve video. Video sẽ được publish cho buyer nếu backend xử lý thành công.');
+        await loadVideos();
+      } catch (approveError) {
+        setError(approveError instanceof ModeratorApiClientError ? approveError.message : 'Approve video thất bại.');
+      } finally {
+        setActionLoadingId(null);
+      }
+    },
+    [accessToken, loadVideos]
+  );
 
   const handleReject = useCallback(async () => {
     if (!accessToken || !rejectingVideoId) return;
@@ -97,7 +100,8 @@ export default function VideoReviewPage() {
     }
   }, [accessToken, loadVideos, rejectingVideoId, rejectReason]);
 
-  if (!ready) return <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
+  if (!ready)
+    return <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
   if (!user || !accessToken) return null;
 
   return (
@@ -111,7 +115,10 @@ export default function VideoReviewPage() {
             <Link href="/" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
               Product Queue
             </Link>
-            <Link href="/videos/review" className="block rounded-md border-l-2 border-brand-600 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700">
+            <Link
+              href="/videos/review"
+              className="block rounded-md border-l-2 border-brand-600 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
+            >
               Video Review Queue
             </Link>
             <Link href="/chat/violations" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
@@ -143,7 +150,12 @@ export default function VideoReviewPage() {
                 <Link href="/" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                   Product queue
                 </Link>
-                <button type="button" onClick={() => void loadVideos()} className="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60" disabled={loading}>
+                <button
+                  type="button"
+                  onClick={() => void loadVideos()}
+                  className="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+                  disabled={loading}
+                >
                   {loading ? 'Đang tải...' : 'Refresh'}
                 </button>
               </div>
@@ -156,9 +168,19 @@ export default function VideoReviewPage() {
             </div>
           </div>
 
-          {(notice || error) && <div className={`rounded-md border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{error || notice}</div>}
+          {(notice || error) && (
+            <div
+              className={`rounded-md border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}
+            >
+              {error || notice}
+            </div>
+          )}
 
-          {loading ? <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">Đang tải video review queue...</div> : null}
+          {loading ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+              Đang tải video review queue...
+            </div>
+          ) : null}
 
           {!loading && items.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
@@ -189,7 +211,9 @@ export default function VideoReviewPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
           <div className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-950">Reject video</h2>
-            <p className="mt-1 text-sm text-slate-500">Nhập lý do rõ ràng để seller biết cần chỉnh nội dung, sản phẩm gắn kèm, hoặc chất lượng media.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Nhập lý do rõ ràng để seller biết cần chỉnh nội dung, sản phẩm gắn kèm, hoặc chất lượng media.
+            </p>
             <textarea
               value={rejectReason}
               onChange={(event) => setRejectReason(event.target.value)}
@@ -198,10 +222,19 @@ export default function VideoReviewPage() {
               className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setRejectingVideoId(null)} className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setRejectingVideoId(null)}
+                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
                 Cancel
               </button>
-              <button type="button" onClick={() => void handleReject()} className="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60" disabled={actionLoadingId === rejectingVideoId}>
+              <button
+                type="button"
+                onClick={() => void handleReject()}
+                className="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+                disabled={actionLoadingId === rejectingVideoId}
+              >
                 {actionLoadingId === rejectingVideoId ? 'Rejecting...' : 'Confirm reject'}
               </button>
             </div>
@@ -212,7 +245,15 @@ export default function VideoReviewPage() {
   );
 }
 
-function VideoQueueList({ items, selectedVideoId, onSelect }: { items: ModerationVideo[]; selectedVideoId: string; onSelect: (videoId: string) => void }) {
+function VideoQueueList({
+  items,
+  selectedVideoId,
+  onSelect
+}: {
+  items: ModerationVideo[];
+  selectedVideoId: string;
+  onSelect: (videoId: string) => void;
+}) {
   return (
     <aside className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
@@ -233,8 +274,11 @@ function VideoQueueList({ items, selectedVideoId, onSelect }: { items: Moderatio
             <VideoThumb video={video} className="h-20 w-14 shrink-0" />
             <span className="min-w-0 flex-1">
               <span className="line-clamp-2 text-sm font-semibold text-slate-950">{video.title}</span>
-              <span className="mt-1 block text-xs text-slate-500">Seller {video.sellerId}</span>
-              <span className="mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-amber-700">{video.status}</span>
+              <span className="mt-1 block text-xs font-medium text-slate-600">{getVideoSellerName(video)}</span>
+              <span className="mt-0.5 block text-[11px] text-slate-400">{video.seller?.sellerCode ?? shortId(video.sellerId)}</span>
+              <span className="mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-amber-700">
+                {video.status}
+              </span>
             </span>
           </button>
         ))}
@@ -243,15 +287,27 @@ function VideoQueueList({ items, selectedVideoId, onSelect }: { items: Moderatio
   );
 }
 
-function VideoReviewDetail({ video, actionLoadingId, onApprove, onRejectStart }: { video: ModerationVideo; actionLoadingId: string | null; onApprove: (videoId: string) => void; onRejectStart: (videoId: string) => void }) {
+function VideoReviewDetail({
+  video,
+  actionLoadingId,
+  onApprove,
+  onRejectStart
+}: {
+  video: ModerationVideo;
+  actionLoadingId: string | null;
+  onApprove: (videoId: string) => void;
+  onRejectStart: (videoId: string) => void;
+}) {
   return (
     <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-5 py-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Seller {video.sellerId}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">{getVideoSellerName(video)}</p>
             <h2 className="mt-1 line-clamp-2 text-xl font-semibold text-slate-950">{video.title}</h2>
-            <p className="mt-1 text-xs text-slate-500">Video ID: {video.videoId}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Seller: {video.seller?.sellerCode ?? video.sellerId} · Video ID: {video.videoId}
+            </p>
           </div>
           <StatusPill status={video.status} />
         </div>
@@ -261,9 +317,18 @@ function VideoReviewDetail({ video, actionLoadingId, onApprove, onRejectStart }:
         <div className="border-r border-slate-200 bg-slate-950 p-4">
           <div className="mx-auto aspect-[9/16] max-h-[680px] overflow-hidden rounded-lg bg-black">
             {video.mediaUrl ? (
-              <video src={video.mediaUrl} poster={video.thumbnailUrl ?? undefined} controls playsInline preload="metadata" className="h-full w-full object-contain" />
+              <video
+                src={video.mediaUrl}
+                poster={video.thumbnailUrl ?? undefined}
+                controls
+                playsInline
+                preload="metadata"
+                className="h-full w-full object-contain"
+              />
             ) : (
-              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white">Video chưa có media, nên không đủ điều kiện approve.</div>
+              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white">
+                Video chưa có media, nên không đủ điều kiện approve.
+              </div>
             )}
           </div>
         </div>
@@ -281,30 +346,48 @@ function VideoReviewDetail({ video, actionLoadingId, onApprove, onRejectStart }:
 
           <section className="mt-5">
             <h3 className="text-sm font-semibold text-slate-950">Description</h3>
-            <p className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-600">{video.description || 'Seller chưa thêm mô tả.'}</p>
+            <p className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-600">
+              {video.description || 'Seller chưa thêm mô tả.'}
+            </p>
           </section>
 
           <section className="mt-5">
             <h3 className="text-sm font-semibold text-slate-950">Linked products</h3>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {video.products.length > 0 ? video.products.map((product) => (
-                <div key={product.productId} className="flex gap-3 rounded-md border border-slate-200 bg-white p-3">
-                  <img src={product.image ?? '/icon.svg'} alt={product.name} className="h-14 w-14 rounded-md object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="line-clamp-2 text-sm font-semibold text-slate-950">{product.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">{product.productId}</p>
-                    <p className="mt-1 text-sm font-semibold text-brand-700">{formatMoney(product.price, product.currency)}</p>
+              {video.products.length > 0 ? (
+                video.products.map((product) => (
+                  <div key={product.productId} className="flex gap-3 rounded-md border border-slate-200 bg-white p-3">
+                    <img src={product.image ?? '/icon.svg'} alt={product.name} className="h-14 w-14 rounded-md object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-semibold text-slate-950">{product.name}</p>
+                      <p className="mt-1 text-xs text-slate-500">{product.productId}</p>
+                      <p className="mt-1 text-sm font-semibold text-brand-700">{formatMoney(product.price, product.currency)}</p>
+                    </div>
                   </div>
-                </div>
-              )) : <p className="rounded-md border border-dashed border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">Video chưa gắn sản phẩm.</p>}
+                ))
+              ) : (
+                <p className="rounded-md border border-dashed border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
+                  Video chưa gắn sản phẩm.
+                </p>
+              )}
             </div>
           </section>
 
           <div className="mt-auto flex flex-wrap justify-end gap-2 pt-6">
-            <button type="button" onClick={() => onRejectStart(video.videoId)} className="rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50" disabled={actionLoadingId === video.videoId}>
+            <button
+              type="button"
+              onClick={() => onRejectStart(video.videoId)}
+              className="rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+              disabled={actionLoadingId === video.videoId}
+            >
               Reject
             </button>
-            <button type="button" onClick={() => onApprove(video.videoId)} className="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50" disabled={actionLoadingId === video.videoId || !video.mediaUrl || video.products.length === 0}>
+            <button
+              type="button"
+              onClick={() => onApprove(video.videoId)}
+              className="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+              disabled={actionLoadingId === video.videoId || !video.mediaUrl || video.products.length === 0}
+            >
               {actionLoadingId === video.videoId ? 'Processing...' : 'Approve & Publish'}
             </button>
           </div>
@@ -318,7 +401,14 @@ function VideoThumb({ video, className }: { video: ModerationVideo; className: s
   return (
     <span className={`relative overflow-hidden rounded-md bg-slate-900 ${className}`}>
       {video.mediaUrl ? (
-        <video src={video.mediaUrl} poster={video.thumbnailUrl ?? undefined} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+        <video
+          src={video.mediaUrl}
+          poster={video.thumbnailUrl ?? undefined}
+          muted
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
       ) : video.thumbnailUrl ? (
         <img src={video.thumbnailUrl} alt={video.title} className="h-full w-full object-cover" />
       ) : (
@@ -359,4 +449,13 @@ function StatusPill({ status }: { status: string }) {
 
 function formatMoney(value: number, currency: string): string {
   return `${new Intl.NumberFormat('vi-VN').format(value)} ${currency}`;
+}
+
+function getVideoSellerName(video: ModerationVideo): string {
+  return video.seller?.shopName?.trim() || video.seller?.sellerCode?.trim() || `Seller ${shortId(video.sellerId)}`;
+}
+
+function shortId(value: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 16 ? `${trimmed.slice(0, 8)}...${trimmed.slice(-6)}` : trimmed;
 }

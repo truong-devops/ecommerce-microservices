@@ -123,6 +123,11 @@ export interface ModerationVideo {
   mediaUrl: string | null;
   thumbnailUrl: string | null;
   products: ModerationVideoProduct[];
+  seller?: {
+    sellerId: string;
+    sellerCode: string;
+    shopName: string;
+  };
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -149,6 +154,7 @@ export interface ChatViolation {
   conversationId: string;
   senderId: string;
   senderRole: string;
+  senderName?: string;
   ruleId: string;
   score: number;
   signals: ChatViolationSignal[];

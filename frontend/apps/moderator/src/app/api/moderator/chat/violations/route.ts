@@ -1,7 +1,7 @@
 import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/moderator-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
-import { serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client';
+import { requestUpstream, serviceBaseUrls, UpstreamHttpError } from '@/lib/server/upstream-client';
 import type { ChatViolationListOutput } from '@/lib/api/types';
 
 const MODERATION_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPPORT', 'SUPER_ADMIN']);
@@ -16,6 +16,14 @@ interface UpstreamPaginatedResponse<T> {
   meta?: {
     pagination?: ChatViolationListOutput['pagination'];
   };
+}
+
+interface PublicUsersOutput {
+  items?: Array<{ id: string; displayName?: string }>;
+}
+
+interface ShopDecorOutput {
+  shopName?: string;
 }
 
 export async function GET(request: Request) {
@@ -46,10 +54,64 @@ export async function GET(request: Request) {
 
   try {
     const payload = await requestPaginatedChatViolations(`${serviceBaseUrls.chat}/chat/violations?${query.toString()}`, accessToken);
-    return ok(payload);
+    const hydrated = await hydrateViolationSenderNames(payload, accessToken);
+    return ok(hydrated);
   } catch (error) {
     return toErrorResponse(error);
   }
+}
+
+async function hydrateViolationSenderNames(payload: ChatViolationListOutput, accessToken: string): Promise<ChatViolationListOutput> {
+  const senderIds = [...new Set(payload.items.map((item) => item.senderId.trim()).filter(Boolean))];
+  if (senderIds.length === 0) {
+    return payload;
+  }
+
+  const userNames: Record<string, string> = {};
+  try {
+    const query = new URLSearchParams({ ids: senderIds.join(',') });
+    const profiles = await requestUpstream<PublicUsersOutput>(`${serviceBaseUrls.user}/users/public?${query.toString()}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    for (const profile of profiles.items ?? []) {
+      if (profile.id && profile.displayName?.trim()) {
+        userNames[profile.id] = profile.displayName.trim();
+      }
+    }
+  } catch {
+    // Name hydration is best effort and must not block moderation data.
+  }
+
+  const sellerIds = [
+    ...new Set(
+      payload.items
+        .filter((item) => item.senderRole.trim().toUpperCase() === 'SELLER')
+        .map((item) => item.senderId.trim())
+        .filter(Boolean)
+    )
+  ];
+  const sellerNames: Record<string, string> = {};
+  await Promise.all(
+    sellerIds.map(async (sellerId) => {
+      try {
+        const shop = await requestUpstream<ShopDecorOutput>(`${serviceBaseUrls.product}/shops/${encodeURIComponent(sellerId)}/decor`);
+        if (shop.shopName?.trim()) {
+          sellerNames[sellerId] = shop.shopName.trim();
+        }
+      } catch {
+        // Fall back to the user's display name or ID.
+      }
+    })
+  );
+
+  return {
+    ...payload,
+    items: payload.items.map((item) => ({
+      ...item,
+      senderName: sellerNames[item.senderId] || userNames[item.senderId] || undefined
+    }))
+  };
 }
 
 async function requestPaginatedChatViolations(url: string, accessToken: string): Promise<ChatViolationListOutput> {

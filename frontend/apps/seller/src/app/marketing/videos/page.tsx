@@ -27,7 +27,7 @@ const checklist = [
 
 const statusLabels: Record<string, string> = {
   draft: 'Nháp',
-  processing: 'Đã upload',
+  processing: 'Đang xử lý',
   processing_failed: 'Upload lỗi',
   review_pending: 'Đang duyệt',
   published: 'Đang hiển thị',
@@ -38,6 +38,29 @@ const statusLabels: Record<string, string> = {
 
 const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
 const MAX_VIDEO_SIZE_MB = 50;
+
+type VideoAction = 'hide' | 'submit' | 'none';
+
+function getVideoAction(video: SellerVideo): { action: VideoAction; label: string; disabled: boolean } {
+  if (video.status === 'published') {
+    return { action: 'hide', label: 'Ẩn', disabled: false };
+  }
+  if (video.status === 'review_pending') {
+    return { action: 'none', label: 'Đang duyệt', disabled: true };
+  }
+  if (video.status === 'processing_failed') {
+    return { action: 'none', label: 'Upload lỗi', disabled: true };
+  }
+  if (video.status === 'archived') {
+    return { action: 'none', label: 'Đã lưu trữ', disabled: true };
+  }
+
+  const hasReadyMedia = Boolean(video.mediaObjectKey && video.mediaUrl && video.mimeType);
+  if (!hasReadyMedia) {
+    return { action: 'none', label: video.status === 'processing' ? 'Đang upload' : 'Chưa upload', disabled: true };
+  }
+  return { action: 'submit', label: video.status === 'rejected' ? 'Gửi duyệt lại' : 'Gửi duyệt', disabled: false };
+}
 
 export default function SellerVideosPage() {
   const router = useRouter();
@@ -50,6 +73,7 @@ export default function SellerVideosPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewVideo, setPreviewVideo] = useState<SellerVideo | null>(null);
@@ -101,16 +125,16 @@ export default function SellerVideosPage() {
         return;
       }
 
-      if (!title.trim() || !selectedProductId) {
-        setError('Vui lòng nhập tiêu đề và chọn sản phẩm.');
+      if (!title.trim() || !selectedProductId || !videoFile) {
+        setError('Vui lòng nhập tiêu đề, chọn sản phẩm và chọn file video.');
         return;
       }
 
-      if (videoFile && !['video/mp4', 'video/webm'].includes(videoFile.type)) {
+      if (!['video/mp4', 'video/webm'].includes(videoFile.type)) {
         setError('Chỉ hỗ trợ video/mp4 hoặc video/webm.');
         return;
       }
-      if (videoFile && videoFile.size > MAX_VIDEO_SIZE_BYTES) {
+      if (videoFile.size > MAX_VIDEO_SIZE_BYTES) {
         setError(`Video tối đa ${MAX_VIDEO_SIZE_MB}MB. Vui lòng nén video hoặc chọn file nhẹ hơn.`);
         return;
       }
@@ -126,36 +150,33 @@ export default function SellerVideosPage() {
           products: [{ productId: selectedProductId, sortOrder: 1 }]
         });
 
-        let current = created;
-        if (videoFile) {
-          const presigned = await presignSellerVideoUpload(accessToken, {
-            videoId: created.videoId,
-            fileName: videoFile.name,
-            contentType: videoFile.type,
-            sizeBytes: videoFile.size
-          });
+        const presigned = await presignSellerVideoUpload(accessToken, {
+          videoId: created.videoId,
+          fileName: videoFile.name,
+          contentType: videoFile.type,
+          sizeBytes: videoFile.size
+        });
 
-          const uploadResponse = await fetch(presigned.uploadUrl, {
-            method: presigned.method || 'PUT',
-            headers: presigned.headers ?? { 'Content-Type': videoFile.type },
-            body: videoFile
-          });
+        const uploadResponse = await fetch(presigned.uploadUrl, {
+          method: presigned.method || 'PUT',
+          headers: presigned.headers ?? { 'Content-Type': videoFile.type },
+          body: videoFile
+        });
 
-          if (!uploadResponse.ok) {
-            throw new Error('Object storage rejected uploaded video.');
-          }
-
-          current = await confirmSellerVideoMedia(accessToken, created.videoId, {
-            mediaObjectKey: presigned.objectKey,
-            mimeType: videoFile.type,
-            sizeBytes: videoFile.size,
-            durationSec: 30
-          });
-
-          current = await submitSellerVideoReview(accessToken, current.videoId);
+        if (!uploadResponse.ok) {
+          throw new Error('Object storage rejected uploaded video.');
         }
 
-        setMessage(videoFile ? 'Đã upload video và gửi moderator duyệt.' : 'Đã tạo draft video. Upload file để gửi duyệt.');
+        const current = await confirmSellerVideoMedia(accessToken, created.videoId, {
+          mediaObjectKey: presigned.objectKey,
+          mimeType: videoFile.type,
+          sizeBytes: videoFile.size,
+          durationSec: 30
+        });
+
+        await submitSellerVideoReview(accessToken, current.videoId);
+
+        setMessage('Đã upload video và gửi moderator duyệt.');
         setTitle('');
         setDescription('');
         setVideoFile(null);
@@ -175,10 +196,16 @@ export default function SellerVideosPage() {
         return;
       }
 
+      const videoAction = getVideoAction(video);
+      if (videoAction.disabled || videoAction.action === 'none') {
+        return;
+      }
+
+      setActionLoadingId(video.videoId);
       setError(null);
       setMessage(null);
       try {
-        if (video.status === 'published') {
+        if (videoAction.action === 'hide') {
           await unpublishSellerVideo(accessToken, video.videoId);
           setMessage('Đã ẩn video khỏi buyer feed.');
         } else {
@@ -188,6 +215,8 @@ export default function SellerVideosPage() {
         await loadData();
       } catch (toggleError) {
         setError(getErrorMessage(toggleError, 'Không cập nhật được trạng thái video.'));
+      } finally {
+        setActionLoadingId(null);
       }
     },
     [accessToken, loadData]
@@ -212,7 +241,10 @@ export default function SellerVideosPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-orange-500">eMall Seller</p>
           <h1 className="mt-2 text-2xl font-semibold text-slate-900">Bạn chưa đăng nhập</h1>
           <p className="mt-2 text-sm text-slate-600">Đăng nhập để truy cập Video Shop.</p>
-          <Link href="/login" className="mt-5 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600">
+          <Link
+            href="/login"
+            className="mt-5 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600"
+          >
             Đi đến trang đăng nhập
           </Link>
         </section>
@@ -229,7 +261,9 @@ export default function SellerVideosPage() {
 
         <main className="min-w-0 flex-1 px-3 py-3 lg:px-4">
           <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <Link href="/" className="hover:text-[#ee4d2d]">Trang chủ</Link>
+            <Link href="/" className="hover:text-[#ee4d2d]">
+              Trang chủ
+            </Link>
             <span>›</span>
             <span>Kênh Marketing</span>
             <span>›</span>
@@ -243,14 +277,20 @@ export default function SellerVideosPage() {
                   <h1 className="text-xl font-semibold text-slate-900">Video Shop</h1>
                   <p className="mt-1 text-sm text-slate-600">Đăng video sản phẩm để buyer xem trực tiếp trên feed video.</p>
                 </div>
-                <button type="button" onClick={() => void loadData()} className="rounded-md border border-[#ee4d2d] px-4 py-2 text-sm font-semibold text-[#ee4d2d]">
+                <button
+                  type="button"
+                  onClick={() => void loadData()}
+                  className="rounded-md border border-[#ee4d2d] px-4 py-2 text-sm font-semibold text-[#ee4d2d]"
+                >
                   Làm mới
                 </button>
               </div>
             </div>
 
             {(message || error) && (
-              <div className={`rounded-md border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+              <div
+                className={`rounded-md border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}
+              >
                 {error ?? message}
               </div>
             )}
@@ -277,42 +317,55 @@ export default function SellerVideosPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {isLoading && (
-                        <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-500">Đang tải...</td></tr>
-                      )}
-                      {!isLoading && videos.length === 0 && (
-                        <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-500">Chưa có video nào.</td></tr>
-                      )}
-                      {videos.map((video) => (
-                        <tr key={video.videoId}>
-                          <td className="px-3 py-2">
-                            <p className="font-medium text-slate-800">{video.title}</p>
-                            <p className="text-xs text-slate-500">{video.videoId}</p>
-                          </td>
-                          <td className="px-3 py-2 text-slate-700">{video.products.map((product) => product.name).join(', ')}</td>
-                          <td className="px-3 py-2 text-slate-700">{statusLabels[video.status] ?? video.status}</td>
-                          <td className="px-3 py-2 text-slate-700">{video.metrics?.qualifiedViewCount ?? 0}</td>
-                          <td className="px-3 py-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setPreviewVideo(video)}
-                                disabled={!video.mediaUrl}
-                                title={video.mediaUrl ? 'Xem video' : 'Video chưa có file'}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
-                              >
-                                ▶
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleTogglePublish(video)}
-                                className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
-                              >
-                                {video.status === 'published' ? 'Ẩn' : 'Gửi duyệt'}
-                              </button>
-                            </div>
+                        <tr>
+                          <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                            Đang tải...
                           </td>
                         </tr>
-                      ))}
+                      )}
+                      {!isLoading && videos.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-6 text-center text-slate-500">
+                            Chưa có video nào.
+                          </td>
+                        </tr>
+                      )}
+                      {videos.map((video) => {
+                        const videoAction = getVideoAction(video);
+                        const actionLoading = actionLoadingId === video.videoId;
+                        return (
+                          <tr key={video.videoId}>
+                            <td className="px-3 py-2">
+                              <p className="font-medium text-slate-800">{video.title}</p>
+                              <p className="text-xs text-slate-500">{video.videoId}</p>
+                            </td>
+                            <td className="px-3 py-2 text-slate-700">{video.products.map((product) => product.name).join(', ')}</td>
+                            <td className="px-3 py-2 text-slate-700">{statusLabels[video.status] ?? video.status}</td>
+                            <td className="px-3 py-2 text-slate-700">{video.metrics?.qualifiedViewCount ?? 0}</td>
+                            <td className="px-3 py-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewVideo(video)}
+                                  disabled={!video.mediaUrl}
+                                  title={video.mediaUrl ? 'Xem video' : 'Video chưa có file'}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  ▶
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleTogglePublish(video)}
+                                  disabled={videoAction.disabled || actionLoading || isSubmitting}
+                                  className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                                >
+                                  {actionLoading ? 'Đang xử lý...' : videoAction.label}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -324,27 +377,53 @@ export default function SellerVideosPage() {
                   <div className="mt-3 space-y-3">
                     <label className="block text-sm font-medium text-slate-700">
                       Tiêu đề
-                      <input value={title} onChange={(event) => setTitle(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" maxLength={120} />
+                      <input
+                        value={title}
+                        onChange={(event) => setTitle(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                        maxLength={120}
+                      />
                     </label>
                     <label className="block text-sm font-medium text-slate-700">
                       Mô tả
-                      <textarea value={description} onChange={(event) => setDescription(event.target.value)} className="mt-1 min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" maxLength={1000} />
+                      <textarea
+                        value={description}
+                        onChange={(event) => setDescription(event.target.value)}
+                        className="mt-1 min-h-20 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                        maxLength={1000}
+                      />
                     </label>
                     <label className="block text-sm font-medium text-slate-700">
                       Sản phẩm gắn vào video
-                      <select value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm">
+                      <select
+                        value={selectedProductId}
+                        onChange={(event) => setSelectedProductId(event.target.value)}
+                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                      >
                         <option value="">Chọn sản phẩm ACTIVE</option>
                         {products.map((product) => (
-                          <option key={product.id} value={product.id}>{product.name}</option>
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
                         ))}
                       </select>
                     </label>
                     <label className="block text-sm font-medium text-slate-700">
                       File video MP4/WebM
-                      <input type="file" accept="video/mp4,video/webm" onChange={handleFileChange} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" />
+                      <input
+                        type="file"
+                        required
+                        accept="video/mp4,video/webm"
+                        onChange={handleFileChange}
+                        className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+                      />
                       <span className="mt-1 block text-xs text-slate-500">Dung lượng tối đa {MAX_VIDEO_SIZE_MB}MB.</span>
                     </label>
-                    <button type="submit" disabled={isSubmitting} className="w-full rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
                       {isSubmitting ? 'Đang xử lý...' : 'Tạo + upload + gửi duyệt'}
                     </button>
                   </div>
@@ -354,7 +433,10 @@ export default function SellerVideosPage() {
                   <h2 className="text-base font-semibold text-slate-900">Checklist trước khi đăng</h2>
                   <ul className="mt-3 space-y-2 text-sm text-slate-700">
                     {checklist.map((item) => (
-                      <li key={item} className="flex items-start gap-2"><span className="mt-1 text-[#ee4d2d]">●</span><span>{item}</span></li>
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="mt-1 text-[#ee4d2d]">●</span>
+                        <span>{item}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -372,7 +454,11 @@ export default function SellerVideosPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">Preview video</p>
                 <h2 className="mt-1 text-base font-semibold text-slate-900">{previewVideo.title}</h2>
               </div>
-              <button type="button" onClick={() => setPreviewVideo(null)} className="rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-600 hover:border-[#ee4d2d] hover:text-[#ee4d2d]">
+              <button
+                type="button"
+                onClick={() => setPreviewVideo(null)}
+                className="rounded-full border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-600 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
+              >
                 Đóng
               </button>
             </div>
@@ -384,7 +470,9 @@ export default function SellerVideosPage() {
               )}
             </div>
             <div className="space-y-2 px-4 py-3 text-sm text-slate-600">
-              <p>Trạng thái: <span className="font-semibold text-slate-900">{statusLabels[previewVideo.status] ?? previewVideo.status}</span></p>
+              <p>
+                Trạng thái: <span className="font-semibold text-slate-900">{statusLabels[previewVideo.status] ?? previewVideo.status}</span>
+              </p>
               <p>Sản phẩm: {previewVideo.products.map((product) => product.name).join(', ') || 'Chưa gắn sản phẩm'}</p>
             </div>
           </div>

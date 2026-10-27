@@ -23,6 +23,7 @@ import (
 type VideoService struct {
 	repo               repository.VideoRepository
 	productRepo        repository.ProductRepository
+	shopDecorRepo      repository.ShopDecorRepository
 	redis              *RedisService
 	events             events.ProductEventPublisher
 	mediaPublicBaseURL string
@@ -87,6 +88,11 @@ func NewVideoService(repo repository.VideoRepository, productRepo repository.Pro
 	}
 }
 
+func (s *VideoService) WithShopDecorRepository(repo repository.ShopDecorRepository) *VideoService {
+	s.shopDecorRepo = repo
+	return s
+}
+
 func (s *VideoService) CreateVideo(ctx context.Context, user domain.UserContext, input CreateVideoInput) (domain.ProductVideoResponse, error) {
 	if strings.TrimSpace(input.SellerID) != "" && !isUUIDString(input.SellerID) {
 		return domain.ProductVideoResponse{}, validationError("sellerId must be a UUID")
@@ -119,7 +125,7 @@ func (s *VideoService) CreateVideo(ctx context.Context, user domain.UserContext,
 	if err != nil {
 		return domain.ProductVideoResponse{}, err
 	}
-	return s.ToVideoResponse(created), nil
+	return s.toVideoResponse(ctx, created), nil
 }
 
 func (s *VideoService) ListManagedVideos(ctx context.Context, user domain.UserContext, query domain.ListProductVideosQuery) (domain.PaginatedVideos, error) {
@@ -132,7 +138,7 @@ func (s *VideoService) ListManagedVideos(ctx context.Context, user domain.UserCo
 	if err != nil {
 		return domain.PaginatedVideos{}, err
 	}
-	return s.paginatedVideos(items, normalized, total), nil
+	return s.paginatedVideos(ctx, items, normalized, total), nil
 }
 
 func (s *VideoService) UpdateVideo(ctx context.Context, user domain.UserContext, videoID string, input UpdateVideoInput) (domain.ProductVideoResponse, error) {
@@ -178,7 +184,7 @@ func (s *VideoService) UpdateVideo(ctx context.Context, user domain.UserContext,
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) ConfirmMedia(ctx context.Context, user domain.UserContext, videoID string, input ConfirmVideoMediaInput) (domain.ProductVideoResponse, error) {
@@ -222,7 +228,7 @@ func (s *VideoService) ConfirmMedia(ctx context.Context, user domain.UserContext
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) ConfirmThumbnail(ctx context.Context, user domain.UserContext, videoID string, input ConfirmVideoThumbnailInput) (domain.ProductVideoResponse, error) {
@@ -253,7 +259,7 @@ func (s *VideoService) ConfirmThumbnail(ctx context.Context, user domain.UserCon
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) SubmitReview(ctx context.Context, user domain.UserContext, videoID string) (domain.ProductVideoResponse, error) {
@@ -262,6 +268,12 @@ func (s *VideoService) SubmitReview(ctx context.Context, user domain.UserContext
 		return domain.ProductVideoResponse{}, err
 	}
 	if err := assertCanManageVideo(user, *existing); err != nil {
+		return domain.ProductVideoResponse{}, err
+	}
+	if existing.Status == domain.ProductVideoStatusReviewPending {
+		return s.toVideoResponse(ctx, *existing), nil
+	}
+	if err := assertCanSubmitVideoReview(*existing); err != nil {
 		return domain.ProductVideoResponse{}, err
 	}
 	if err := assertReadyForPublish(*existing); err != nil {
@@ -278,7 +290,7 @@ func (s *VideoService) SubmitReview(ctx context.Context, user domain.UserContext
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) PublishVideo(ctx context.Context, user domain.UserContext, videoID string) (domain.ProductVideoResponse, error) {
@@ -305,7 +317,7 @@ func (s *VideoService) PublishVideo(ctx context.Context, user domain.UserContext
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) UnpublishVideo(ctx context.Context, user domain.UserContext, videoID string) (domain.ProductVideoResponse, error) {
@@ -328,7 +340,7 @@ func (s *VideoService) UnpublishVideo(ctx context.Context, user domain.UserConte
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) ArchiveVideo(ctx context.Context, user domain.UserContext, videoID string) (domain.ProductVideoResponse, error) {
@@ -348,7 +360,7 @@ func (s *VideoService) ArchiveVideo(ctx context.Context, user domain.UserContext
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) ListFeed(ctx context.Context, query domain.ListProductVideosQuery) (domain.PaginatedVideos, error) {
@@ -361,7 +373,7 @@ func (s *VideoService) ListFeed(ctx context.Context, query domain.ListProductVid
 	if err != nil {
 		return domain.PaginatedVideos{}, err
 	}
-	response := s.paginatedVideos(items, normalized, total)
+	response := s.paginatedVideos(ctx, items, normalized, total)
 	s.writeFeedCache(ctx, cacheKey, response)
 	return response, nil
 }
@@ -374,7 +386,7 @@ func (s *VideoService) GetPublicVideo(ctx context.Context, videoID string) (doma
 	if video == nil {
 		return domain.ProductVideoResponse{}, httpx.NewAppError(http.StatusNotFound, domain.ErrorCodeNotFound, "Video not found", nil)
 	}
-	return s.ToVideoResponse(*video), nil
+	return s.toVideoResponse(ctx, *video), nil
 }
 
 func (s *VideoService) ListReviewQueue(ctx context.Context, user domain.UserContext, query domain.ListProductVideosQuery) (domain.PaginatedVideos, error) {
@@ -389,7 +401,7 @@ func (s *VideoService) ListReviewQueue(ctx context.Context, user domain.UserCont
 	if err != nil {
 		return domain.PaginatedVideos{}, err
 	}
-	return s.paginatedVideos(items, normalized, total), nil
+	return s.paginatedVideos(ctx, items, normalized, total), nil
 }
 
 func (s *VideoService) ApproveVideo(ctx context.Context, user domain.UserContext, videoID string) (domain.ProductVideoResponse, error) {
@@ -425,7 +437,7 @@ func (s *VideoService) ApproveVideo(ctx context.Context, user domain.UserContext
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) RejectVideo(ctx context.Context, user domain.UserContext, videoID string, reason string) (domain.ProductVideoResponse, error) {
@@ -456,7 +468,7 @@ func (s *VideoService) RejectVideo(ctx context.Context, user domain.UserContext,
 		return domain.ProductVideoResponse{}, videoNotFound()
 	}
 	s.invalidateFeedCache(ctx)
-	return s.ToVideoResponse(*updated), nil
+	return s.toVideoResponse(ctx, *updated), nil
 }
 
 func (s *VideoService) TrackEvent(ctx context.Context, videoID string, eventType string, input TrackVideoEventInput) (map[string]bool, error) {
@@ -559,12 +571,43 @@ func (s *VideoService) CreateComment(ctx context.Context, user domain.UserContex
 	return s.ToVideoCommentResponse(comment), nil
 }
 
-func (s *VideoService) paginatedVideos(items []domain.ProductVideo, query domain.ListProductVideosQuery, total int64) domain.PaginatedVideos {
+func (s *VideoService) paginatedVideos(ctx context.Context, items []domain.ProductVideo, query domain.ListProductVideosQuery, total int64) domain.PaginatedVideos {
 	responses := make([]domain.ProductVideoResponse, 0, len(items))
+	sellers := make(map[string]domain.VideoSellerResponse)
 	for _, item := range items {
-		responses = append(responses, s.ToVideoResponse(item))
+		response := s.ToVideoResponse(item)
+		seller, ok := sellers[item.SellerID]
+		if !ok {
+			seller = s.resolveVideoSeller(ctx, item.SellerID)
+			sellers[item.SellerID] = seller
+		}
+		response.Seller = seller
+		responses = append(responses, response)
 	}
 	return domain.PaginatedVideos{Items: responses, Pagination: buildPagination(query.Page, query.PageSize, total)}
+}
+
+func (s *VideoService) toVideoResponse(ctx context.Context, video domain.ProductVideo) domain.ProductVideoResponse {
+	response := s.ToVideoResponse(video)
+	response.Seller = s.resolveVideoSeller(ctx, video.SellerID)
+	return response
+}
+
+func (s *VideoService) resolveVideoSeller(ctx context.Context, sellerID string) domain.VideoSellerResponse {
+	seller := domain.VideoSellerResponse{
+		SellerID:   sellerID,
+		SellerCode: ToDisplayCode(sellerID, "SEL"),
+		ShopName:   "Shop " + ToDisplayCode(sellerID, "SEL"),
+	}
+	if s.shopDecorRepo == nil {
+		return seller
+	}
+
+	decor, err := s.shopDecorRepo.FindBySellerID(ctx, sellerID)
+	if err == nil && decor != nil && strings.TrimSpace(decor.ShopName) != "" {
+		seller.ShopName = strings.TrimSpace(decor.ShopName)
+	}
+	return seller
 }
 
 func (s *VideoService) requireVideo(ctx context.Context, videoID string) (*domain.ProductVideo, error) {
@@ -752,6 +795,16 @@ func (s *VideoService) readFeedCache(ctx context.Context, key string) (domain.Pa
 	if err := json.Unmarshal([]byte(raw), &value); err != nil {
 		return domain.PaginatedVideos{}, false
 	}
+	sellers := make(map[string]domain.VideoSellerResponse)
+	for index := range value.Items {
+		sellerID := value.Items[index].SellerID
+		seller, ok := sellers[sellerID]
+		if !ok {
+			seller = s.resolveVideoSeller(ctx, sellerID)
+			sellers[sellerID] = seller
+		}
+		value.Items[index].Seller = seller
+	}
 	return value, true
 }
 
@@ -878,6 +931,18 @@ func assertVideoEditable(video domain.ProductVideo) error {
 		return httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Video cannot be edited in its current status", nil)
 	}
 	return nil
+}
+
+func assertCanSubmitVideoReview(video domain.ProductVideo) error {
+	switch video.Status {
+	case domain.ProductVideoStatusDraft,
+		domain.ProductVideoStatusProcessing,
+		domain.ProductVideoStatusRejected,
+		domain.ProductVideoStatusHidden:
+		return nil
+	default:
+		return httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Video cannot be submitted for review in its current status", nil)
+	}
 }
 
 func assertReadyForPublish(video domain.ProductVideo) error {

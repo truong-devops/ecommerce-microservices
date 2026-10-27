@@ -111,7 +111,10 @@ export default function ChatViolationsPage() {
             <Link href="/videos/review" className="block rounded-md px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
               Video Review Queue
             </Link>
-            <Link href="/chat/violations" className="block rounded-md border-l-2 border-brand-600 bg-brand-50 px-2.5 py-2 text-sm font-semibold text-brand-700">
+            <Link
+              href="/chat/violations"
+              className="block rounded-md border-l-2 border-brand-600 bg-brand-50 px-2.5 py-2 text-sm font-semibold text-brand-700"
+            >
               Chat Violations
             </Link>
             {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
@@ -251,11 +254,15 @@ export default function ChatViolationsPage() {
                         <tr key={item.id} className="align-top">
                           <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(item.createdAt)}</td>
                           <td className="px-4 py-3">
-                            <p className="font-semibold text-slate-900">{item.senderRole}</p>
-                            <p className="font-mono text-xs text-slate-500">{item.senderId}</p>
+                            <p className="font-semibold text-slate-900">{item.senderName?.trim() || formatSenderRole(item.senderRole)}</p>
+                            <p className="text-xs text-slate-500">
+                              {formatSenderRole(item.senderRole)} · <span className="font-mono">{shortId(item.senderId)}</span>
+                            </p>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{formatRule(item.ruleId)}</span>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                              {formatRule(item.ruleId)}
+                            </span>
                           </td>
                           <td className="px-4 py-3 font-semibold text-brand-700">{item.score}</td>
                           <td className="max-w-xl px-4 py-3 text-slate-700">{item.textPreview || '-'}</td>
@@ -330,4 +337,18 @@ function toIsoTime(value: string): string | undefined {
     return undefined;
   }
   return date.toISOString();
+}
+
+function formatSenderRole(role: string): string {
+  const normalized = role.trim().toUpperCase();
+  if (normalized === 'SELLER') return 'Người bán';
+  if (normalized === 'CUSTOMER' || normalized === 'BUYER') return 'Khách hàng';
+  if (normalized === 'ADMIN' || normalized === 'SUPER_ADMIN') return 'Quản trị viên';
+  if (normalized === 'SUPPORT') return 'Hỗ trợ';
+  return role || 'Không xác định';
+}
+
+function shortId(value: string): string {
+  const trimmed = value.trim();
+  return trimmed.length > 16 ? `${trimmed.slice(0, 8)}...${trimmed.slice(-6)}` : trimmed;
 }

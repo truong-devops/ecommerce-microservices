@@ -70,14 +70,11 @@ export default function SellerLoginPage() {
         </div>
       </header>
 
-      <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
-        <section
-          className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-cover bg-center p-12 shadow-[0_24px_70px_rgba(15,23,42,0.14)] lg:flex lg:flex-col lg:justify-between"
-          style={{ backgroundImage: "url('/images/auth/seller-login-hero.jpg')" }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/20" />
-          <div className="absolute inset-0 ring-1 ring-inset ring-white/70" />
+      <main className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('/images/auth/seller-login-hero.jpg')" }}>
+        <div className="absolute inset-0 bg-white/35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/45" />
+        <div className="relative mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
+        <section className="relative hidden min-h-[620px] p-12 lg:flex lg:flex-col lg:justify-between">
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-600">EMALL SELLER CENTER</p>
             <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950">Vận hành cửa hàng, tập trung tăng trưởng.</h1>
@@ -95,10 +92,7 @@ export default function SellerLoginPage() {
         </section>
 
         <section className="mx-auto w-full max-w-[460px]">
-          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
-            <div className="relative -mx-6 -mt-6 mb-6 h-32 bg-cover bg-center sm:-mx-9 sm:-mt-9 lg:hidden" style={{ backgroundImage: "url('/images/auth/seller-login-hero.jpg')" }}>
-              <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-transparent" />
-            </div>
+          <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-9">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Seller access</p>
             <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em]">Đăng nhập Kênh Người Bán</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản Seller đã được eMall xác minh.</p>
@@ -127,8 +121,8 @@ export default function SellerLoginPage() {
             <p className="mt-5 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-400">Khi tiếp tục, bạn đồng ý với Điều khoản dịch vụ và Chính sách bảo mật của eMall.</p>
           </div>
         </section>
+        </div>
       </main>
-      <footer className="px-5 pb-7 text-center text-xs text-slate-400">© 2026 eMall Seller Center</footer>
     </div>
   );
 }

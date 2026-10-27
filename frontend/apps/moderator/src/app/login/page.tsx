@@ -70,14 +70,11 @@ export default function ModeratorLoginPage() {
         </div>
       </header>
 
-      <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
-        <section
-          className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-cover bg-center p-12 shadow-[0_24px_70px_rgba(15,23,42,0.14)] lg:flex lg:flex-col lg:justify-between"
-          style={{ backgroundImage: "url('/images/auth/moderator-login-hero.jpg')" }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/10" />
-          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/20" />
-          <div className="absolute inset-0 ring-1 ring-inset ring-white/70" />
+      <main className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('/images/auth/moderator-login-hero.jpg')" }}>
+        <div className="absolute inset-0 bg-white/35" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/45" />
+        <div className="relative mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
+        <section className="relative hidden min-h-[620px] p-12 lg:flex lg:flex-col lg:justify-between">
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-indigo-700 shadow-sm backdrop-blur-md">
               <LockMiniIcon /> Restricted workspace
@@ -93,10 +90,7 @@ export default function ModeratorLoginPage() {
         </section>
 
         <section className="mx-auto w-full max-w-[460px]">
-          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
-            <div className="relative -mx-6 -mt-6 mb-6 h-32 bg-cover bg-center sm:-mx-9 sm:-mt-9 lg:hidden" style={{ backgroundImage: "url('/images/auth/moderator-login-hero.jpg')" }}>
-              <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-transparent" />
-            </div>
+          <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/90 p-6 shadow-[0_18px_50px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:p-9">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-600">Internal access</p>
             <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em]">Đăng nhập quản trị</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản nội bộ đã được phân quyền.</p>
@@ -125,8 +119,8 @@ export default function ModeratorLoginPage() {
             <p className="mt-5 border-t border-slate-100 pt-5 text-center text-xs leading-5 text-slate-400">Hệ thống nội bộ eMall · Phiên đăng nhập được mã hóa</p>
           </div>
         </section>
+        </div>
       </main>
-      <footer className="px-5 pb-7 text-center text-xs text-slate-400">© 2026 eMall Trust & Safety</footer>
     </div>
   );
 }

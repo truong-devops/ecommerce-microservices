@@ -50,6 +50,56 @@ func TestVideoFeedMapsPublishedVideos(t *testing.T) {
 	}
 }
 
+func TestVideoFeedUsesConfiguredShopName(t *testing.T) {
+	now := time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)
+	repo := &fakeVideoRepo{items: []domain.ProductVideo{{
+		VideoID:   "video-1",
+		SellerID:  "seller-1",
+		Title:     "Demo video",
+		Status:    domain.ProductVideoStatusPublished,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}}}
+	shopRepo := &fakeShopDecorRepo{decor: &domain.ShopDecor{SellerID: "seller-1", ShopName: "Shop Công Nghệ"}}
+	videoService := NewVideoService(repo, &fakeProductRepo{}, nil, nil, "").WithShopDecorRepository(shopRepo)
+
+	result, err := videoService.ListFeed(context.Background(), domain.ListProductVideosQuery{Page: 1, PageSize: 12})
+	if err != nil {
+		t.Fatalf("ListFeed returned error: %v", err)
+	}
+	if len(result.Items) != 1 {
+		t.Fatalf("expected one video, got %d", len(result.Items))
+	}
+	if got := result.Items[0].Seller.ShopName; got != "Shop Công Nghệ" {
+		t.Fatalf("expected configured shop name, got %q", got)
+	}
+}
+
+func TestVideoReviewSubmissionStateValidation(t *testing.T) {
+	allowed := []domain.ProductVideoStatus{
+		domain.ProductVideoStatusDraft,
+		domain.ProductVideoStatusProcessing,
+		domain.ProductVideoStatusRejected,
+		domain.ProductVideoStatusHidden,
+	}
+	for _, status := range allowed {
+		if err := assertCanSubmitVideoReview(domain.ProductVideo{Status: status}); err != nil {
+			t.Fatalf("expected status %s to be allowed: %v", status, err)
+		}
+	}
+
+	blocked := []domain.ProductVideoStatus{
+		domain.ProductVideoStatusProcessingFailed,
+		domain.ProductVideoStatusPublished,
+		domain.ProductVideoStatusArchived,
+	}
+	for _, status := range blocked {
+		if err := assertCanSubmitVideoReview(domain.ProductVideo{Status: status}); err == nil {
+			t.Fatalf("expected status %s to be rejected", status)
+		}
+	}
+}
+
 func TestCreateVideoCommentIncrementsCommentCount(t *testing.T) {
 	now := time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)
 	repo := &fakeVideoRepo{items: []domain.ProductVideo{{

@@ -79,7 +79,7 @@ func main() {
 	defer eventPublisher.Close()
 
 	productService := service.NewProductService(productRepo, searchClient, eventPublisher, cfg.MediaPublicBaseURL).WithCache(redisService)
-	videoService := service.NewVideoService(videoRepo, productRepo, redisService, eventPublisher, cfg.MediaPublicBaseURL)
+	videoService := service.NewVideoService(videoRepo, productRepo, redisService, eventPublisher, cfg.MediaPublicBaseURL).WithShopDecorRepository(shopDecorRepo)
 	shopDecorService := service.NewShopDecorService(shopDecorRepo).WithCache(redisService)
 	healthService := service.NewHealthService(cfg.AppName, mongoClient, redisService)
 

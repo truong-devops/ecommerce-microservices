@@ -1,11 +1,13 @@
 const API_GATEWAY_BASE_URL = process.env.API_GATEWAY_BASE_URL ?? 'http://localhost:12000/api/v1';
 const AUTH_SERVICE_BASE_URL = process.env.AUTH_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
+const USER_SERVICE_BASE_URL = process.env.USER_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const PRODUCT_SERVICE_BASE_URL = process.env.PRODUCT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const CHAT_SERVICE_BASE_URL = process.env.CHAT_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 const WALLET_SERVICE_BASE_URL = process.env.WALLET_SERVICE_BASE_URL ?? API_GATEWAY_BASE_URL;
 
 export const serviceBaseUrls = {
   auth: AUTH_SERVICE_BASE_URL,
+  user: USER_SERVICE_BASE_URL,
   product: PRODUCT_SERVICE_BASE_URL,
   chat: CHAT_SERVICE_BASE_URL,
   wallet: WALLET_SERVICE_BASE_URL
@@ -65,10 +67,10 @@ export async function requestUpstreamEnvelope<T>(url: string, init?: RequestInit
   const payload = safeParseJson(text) as UpstreamSuccessBody<T> | UpstreamErrorBody | null;
 
   if (!response.ok) {
-    const code = payload && 'error' in payload ? payload.error?.code ?? `HTTP_${response.status}` : `HTTP_${response.status}`;
+    const code = payload && 'error' in payload ? (payload.error?.code ?? `HTTP_${response.status}`) : `HTTP_${response.status}`;
     const message =
       payload && 'error' in payload
-        ? payload.error?.message ?? `Upstream request failed with status ${response.status}`
+        ? (payload.error?.message ?? `Upstream request failed with status ${response.status}`)
         : `Upstream request failed with status ${response.status}`;
 
     throw new UpstreamHttpError(response.status, code, message);

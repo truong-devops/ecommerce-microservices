@@ -4,6 +4,15 @@ import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
 
 const CHAT_ROLES = new Set(['CUSTOMER', 'BUYER', 'ADMIN', 'SUPPORT', 'SUPER_ADMIN']);
 
+interface BuyerChatConversationPayload {
+  items?: unknown;
+}
+
+interface ShopDecorOutput {
+  sellerId?: string;
+  shopName?: string;
+}
+
 export async function GET(request: Request) {
   const accessToken = readBearerToken(request.headers.get('authorization'));
   if (!accessToken) {
@@ -31,7 +40,8 @@ export async function GET(request: Request) {
       }
     });
 
-    return ok(payload, 'backend');
+    const hydrated = await hydrateSellerNames(payload);
+    return ok(hydrated, 'backend');
   } catch (error) {
     return toErrorResponse(error);
   }
@@ -107,4 +117,74 @@ function sanitizePositiveInt(raw: string | null, fallback: number, min: number, 
   if (normalized < min) return min;
   if (normalized > max) return max;
   return normalized;
+}
+
+async function hydrateSellerNames(payload: unknown): Promise<unknown> {
+  const conversations = getConversationItems(payload);
+  const sellerIds = [...new Set(conversations.map((item) => getStringField(item, 'sellerId')).filter(Boolean))];
+  if (sellerIds.length === 0) {
+    return payload;
+  }
+
+  const entries = await Promise.all(
+    sellerIds.map(async (sellerId) => {
+      try {
+        const shop = await requestUpstream<ShopDecorOutput>(`${serviceBaseUrls.product}/shops/${encodeURIComponent(sellerId)}/decor`);
+        return [sellerId, shop.shopName?.trim() ?? ''] as const;
+      } catch {
+        return [sellerId, ''] as const;
+      }
+    })
+  );
+  const nameMap = Object.fromEntries(entries.filter(([, name]) => name.length > 0));
+  if (Object.keys(nameMap).length === 0) {
+    return payload;
+  }
+
+  const hydrateOne = (item: unknown): unknown => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return item;
+    }
+    const conversation = item as Record<string, unknown>;
+    const sellerName = nameMap[getStringField(conversation, 'sellerId')];
+    if (!sellerName) {
+      return item;
+    }
+    const currentContext =
+      conversation.context && typeof conversation.context === 'object' && !Array.isArray(conversation.context)
+        ? (conversation.context as Record<string, unknown>)
+        : {};
+    return {
+      ...conversation,
+      context: {
+        ...currentContext,
+        sellerName
+      }
+    };
+  };
+
+  if (Array.isArray(payload)) {
+    return payload.map(hydrateOne);
+  }
+  if (payload && typeof payload === 'object' && Array.isArray((payload as BuyerChatConversationPayload).items)) {
+    return {
+      ...(payload as Record<string, unknown>),
+      items: ((payload as BuyerChatConversationPayload).items as unknown[]).map(hydrateOne)
+    };
+  }
+  return payload;
+}
+
+function getConversationItems(payload: unknown): Record<string, unknown>[] {
+  const rawItems: unknown[] = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === 'object' && Array.isArray((payload as BuyerChatConversationPayload).items)
+      ? ((payload as BuyerChatConversationPayload).items as unknown[])
+      : [];
+  return rawItems.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item));
+}
+
+function getStringField(input: Record<string, unknown>, field: string): string {
+  const value = input[field];
+  return typeof value === 'string' ? value.trim() : '';
 }

@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS ledger_accounts (
   currency char(3) NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT chk_ledger_accounts_type CHECK (
-    account_type IN ('PLATFORM_CLEARING', 'PLATFORM_PAYOUT_CLEARING', 'SELLER_HELD', 'SELLER_AVAILABLE', 'PAYOUT_PENDING')
+    account_type IN ('PLATFORM_CLEARING', 'PLATFORM_PAYOUT_CLEARING', 'SELLER_HELD', 'SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE', 'PAYOUT_PENDING')
   ),
   CONSTRAINT chk_ledger_accounts_scope CHECK (
     (account_type IN ('PLATFORM_CLEARING', 'PLATFORM_PAYOUT_CLEARING') AND wallet_id IS NULL)
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS ledger_transactions (
   occurred_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT chk_ledger_transactions_type CHECK (
-    transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
+    transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CUSTOMER_REFUND_CREDIT', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
   ),
   CONSTRAINT chk_ledger_transactions_currency_upper CHECK (currency = upper(currency))
 );
@@ -289,7 +289,7 @@ CREATE INDEX IF NOT EXISTS idx_outbox_events_dispatch
 -- Phase 2 upgrade path for databases that already ran the Phase 1 version.
 ALTER TABLE ledger_accounts DROP CONSTRAINT IF EXISTS chk_ledger_accounts_type;
 ALTER TABLE ledger_accounts ADD CONSTRAINT chk_ledger_accounts_type CHECK (
-  account_type IN ('PLATFORM_CLEARING', 'PLATFORM_PAYOUT_CLEARING', 'SELLER_HELD', 'SELLER_AVAILABLE', 'PAYOUT_PENDING')
+  account_type IN ('PLATFORM_CLEARING', 'PLATFORM_PAYOUT_CLEARING', 'SELLER_HELD', 'SELLER_AVAILABLE', 'CUSTOMER_AVAILABLE', 'PAYOUT_PENDING')
 );
 ALTER TABLE ledger_accounts DROP CONSTRAINT IF EXISTS chk_ledger_accounts_scope;
 ALTER TABLE ledger_accounts ADD CONSTRAINT chk_ledger_accounts_scope CHECK (
@@ -298,7 +298,7 @@ ALTER TABLE ledger_accounts ADD CONSTRAINT chk_ledger_accounts_scope CHECK (
 );
 ALTER TABLE ledger_transactions DROP CONSTRAINT IF EXISTS chk_ledger_transactions_type;
 ALTER TABLE ledger_transactions ADD CONSTRAINT chk_ledger_transactions_type CHECK (
-  transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
+  transaction_type IN ('PAYMENT_HELD', 'FUNDS_RELEASED', 'PAYMENT_REFUND', 'CUSTOMER_REFUND_CREDIT', 'CHARGEBACK', 'PAYOUT_REQUESTED', 'PAYOUT_SUCCEEDED', 'PAYOUT_FAILED', 'PAYOUT_CANCELLED')
 );
 
 ALTER TABLE outbox_events DROP CONSTRAINT IF EXISTS chk_outbox_events_status;

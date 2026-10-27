@@ -71,18 +71,23 @@ export default function SellerLoginPage() {
       </header>
 
       <main className="mx-auto grid min-h-[calc(100vh-120px)] w-full max-w-[1240px] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16 lg:py-14">
-        <section className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-[#172033] p-12 text-white shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:flex lg:flex-col lg:justify-between">
-          <div className="absolute -right-20 top-10 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" />
-          <div className="relative">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-orange-300">EMALL SELLER CENTER</p>
-            <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em]">Vận hành cửa hàng, tập trung tăng trưởng.</h1>
-            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-300">Quản lý sản phẩm, đơn hàng, doanh thu và số dư trên một không gian làm việc thống nhất.</p>
+        <section
+          className="relative hidden min-h-[620px] overflow-hidden rounded-[32px] bg-cover bg-center p-12 shadow-[0_24px_70px_rgba(15,23,42,0.14)] lg:flex lg:flex-col lg:justify-between"
+          style={{ backgroundImage: "url('/images/auth/seller-login-hero.jpg')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-white/20" />
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/70" />
+          <div className="relative z-10">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-600">EMALL SELLER CENTER</p>
+            <h1 className="mt-6 max-w-[560px] text-5xl font-semibold leading-[1.08] tracking-[-0.035em] text-slate-950">Vận hành cửa hàng, tập trung tăng trưởng.</h1>
+            <p className="mt-6 max-w-[520px] text-lg leading-8 text-slate-700">Quản lý sản phẩm, đơn hàng, doanh thu và số dư trên một không gian làm việc thống nhất.</p>
           </div>
 
-          <div className="relative grid grid-cols-2 gap-3">
+          <div className="relative z-10 grid grid-cols-2 gap-3">
             <Metric value="24/7" label="Theo dõi vận hành" />
             <Metric value="1 nơi" label="Quản lý toàn bộ shop" />
-            <div className="col-span-2 mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-4 text-sm font-medium text-slate-200">
+            <div className="col-span-2 mt-2 flex items-center gap-3 rounded-2xl border border-white/80 bg-white/75 px-4 py-4 text-sm font-semibold text-slate-800 shadow-sm backdrop-blur-md">
               <ShieldIcon />
               Dữ liệu bán hàng và phiên đăng nhập được bảo vệ.
             </div>
@@ -90,7 +95,10 @@ export default function SellerLoginPage() {
         </section>
 
         <section className="mx-auto w-full max-w-[460px]">
-          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+          <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.08)] sm:p-9">
+            <div className="relative -mx-6 -mt-6 mb-6 h-32 bg-cover bg-center sm:-mx-9 sm:-mt-9 lg:hidden" style={{ backgroundImage: "url('/images/auth/seller-login-hero.jpg')" }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/10 to-transparent" />
+            </div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">Seller access</p>
             <h2 className="mt-3 text-[30px] font-semibold tracking-[-0.025em]">Đăng nhập Kênh Người Bán</h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">Sử dụng tài khoản Seller đã được eMall xác minh.</p>
@@ -126,7 +134,7 @@ export default function SellerLoginPage() {
 }
 
 function Metric({ value, label }: { value: string; label: string }) {
-  return <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-sm"><strong className="block text-2xl font-semibold tracking-tight text-white">{value}</strong><span className="mt-1 block text-xs font-medium text-slate-400">{label}</span></div>;
+  return <div className="rounded-2xl border border-white/80 bg-white/75 p-5 shadow-sm backdrop-blur-md"><strong className="block text-2xl font-semibold tracking-tight text-slate-950">{value}</strong><span className="mt-1 block text-xs font-semibold text-slate-600">{label}</span></div>;
 }
 function Field({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) { return <label className="block text-sm font-semibold text-slate-700"><span>{label}</span><span className="relative mt-2 block rounded-xl border border-slate-300 bg-white transition focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10"><span className="pointer-events-none absolute bottom-0 left-0 grid h-12 w-11 place-items-center text-slate-400">{icon}</span>{children}</span></label>; }
 function Divider() { return <div className="flex items-center gap-3 text-xs font-medium text-slate-400"><span className="h-px flex-1 bg-slate-200" /><span>hoặc tiếp tục với</span><span className="h-px flex-1 bg-slate-200" /></div>; }
@@ -135,6 +143,6 @@ function MailIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" classNa
 function LockIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="4" y="10" width="16" height="11" rx="3" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>; }
 function EyeIcon({ crossed }: { crossed: boolean }) { return <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" />{crossed ? <path d="m4 4 16 16" /> : null}</svg>; }
 function AlertIcon() { return <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 17h.01" /></svg>; }
-function ShieldIcon() { return <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange-400/15 text-orange-300"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg></span>; }
+function ShieldIcon() { return <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-orange-100 text-brand-600"><svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 5 6v5c0 4.6 2.8 8.1 7 10 4.2-1.9 7-5.4 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" /></svg></span>; }
 function GoogleMark() { return <span aria-hidden="true" className="grid h-6 w-6 place-items-center rounded-full border border-slate-200 bg-white text-xs font-black text-[#4285f4]">G</span>; }
 function Spinner({ dark = false }: { dark?: boolean }) { return <span aria-hidden="true" className={`mr-2 h-4 w-4 animate-spin rounded-full border-2 ${dark ? 'border-slate-300 border-t-slate-700' : 'border-white/40 border-t-white'}`} />; }

@@ -48,6 +48,41 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 
+CREATE SEQUENCE IF NOT EXISTS order_number_seq AS bigint START WITH 1 INCREMENT BY 1 NO CYCLE;
+
+DO $$
+DECLARE
+  max_display_code bigint;
+  sequence_last_value bigint;
+  sequence_is_called boolean;
+  next_sequence_value bigint;
+BEGIN
+  SELECT COALESCE(MAX(RIGHT(digits, 7)::bigint), 0)
+  INTO max_display_code
+  FROM (
+    SELECT REGEXP_REPLACE(UPPER(order_number), '[^0-9]', '', 'g') AS digits
+    FROM orders
+  ) normalized
+  WHERE digits <> '';
+
+  SELECT last_value, is_called
+  INTO sequence_last_value, sequence_is_called
+  FROM order_number_seq;
+
+  next_sequence_value := GREATEST(
+    max_display_code + 1,
+    CASE WHEN sequence_is_called THEN sequence_last_value + 1 ELSE sequence_last_value END,
+    1
+  );
+
+  IF next_sequence_value > 9999999 THEN
+    RAISE EXCEPTION 'order display code space exhausted';
+  END IF;
+
+  PERFORM setval('order_number_seq', next_sequence_value, false);
+END
+$$;
+
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS seller_id uuid;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_name varchar(255);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS recipient_phone varchar(32);

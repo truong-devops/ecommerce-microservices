@@ -3,12 +3,12 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"sync"
 	"time"
 
 	"payment-service-go/internal/config"
 
-	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
@@ -31,14 +31,14 @@ func NewPublisher(cfg config.Config, logger *zap.Logger) *Publisher {
 	}
 }
 
-func (p *Publisher) Publish(ctx context.Context, eventType string, payload map[string]any) error {
+func (p *Publisher) Publish(ctx context.Context, eventID, eventType string, payload map[string]any) error {
 	if !p.enabled {
 		return nil
 	}
 
 	topics := p.resolveTopics()
 	message, err := json.Marshal(map[string]any{
-		"eventId":    uuid.NewString(),
+		"eventId":    eventID,
 		"eventType":  eventType,
 		"payload":    payload,
 		"occurredAt": time.Now().UTC().Format(time.RFC3339Nano),
@@ -49,12 +49,21 @@ func (p *Publisher) Publish(ctx context.Context, eventType string, payload map[s
 
 	for _, topic := range topics {
 		writer := p.writerForTopic(topic)
-		if err := writer.WriteMessages(ctx, kafka.Message{Key: []byte(eventType), Value: message}); err != nil {
+		if err := writer.WriteMessages(ctx, kafka.Message{Key: eventMessageKey(eventType, payload), Value: message}); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func eventMessageKey(eventType string, payload map[string]any) []byte {
+	for _, field := range []string{"paymentId", "orderId"} {
+		if value, ok := payload[field].(string); ok && strings.TrimSpace(value) != "" {
+			return []byte(strings.TrimSpace(value))
+		}
+	}
+	return []byte(eventType)
 }
 
 func (p *Publisher) Close() {

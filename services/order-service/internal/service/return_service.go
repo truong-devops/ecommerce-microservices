@@ -96,6 +96,9 @@ func (s *ReturnService) Create(ctx context.Context, user domain.UserContext, req
 	if strings.ToUpper(strings.TrimSpace(order.PaymentMethod)) != "ONLINE" {
 		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Automatic refund is currently available for online payments only", nil)
 	}
+	if strings.ToUpper(strings.TrimSpace(order.Currency)) != "VND" {
+		return nil, httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Automatic refund is currently available for VND orders only", nil)
+	}
 	deliveredAt := order.UpdatedAt
 	statusDeliveredAt, err := s.repo.FindOrderDeliveredAt(ctx, tx, order.ID)
 	if err != nil {

@@ -112,6 +112,18 @@ func (r *OrderRepository) FindReturnRequestByOrderID(ctx context.Context, orderI
 	return &request, nil
 }
 
+func (r *OrderRepository) FindReturnRequestByOrderIDForUpdate(ctx context.Context, tx pgx.Tx, orderID string) (*domain.ReturnRequest, error) {
+	row := tx.QueryRow(ctx, returnRequestSelect+` WHERE rr.order_id = $1 FOR UPDATE OF rr`, orderID)
+	request, err := scanReturnRequestRow(row)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, queryFailed("find return request by order for update failed", err)
+	}
+	return &request, nil
+}
+
 func (r *OrderRepository) FindReturnRequestByIDForUpdate(ctx context.Context, tx pgx.Tx, id string) (*domain.ReturnRequest, error) {
 	row := tx.QueryRow(ctx, returnRequestSelect+` WHERE rr.id = $1 FOR UPDATE`, id)
 	request, err := scanReturnRequestRow(row)
@@ -131,7 +143,7 @@ func (r *OrderRepository) FindReturnRequestByIDForUpdate(ctx context.Context, tx
 
 func (r *OrderRepository) UpdateReturnRequestStatus(ctx context.Context, tx pgx.Tx, input UpdateReturnRequestStatusInput) (domain.ReturnRequest, error) {
 	row := tx.QueryRow(ctx, `
-		UPDATE return_requests
+		UPDATE return_requests AS rr
 		SET status = $2,
 			seller_note = COALESCE($3, seller_note),
 			responded_at = COALESCE($4, responded_at),
@@ -139,11 +151,12 @@ func (r *OrderRepository) UpdateReturnRequestStatus(ctx context.Context, tx pgx.
 			received_at = COALESCE($6, received_at),
 			refunded_at = COALESCE($7, refunded_at),
 			updated_at = now()
-		WHERE id = $1
-		RETURNING id, return_number, order_id, '', customer_id, seller_id, status,
-			reason_code, reason_detail, evidence_urls, seller_note, refund_amount,
-			currency, requested_at, responded_at, shipped_at, received_at, refunded_at,
-			return_shipment_id, return_awb, return_tracking_number, return_tracking_url, updated_at
+		FROM orders AS o
+		WHERE rr.id = $1 AND o.id = rr.order_id
+		RETURNING rr.id, rr.return_number, rr.order_id, o.order_number, rr.customer_id, rr.seller_id, rr.status,
+			rr.reason_code, rr.reason_detail, rr.evidence_urls, rr.seller_note, rr.refund_amount,
+			rr.currency, rr.requested_at, rr.responded_at, rr.shipped_at, rr.received_at, rr.refunded_at,
+			rr.return_shipment_id, rr.return_awb, rr.return_tracking_number, rr.return_tracking_url, rr.updated_at
 	`, input.ID, input.Status, input.SellerNote, input.RespondedAt, input.ShippedAt, input.ReceivedAt, input.RefundedAt)
 	request, err := scanReturnRequestRow(row)
 	if err != nil {
@@ -160,13 +173,14 @@ func (r *OrderRepository) UpdateReturnRequestStatus(ctx context.Context, tx pgx.
 func (r *OrderRepository) MarkReturnRequestRefundedByOrderID(ctx context.Context, tx pgx.Tx, orderID string) (*domain.ReturnRequest, error) {
 	now := time.Now().UTC()
 	row := tx.QueryRow(ctx, `
-		UPDATE return_requests
+		UPDATE return_requests AS rr
 		SET status = $2, refunded_at = $3, updated_at = now()
-		WHERE order_id = $1 AND status = $4
-		RETURNING id, return_number, order_id, '', customer_id, seller_id, status,
-			reason_code, reason_detail, evidence_urls, seller_note, refund_amount,
-			currency, requested_at, responded_at, shipped_at, received_at, refunded_at,
-			return_shipment_id, return_awb, return_tracking_number, return_tracking_url, updated_at
+		FROM orders AS o
+		WHERE rr.order_id = $1 AND rr.status = $4 AND o.id = rr.order_id
+		RETURNING rr.id, rr.return_number, rr.order_id, o.order_number, rr.customer_id, rr.seller_id, rr.status,
+			rr.reason_code, rr.reason_detail, rr.evidence_urls, rr.seller_note, rr.refund_amount,
+			rr.currency, rr.requested_at, rr.responded_at, rr.shipped_at, rr.received_at, rr.refunded_at,
+			rr.return_shipment_id, rr.return_awb, rr.return_tracking_number, rr.return_tracking_url, rr.updated_at
 	`, orderID, domain.ReturnRequestStatusRefunded, now, domain.ReturnRequestStatusRefundPending)
 	request, err := scanReturnRequestRow(row)
 	if err != nil {
@@ -181,9 +195,9 @@ func (r *OrderRepository) MarkReturnRequestRefundedByOrderID(ctx context.Context
 func (r *OrderRepository) UpdateReturnShipmentTracking(ctx context.Context, tx pgx.Tx, returnRequestID, shipmentID, awb, trackingNumber string, trackingURL *string) error {
 	command, err := tx.Exec(ctx, `
 		UPDATE return_requests
-		SET return_shipment_id = NULLIF($2::text, '')::uuid,
-			return_awb = NULLIF($3::text, ''),
-			return_tracking_number = NULLIF($4::text, ''),
+		SET return_shipment_id = COALESCE(NULLIF($2::text, '')::uuid, return_shipment_id),
+			return_awb = COALESCE(NULLIF($3::text, ''), return_awb),
+			return_tracking_number = COALESCE(NULLIF($4::text, ''), return_tracking_number),
 			return_tracking_url = COALESCE(NULLIF($5::text, ''), return_tracking_url),
 			updated_at = now()
 		WHERE id = $1

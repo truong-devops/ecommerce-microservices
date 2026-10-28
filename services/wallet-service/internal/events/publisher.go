@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"wallet-service/internal/config"
@@ -39,7 +40,16 @@ func (p *Publisher) Publish(ctx context.Context, eventID, eventType string, payl
 	if err != nil {
 		return err
 	}
-	return p.writer.WriteMessages(ctx, kafka.Message{Key: []byte(eventType), Value: value})
+	return p.writer.WriteMessages(ctx, kafka.Message{Key: eventMessageKey(eventType, payload), Value: value})
+}
+
+func eventMessageKey(eventType string, payload map[string]any) []byte {
+	for _, field := range []string{"walletId", "paymentId", "orderId"} {
+		if value, ok := payload[field].(string); ok && strings.TrimSpace(value) != "" {
+			return []byte(strings.TrimSpace(value))
+		}
+	}
+	return []byte(eventType)
 }
 
 func (p *Publisher) Close() {

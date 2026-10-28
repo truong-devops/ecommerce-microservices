@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -173,25 +174,56 @@ func (s *OrderSagaService) HandleCustomerRefundCredited(ctx context.Context, eve
 	if alreadyProcessed {
 		return tx.Commit(ctx)
 	}
-	request, err := s.repo.MarkReturnRequestRefundedByOrderID(ctx, tx, orderID)
+	request, err := s.repo.FindReturnRequestByOrderIDForUpdate(ctx, tx, orderID)
 	if err != nil {
 		return err
 	}
-	if request != nil {
-		if request.CustomerID != strings.TrimSpace(event.CustomerID) {
-			return fmt.Errorf("customer refund credit owner mismatch for order %s", orderID)
-		}
-		if err := s.repo.InsertAuditLog(ctx, tx, repository.CreateAuditLogInput{
-			OrderID: orderID, Action: "RETURN_REFUNDED", ActorID: orderSagaSystemActorID,
-			ActorRole: domain.RoleSuperAdmin, RequestID: requestIDOrDefault(meta),
-			Metadata: map[string]any{"returnRequestId": request.ID, "paymentId": event.PaymentID,
-				"customerId": event.CustomerID, "walletId": event.WalletID, "refundedAmount": event.RefundedAmount, "currency": event.Currency},
-			OccurredAt: s.defaultStatusTime(),
-		}); err != nil {
-			return err
-		}
+	if request == nil {
+		return tx.Commit(ctx)
+	}
+	if request.Status == domain.ReturnRequestStatusRefunded {
+		return tx.Commit(ctx)
+	}
+	if err := validateCustomerRefundCredited(*request, event); err != nil {
+		return err
+	}
+	request, err = s.repo.MarkReturnRequestRefundedByOrderID(ctx, tx, orderID)
+	if err != nil {
+		return err
+	}
+	if request == nil {
+		return fmt.Errorf("return request for order %s changed before refund completion", orderID)
+	}
+	if err := s.repo.InsertAuditLog(ctx, tx, repository.CreateAuditLogInput{
+		OrderID: orderID, Action: "RETURN_REFUNDED", ActorID: orderSagaSystemActorID,
+		ActorRole: domain.RoleSuperAdmin, RequestID: requestIDOrDefault(meta),
+		Metadata: map[string]any{"returnRequestId": request.ID, "paymentId": event.PaymentID,
+			"customerId": event.CustomerID, "walletId": event.WalletID, "refundedAmount": event.RefundedAmount, "currency": event.Currency},
+		OccurredAt: s.defaultStatusTime(),
+	}); err != nil {
+		return err
 	}
 	return tx.Commit(ctx)
+}
+
+func validateCustomerRefundCredited(request domain.ReturnRequest, event CustomerRefundCreditedEvent) error {
+	if request.Status != domain.ReturnRequestStatusRefundPending {
+		return fmt.Errorf("return request %s is %s, expected %s", request.ID, request.Status, domain.ReturnRequestStatusRefundPending)
+	}
+	if request.CustomerID != strings.TrimSpace(event.CustomerID) {
+		return fmt.Errorf("customer refund credit owner mismatch for order %s", request.OrderID)
+	}
+	if strings.TrimSpace(event.PaymentID) == "" || strings.TrimSpace(event.WalletID) == "" {
+		return fmt.Errorf("customer refund credit is missing payment or wallet identity for order %s", request.OrderID)
+	}
+	if !strings.EqualFold(strings.TrimSpace(request.Currency), strings.TrimSpace(event.Currency)) {
+		return fmt.Errorf("customer refund credit currency mismatch for order %s", request.OrderID)
+	}
+	expectedAmount := math.Round(request.RefundAmount)
+	if request.RefundAmount <= 0 || math.Abs(request.RefundAmount-expectedAmount) > 0.000001 || event.RefundedAmount != int64(expectedAmount) {
+		return fmt.Errorf("customer refund credit amount mismatch for order %s", request.OrderID)
+	}
+	return nil
 }
 
 func (s *OrderSagaService) FailStalePendingSagas(ctx context.Context, timeoutAfter time.Duration, batchSize int) (int, error) {

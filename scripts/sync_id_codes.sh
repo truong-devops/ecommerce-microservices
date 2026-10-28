@@ -90,17 +90,32 @@ done <<< "${AUTH_USERS_RAW}"
 
 echo "[sync] normalize order numbers to EMX format..."
 docker exec -i "${POSTGRES_CONTAINER}" psql -U ecommerce -d "${ORDER_DB}" -c "
-WITH ranked AS (
-  SELECT id,
-         'EMX' || LPAD(ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC)::text, 7, '0') AS new_order_number
+WITH normalized AS (
+  SELECT REGEXP_REPLACE(UPPER(order_number), '[^0-9]', '', 'g') AS digits
   FROM orders
+), max_code AS (
+  SELECT COALESCE(MAX(RIGHT(digits, 7)::bigint), 0) AS value
+  FROM normalized
+  WHERE digits <> ''
+), ranked AS (
+  SELECT o.id,
+         'EMX' || LPAD((m.value + ROW_NUMBER() OVER (ORDER BY o.created_at ASC, o.id ASC))::text, 7, '0') AS new_order_number
+  FROM orders o
+  CROSS JOIN max_code m
+  WHERE o.order_number !~ '^EMX[0-9]{7}$'
 )
 UPDATE orders o
 SET order_number = r.new_order_number,
     updated_at = now()
 FROM ranked r
 WHERE o.id = r.id
-  AND o.order_number !~ '^EMX[0-9]+$';
+  AND o.order_number <> r.new_order_number;
+
+SELECT setval(
+  'order_number_seq',
+  COALESCE((SELECT MAX(SUBSTRING(order_number FROM 4)::bigint) + 1 FROM orders WHERE order_number ~ '^EMX[0-9]{7}$'), 1),
+  false
+);
 " >/dev/null
 
 echo "[sync] done."

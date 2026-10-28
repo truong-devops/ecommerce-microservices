@@ -21,6 +21,8 @@ type OrderRepository struct {
 	pool *pgxpool.Pool
 }
 
+const maxGeneratedOrderNumberAttempts = 32
+
 type CreateOrderInput struct {
 	OrderNumber       string
 	UserID            string
@@ -127,7 +129,21 @@ func (r *OrderRepository) BeginTx(ctx context.Context) (pgx.Tx, error) {
 }
 
 func (r *OrderRepository) CreateOrder(ctx context.Context, tx pgx.Tx, input CreateOrderInput) (domain.Order, error) {
-	row := tx.QueryRow(ctx, `
+	requestedOrderNumber := strings.TrimSpace(input.OrderNumber)
+	for attempt := 0; attempt < maxGeneratedOrderNumberAttempts; attempt++ {
+		orderNumber := requestedOrderNumber
+		if orderNumber == "" {
+			sequence, err := r.nextOrderNumberSequence(ctx, tx)
+			if err != nil {
+				return domain.Order{}, err
+			}
+			orderNumber, err = formatGeneratedOrderNumber(sequence)
+			if err != nil {
+				return domain.Order{}, err
+			}
+		}
+
+		row := tx.QueryRow(ctx, `
 		INSERT INTO orders (
 			order_number, user_id, seller_id, status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
@@ -135,36 +151,56 @@ func (r *OrderRepository) CreateOrder(ctx context.Context, tx pgx.Tx, input Crea
 			recipient_ward, recipient_district, recipient_province
 		)
 		VALUES ($1,$2,NULLIF($3, '')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		ON CONFLICT (order_number) DO NOTHING
 		RETURNING id, order_number, user_id, COALESCE(seller_id::text, ''), status, currency,
 			subtotal_amount, shipping_amount, discount_amount, total_amount, note,
 			COALESCE(payment_method, ''), COALESCE(recipient_name, ''), COALESCE(recipient_phone, ''),
 			COALESCE(recipient_address, ''), recipient_ward, recipient_district, recipient_province,
 			created_at, updated_at
-	`,
-		input.OrderNumber,
-		input.UserID,
-		input.SellerID,
-		input.Status,
-		input.Currency,
-		input.SubtotalAmount,
-		input.ShippingAmount,
-		input.DiscountAmount,
-		input.TotalAmount,
-		input.Note,
-		input.PaymentMethod,
-		input.RecipientName,
-		input.RecipientPhone,
-		input.RecipientAddress,
-		input.RecipientWard,
-		input.RecipientDistrict,
-		input.RecipientProvince,
-	)
+		`,
+			orderNumber,
+			input.UserID,
+			input.SellerID,
+			input.Status,
+			input.Currency,
+			input.SubtotalAmount,
+			input.ShippingAmount,
+			input.DiscountAmount,
+			input.TotalAmount,
+			input.Note,
+			input.PaymentMethod,
+			input.RecipientName,
+			input.RecipientPhone,
+			input.RecipientAddress,
+			input.RecipientWard,
+			input.RecipientDistrict,
+			input.RecipientProvince,
+		)
 
-	order, err := scanOrderRow(row)
-	if err != nil {
-		return domain.Order{}, queryFailed("create order failed", err)
+		order, err := scanOrderRow(row)
+		if err == nil {
+			return order, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) || requestedOrderNumber != "" {
+			return domain.Order{}, queryFailed("create order failed", err)
+		}
 	}
-	return order, nil
+	return domain.Order{}, queryFailed("create order failed", fmt.Errorf("could not allocate a unique order number after %d attempts", maxGeneratedOrderNumberAttempts))
+}
+
+func (r *OrderRepository) nextOrderNumberSequence(ctx context.Context, tx pgx.Tx) (int64, error) {
+	var sequence int64
+	if err := tx.QueryRow(ctx, `SELECT nextval('order_number_seq')`).Scan(&sequence); err != nil {
+		return 0, queryFailed("allocate order number failed", err)
+	}
+	return sequence, nil
+}
+
+func formatGeneratedOrderNumber(sequence int64) (string, error) {
+	if sequence < 1 || sequence > 9999999 {
+		return "", fmt.Errorf("order number sequence %d is outside the supported range", sequence)
+	}
+	return fmt.Sprintf("EMX%07d", sequence), nil
 }
 
 func (r *OrderRepository) CreateOrderItems(ctx context.Context, tx pgx.Tx, orderID string, items []CreateOrderItemInput) ([]domain.OrderItem, error) {

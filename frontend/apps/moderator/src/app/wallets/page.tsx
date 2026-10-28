@@ -318,11 +318,11 @@ export default function WalletAdministrationPage() {
   if (!user || !accessToken) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50/70 text-slate-900">
+    <div className="min-h-screen bg-[#f5f5f5] text-[#222222]">
       <ModeratorTopbar email={user.email} role={user.role} onLogout={handleLogout} />
 
-      <div className="mx-auto w-full max-w-[1760px] px-3 py-5 sm:px-5 lg:px-6">
-        <div className="grid gap-5 lg:grid-cols-[256px_minmax(0,1fr)]">
+      <div className="mx-auto w-full max-w-[1760px] px-3 py-4 sm:px-5 lg:px-6">
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
           {/* Sidebar */}
           <div className="hidden lg:block">
             <ModeratorSidebar
@@ -331,19 +331,19 @@ export default function WalletAdministrationPage() {
             />
           </div>
 
-          <main className="min-w-0 space-y-4">
+          <main className="min-w-0 space-y-3.5">
             {!isAdmin ? (
-              <section className="rounded-2xl border border-rose-200 bg-white p-12 text-center shadow-card">
-                <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-50 text-rose-600">
+              <section className="rounded-lg border border-[#e8e8e8] bg-white p-12 text-center shadow-xs">
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-lg bg-[#f5f5f5] text-[#555555]">
                   <LockIcon size={28} />
                 </div>
-                <h1 className="mt-4 text-lg font-bold text-slate-950">Không có quyền truy cập</h1>
-                <p className="mt-1 text-sm text-slate-500">
+                <h1 className="mt-4 text-lg font-bold text-[#222222]">Không có quyền truy cập</h1>
+                <p className="mt-1 text-xs text-[#757575]">
                   Chức năng quản lý ví và tài chính chỉ dành riêng cho tài khoản quản trị ADMIN và SUPER_ADMIN.
                 </p>
                 <Link
                   href="/"
-                  className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-subtle hover:bg-slate-800"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded bg-[#ee4d2d] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#d73211]"
                 >
                   Quay lại Dashboard
                 </Link>
@@ -351,22 +351,22 @@ export default function WalletAdministrationPage() {
             ) : (
               <>
                 {/* Header & Overview */}
-                <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
+                <section className="rounded-lg border border-[#e8e8e8] bg-white p-4 sm:p-5 shadow-xs">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
+                        <span className="rounded bg-[#fef6f5] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#ee4d2d] border border-[#fcdcd7]">
                           Financial Operations
                         </span>
-                        <span className="text-xs text-slate-400">·</span>
-                        <span className="text-xs font-semibold text-slate-500">
+                        <span className="text-xs text-[#999999]">·</span>
+                        <span className="text-xs font-medium text-[#757575]">
                           Đối soát chuyển tiền &amp; Quản trị rủi ro số dư
                         </span>
                       </div>
-                      <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                      <h1 className="mt-1 text-xl font-bold tracking-tight text-[#222222]">
                         Quản lý ví eMall
                       </h1>
-                      <p className="mt-1 text-sm text-slate-500 max-w-2xl leading-relaxed">
+                      <p className="mt-1 text-xs text-[#757575] max-w-2xl leading-relaxed">
                         Theo dõi tài khoản ví Seller và khách hàng hoàn tiền, duyệt xác minh tài khoản ngân hàng và đối soát VietQR / SePay.
                       </p>
                     </div>
@@ -375,7 +375,7 @@ export default function WalletAdministrationPage() {
                       type="button"
                       onClick={() => void loadOverview()}
                       disabled={loading}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-subtle transition hover:bg-slate-800 active:scale-95 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded bg-[#ee4d2d] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-[#d73211] active:scale-95 disabled:opacity-60"
                     >
                       <RefreshCwIcon size={13} className={loading ? 'animate-spin' : ''} />
                       <span>{loading ? 'Đang tải...' : 'Làm mới dữ liệu'}</span>
@@ -440,14 +440,14 @@ export default function WalletAdministrationPage() {
                 ) : null}
 
                 {/* Wallets List Section */}
-                <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+                <section className="overflow-hidden rounded-lg border border-[#e8e8e8] bg-white shadow-xs">
                   {/* Filter Toolbar */}
-                  <div className="border-b border-slate-100 bg-slate-50/60 p-4">
-                    <div className="grid gap-2.5 md:grid-cols-[minmax(240px,1.2fr)_150px_160px_170px_auto]">
+                  <div className="border-b border-[#e8e8e8] bg-[#fafafa] p-3 sm:p-4">
+                    <div className="grid gap-2 md:grid-cols-[minmax(240px,1.2fr)_150px_160px_170px_auto]">
                       <div className="relative">
                         <SearchIcon
                           size={15}
-                          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999999]"
                         />
                         <input
                           value={searchInput}
@@ -459,7 +459,7 @@ export default function WalletAdministrationPage() {
                             }
                           }}
                           placeholder="Owner ID, tên chủ tài khoản hoặc 4 số cuối..."
-                          className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-xs font-medium text-slate-900 shadow-2xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                          className="h-9 w-full rounded border border-[#e8e8e8] bg-white pl-9 pr-3 text-xs text-[#222222] outline-none transition placeholder:text-[#999999] focus:border-[#ee4d2d]"
                         />
                       </div>
 
@@ -469,7 +469,7 @@ export default function WalletAdministrationPage() {
                           setOwnerTypeFilter(event.target.value as typeof ownerTypeFilter);
                           setPage(1);
                         }}
-                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none transition hover:border-slate-300 focus:border-brand-500"
+                        className="h-9 rounded border border-[#e8e8e8] bg-white px-2.5 text-xs font-medium text-[#555555] outline-none transition hover:border-[#cccccc] focus:border-[#ee4d2d]"
                       >
                         <option value="">Tất cả loại ví</option>
                         <option value="SELLER">Ví Người bán</option>
@@ -482,7 +482,7 @@ export default function WalletAdministrationPage() {
                           setStateFilter(event.target.value as typeof stateFilter);
                           setPage(1);
                         }}
-                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none transition hover:border-slate-300 focus:border-brand-500"
+                        className="h-9 rounded border border-[#e8e8e8] bg-white px-2.5 text-xs font-medium text-[#555555] outline-none transition hover:border-[#cccccc] focus:border-[#ee4d2d]"
                       >
                         <option value="">Trạng thái ví</option>
                         <option value="ACTIVE">Đang hoạt động</option>
@@ -495,7 +495,7 @@ export default function WalletAdministrationPage() {
                           setBankFilter(event.target.value as typeof bankFilter);
                           setPage(1);
                         }}
-                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none transition hover:border-slate-300 focus:border-brand-500"
+                        className="h-9 rounded border border-[#e8e8e8] bg-white px-2.5 text-xs font-medium text-[#555555] outline-none transition hover:border-[#cccccc] focus:border-[#ee4d2d]"
                       >
                         <option value="">Trạng thái ngân hàng</option>
                         <option value="UNVERIFIED">Chờ xác minh</option>
@@ -510,7 +510,7 @@ export default function WalletAdministrationPage() {
                           setSearch(searchInput.trim());
                           setPage(1);
                         }}
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-xs font-bold text-white shadow-subtle transition hover:bg-brand-700 active:scale-95"
+                        className="inline-flex h-9 items-center justify-center rounded bg-[#ee4d2d] px-4 text-xs font-semibold text-white shadow-xs transition hover:bg-[#d73211] active:scale-95"
                       >
                         Áp dụng
                       </button>
@@ -559,25 +559,25 @@ export default function WalletAdministrationPage() {
                                     )}
                                   </button>
                                   <span
-                                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                                    className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                                       wallet.ownerType === 'CUSTOMER'
-                                        ? 'bg-sky-50 text-sky-700 border border-sky-200/60'
-                                        : 'bg-indigo-50 text-indigo-700 border border-indigo-200/60'
+                                        ? 'bg-[#f5f5f5] text-[#555555] border border-[#e8e8e8]'
+                                        : 'bg-[#fef6f5] text-[#ee4d2d] border border-[#fcdcd7]'
                                     }`}
                                   >
                                     {wallet.ownerType === 'CUSTOMER' ? 'Khách hàng' : 'Seller'}
                                   </span>
                                 </div>
-                                <p className="mt-1 font-mono text-[11px] text-slate-400 truncate">
+                                <p className="mt-1 font-mono text-[11px] text-[#757575] truncate">
                                   {wallet.id}
                                 </p>
                               </td>
 
                               <td className="px-4 py-3.5 whitespace-nowrap">
-                                <p className="font-extrabold text-emerald-700">
+                                <p className="font-bold text-[#222222]">
                                   {formatMoney(wallet.availableAmount)}
                                 </p>
-                                <p className="mt-0.5 text-xs text-slate-500 font-medium">
+                                <p className="mt-0.5 text-xs text-[#757575] font-medium">
                                   Tạm giữ: {formatMoney(wallet.heldAmount)}
                                 </p>
                               </td>
@@ -585,20 +585,20 @@ export default function WalletAdministrationPage() {
                               <td className="px-4 py-3.5 whitespace-nowrap">
                                 {wallet.bankAccount ? (
                                   <div className="flex items-center gap-2">
-                                    <div className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                    <div className="grid h-7 w-7 place-items-center rounded bg-[#f5f5f5] text-[#333333] font-bold text-[10px] border border-[#e8e8e8]">
                                       {wallet.bankAccount.bankCode.slice(0, 3)}
                                     </div>
                                     <div>
-                                      <p className="text-xs font-bold text-slate-900">
+                                      <p className="text-xs font-semibold text-[#222222]">
                                         {wallet.bankAccount.bankCode} · {wallet.bankAccount.maskedAccountNumber}
                                       </p>
-                                      <p className="text-[11px] text-slate-500 font-medium uppercase">
+                                      <p className="text-[11px] text-[#757575] font-medium uppercase">
                                         {wallet.bankAccount.accountHolderName}
                                       </p>
                                     </div>
                                   </div>
                                 ) : (
-                                  <span className="text-xs text-slate-400 italic">Chưa liên kết</span>
+                                  <span className="text-xs text-[#999999] italic">Chưa liên kết</span>
                                 )}
                               </td>
 
@@ -616,10 +616,10 @@ export default function WalletAdministrationPage() {
                                     e.stopPropagation();
                                     setSelectedWallet(wallet);
                                   }}
-                                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition shadow-2xs ${
+                                  className={`inline-flex items-center gap-1 rounded px-3 py-1 text-xs font-medium transition ${
                                     isSelected
-                                      ? 'bg-brand-600 text-white shadow-subtle'
-                                      : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                      ? 'bg-[#ee4d2d] text-white shadow-xs'
+                                      : 'border border-[#e8e8e8] bg-white text-[#555555] hover:border-[#ee4d2d] hover:text-[#ee4d2d]'
                                   }`}
                                 >
                                   <span>Chi tiết</span>

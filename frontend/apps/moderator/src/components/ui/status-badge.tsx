@@ -10,125 +10,109 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
 
   const config: Record<
     string,
-    { label: string; dot: string; bg: string; text: string; border: string }
+    { label: string; bg: string; text: string; border: string }
   > = {
     ACTIVE: {
       label: 'Đang hoạt động',
-      dot: 'bg-emerald-500',
-      bg: 'bg-emerald-50/80',
-      text: 'text-emerald-700',
-      border: 'border-emerald-200'
+      bg: 'bg-[#fef6f5]',
+      text: 'text-[#ee4d2d]',
+      border: 'border-[#fcdcd7]'
     },
     DRAFT: {
       label: 'Bản nháp',
-      dot: 'bg-slate-400',
-      bg: 'bg-slate-50',
-      text: 'text-slate-600',
-      border: 'border-slate-200'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#666666]',
+      border: 'border-[#e8e8e8]'
     },
     HIDDEN: {
       label: 'Đã ẩn',
-      dot: 'bg-amber-500',
-      bg: 'bg-amber-50/80',
-      text: 'text-amber-800',
-      border: 'border-amber-200'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#444444]',
+      border: 'border-[#d4d4d4]'
     },
     ARCHIVED: {
       label: 'Đã lưu trữ',
-      dot: 'bg-rose-500',
-      bg: 'bg-rose-50/80',
-      text: 'text-rose-700',
-      border: 'border-rose-200'
+      bg: 'bg-[#fafafa]',
+      text: 'text-[#888888]',
+      border: 'border-[#e8e8e8]'
     },
     // Wallet / Payout statuses
     FROZEN: {
       label: 'Đóng băng',
-      dot: 'bg-rose-500',
-      bg: 'bg-rose-50/80',
-      text: 'text-rose-700',
-      border: 'border-rose-200'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#222222]',
+      border: 'border-[#999999]'
     },
     ALLOWLISTED: {
       label: 'Đã xác minh',
-      dot: 'bg-emerald-500',
-      bg: 'bg-emerald-50/80',
-      text: 'text-emerald-700',
-      border: 'border-emerald-200'
+      bg: 'bg-[#fef6f5]',
+      text: 'text-[#ee4d2d]',
+      border: 'border-[#fcdcd7]'
     },
     UNVERIFIED: {
       label: 'Chờ xác minh',
-      dot: 'bg-amber-500',
-      bg: 'bg-amber-50/80',
-      text: 'text-amber-800',
-      border: 'border-amber-200'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#666666]',
+      border: 'border-[#e8e8e8]'
     },
     DISABLED: {
       label: 'Đã khóa',
-      dot: 'bg-slate-500',
-      bg: 'bg-slate-100',
-      text: 'text-slate-700',
-      border: 'border-slate-300'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#444444]',
+      border: 'border-[#cccccc]'
     },
     MISSING: {
       label: 'Chưa thiết lập',
-      dot: 'bg-slate-400',
-      bg: 'bg-slate-50',
-      text: 'text-slate-500',
-      border: 'border-slate-200'
+      bg: 'bg-[#fafafa]',
+      text: 'text-[#888888]',
+      border: 'border-[#e8e8e8]'
     },
     REQUESTED: {
       label: 'Đã yêu cầu',
-      dot: 'bg-amber-500',
-      bg: 'bg-amber-50/80',
-      text: 'text-amber-800',
-      border: 'border-amber-200'
+      bg: 'bg-[#fef6f5]',
+      text: 'text-[#ee4d2d]',
+      border: 'border-[#fcdcd7]'
     },
     PROCESSING: {
       label: 'Đang xử lý',
-      dot: 'bg-sky-500',
-      bg: 'bg-sky-50/80',
-      text: 'text-sky-800',
-      border: 'border-sky-200'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#333333]',
+      border: 'border-[#cccccc]'
     },
     SUCCEEDED: {
       label: 'Thành công',
-      dot: 'bg-emerald-500',
-      bg: 'bg-emerald-50/80',
-      text: 'text-emerald-700',
-      border: 'border-emerald-200'
+      bg: 'bg-[#fef6f5]',
+      text: 'text-[#ee4d2d]',
+      border: 'border-[#fcdcd7]'
     },
     FAILED: {
       label: 'Thất bại',
-      dot: 'bg-rose-500',
-      bg: 'bg-rose-50/80',
-      text: 'text-rose-700',
-      border: 'border-rose-200'
+      bg: 'bg-[#f5f5f5]',
+      text: 'text-[#222222]',
+      border: 'border-[#888888]'
     },
     CANCELLED: {
       label: 'Đã hủy',
-      dot: 'bg-slate-400',
-      bg: 'bg-slate-100',
-      text: 'text-slate-600',
-      border: 'border-slate-200'
+      bg: 'bg-[#fafafa]',
+      text: 'text-[#888888]',
+      border: 'border-[#e8e8e8]'
     }
   };
 
   const current = config[normalized] || {
     label: status,
-    dot: 'bg-slate-400',
-    bg: 'bg-slate-50',
-    text: 'text-slate-700',
-    border: 'border-slate-200'
+    bg: 'bg-[#f5f5f5]',
+    text: 'text-[#555555]',
+    border: 'border-[#e8e8e8]'
   };
 
   const sizeClasses =
-    size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs';
+    size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-0.5 text-xs';
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold tracking-tight shadow-2xs ${current.bg} ${current.text} ${current.border} ${sizeClasses}`}
+      className={`inline-flex items-center rounded border font-medium ${current.bg} ${current.text} ${current.border} ${sizeClasses}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${current.dot}`} />
       <span>{current.label}</span>
     </span>
   );

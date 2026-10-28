@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { ModerationProduct, ModerationProductStatus } from '@/lib/api/types';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveMediaUrl } from '@/lib/media-url';
 import {
   CheckIcon,
   EyeOffIcon,
@@ -21,10 +22,6 @@ interface ProductModerationBoardProps {
   loading: boolean;
   onUpdateStatus: (productId: string, status: ModerationProductStatus, reason?: string) => void;
 }
-
-const MEDIA_PUBLIC_BASE_URL = (
-  process.env.NEXT_PUBLIC_MEDIA_PUBLIC_BASE_URL ?? 'http://127.0.0.1:12030/ecommerce-media'
-).replace(/\/$/, '');
 
 export function ProductModerationBoard({ items, loading, onUpdateStatus }: ProductModerationBoardProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -247,20 +244,20 @@ export function ProductModerationBoard({ items, loading, onUpdateStatus }: Produ
                           <button
                             type="button"
                             onClick={() => handleOpenActionModal(item, 'ACTIVE')}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-subtle transition hover:bg-emerald-700 active:scale-95"
+                            className="inline-flex items-center gap-1 rounded bg-[#ee4d2d] px-2.5 py-1 text-xs font-medium text-white shadow-xs transition hover:bg-[#d73211] active:scale-95"
                             title="Duyệt và xuất bản sản phẩm"
                           >
-                            <CheckIcon size={13} />
+                            <CheckIcon size={12} />
                             <span>Duyệt</span>
                           </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleOpenActionModal(item, 'HIDDEN')}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 shadow-2xs transition hover:bg-amber-100 active:scale-95"
+                            className="inline-flex items-center gap-1 rounded border border-[#e8e8e8] bg-white px-2.5 py-1 text-xs font-medium text-[#444444] transition hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
                             title="Tạm ẩn sản phẩm khỏi sàn"
                           >
-                            <EyeOffIcon size={13} />
+                            <EyeOffIcon size={12} />
                             <span>Ẩn</span>
                           </button>
                         )}
@@ -270,10 +267,10 @@ export function ProductModerationBoard({ items, loading, onUpdateStatus }: Produ
                           <button
                             type="button"
                             onClick={() => handleOpenActionModal(item, 'DRAFT')}
-                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-slate-300 hover:bg-slate-50"
+                            className="inline-flex items-center gap-1 rounded border border-[#e8e8e8] bg-white px-2 py-1 text-xs font-medium text-[#555555] transition hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
                             title="Chuyển về trạng thái nháp"
                           >
-                            <Edit3Icon size={12} className="text-slate-400" />
+                            <Edit3Icon size={11} className="text-[#757575]" />
                             <span>Nháp</span>
                           </button>
                         )}
@@ -282,10 +279,10 @@ export function ProductModerationBoard({ items, loading, onUpdateStatus }: Produ
                           <button
                             type="button"
                             onClick={() => handleOpenActionModal(item, 'ARCHIVED')}
-                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                            className="inline-flex items-center gap-1 rounded border border-[#e8e8e8] bg-white px-2 py-1 text-xs font-medium text-[#757575] transition hover:border-[#222222] hover:text-[#222222]"
                             title="Lưu trữ sản phẩm"
                           >
-                            <ArchiveIcon size={12} className="text-slate-400 hover:text-rose-600" />
+                            <ArchiveIcon size={11} className="text-[#999999]" />
                             <span>Lưu trữ</span>
                           </button>
                         )}
@@ -382,18 +379,18 @@ export function ProductModerationBoard({ items, loading, onUpdateStatus }: Produ
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-2.5">
+            <div className="mt-5 flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setModalAction(null)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-xs font-medium text-[#555555] transition hover:bg-[#fafafa]"
               >
                 Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={handleConfirmAction}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-subtle transition hover:bg-brand-700 active:scale-95"
+                className="rounded bg-[#ee4d2d] px-4 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-[#d73211] active:scale-95"
               >
                 Xác nhận thay đổi
               </button>
@@ -406,34 +403,7 @@ export function ProductModerationBoard({ items, loading, onUpdateStatus }: Produ
 }
 
 function resolveImageUrl(value: string | undefined): string {
-  if (!value) {
-    return '';
-  }
-
-  if (/^https?:\/\//i.test(value)) {
-    return normalizeProductImageUrl(value);
-  }
-
-  const normalized = value.startsWith('/') ? value.slice(1) : value;
-  return `${MEDIA_PUBLIC_BASE_URL}/${normalized}`;
-}
-
-function normalizeProductImageUrl(raw: string): string {
-  const value = raw.trim();
-
-  const legacyPrefixes = [
-    'http://localhost:3003/',
-    'http://127.0.0.1:3003/',
-    'http://localhost:12030/',
-    'http://127.0.0.1:12030/'
-  ];
-  const legacyPrefix = legacyPrefixes.find((prefix) => value.startsWith(prefix));
-  if (legacyPrefix) {
-    const relativePath = value.slice(legacyPrefix.length).replace(/^ecommerce-media\//, '');
-    return `${MEDIA_PUBLIC_BASE_URL}/${relativePath}`;
-  }
-
-  return value;
+  return resolveMediaUrl(value);
 }
 
 function toDisplayCode(raw: string, prefix: string): string {

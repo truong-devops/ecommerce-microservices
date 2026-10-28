@@ -109,8 +109,8 @@ export function SellerSidebar() {
   };
 
   return (
-    <aside className="hidden w-[232px] shrink-0 border-r border-slate-200 bg-[#f5f5f5] lg:block">
-      <div className="sticky top-[56px] h-[calc(100vh-56px)] overflow-y-auto px-3 py-4">
+    <aside className="hidden w-[232px] shrink-0 border-r border-[#e8e8e8] bg-white lg:block">
+      <div className="sticky top-[56px] h-[calc(100vh-56px)] overflow-y-auto px-2 py-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-3">
             {section.items.length > 0 ? (
@@ -119,26 +119,26 @@ export function SellerSidebar() {
                 onClick={() => {
                   toggleSection(section.title);
                 }}
-                className="flex w-full items-start justify-between rounded-md px-2 py-1 text-left text-[13px] font-semibold leading-5 text-slate-600 hover:bg-white"
+                className="flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#757575] hover:text-[#ee4d2d] transition"
               >
                 <span>{section.title}</span>
-                <span className="pt-0.5 text-xs text-slate-500">{expandedSections[section.title] ? '▴' : '▾'}</span>
+                <span className="text-[10px] text-[#999999]">{expandedSections[section.title] ? '▲' : '▼'}</span>
               </button>
             ) : (
-              <button type="button" className="w-full rounded-md px-2 py-1 text-left text-[13px] font-semibold text-slate-600 hover:bg-white">
+              <button type="button" className="w-full rounded px-2.5 py-1.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#757575] hover:text-[#ee4d2d]">
                 {section.title}
               </button>
             )}
 
             {section.items.length > 0 && expandedSections[section.title] ? (
-              <ul className="ml-2 mt-1 space-y-0.5">
+              <ul className="mt-0.5 space-y-0.5">
                 {section.items.map((item) => {
                   const isActive = isItemActive(pathname, item.href);
                   const itemClassName = [
-                    'block w-full rounded-md border px-3 py-1.5 text-left text-sm transition',
+                    'block w-full border-l-[3px] px-3 py-1.5 text-left text-xs transition rounded-r',
                     isActive
-                      ? 'border-[#fbd3c9] bg-[#fff5f2] font-semibold text-[#ee4d2d]'
-                      : 'border-transparent text-slate-700 hover:border-slate-200 hover:bg-white'
+                      ? 'border-[#ee4d2d] bg-[#fef6f5] font-semibold text-[#ee4d2d]'
+                      : 'border-transparent text-[#333333] hover:bg-[#fafafa] hover:text-[#ee4d2d]'
                   ].join(' ');
 
                   return (

@@ -19,6 +19,7 @@ import {
 import { ModeratorApiClientError } from '@/lib/api/client';
 import { approveModerationVideo, listModerationVideos, rejectModerationVideo } from '@/lib/api/moderation';
 import type { ModerationVideo } from '@/lib/api/types';
+import { resolveMediaUrl } from '@/lib/media-url';
 import { useAuth } from '@/providers/AppProvider';
 
 export default function VideoReviewPage() {
@@ -314,12 +315,12 @@ export default function VideoReviewPage() {
 
                   <div className="grid gap-0 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
                     {/* Video Player */}
-                    <div className="border-r border-slate-100 bg-slate-950 p-4">
-                      <div className="mx-auto aspect-[9/16] max-h-[620px] overflow-hidden rounded-2xl bg-black shadow-inner">
+                    <div className="border-r border-[#e8e8e8] bg-black p-4">
+                      <div className="mx-auto aspect-[9/16] max-h-[620px] overflow-hidden rounded-lg bg-black shadow-inner">
                         {selectedVideo.mediaUrl ? (
                           <video
-                            src={selectedVideo.mediaUrl}
-                            poster={selectedVideo.thumbnailUrl ?? undefined}
+                            src={resolveMediaUrl(selectedVideo.mediaUrl)}
+                            poster={resolveMediaUrl(selectedVideo.thumbnailUrl) || undefined}
                             controls
                             playsInline
                             preload="metadata"
@@ -491,20 +492,23 @@ export default function VideoReviewPage() {
 }
 
 function VideoThumb({ video, className }: { video: ModerationVideo; className: string }) {
+  const mediaUrl = resolveMediaUrl(video.mediaUrl);
+  const thumbUrl = resolveMediaUrl(video.thumbnailUrl);
+
   return (
-    <div className={`relative overflow-hidden bg-slate-900 border border-slate-200/80 ${className}`}>
-      {video.mediaUrl ? (
+    <div className={`relative overflow-hidden bg-black border border-[#e8e8e8] ${className}`}>
+      {mediaUrl ? (
         <video
-          src={video.mediaUrl}
-          poster={video.thumbnailUrl ?? undefined}
+          src={mediaUrl}
+          poster={thumbUrl || undefined}
           muted
           playsInline
           preload="metadata"
           className="h-full w-full object-cover"
         />
-      ) : video.thumbnailUrl ? (
+      ) : thumbUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={video.thumbnailUrl} alt={video.title} className="h-full w-full object-cover" />
+        <img src={thumbUrl} alt={video.title} className="h-full w-full object-cover" />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white/50">
           No media

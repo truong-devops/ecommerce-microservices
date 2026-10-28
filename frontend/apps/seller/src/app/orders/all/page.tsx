@@ -111,23 +111,23 @@ export default function AllOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen text-slate-900">
+    <div className="min-h-screen bg-[#f5f5f5] text-[#222222]">
       <SellerTopbar email={user.email} role={user.role} onLogout={handleLogout} />
 
       <div className="flex">
         <SellerSidebar />
 
         <main className="min-w-0 flex-1 px-3 py-3 lg:px-4">
-          <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
+          <div className="mb-3 flex items-center gap-2 text-xs text-[#757575]">
             <Link href="/" className="hover:text-[#ee4d2d]">
               Trang chủ
             </Link>
             <span>›</span>
-            <span className="font-medium text-slate-700">Tất cả đơn hàng</span>
+            <span className="font-semibold text-[#222222]">Tất cả đơn hàng</span>
           </div>
 
-          <section className="rounded-md border border-slate-200 bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-2">
+          <section className="rounded-lg border border-[#e8e8e8] bg-white p-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e8e8e8] pb-2">
               <div className="flex min-w-0 flex-1 items-end gap-5 overflow-x-auto whitespace-nowrap">
                 {statusTabs.map((tab) => {
                   const isActive = activeStatus === tab.value;
@@ -141,8 +141,8 @@ export default function AllOrdersPage() {
                         setActiveStatus(tab.value);
                       }}
                       className={[
-                        'border-b-[3px] pb-2 text-sm font-semibold transition',
-                        isActive ? 'border-[#ee4d2d] text-[#ee4d2d]' : 'border-transparent text-slate-800'
+                        'border-b-2 pb-2 text-sm font-semibold transition',
+                        isActive ? 'border-[#ee4d2d] text-[#ee4d2d]' : 'border-transparent text-[#555555] hover:text-[#ee4d2d]'
                       ].join(' ')}
                     >
                       {tab.label} ({count})
@@ -156,25 +156,25 @@ export default function AllOrdersPage() {
                 onClick={() => {
                   void loadOrders();
                 }}
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-xs font-semibold text-[#555555] hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
               >
                 Làm mới
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 xl:grid-cols-[1fr_140px_140px_auto]">
+            <div className="mt-3 grid gap-2.5 xl:grid-cols-[1fr_130px_130px_auto]">
               <input
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Tìm theo mã đơn / mã khách hàng"
-                className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400"
+                placeholder="Tìm theo mã đơn / mã khách hàng..."
+                className="rounded border border-[#e8e8e8] bg-white px-3 py-2 text-xs text-[#222222] placeholder:text-[#999999] focus:border-[#ee4d2d] outline-none"
               />
               <button
                 type="button"
                 onClick={() => {
                   setSearch(searchInput.trim());
                 }}
-                className="rounded-md border border-[#ee4d2d] px-3 py-2 text-sm font-semibold text-[#ee4d2d]"
+                className="rounded bg-[#ee4d2d] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#d73211]"
               >
                 Áp dụng
               </button>
@@ -185,49 +185,49 @@ export default function AllOrdersPage() {
                   setSearch('');
                   setActiveStatus('');
                 }}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700"
+                className="rounded border border-[#e8e8e8] bg-white px-3 py-2 text-xs font-semibold text-[#555555] hover:bg-[#fafafa]"
               >
                 Đặt lại
               </button>
-              <button type="button" className="text-sm font-medium text-[#2563eb] hover:underline">
+              <button type="button" className="text-xs font-medium text-[#ee4d2d] hover:underline self-center">
                 Mở rộng ▾
               </button>
             </div>
 
-            {error ? <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
+            {error ? <div className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{error}</div> : null}
 
-            <div className="mt-4 overflow-hidden rounded-md border border-slate-200">
+            <div className="mt-3 overflow-hidden rounded border border-[#e8e8e8]">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] border-collapse text-left text-sm text-slate-700">
-                  <thead className="bg-slate-50 text-sm font-medium text-slate-500">
+                <table className="w-full min-w-[980px] border-collapse text-left text-xs text-[#333333]">
+                  <thead className="bg-[#fafafa] border-b border-[#e8e8e8] text-xs font-semibold text-[#555555]">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Mã đơn</th>
-                      <th className="px-4 py-3 font-medium">Khách hàng</th>
-                      <th className="px-4 py-3 font-medium">Sản phẩm</th>
-                      <th className="px-4 py-3 font-medium">Tổng tiền</th>
-                      <th className="px-4 py-3 font-medium">Trạng thái</th>
-                      <th className="px-4 py-3 font-medium">Cập nhật</th>
-                      <th className="px-4 py-3 font-medium">Thao tác</th>
+                      <th className="px-4 py-3 font-semibold">Mã đơn</th>
+                      <th className="px-4 py-3 font-semibold">Khách hàng</th>
+                      <th className="px-4 py-3 font-semibold">Sản phẩm</th>
+                      <th className="px-4 py-3 font-semibold">Tổng tiền</th>
+                      <th className="px-4 py-3 font-semibold">Trạng thái</th>
+                      <th className="px-4 py-3 font-semibold">Cập nhật</th>
+                      <th className="px-4 py-3 font-semibold">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={7} className="h-[180px] px-4 py-6 text-center text-slate-500">
+                        <td colSpan={7} className="h-[180px] px-4 py-6 text-center text-[#757575]">
                           Đang tải đơn hàng...
                         </td>
                       </tr>
                     ) : items.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="h-[200px] px-4 py-6 text-center text-slate-400">
+                        <td colSpan={7} className="h-[200px] px-4 py-6 text-center text-[#999999]">
                           Không có đơn hàng phù hợp.
                         </td>
                       </tr>
                     ) : (
                       items.map((order) => (
-                        <tr key={order.id} className="border-t border-slate-200 align-top">
-                          <td className="px-4 py-3 font-medium text-slate-800">
-                            <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:underline">
+                        <tr key={order.id} className="border-t border-[#f0f0f0] align-top hover:bg-[#fef6f5]/30">
+                          <td className="px-4 py-3 font-semibold text-[#222222]">
+                            <Link href={`/orders/${encodeURIComponent(order.id)}`} className="hover:text-[#ee4d2d] hover:underline">
                               {formatOrderCode(order.orderNumber, order.id)}
                             </Link>
                           </td>
@@ -235,18 +235,18 @@ export default function AllOrdersPage() {
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <OrderItemThumbnail imageUrl={getPrimaryOrderImage(order)} />
-                              <span>{toProductSummary(order)}</span>
+                              <span className="line-clamp-2">{toProductSummary(order)}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3">{formatCurrency(order.totalAmount, order.currency)}</td>
+                          <td className="px-4 py-3 font-bold text-[#222222]">{formatCurrency(order.totalAmount, order.currency)}</td>
                           <td className="px-4 py-3">
-                            <span className="rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-700">
+                            <span className="rounded border border-[#e8e8e8] bg-[#f5f5f5] px-2 py-0.5 text-[11px] text-[#555555]">
                               {toStatusLabel(order.status)}
                             </span>
                           </td>
-                          <td className="px-4 py-3">{formatDateTime(order.updatedAt)}</td>
+                          <td className="px-4 py-3 text-[#757575]">{formatDateTime(order.updatedAt)}</td>
                           <td className="px-4 py-3">
-                            <Link href={`/orders/${encodeURIComponent(order.id)}`} className="text-[#2563eb] hover:underline">
+                            <Link href={`/orders/${encodeURIComponent(order.id)}`} className="text-[#ee4d2d] font-medium hover:underline">
                               Chi tiết
                             </Link>
                           </td>

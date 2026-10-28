@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,12 +49,21 @@ func (p *Publisher) Publish(ctx context.Context, eventID, eventType string, payl
 
 	for _, topic := range topics {
 		writer := p.writerForTopic(topic)
-		if err := writer.WriteMessages(ctx, kafka.Message{Key: []byte(eventType), Value: message}); err != nil {
+		if err := writer.WriteMessages(ctx, kafka.Message{Key: eventMessageKey(eventType, payload), Value: message}); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func eventMessageKey(eventType string, payload map[string]any) []byte {
+	for _, field := range []string{"shipmentId", "orderId", "returnRequestId"} {
+		if value, ok := payload[field].(string); ok && strings.TrimSpace(value) != "" {
+			return []byte(strings.TrimSpace(value))
+		}
+	}
+	return []byte(eventType)
 }
 
 func (p *Publisher) Close() {

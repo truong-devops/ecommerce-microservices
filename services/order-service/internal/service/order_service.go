@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"order-service/internal/domain"
@@ -92,7 +91,6 @@ type OrderService struct {
 	sellerProfiles    *SellerProfileClient
 	sagaMetrics       *metrics.CheckoutSagaMetrics
 	defaultStatusTime func() time.Time
-	orderSeq          uint64
 }
 
 func NewOrderService(
@@ -159,7 +157,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, user domain.UserContext,
 	}
 
 	createdOrder, err := s.repo.CreateOrder(ctx, tx, repository.CreateOrderInput{
-		OrderNumber:       s.generateOrderNumber(),
 		UserID:            user.UserID,
 		SellerID:          strings.TrimSpace(req.SellerID),
 		Status:            domain.OrderStatusPending,
@@ -1013,15 +1010,6 @@ func trimAndNilIfEmpty(value *string) *string {
 
 func strPtr(v string) *string {
 	return &v
-}
-
-func (s *OrderService) generateOrderNumber() string {
-	now := time.Now().UTC()
-	date := fmt.Sprintf("%04d%02d%02d", now.Year(), now.Month(), now.Day())
-	seq := atomic.AddUint64(&s.orderSeq, 1) % 1000000
-	// Keep <= 32 chars for orders.order_number varchar(32).
-	// Format length: 4 + 8 + 1 + 10 + 1 + 6 = 30.
-	return fmt.Sprintf("ORD-%s-%010d-%06d", date, now.Unix(), seq)
 }
 
 func formatOrderCode(orderNumber string, fallbackID string) string {

@@ -27,6 +27,44 @@ func TestValidateCreateReturnRequest(t *testing.T) {
 	}
 }
 
+func TestValidateCustomerRefundCredited(t *testing.T) {
+	request := domain.ReturnRequest{
+		ID: "return-1", OrderID: "order-1", CustomerID: "customer-1",
+		Status: domain.ReturnRequestStatusRefundPending, RefundAmount: 125_000, Currency: "VND",
+	}
+	valid := CustomerRefundCreditedEvent{
+		OrderID: "order-1", PaymentID: "payment-1", CustomerID: "customer-1",
+		WalletID: "wallet-1", Currency: "VND", RefundedAmount: 125_000,
+	}
+
+	tests := []struct {
+		name    string
+		request domain.ReturnRequest
+		event   CustomerRefundCreditedEvent
+		wantErr bool
+	}{
+		{name: "valid", request: request, event: valid},
+		{name: "wrong status", request: func() domain.ReturnRequest {
+			value := request
+			value.Status = domain.ReturnRequestStatusReturning
+			return value
+		}(), event: valid, wantErr: true},
+		{name: "wrong customer", request: request, event: func() CustomerRefundCreditedEvent { value := valid; value.CustomerID = "customer-2"; return value }(), wantErr: true},
+		{name: "wrong currency", request: request, event: func() CustomerRefundCreditedEvent { value := valid; value.Currency = "USD"; return value }(), wantErr: true},
+		{name: "partial amount", request: request, event: func() CustomerRefundCreditedEvent { value := valid; value.RefundedAmount = 25_000; return value }(), wantErr: true},
+		{name: "missing payment", request: request, event: func() CustomerRefundCreditedEvent { value := valid; value.PaymentID = ""; return value }(), wantErr: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateCustomerRefundCredited(test.request, test.event)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("validateCustomerRefundCredited() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestReturnPermissions(t *testing.T) {
 	request := domain.ReturnRequest{CustomerID: "customer-1", SellerID: "seller-1"}
 	if err := assertCanReadReturn(domain.UserContext{UserID: "customer-1", Role: domain.RoleCustomer}, request); err != nil {

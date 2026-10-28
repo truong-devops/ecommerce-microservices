@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { listBuyerVideos } from '@/lib/api/videos';
 import type { BuyerVideo, ProductItem } from '@/lib/api/types';
+import { resolveMediaUrl } from '@/lib/media-url';
 import { useLanguage } from '@/providers/AppProvider';
 
 interface VideoHighlightsSectionProps {
@@ -82,58 +83,81 @@ export function VideoHighlightsSection({ products }: VideoHighlightsSectionProps
   const displayCards = videoCards.length > 0 ? videoCards : fallbackVideos;
 
   return (
-    <section aria-labelledby="video-highlights-heading" className="rounded-xl bg-white p-3 shadow-card md:rounded-md md:p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 id="video-highlights-heading" className="text-xl font-bold text-slate-900">
-          {text.home.videoHighlightsTitle}
-        </h2>
-        <Link href="/videos" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-          {text.home.seeVideoFeed}
+    <section aria-labelledby="video-highlights-heading" className="rounded-sm bg-white p-4 shadow-sm">
+      <div className="mb-3.5 flex items-center justify-between border-b border-[#f1f1f1] pb-3">
+        <div className="flex items-center gap-2">
+          <span className="h-4 w-1 bg-[#ee4d2d]" />
+          <h2 id="video-highlights-heading" className="text-base font-bold uppercase tracking-wide text-[#222]">
+            {text.home.videoHighlightsTitle || 'Video nổi bật'}
+          </h2>
+        </div>
+        <Link href="/videos" className="text-xs font-semibold text-[#ee4d2d] hover:text-[#d73211] flex items-center gap-1">
+          <span>{text.home.seeVideoFeed || 'Xem tất cả video'}</span>
+          <span>&rsaquo;</span>
         </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {displayCards.map((item) => (
-          <Link
-            key={item.id}
-            href={item.productId ? `/videos?productId=${encodeURIComponent(item.productId)}` : '/videos'}
-            className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-900"
-          >
-            <div className="relative h-44 w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(248,81,47,0.45),transparent_42%),linear-gradient(160deg,#111827,#020617)] sm:h-56">
-              {item.mediaUrl ? (
-                <video
-                  src={item.mediaUrl}
-                  poster={item.thumbnail ?? undefined}
-                  muted
-                  playsInline
-                  preload="metadata"
-                  className="h-full w-full object-cover opacity-95 transition group-hover:scale-[1.02]"
-                />
-              ) : item.thumbnail ? (
-                <img src={item.thumbnail} alt={item.title} className="h-full w-full object-cover opacity-95 transition group-hover:scale-[1.02]" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-white/80">Video preview</div>
-              )}
-            </div>
+        {displayCards.map((item) => {
+          const resolvedMedia = resolveMediaUrl(item.mediaUrl);
+          const resolvedThumb = resolveMediaUrl(item.thumbnail);
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
-
-            <div className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/50 px-2 py-1 text-[11px] font-semibold text-white">
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-              {item.views}
-            </div>
-
-            <div className="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[11px] font-semibold text-white">{item.duration}</div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-2.5">
-              <p className="line-clamp-2 text-sm font-semibold text-white">{item.title}</p>
-              <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[11px] font-semibold text-white">
-                <span>▶</span>
-                <span>{text.home.watchNow}</span>
+          return (
+            <Link
+              key={item.id}
+              href={item.productId ? `/videos?productId=${encodeURIComponent(item.productId)}` : '/videos'}
+              className="group relative overflow-hidden rounded-sm border border-[#e8e8e8] bg-black block"
+            >
+              <div className="relative h-48 w-full overflow-hidden bg-black sm:h-64">
+                {resolvedMedia ? (
+                  <video
+                    src={resolvedMedia}
+                    poster={resolvedThumb || undefined}
+                    muted
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                ) : resolvedThumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={resolvedThumb}
+                    alt={item.title}
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-white/70">
+                    Video preview
+                  </div>
+                )}
               </div>
-            </div>
-          </Link>
-        ))}
+
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+
+              {/* Top View badge */}
+              <div className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#ee4d2d]" />
+                <span>{item.views}</span>
+              </div>
+
+              <div className="absolute right-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white/90">
+                {item.duration}
+              </div>
+
+              {/* Title & Play Button */}
+              <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                <p className="line-clamp-2 text-xs font-semibold text-white leading-snug">
+                  {item.title}
+                </p>
+                <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#ee4d2d]">
+                  <span>▶</span>
+                  <span>Xem ngay</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

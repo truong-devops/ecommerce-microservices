@@ -202,15 +202,15 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
               key={category.id}
               type="button"
               onClick={() => onSelectCategory(isActive ? null : category.id)}
-              className={`group rounded-2xl border p-2.5 text-center transition duration-200 md:p-3 ${
+              className={`group rounded-xl border p-2.5 text-center transition duration-150 md:p-3 ${
                 isActive
-                  ? 'border-brand-300 bg-gradient-to-b from-brand-50 to-white shadow-md'
-                  : 'border-slate-100 bg-white hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md'
+                  ? 'border-[#ee4d2d] bg-[#fef6f5] shadow-xs'
+                  : 'border-[#e8e8e8] bg-white hover:border-[#ee4d2d] hover:shadow-xs'
               }`}
             >
               <div
                 className={`mx-auto h-14 w-14 overflow-hidden rounded-full md:h-16 md:w-16 ${
-                  isActive ? 'ring-2 ring-brand-200 ring-offset-2 ring-offset-white' : 'ring-1 ring-slate-100'
+                  isActive ? 'ring-2 ring-[#ee4d2d]' : 'ring-1 ring-[#e8e8e8]'
                 } bg-slate-100`}
               >
                 {category.icon ? (
@@ -219,7 +219,7 @@ export function CategorySection({ categories, selectedCategoryId, onSelectCatego
                   <div className="grid h-full w-full place-items-center text-base font-semibold text-slate-700">{fallbackText || 'DM'}</div>
                 )}
               </div>
-              <p className="mt-2 line-clamp-2 min-h-[2.25rem] text-xs font-medium text-slate-700 md:min-h-[2.5rem] md:text-sm">{category.label}</p>
+              <p className={`mt-2 line-clamp-2 min-h-[2.25rem] text-xs font-medium md:min-h-[2.5rem] md:text-sm ${isActive ? 'text-[#ee4d2d] font-semibold' : 'text-[#222222] group-hover:text-[#ee4d2d]'}`}>{category.label}</p>
             </button>
           );
         })}

@@ -9,6 +9,7 @@ import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import { createBuyerVideoComment, listBuyerVideoComments, listBuyerVideos, trackBuyerVideoEvent } from '@/lib/api/videos';
 import type { BuyerVideo, BuyerVideoComment, ProductItem } from '@/lib/api/types';
 import { validateChatText } from '@/lib/chat-safety';
+import { resolveMediaUrl } from '@/lib/media-url';
 import { formatPrice } from '@/lib/price';
 import { useAuth, useLanguage } from '@/providers/AppProvider';
 
@@ -34,6 +35,9 @@ export default function VideosPage() {
   const [recommendedProducts, setRecommendedProducts] = useState<ProductItem[]>([]);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [commentNameMap, setCommentNameMap] = useState<Record<string, string>>({});
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const trackedQualifiedViews = useRef<Set<string>>(new Set());
 
@@ -80,7 +84,40 @@ export default function VideosPage() {
   const chatEmojis = ['🔥', '❤️', '👍', '😍'];
   const commentSafety = useMemo(() => validateChatText(commentInput), [commentInput]);
 
+  const resolvedMediaUrl = useMemo(() => resolveMediaUrl(currentVideo?.mediaUrl), [currentVideo?.mediaUrl]);
+  const resolvedThumbnailUrl = useMemo(() => resolveMediaUrl(currentVideo?.thumbnailUrl), [currentVideo?.thumbnailUrl]);
+
+  // Reset video player state when changing videos
+  useEffect(() => {
+    setVideoError(false);
+    setIsPlaying(true);
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {
+        // Autoplay may require muted state in browser
+        setIsPlaying(false);
+      });
+    }
+  }, [currentVideoId]);
+
+  const togglePlay = useCallback(() => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  }, []);
+
   const handlePlay = useCallback((video: BuyerVideo) => {
+    setIsPlaying(true);
     void trackBuyerVideoEvent(video.videoId, 'view-started', buildEventPayload(video));
   }, []);
 
@@ -282,76 +319,87 @@ export default function VideosPage() {
   }, [shareStatus]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#f5f5f5] text-[#222]">
       <Header keywords={keywords} />
 
-      <main className="bg-slate-50">
-        {status === 'loading' ? <p className="py-16 text-center text-sm text-slate-600">{text.home.loading}</p> : null}
+      <main className="mx-auto w-full max-w-[1240px] px-3 py-4 md:px-4 md:py-6">
+        {status === 'loading' ? (
+          <div className="py-24 text-center">
+            <span className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#ee4d2d] border-t-transparent" />
+            <p className="mt-3 text-sm text-[#666]">{text.home.loading}</p>
+          </div>
+        ) : null}
 
         {status === 'error' ? (
-          <div className="mx-auto flex min-h-[520px] max-w-xl flex-col items-center justify-center px-4 text-center">
-            <p className="text-sm text-red-600">{error || text.home.loadError}</p>
-            <button type="button" onClick={() => void loadData()} className="mt-4 rounded-md bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+          <div className="mx-auto flex min-h-[460px] max-w-md flex-col items-center justify-center rounded-sm bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-medium text-[#ee4d2d]">{error || text.home.loadError}</p>
+            <button
+              type="button"
+              onClick={() => void loadData()}
+              className="mt-4 rounded-sm bg-[#ee4d2d] px-5 py-2 text-sm font-bold text-white hover:bg-[#d73211]"
+            >
               {text.home.retry}
             </button>
           </div>
         ) : null}
 
         {status === 'success' && videos.length === 0 ? (
-          <div className="mx-auto flex min-h-[520px] max-w-xl flex-col items-center justify-center px-4 text-center">
-            <p className="text-base font-semibold text-slate-900">Chưa có video nào được publish.</p>
-            <p className="mt-2 text-sm text-slate-500">Hãy publish video từ Seller Center để thấy feed thật ở đây.</p>
-            <Link href="/" className="mt-5 rounded-md border border-brand-300 bg-white px-5 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50">
+          <div className="mx-auto flex min-h-[460px] max-w-md flex-col items-center justify-center rounded-sm bg-white p-6 text-center shadow-sm">
+            <p className="text-base font-bold text-[#222]">Chưa có video nào được đăng tải.</p>
+            <p className="mt-2 text-xs text-[#757575]">Hãy đăng tải video từ Kênh Người Bán để xem feed video tại đây.</p>
+            <Link
+              href="/"
+              className="mt-5 rounded-sm border border-[#ee4d2d] bg-white px-5 py-2 text-xs font-bold text-[#ee4d2d] hover:bg-[#fef6f5]"
+            >
               Về trang chủ
             </Link>
           </div>
         ) : null}
 
         {status === 'success' && currentVideo ? (
-          <section aria-label="Shoppable video viewer" className="mx-auto min-h-[calc(100vh-184px)] max-w-[1180px] px-3 py-4 md:px-4 md:py-6">
-            <div className="grid items-start gap-5 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-              <aside className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-4 lg:sticky lg:top-24">
+          <section aria-label="Shoppable video viewer">
+            <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+              {/* Left Column: Shop & Products */}
+              <aside className="rounded-sm border border-[#e8e8e8] bg-white p-4 shadow-sm space-y-4">
                 <Link
                   href={`/shops/${encodeURIComponent(currentVideo.seller.sellerId)}`}
-                  className="flex items-center gap-3 border-b border-slate-100 pb-4 transition hover:border-brand-100"
+                  className="flex items-center gap-3 border-b border-[#f1f1f1] pb-3 transition"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fef6f5] text-sm font-bold text-[#ee4d2d] border border-[#fcdcd7]">
                     {currentVideo.seller.shopName.trim().charAt(0).toUpperCase()}
                   </span>
-                  <span className="min-w-0">
-                    <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">Shop</span>
-                    <span className="block truncate text-sm font-semibold text-slate-900">{currentVideo.seller.shopName}</span>
-                    <span className="mt-0.5 block truncate text-xs text-slate-500">{currentVideo.seller.sellerCode}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-[#222] hover:text-[#ee4d2d]">
+                      {currentVideo.seller.shopName}
+                    </span>
+                    <span className="block text-[11px] text-[#757575] font-mono">{currentVideo.seller.sellerCode}</span>
+                  </div>
+                  <span className="shrink-0 rounded-sm border border-[#ee4d2d] px-2 py-0.5 text-[11px] font-semibold text-[#ee4d2d]">
+                    Xem Shop
                   </span>
-                  <span className="ml-auto shrink-0 rounded-md border border-brand-100 px-2 py-1 text-xs font-semibold text-brand-600">Xem shop</span>
                 </Link>
 
-                <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50 px-3 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Mua sắm trong video</p>
-                  <ul className="mt-2 space-y-1.5 text-sm leading-5 text-slate-700">
-                    <li>Chọn sản phẩm bên dưới để xem chi tiết.</li>
-                    <li>Vào shop để xem thêm sản phẩm cùng người bán.</li>
-                    <li>Hỏi shop ngay nếu bạn cần thêm thông tin sản phẩm.</li>
-                  </ul>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mô tả video</p>
-                  <p className="mt-2 line-clamp-5 text-sm leading-6 text-slate-600">
-                    {currentVideo.description || 'Seller chưa thêm mô tả cho video này.'}
+                {/* Description */}
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#757575]">Mô tả video</h3>
+                  <p className="mt-1.5 text-xs text-[#555] leading-relaxed line-clamp-4">
+                    {currentVideo.description || 'Người bán chưa thêm mô tả.'}
                   </p>
                 </div>
 
-                {currentVideo.products.length > 0 ? (
-                  <div className="mt-5">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sản phẩm trong video</p>
-                    <div className="mt-2 space-y-2">
-                      {currentVideo.products.slice(0, 3).map((product) => (
+                {/* Products in Video */}
+                {currentVideo.products.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#757575] mb-2">
+                      Sản phẩm trong video ({currentVideo.products.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {currentVideo.products.map((product) => (
                         <Link
                           key={product.productId}
                           href={`/products/${encodeURIComponent(product.productId)}`}
                           onClick={() => handleProductClick(currentVideo, product.productId)}
-                          className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2 transition hover:border-brand-200 hover:bg-brand-50"
+                          className="flex items-center gap-2.5 rounded-sm border border-[#e8e8e8] p-2 transition hover:border-[#ee4d2d]"
                         >
                           <Image
                             src={product.image ?? '/icon.svg'}
@@ -359,225 +407,264 @@ export default function VideosPage() {
                             width={44}
                             height={44}
                             unoptimized
-                            className="h-11 w-11 rounded-md object-cover"
+                            className="h-11 w-11 rounded-sm object-cover shrink-0 border border-[#f1f1f1]"
                           />
-                          <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 text-sm font-semibold text-slate-900">{product.name}</span>
-                            <span className="block text-sm font-bold text-brand-600">{formatPrice(product.price)}</span>
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-1 text-xs font-semibold text-[#222]">{product.name}</p>
+                            <p className="text-xs font-bold text-[#ee4d2d] mt-0.5">{formatPrice(product.price)}</p>
+                          </div>
+                          <span className="rounded-sm bg-[#ee4d2d] px-2.5 py-1 text-[11px] font-bold text-white shrink-0 hover:bg-[#d73211]">
+                            Mua
                           </span>
-                          <span className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-semibold text-white">Mua</span>
                         </Link>
                       ))}
                     </div>
                   </div>
-                ) : null}
+                )}
 
-                {recommendationLoading || recommendedProducts.length > 0 ? (
-                  <div className="mt-5">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Mua kèm phổ biến</p>
-                    <div className="mt-2 space-y-2">
+                {/* Recommended Products */}
+                {recommendedProducts.length > 0 && (
+                  <div className="border-t border-[#f1f1f1] pt-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-[#757575] mb-2">Gợi ý mua kèm</h3>
+                    <div className="space-y-2">
                       {recommendedProducts.map((product) => (
                         <Link
                           key={product.id}
                           href={`/products/${encodeURIComponent(product.id)}`}
-                          className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 transition hover:border-brand-200 hover:bg-brand-50"
+                          className="flex items-center gap-2 rounded-sm border border-[#f1f1f1] p-1.5 transition hover:border-[#ee4d2d]"
                         >
                           <Image
                             src={product.image || '/icon.svg'}
                             alt={product.title}
-                            width={44}
-                            height={44}
+                            width={36}
+                            height={36}
                             unoptimized
-                            className="h-11 w-11 rounded-md object-cover"
+                            className="h-9 w-9 rounded-sm object-cover shrink-0"
                           />
-                          <span className="min-w-0 flex-1">
-                            <span className="line-clamp-1 text-sm font-semibold text-slate-900">{product.title}</span>
-                            <span className="block text-sm font-bold text-brand-600">{formatPrice(product.price)}</span>
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-1 text-xs text-[#222]">{product.title}</p>
+                            <p className="text-xs font-bold text-[#ee4d2d]">{formatPrice(product.price)}</p>
+                          </div>
                         </Link>
                       ))}
-                      {recommendationLoading && recommendedProducts.length === 0 ? (
-                        <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-2 text-xs text-slate-500">
-                          Đang tải gợi ý...
-                        </p>
-                      ) : null}
                     </div>
                   </div>
-                ) : null}
+                )}
               </aside>
 
-              <div className="relative min-w-0">
-                <div className="grid items-start gap-4 xl:grid-cols-[minmax(300px,430px)_minmax(280px,340px)]">
-                  <article className="mx-auto w-full max-w-[430px] rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <div className="mb-3 flex items-start justify-between gap-3 px-1">
-                      {/* <p className="truncate text-xs font-semibold uppercase tracking-wide text-brand-600">{currentVideo.seller.shopName}</p> */}
-                      <h1 className="mt-1 min-w-0 truncate text-lg font-semibold text-slate-950">{currentVideo.title}</h1>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleLike(currentVideo.videoId)}
-                          aria-pressed={currentVideoLiked}
-                          aria-label={currentVideoLiked ? 'Bỏ tym video' : 'Tym video'}
-                          className={`flex h-9 w-9 items-center justify-center rounded-full border text-lg font-bold transition ${
-                            currentVideoLiked
-                              ? 'border-brand-200 bg-brand-50 text-brand-600'
-                              : 'border-slate-200 bg-white text-slate-500 hover:border-brand-200 hover:text-brand-600'
-                          }`}
-                        >
-                          {currentVideoLiked ? '♥' : '♡'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleShareVideo(currentVideo)}
-                          aria-label="Chia sẻ video"
-                          className="flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-brand-200 hover:text-brand-600"
-                        >
-                          Chia sẻ
-                        </button>
-                      </div>
-                    </div>
-                    {likeStatus === 'login-required' ? <p className="mb-2 px-1 text-xs font-medium text-red-600">Đăng nhập để tiếp tục.</p> : null}
-                    {shareStatus === 'copied' ? <p className="mb-2 px-1 text-xs font-medium text-brand-600">Đã copy link video.</p> : null}
-                    {shareStatus === 'error' ? <p className="mb-2 px-1 text-xs font-medium text-red-600">Không thể chia sẻ video lúc này.</p> : null}
+              {/* Center Column: Video Player */}
+              <article className="rounded-sm border border-[#e8e8e8] bg-white p-3 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3 px-1 border-b border-[#f1f1f1] pb-2.5">
+                  <h1 className="min-w-0 truncate text-base font-bold text-[#222]">{currentVideo.title}</h1>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleLike(currentVideo.videoId)}
+                      aria-pressed={currentVideoLiked}
+                      className={`inline-flex items-center gap-1 rounded-sm border px-2.5 py-1 text-xs font-bold transition ${
+                        currentVideoLiked
+                          ? 'border-[#ee4d2d] bg-[#fef6f5] text-[#ee4d2d]'
+                          : 'border-[#e8e8e8] text-[#555] hover:border-[#ee4d2d] hover:text-[#ee4d2d]'
+                      }`}
+                    >
+                      <span>{currentVideoLiked ? '♥' : '♡'}</span>
+                      <span>Thích</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleShareVideo(currentVideo)}
+                      className="rounded-sm border border-[#e8e8e8] px-2.5 py-1 text-xs font-semibold text-[#555] hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
+                    >
+                      {shareStatus === 'copied' ? 'Đã copy link' : 'Chia sẻ'}
+                    </button>
+                  </div>
+                </div>
 
-                    <div className="relative mx-auto aspect-[9/16] max-h-[min(640px,72vh)] overflow-hidden rounded-lg border border-slate-200 bg-white">
-                      {currentVideo.mediaUrl ? (
-                        <video
-                          key={currentVideo.videoId}
-                          ref={videoRef}
-                          src={currentVideo.mediaUrl}
-                          poster={currentVideo.thumbnailUrl ?? undefined}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="h-full w-full object-contain"
-                          onPlay={() => handlePlay(currentVideo)}
-                          onTimeUpdate={(event) => handleTimeUpdate(currentVideo, event.currentTarget.currentTime)}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center bg-slate-100 px-6 text-center text-sm text-slate-600">Video chưa có media</div>
+                {likeStatus === 'login-required' && (
+                  <p className="mb-2 text-xs font-medium text-[#ee4d2d]">Vui lòng đăng nhập để thích video.</p>
+                )}
+
+                {/* Main Video Box */}
+                <div className="relative mx-auto aspect-[9/16] max-h-[min(640px,72vh)] overflow-hidden rounded-sm bg-black group select-none">
+                  {resolvedMediaUrl && !videoError ? (
+                    <>
+                      <video
+                        key={currentVideo.videoId}
+                        ref={videoRef}
+                        src={resolvedMediaUrl}
+                        poster={resolvedThumbnailUrl || undefined}
+                        autoPlay
+                        muted={isMuted}
+                        playsInline
+                        loop
+                        preload="auto"
+                        onClick={togglePlay}
+                        onError={() => setVideoError(true)}
+                        className="h-full w-full object-contain cursor-pointer"
+                        onPlay={() => handlePlay(currentVideo)}
+                        onTimeUpdate={(e) => handleTimeUpdate(currentVideo, e.currentTarget.currentTime)}
+                      />
+
+                      {/* Play/Pause Overlay Icon when paused */}
+                      {!isPlaying && (
+                        <div
+                          onClick={togglePlay}
+                          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
+                        >
+                          <div className="grid h-16 w-16 place-items-center rounded-full bg-black/60 text-white text-2xl shadow-lg border border-white/20 transition hover:scale-110">
+                            ▶
+                          </div>
+                        </div>
                       )}
 
-                      <div className="pointer-events-none absolute left-3 right-3 top-3 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">{currentVideo.metrics.qualifiedViewCount} views</span>
-                        <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm">
-                          {currentVideo.metrics.commentCount ?? 0} bình luận
+                      {/* Top Badges */}
+                      <div className="absolute left-3 top-3 flex items-center gap-1.5 pointer-events-none">
+                        <span className="rounded-full bg-black/60 px-2.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
+                          {currentVideo.metrics.qualifiedViewCount} views
                         </span>
-                        <span className="rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white shadow-sm">Published</span>
+                        <span className="rounded-full bg-[#ee4d2d] px-2.5 py-0.5 text-[10px] font-bold uppercase text-white">
+                          Shopee Video
+                        </span>
+                      </div>
+
+                      {/* Sound Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={toggleMute}
+                        className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white text-xs hover:bg-black/80 transition shadow"
+                        title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+                      >
+                        {isMuted ? '🔇' : '🔊'}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-black p-6 text-center text-white">
+                      <span className="text-3xl mb-2">📹</span>
+                      <p className="text-xs font-semibold text-white/90">
+                        {videoError ? 'Không thể tải được video này.' : 'Video chưa có tệp đa phương tiện.'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVideoError(false);
+                          if (videoRef.current) videoRef.current.load();
+                        }}
+                        className="mt-3 rounded-sm bg-[#ee4d2d] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#d73211]"
+                      >
+                        Thử tải lại
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Navigation controls */}
+                <div className="mt-3 flex items-center justify-between border-t border-[#f1f1f1] pt-2.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={goPrevious}
+                    disabled={currentIndex <= 0}
+                    className="inline-flex items-center gap-1 rounded-sm border border-[#e8e8e8] px-3 py-1 font-semibold text-[#555] hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span>▲</span>
+                    <span>Video trước</span>
+                  </button>
+                  <span className="text-[#757575] text-[11px]">
+                    {currentIndex + 1} / {videos.length} video
+                  </span>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={currentIndex >= videos.length - 1}
+                    className="inline-flex items-center gap-1 rounded-sm border border-[#e8e8e8] px-3 py-1 font-semibold text-[#555] hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span>Video tiếp</span>
+                    <span>▼</span>
+                  </button>
+                </div>
+              </article>
+
+              {/* Right Column: Comments */}
+              <aside className="rounded-sm border border-[#e8e8e8] bg-white shadow-sm flex flex-col h-[min(720px,82vh)]">
+                <div className="flex items-center justify-between border-b border-[#f1f1f1] px-4 py-3 bg-[#fafafa]">
+                  <div>
+                    <h2 className="text-sm font-bold text-[#222]">Bình luận ({currentVideo.metrics.commentCount ?? comments.length})</h2>
+                    <p className="text-[11px] text-[#757575]">
+                      {accessToken ? 'Trao đổi cùng người bán và người mua.' : 'Đăng nhập để tham gia bình luận.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Comments List */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+                  {commentsStatus === 'loading' && (
+                    <p className="text-center text-xs text-[#757575] py-4">Đang tải bình luận...</p>
+                  )}
+                  {commentsStatus === 'error' && (
+                    <p className="text-center text-xs text-[#ee4d2d] py-4">{commentError || 'Lỗi tải bình luận.'}</p>
+                  )}
+                  {commentsStatus === 'success' && comments.length === 0 && (
+                    <p className="text-center text-xs text-[#757575] py-8">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+                  )}
+                  {comments.map((comment) => (
+                    <div key={comment.commentId} className="flex gap-2.5 rounded-sm bg-[#fafafa] p-2.5 border border-[#f1f1f1]">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fef6f5] text-[11px] font-bold text-[#ee4d2d] border border-[#fcdcd7]">
+                        {getCommentInitial(comment, user, commentNameMap)}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#222]">{formatCommentAuthor(comment, user, commentNameMap)}</p>
+                        <p className="mt-0.5 text-xs text-[#555] break-words">{comment.text}</p>
                       </div>
                     </div>
-                  </article>
-
-                  <aside className="rounded-2xl border border-[#ead8ca] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.08)] xl:sticky xl:top-24">
-                    <section className="overflow-hidden rounded-2xl">
-                      <div className="flex items-center justify-between border-b border-[#ebe3d8] bg-[#fffdfa] px-4 py-3">
-                        <div>
-                          <h2 className="text-lg font-bold text-slate-900">Bình luận</h2>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {accessToken ? 'Trao đổi với shop và người mua khác.' : 'Đăng nhập để tham gia bình luận.'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-slate-500">{currentVideo.metrics.commentCount ?? comments.length}</span>
-                          <button
-                            type="button"
-                            onClick={() => setCommentsCollapsed((current) => !current)}
-                            aria-expanded={!commentsCollapsed}
-                            aria-label={commentsCollapsed ? 'Hiện bình luận' : 'Ẩn bình luận'}
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-[#ead8ca] bg-white text-xs font-bold text-slate-500 transition hover:border-brand-200 hover:text-brand-600"
-                          >
-                            {commentsCollapsed ? '↓' : '↑'}
-                          </button>
-                        </div>
-                      </div>
-                      {!commentsCollapsed ? (
-                        <div className="flex max-h-[640px] min-h-[360px] flex-col xl:h-[640px]">
-                          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto bg-[#fffdfa] p-3">
-                            {commentsStatus === 'loading' ? <p className="text-sm text-slate-500">Đang tải bình luận...</p> : null}
-                            {commentsStatus === 'error' ? <p className="text-sm text-red-600">{commentError || 'Không thể tải bình luận.'}</p> : null}
-                            {commentsStatus === 'success' && comments.length === 0 ? <p className="text-sm text-slate-500">Chưa có bình luận.</p> : null}
-                            {comments.map((comment) => (
-                              <div key={comment.commentId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
-                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getCommentAvatarColor(comment.userRole)}`}>
-                                  {getCommentInitial(comment, user, commentNameMap)}
-                                </span>
-                                <span className="min-w-0">
-                                  <p className={`text-xs font-bold ${getCommentNameColor(comment.userRole)}`}>{formatCommentAuthor(comment, user, commentNameMap)}</p>
-                                  <p className="mt-1 break-words text-sm leading-5 text-slate-900">{comment.text}</p>
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="border-t border-[#ebe3d8] bg-white p-3">
-                            <div className="mb-2 flex gap-1.5">
-                              {chatEmojis.map((emoji) => (
-                                <button
-                                  key={emoji}
-                                  type="button"
-                                  onClick={() => setCommentInput((current) => `${current}${emoji}`)}
-                                  disabled={!accessToken || commentSubmitting}
-                                  className="flex h-8 w-8 items-center justify-center rounded-full border border-[#ead8ca] bg-[#fff8f3] text-sm transition hover:border-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {emoji}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                value={commentInput}
-                                onChange={(event) => setCommentInput(event.target.value)}
-                                onKeyDown={(event) => {
-                                  if (event.key === 'Enter') {
-                                    void handleSubmitComment();
-                                  }
-                                }}
-                                placeholder={accessToken ? 'Chỉ trao đổi về sản phẩm trên eMall...' : 'Đăng nhập để bình luận'}
-                                className="min-w-0 flex-1 rounded-xl border border-[#d7d0c5] bg-[#fbfaf7] px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:bg-white"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => void handleSubmitComment()}
-                                disabled={!commentInput.trim() || !commentSafety.allowed || commentSubmitting}
-                                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                Gửi
-                              </button>
-                            </div>
-                            {!commentSafety.allowed && commentInput.trim() ? (
-                              <p className="mt-2 text-xs font-semibold text-[#c2410c]">{commentSafety.message}</p>
-                            ) : null}
-                            {commentError && commentsStatus !== 'error' ? <p className="mt-2 text-xs font-medium text-red-600">{commentError}</p> : null}
-                          </div>
-                        </div>
-                      ) : null}
-                    </section>
-                  </aside>
+                  ))}
                 </div>
 
-                <div className="mt-4 flex justify-center gap-3 xl:absolute xl:-right-16 xl:top-1/2 xl:mt-0 xl:-translate-y-1/2 xl:flex-col">
-                  <NavigationButton direction="up" disabled={currentIndex <= 0} onClick={goPrevious} label="Video trước" />
-                  <NavigationButton direction="down" disabled={currentIndex >= videos.length - 1} onClick={goNext} label="Video sau" />
+                {/* Comment Input */}
+                <div className="border-t border-[#f1f1f1] p-3 bg-white">
+                  <div className="mb-2 flex gap-1">
+                    {chatEmojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setCommentInput((c) => `${c}${emoji}`)}
+                        disabled={!accessToken || commentSubmitting}
+                        className="grid h-7 w-7 place-items-center rounded-sm border border-[#e8e8e8] bg-[#fafafa] text-xs hover:border-[#ee4d2d] disabled:opacity-40"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') void handleSubmitComment();
+                      }}
+                      placeholder={accessToken ? 'Viết bình luận sản phẩm...' : 'Đăng nhập để gửi bình luận'}
+                      className="min-w-0 flex-1 rounded-sm border border-[#e8e8e8] px-3 py-1.5 text-xs outline-none focus:border-[#ee4d2d]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleSubmitComment()}
+                      disabled={!commentInput.trim() || !commentSafety.allowed || commentSubmitting}
+                      className="rounded-sm bg-[#ee4d2d] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#d73211] disabled:opacity-50"
+                    >
+                      Gửi
+                    </button>
+                  </div>
+                  {!commentSafety.allowed && commentInput.trim() && (
+                    <p className="mt-1 text-[11px] text-[#ee4d2d]">{commentSafety.message}</p>
+                  )}
+                  {commentError && commentsStatus !== 'error' && (
+                    <p className="mt-1 text-[11px] text-[#ee4d2d]">{commentError}</p>
+                  )}
                 </div>
-              </div>
+              </aside>
             </div>
           </section>
         ) : null}
       </main>
     </div>
-  );
-}
-
-function NavigationButton({ direction, disabled, onClick, label }: { direction: 'up' | 'down'; disabled: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-200/80 bg-white/70 text-2xl font-semibold text-brand-500/90 shadow-sm shadow-slate-200/40 backdrop-blur-sm transition hover:border-brand-200 hover:bg-white hover:text-brand-600 disabled:cursor-not-allowed disabled:text-slate-300 disabled:opacity-45 md:h-14 md:w-14"
-    >
-      {direction === 'up' ? '↑' : '↓'}
-    </button>
   );
 }
 
@@ -613,28 +700,6 @@ function getCommentInitial(
 ): string {
   const author = formatCommentAuthor(comment, currentUser, knownNames);
   return (author.trim().charAt(0) || 'U').toUpperCase();
-}
-
-function getCommentAvatarColor(userRole: string): string {
-  const normalizedRole = userRole.toLowerCase();
-  if (normalizedRole.includes('seller')) {
-    return 'bg-brand-500';
-  }
-  if (normalizedRole.includes('admin') || normalizedRole.includes('moderator')) {
-    return 'bg-slate-700';
-  }
-  return 'bg-[#f59e0b]';
-}
-
-function getCommentNameColor(userRole: string): string {
-  const normalizedRole = userRole.toLowerCase();
-  if (normalizedRole.includes('seller')) {
-    return 'text-brand-600';
-  }
-  if (normalizedRole.includes('admin') || normalizedRole.includes('moderator')) {
-    return 'text-slate-700';
-  }
-  return 'text-[#b45309]';
 }
 
 function buildEventPayload(video: BuyerVideo, extra: Record<string, unknown> = {}) {
@@ -676,7 +741,7 @@ function writeLikedVideoIds(videoIds: Set<string>) {
   try {
     window.localStorage.setItem('buyer_video_liked_ids', JSON.stringify(Array.from(videoIds)));
   } catch {
-    // Ignore storage failures; the visual state still updates for this session.
+    // Ignore storage failures
   }
 }
 

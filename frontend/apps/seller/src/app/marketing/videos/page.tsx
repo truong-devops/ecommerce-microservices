@@ -18,6 +18,7 @@ import {
   unpublishSellerVideo,
   updateSellerVideo
 } from '@/lib/api/videos';
+import { resolveMediaUrl } from '@/lib/media-url';
 import { useAuth } from '@/providers/AppProvider';
 
 const checklist = [
@@ -627,7 +628,7 @@ export default function SellerVideosPage() {
             </div>
             <div className="bg-slate-950">
               {previewVideo.mediaUrl ? (
-                <video src={previewVideo.mediaUrl} controls autoPlay className="max-h-[72vh] w-full bg-slate-950 object-contain" />
+                <video src={resolveMediaUrl(previewVideo.mediaUrl)} controls autoPlay className="max-h-[72vh] w-full bg-slate-950 object-contain" />
               ) : (
                 <div className="flex h-72 items-center justify-center text-sm text-white">Video chưa có file để xem trước.</div>
               )}

@@ -11,6 +11,7 @@ import { fetchProductDetail } from '@/lib/api/products';
 import { formatPrice } from '@/lib/price';
 import { fetchBuyerShipmentByOrderId } from '@/lib/api/shipping';
 import { formatOrderCode } from '@/lib/order-codes';
+import { resolveMediaUrl } from '@/lib/media-url';
 import type {
   Order,
   OrderItem,
@@ -902,7 +903,8 @@ export default function OrdersPage() {
 }
 
 function OrderItemImage({ src, alt }: { src?: string; alt: string }) {
-  const imageSrc = src?.trim() || ORDER_IMAGE_PLACEHOLDER;
+  const resolved = src ? resolveMediaUrl(src) : '';
+  const imageSrc = resolved.trim() || ORDER_IMAGE_PLACEHOLDER;
 
   return (
     <img

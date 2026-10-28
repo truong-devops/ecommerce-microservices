@@ -1,3 +1,8 @@
+'use client';
+
+import Link from 'next/link';
+import { LogOutIcon } from '@/components/ui/icons';
+
 interface ModeratorTopbarProps {
   email: string;
   role: string;
@@ -9,43 +14,57 @@ export function ModeratorTopbar({ email, role, onLogout }: ModeratorTopbarProps)
   const initial = (displayName.trim().charAt(0) || 'M').toUpperCase();
 
   return (
-    <header className="sticky top-0 z-40 h-14 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex h-full items-center justify-between px-3 lg:px-4">
-        <div className="flex items-center gap-2">
-          <div
-            aria-hidden="true"
-            className="h-8 w-8 rounded-xl bg-white bg-cover bg-center shadow-sm ring-1 ring-slate-200"
-            style={{ backgroundImage: "url('/icon.svg')" }}
-          />
-          <div>
-            <p className="text-sm font-semibold leading-none text-slate-900 md:text-base">eMall Trust & Safety</p>
-            <p className="hidden text-[11px] text-slate-500 md:block">Moderation Operations Console</p>
-          </div>
+    <header className="sticky top-0 z-40 h-14 border-b border-[#e8e8e8] bg-white">
+      <div className="mx-auto flex h-full w-full max-w-[1760px] items-center justify-between px-4 sm:px-6">
+        {/* Left: Brand Identity */}
+        <div className="flex items-center gap-3">
+          <Link href="/" className="group flex items-center gap-2.5 transition">
+            <div
+              aria-hidden="true"
+              className="relative h-8 w-8 rounded-lg bg-white bg-cover bg-center shadow-xs ring-1 ring-orange-100 transition-transform group-hover:scale-105"
+              style={{ backgroundImage: "url('/icon.svg')" }}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold text-[#ee4d2d]">
+                eMall
+              </span>
+              <span className="text-sm font-semibold text-[#222222]">
+                Kiểm duyệt &amp; Vận hành
+              </span>
+            </div>
+          </Link>
         </div>
 
-        <div className="flex items-center gap-2 text-slate-600">
-          <div className="hidden rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-indigo-700 lg:block">
-            Trust Team
-          </div>
+        {/* Right: User & Logout */}
+        <div className="flex items-center gap-3">
+          {/* Role badge */}
+          <span className="hidden sm:inline-block rounded border border-[#e8e8e8] bg-[#f5f5f5] px-2.5 py-1 text-xs font-semibold text-[#555555]">
+            {role}
+          </span>
 
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-3 shadow-sm">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-slate-800 text-xs font-bold text-white shadow-sm">
+          {/* User profile capsule */}
+          <div className="flex items-center gap-2 rounded-full border border-[#e8e8e8] bg-white py-1 pl-1 pr-3">
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-[#ee4d2d] text-xs font-bold text-white shadow-xs">
               {initial}
-            </span>
-            <span className="hidden min-w-0 md:block">
-              <span className="block max-w-[150px] truncate text-sm font-semibold leading-4 text-slate-800">{displayName}</span>
-              <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-500">{role}</span>
-            </span>
+            </div>
+            <div className="hidden min-w-0 md:block">
+              <span className="block max-w-[140px] truncate text-xs font-semibold leading-tight text-[#222222]">
+                {displayName}
+              </span>
+            </div>
           </div>
 
+          {/* Logout Button */}
           <button
             type="button"
             onClick={() => {
               void onLogout();
             }}
-            className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
+            className="inline-flex items-center gap-1.5 rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-xs font-semibold text-[#555555] transition-all hover:border-[#ee4d2d] hover:bg-[#fef6f5] hover:text-[#ee4d2d]"
+            title="Đăng xuất khỏi hệ thống"
           >
-            Đăng xuất
+            <LogOutIcon size={14} />
+            <span className="hidden sm:inline">Đăng xuất</span>
           </button>
         </div>
       </div>

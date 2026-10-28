@@ -282,6 +282,10 @@ func (s *VideoService) SubmitReview(ctx context.Context, user domain.UserContext
 	now := time.Now().UTC()
 	moderation := existing.Moderation
 	moderation.SubmittedAt = &now
+	moderation.RejectionReason = nil
+	moderation.ReviewedAt = nil
+	moderation.ReviewedBy = nil
+	moderation.PolicyFlags = nil
 	updated, err := s.repo.UpdateByVideoID(ctx, existing.VideoID, bson.M{"status": domain.ProductVideoStatusReviewPending, "moderation": moderation})
 	if err != nil {
 		return domain.ProductVideoResponse{}, err
@@ -350,6 +354,14 @@ func (s *VideoService) ArchiveVideo(ctx context.Context, user domain.UserContext
 	}
 	if err := assertCanManageVideo(user, *existing); err != nil {
 		return domain.ProductVideoResponse{}, err
+	}
+	if domain.IsSeller(user.Role) && !isSellerDeletableVideoStatus(existing.Status) {
+		return domain.ProductVideoResponse{}, httpx.NewAppError(
+			http.StatusUnprocessableEntity,
+			domain.ErrorCodeValidationFailed,
+			"Only draft, failed, processing, or rejected videos can be deleted",
+			nil,
+		)
 	}
 	now := time.Now().UTC()
 	updated, err := s.repo.UpdateByVideoID(ctx, existing.VideoID, bson.M{"status": domain.ProductVideoStatusArchived, "archivedAt": now})
@@ -757,6 +769,13 @@ func (s *VideoService) ToVideoResponse(video domain.ProductVideo) domain.Product
 			AddToCartRate:      addToCartRate,
 			LastAggregatedAt:   formatTimePtr(metrics.LastAggregatedAt),
 		},
+		Moderation: domain.VideoModerationResponse{
+			SubmittedAt:     formatTimePtr(video.Moderation.SubmittedAt),
+			ReviewedAt:      formatTimePtr(video.Moderation.ReviewedAt),
+			ReviewedBy:      video.Moderation.ReviewedBy,
+			RejectionReason: video.Moderation.RejectionReason,
+			PolicyFlags:     append([]string(nil), video.Moderation.PolicyFlags...),
+		},
 		PublishedAt: formatTimePtr(video.PublishedAt),
 		HiddenAt:    formatTimePtr(video.HiddenAt),
 		ArchivedAt:  formatTimePtr(video.ArchivedAt),
@@ -931,6 +950,18 @@ func assertVideoEditable(video domain.ProductVideo) error {
 		return httpx.NewAppError(http.StatusUnprocessableEntity, domain.ErrorCodeValidationFailed, "Video cannot be edited in its current status", nil)
 	}
 	return nil
+}
+
+func isSellerDeletableVideoStatus(status domain.ProductVideoStatus) bool {
+	switch status {
+	case domain.ProductVideoStatusDraft,
+		domain.ProductVideoStatusProcessing,
+		domain.ProductVideoStatusProcessingFailed,
+		domain.ProductVideoStatusRejected:
+		return true
+	default:
+		return false
+	}
 }
 
 func assertCanSubmitVideoReview(video domain.ProductVideo) error {

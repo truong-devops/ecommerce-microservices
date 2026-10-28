@@ -47,6 +47,7 @@ function SearchPageContent() {
 
   const query = useMemo(() => {
     const q = searchParams.get('q')?.trim() ?? '';
+    const categoryId = searchParams.get('categoryId')?.trim() ?? '';
     const page = parsePositiveInt(searchParams.get('page')) ?? 1;
 
     const rawSortBy = searchParams.get('sortBy');
@@ -58,6 +59,7 @@ function SearchPageContent() {
 
     return {
       q,
+      categoryId,
       page,
       sortBy,
       sortOrder
@@ -73,6 +75,7 @@ function SearchPageContent() {
         page: query.page,
         pageSize: 20,
         search: query.q,
+        categoryId: query.categoryId,
         sortBy: query.sortBy,
         sortOrder: query.sortOrder
       });
@@ -87,7 +90,7 @@ function SearchPageContent() {
       }
       setStatus('error');
     }
-  }, [query.page, query.q, query.sortBy, query.sortOrder, text.search.loadError]);
+  }, [query.categoryId, query.page, query.q, query.sortBy, query.sortOrder, text.search.loadError]);
 
   useEffect(() => {
     void loadProducts();
@@ -131,7 +134,11 @@ function SearchPageContent() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900">{text.search.title}</h1>
               <p className="mt-1 text-sm text-slate-600">
-                {query.q ? text.search.resultFor.replace('{query}', query.q) : text.search.subtitle}
+                {query.q
+                  ? text.search.resultFor.replace('{query}', query.q)
+                  : query.categoryId
+                    ? `Sản phẩm thuộc danh mục ${prettifyCategory(query.categoryId)}`
+                    : text.search.subtitle}
               </p>
               <p className="mt-1 text-sm text-slate-500">
                 {text.search.totalResults.replace('{count}', String(result.pagination.totalItems))}
@@ -259,4 +266,10 @@ function parsePositiveInt(raw: string | null): number | null {
   }
 
   return Math.floor(value);
+}
+
+function prettifyCategory(value: string): string {
+  return value
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\p{L}/gu, (character) => character.toLocaleUpperCase('vi-VN'));
 }

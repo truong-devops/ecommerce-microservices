@@ -11,6 +11,7 @@ interface ProductVariant {
   price: number;
   currency: string;
   compareAtPrice: number | null;
+  initialStock?: number | null;
   isDefault: boolean;
   metadata?: Record<string, unknown> | null;
 }
@@ -220,10 +221,27 @@ function toVariants(
       currency: sanitizeCurrency(variant.currency) || fallbackCurrency,
       compareAtPrice: variantCompareAt,
       discountPercent: calculateDiscountPercent(variantPrice, variantCompareAt),
+      stock: toNonNegativeInt(variant.initialStock),
+      image: extractVariantImage(variant.metadata),
       isDefault: Boolean(variant.isDefault),
       metadata: sanitizeFlatRecord(variant.metadata)
     };
   });
+}
+
+function extractVariantImage(metadata?: Record<string, unknown> | null): string | null {
+  if (!metadata) {
+    return null;
+  }
+
+  for (const key of ['imageUrl', 'image', 'thumbnailUrl', 'thumbnail']) {
+    const candidate = metadata[key];
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
 }
 
 function extractStock(attributes?: Record<string, unknown> | null): number | null {

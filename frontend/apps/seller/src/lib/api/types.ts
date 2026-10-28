@@ -695,6 +695,12 @@ export interface CreateSellerVideoInput {
   products: SellerVideoProductInput[];
 }
 
+export interface UpdateSellerVideoInput {
+  title?: string;
+  description?: string;
+  products?: SellerVideoProductInput[];
+}
+
 export interface SellerVideoProduct {
   productId: string;
   sku: string | null;
@@ -730,6 +736,13 @@ export interface SellerVideo {
     ctr: number;
     addToCartRate: number;
     lastAggregatedAt: string | null;
+  };
+  moderation: {
+    submittedAt: string | null;
+    reviewedAt: string | null;
+    reviewedBy: string | null;
+    rejectionReason: string | null;
+    policyFlags: string[];
   };
   publishedAt: string | null;
   createdAt: string;

@@ -100,6 +100,59 @@ func TestVideoReviewSubmissionStateValidation(t *testing.T) {
 	}
 }
 
+func TestSellerVideoDeleteStateValidation(t *testing.T) {
+	allowed := []domain.ProductVideoStatus{
+		domain.ProductVideoStatusDraft,
+		domain.ProductVideoStatusProcessing,
+		domain.ProductVideoStatusProcessingFailed,
+		domain.ProductVideoStatusRejected,
+	}
+	for _, status := range allowed {
+		if !isSellerDeletableVideoStatus(status) {
+			t.Fatalf("expected status %s to be deletable", status)
+		}
+	}
+
+	blocked := []domain.ProductVideoStatus{
+		domain.ProductVideoStatusReviewPending,
+		domain.ProductVideoStatusPublished,
+		domain.ProductVideoStatusHidden,
+		domain.ProductVideoStatusArchived,
+	}
+	for _, status := range blocked {
+		if isSellerDeletableVideoStatus(status) {
+			t.Fatalf("expected status %s to be protected from seller deletion", status)
+		}
+	}
+}
+
+func TestVideoResponseIncludesModerationReason(t *testing.T) {
+	reason := "Nội dung chứa thông tin liên hệ ngoài sàn"
+	reviewedAt := time.Date(2026, 5, 15, 2, 0, 0, 0, time.UTC)
+	videoService := NewVideoService(&fakeVideoRepo{}, &fakeProductRepo{}, nil, nil, "")
+
+	response := videoService.ToVideoResponse(domain.ProductVideo{
+		VideoID:  "video-1",
+		SellerID: "seller-1",
+		Title:    "Rejected video",
+		Status:   domain.ProductVideoStatusRejected,
+		Moderation: domain.VideoModeration{
+			ReviewedAt:      &reviewedAt,
+			RejectionReason: &reason,
+			PolicyFlags:     []string{"OFF_PLATFORM_CONTACT"},
+		},
+		CreatedAt: reviewedAt,
+		UpdatedAt: reviewedAt,
+	})
+
+	if response.Moderation.RejectionReason == nil || *response.Moderation.RejectionReason != reason {
+		t.Fatalf("expected rejection reason in response, got %+v", response.Moderation)
+	}
+	if len(response.Moderation.PolicyFlags) != 1 || response.Moderation.PolicyFlags[0] != "OFF_PLATFORM_CONTACT" {
+		t.Fatalf("expected moderation policy flags, got %+v", response.Moderation.PolicyFlags)
+	}
+}
+
 func TestCreateVideoCommentIncrementsCommentCount(t *testing.T) {
 	now := time.Date(2026, 5, 15, 0, 0, 0, 0, time.UTC)
 	repo := &fakeVideoRepo{items: []domain.ProductVideo{{

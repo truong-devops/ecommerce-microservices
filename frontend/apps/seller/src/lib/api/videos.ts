@@ -6,7 +6,8 @@ import type {
   PresignSellerVideoUploadOutput,
   SellerVideo,
   SellerVideoListOutput,
-  SellerVideoStatus
+  SellerVideoStatus,
+  UpdateSellerVideoInput
 } from './types';
 
 interface ListSellerVideosInput {
@@ -46,6 +47,25 @@ export function createSellerVideo(accessToken: string, payload: CreateSellerVide
       Authorization: `Bearer ${accessToken}`
     },
     body: JSON.stringify(payload)
+  });
+}
+
+export function updateSellerVideo(accessToken: string, videoId: string, payload: UpdateSellerVideoInput): Promise<SellerVideo> {
+  return requestSellerApi<SellerVideo>(`/api/seller/videos/${videoId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(payload)
+  });
+}
+
+export function archiveSellerVideo(accessToken: string, videoId: string): Promise<SellerVideo> {
+  return requestSellerApi<SellerVideo>(`/api/seller/videos/${videoId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
   });
 }
 

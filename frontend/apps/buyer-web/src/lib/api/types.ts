@@ -71,6 +71,8 @@ export interface ProductDetailVariant {
   currency: string;
   compareAtPrice: number | null;
   discountPercent: number;
+  stock: number | null;
+  image: string | null;
   isDefault: boolean;
   metadata: Record<string, string | number | boolean | null>;
 }

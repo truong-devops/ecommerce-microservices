@@ -9,12 +9,14 @@ import { SellerApiClientError } from '@/lib/api/client';
 import { listSellerProducts } from '@/lib/api/products';
 import type { SellerProduct, SellerVideo } from '@/lib/api/types';
 import {
+  archiveSellerVideo,
   confirmSellerVideoMedia,
   createSellerVideo,
   listSellerVideos,
   presignSellerVideoUpload,
   submitSellerVideoReview,
-  unpublishSellerVideo
+  unpublishSellerVideo,
+  updateSellerVideo
 } from '@/lib/api/videos';
 import { useAuth } from '@/providers/AppProvider';
 
@@ -77,6 +79,13 @@ export default function SellerVideosPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewVideo, setPreviewVideo] = useState<SellerVideo | null>(null);
+  const [editingVideo, setEditingVideo] = useState<SellerVideo | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editProductId, setEditProductId] = useState('');
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [retryVideo, setRetryVideo] = useState<SellerVideo | null>(null);
+  const [retryFile, setRetryFile] = useState<File | null>(null);
 
   const loadData = useCallback(async () => {
     if (!accessToken) {
@@ -90,7 +99,7 @@ export default function SellerVideosPage() {
         listSellerVideos({ accessToken, page: 1, pageSize: 20 }),
         listSellerProducts({ accessToken, page: 1, pageSize: 50 })
       ]);
-      setVideos(videoResult.items ?? []);
+      setVideos((videoResult.items ?? []).filter((video) => video.status !== 'archived'));
       setProducts((productResult.items ?? []).filter((product) => product.status === 'ACTIVE'));
       if (!selectedProductId && productResult.items?.[0]) {
         const firstActive = productResult.items.find((product) => product.status === 'ACTIVE');
@@ -222,6 +231,113 @@ export default function SellerVideosPage() {
     [accessToken, loadData]
   );
 
+  const uploadVideoMedia = useCallback(async (video: SellerVideo, file: File) => {
+    if (!accessToken) {
+      return;
+    }
+    validateVideoFile(file);
+    const presigned = await presignSellerVideoUpload(accessToken, {
+      videoId: video.videoId,
+      fileName: file.name,
+      contentType: file.type,
+      sizeBytes: file.size
+    });
+    const response = await fetch(presigned.uploadUrl, {
+      method: presigned.method || 'PUT',
+      headers: presigned.headers ?? { 'Content-Type': file.type },
+      body: file
+    });
+    if (!response.ok) {
+      throw new Error('Kho lưu trữ từ chối file video. Vui lòng thử lại.');
+    }
+    await confirmSellerVideoMedia(accessToken, video.videoId, {
+      mediaObjectKey: presigned.objectKey,
+      mimeType: file.type,
+      sizeBytes: file.size,
+      durationSec: 30
+    });
+  }, [accessToken]);
+
+  const openEditor = useCallback((video: SellerVideo) => {
+    setEditingVideo(video);
+    setEditTitle(video.title);
+    setEditDescription(video.description ?? '');
+    setEditProductId(video.products[0]?.productId ?? '');
+    setEditFile(null);
+  }, []);
+
+  const handleSaveVideo = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!accessToken || !editingVideo) {
+      return;
+    }
+    if (!editTitle.trim() || !editProductId) {
+      setError('Vui lòng nhập tiêu đề và chọn sản phẩm.');
+      return;
+    }
+
+    setActionLoadingId(editingVideo.videoId);
+    setError(null);
+    setMessage(null);
+    try {
+      await updateSellerVideo(accessToken, editingVideo.videoId, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        products: [{ productId: editProductId, sortOrder: 1 }]
+      });
+      if (editFile) {
+        await uploadVideoMedia(editingVideo, editFile);
+      }
+      setEditingVideo(null);
+      setMessage(editFile ? 'Đã cập nhật thông tin và thay file video.' : 'Đã cập nhật thông tin video.');
+      await loadData();
+    } catch (saveError) {
+      setError(getErrorMessage(saveError, 'Không cập nhật được video.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [accessToken, editDescription, editFile, editProductId, editTitle, editingVideo, loadData, uploadVideoMedia]);
+
+  const handleRetryUpload = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!retryVideo || !retryFile) {
+      setError('Vui lòng chọn file video để upload lại.');
+      return;
+    }
+    setActionLoadingId(retryVideo.videoId);
+    setError(null);
+    setMessage(null);
+    try {
+      await uploadVideoMedia(retryVideo, retryFile);
+      setRetryVideo(null);
+      setRetryFile(null);
+      setMessage('Upload lại thành công. Bạn có thể kiểm tra và gửi duyệt video.');
+      await loadData();
+    } catch (retryError) {
+      setError(getErrorMessage(retryError, 'Upload lại video thất bại.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [loadData, retryFile, retryVideo, uploadVideoMedia]);
+
+  const handleDeleteVideo = useCallback(async (video: SellerVideo) => {
+    if (!accessToken || !window.confirm(`Xóa video “${video.title}”? Thao tác này không thể hoàn tác trên Kênh Người Bán.`)) {
+      return;
+    }
+    setActionLoadingId(video.videoId);
+    setError(null);
+    setMessage(null);
+    try {
+      await archiveSellerVideo(accessToken, video.videoId);
+      setMessage('Đã xóa video khỏi danh sách của shop.');
+      await loadData();
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError, 'Không xóa được video.'));
+    } finally {
+      setActionLoadingId(null);
+    }
+  }, [accessToken, loadData]);
+
   const stats = useMemo(() => {
     const published = videos.filter((video) => video.status === 'published').length;
     const views = videos.reduce((total, video) => total + (video.metrics?.qualifiedViewCount ?? 0), 0);
@@ -229,6 +345,7 @@ export default function SellerVideosPage() {
     const ctr = views > 0 ? `${((clicks / views) * 100).toFixed(1)}%` : '0%';
     return { published, views, ctr };
   }, [videos]);
+  const rejectedVideos = useMemo(() => videos.filter((video) => video.status === 'rejected'), [videos]);
 
   if (!ready) {
     return <main className="flex min-h-screen items-center justify-center text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
@@ -301,6 +418,13 @@ export default function SellerVideosPage() {
               <KpiCard label="CTR" value={stats.ctr} />
             </div>
 
+            {rejectedVideos.length > 0 ? (
+              <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="status">
+                <p className="font-semibold">Bạn có {rejectedVideos.length} video bị từ chối.</p>
+                <p className="mt-1">Xem lý do trong danh sách, chỉnh sửa rồi gửi duyệt lại.</p>
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_380px]">
               <div className="rounded-md border border-slate-200 bg-white p-4">
                 <h2 className="text-base font-semibold text-slate-900">Danh sách video</h2>
@@ -340,18 +464,24 @@ export default function SellerVideosPage() {
                               <p className="text-xs text-slate-500">{video.videoId}</p>
                             </td>
                             <td className="px-3 py-2 text-slate-700">{video.products.map((product) => product.name).join(', ')}</td>
-                            <td className="px-3 py-2 text-slate-700">{statusLabels[video.status] ?? video.status}</td>
+                            <td className="px-3 py-2 text-slate-700">
+                              <p>{statusLabels[video.status] ?? video.status}</p>
+                              {video.status === 'rejected' ? (
+                                <p className="mt-1 max-w-xs text-xs font-medium text-rose-600">
+                                  Lý do: {video.moderation?.rejectionReason || 'Moderator chưa cung cấp lý do.'}
+                                </p>
+                              ) : null}
+                            </td>
                             <td className="px-3 py-2 text-slate-700">{video.metrics?.qualifiedViewCount ?? 0}</td>
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => setPreviewVideo(video)}
-                                  disabled={!video.mediaUrl}
-                                  title={video.mediaUrl ? 'Xem video' : 'Video chưa có file'}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                  title="Xem chi tiết video"
+                                  className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50"
                                 >
-                                  ▶
+                                  Chi tiết
                                 </button>
                                 <button
                                   type="button"
@@ -361,6 +491,39 @@ export default function SellerVideosPage() {
                                 >
                                   {actionLoading ? 'Đang xử lý...' : videoAction.label}
                                 </button>
+                                {canEditVideo(video) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditor(video)}
+                                    disabled={actionLoading || isSubmitting}
+                                    className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:opacity-50"
+                                  >
+                                    Sửa
+                                  </button>
+                                ) : null}
+                                {canRetryVideo(video) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRetryVideo(video);
+                                      setRetryFile(null);
+                                    }}
+                                    disabled={actionLoading || isSubmitting}
+                                    className="rounded-md border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                                  >
+                                    Upload lại
+                                  </button>
+                                ) : null}
+                                {canDeleteVideo(video) ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleDeleteVideo(video)}
+                                    disabled={actionLoading || isSubmitting}
+                                    className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                  >
+                                    Xóa
+                                  </button>
+                                ) : null}
                               </div>
                             </td>
                           </tr>
@@ -474,8 +637,56 @@ export default function SellerVideosPage() {
                 Trạng thái: <span className="font-semibold text-slate-900">{statusLabels[previewVideo.status] ?? previewVideo.status}</span>
               </p>
               <p>Sản phẩm: {previewVideo.products.map((product) => product.name).join(', ') || 'Chưa gắn sản phẩm'}</p>
+              <p>Mô tả: {previewVideo.description || 'Chưa có mô tả'}</p>
+              {previewVideo.status === 'rejected' ? (
+                <p className="font-medium text-rose-600">
+                  Lý do từ chối: {previewVideo.moderation?.rejectionReason || 'Moderator chưa cung cấp lý do.'}
+                </p>
+              ) : null}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {editingVideo ? (
+        <VideoEditorModal
+          title="Chỉnh sửa video"
+          submitLabel={actionLoadingId === editingVideo.videoId ? 'Đang lưu...' : 'Lưu thay đổi'}
+          titleValue={editTitle}
+          descriptionValue={editDescription}
+          productId={editProductId}
+          products={products}
+          disabled={actionLoadingId === editingVideo.videoId}
+          onTitleChange={setEditTitle}
+          onDescriptionChange={setEditDescription}
+          onProductChange={setEditProductId}
+          onFileChange={setEditFile}
+          onClose={() => setEditingVideo(null)}
+          onSubmit={handleSaveVideo}
+        />
+      ) : null}
+
+      {retryVideo ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <form onSubmit={(event) => void handleRetryUpload(event)} className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
+            <h2 className="text-lg font-semibold text-slate-900">Upload lại video</h2>
+            <p className="mt-1 text-sm text-slate-600">{retryVideo.title}</p>
+            <input
+              type="file"
+              required
+              accept="video/mp4,video/webm"
+              onChange={(event) => setRetryFile(event.target.files?.[0] ?? null)}
+              className="mt-4 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            />
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setRetryVideo(null)} className="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
+                Hủy
+              </button>
+              <button disabled={actionLoadingId === retryVideo.videoId} className="rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {actionLoadingId === retryVideo.videoId ? 'Đang upload...' : 'Upload lại'}
+              </button>
+            </div>
+          </form>
         </div>
       ) : null}
     </div>
@@ -487,6 +698,77 @@ function KpiCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-md border border-slate-200 bg-white p-4">
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function canEditVideo(video: SellerVideo): boolean {
+  return ['draft', 'processing', 'processing_failed', 'rejected', 'hidden'].includes(video.status);
+}
+
+function canRetryVideo(video: SellerVideo): boolean {
+  return ['draft', 'processing', 'processing_failed', 'rejected'].includes(video.status) &&
+    (video.status === 'processing_failed' || video.status === 'processing' || !video.mediaUrl);
+}
+
+function canDeleteVideo(video: SellerVideo): boolean {
+  return ['draft', 'processing', 'processing_failed', 'rejected'].includes(video.status);
+}
+
+function validateVideoFile(file: File): void {
+  if (!['video/mp4', 'video/webm'].includes(file.type)) {
+    throw new Error('Chỉ hỗ trợ video MP4 hoặc WebM.');
+  }
+  if (file.size < 1 || file.size > MAX_VIDEO_SIZE_BYTES) {
+    throw new Error(`Video tối đa ${MAX_VIDEO_SIZE_MB}MB.`);
+  }
+}
+
+interface VideoEditorModalProps {
+  title: string;
+  submitLabel: string;
+  titleValue: string;
+  descriptionValue: string;
+  productId: string;
+  products: SellerProduct[];
+  disabled: boolean;
+  onTitleChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
+  onProductChange: (value: string) => void;
+  onFileChange: (file: File | null) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}
+
+function VideoEditorModal(props: VideoEditorModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+      <form onSubmit={props.onSubmit} className="w-full max-w-lg space-y-4 rounded-xl bg-white p-5 shadow-2xl">
+        <h2 className="text-lg font-semibold text-slate-900">{props.title}</h2>
+        <label className="block text-sm font-medium text-slate-700">
+          Tiêu đề
+          <input value={props.titleValue} onChange={(event) => props.onTitleChange(event.target.value)} required maxLength={120} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Mô tả
+          <textarea value={props.descriptionValue} onChange={(event) => props.onDescriptionChange(event.target.value)} maxLength={1000} className="mt-1 min-h-24 w-full rounded-md border border-slate-200 px-3 py-2" />
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Sản phẩm
+          <select value={props.productId} onChange={(event) => props.onProductChange(event.target.value)} required className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2">
+            <option value="">Chọn sản phẩm ACTIVE</option>
+            {props.products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Thay file video (không bắt buộc)
+          <input type="file" accept="video/mp4,video/webm" onChange={(event) => props.onFileChange(event.target.files?.[0] ?? null)} className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2" />
+        </label>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={props.onClose} disabled={props.disabled} className="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Hủy</button>
+          <button disabled={props.disabled} className="rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{props.submitLabel}</button>
+        </div>
+      </form>
     </div>
   );
 }

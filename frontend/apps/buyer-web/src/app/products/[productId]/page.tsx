@@ -110,7 +110,10 @@ export default function ProductDetailPage() {
   const displayCompareAtPrice = selectedVariant?.compareAtPrice ?? product?.compareAtPrice ?? null;
   const displayDiscountPercent = selectedVariant?.discountPercent ?? product?.discountPercent ?? 0;
   const displaySku = selectedVariant?.sku ?? product?.defaultSku ?? null;
-  const variantStock = useMemo(() => extractStockFromRecord(selectedVariant?.metadata), [selectedVariant?.metadata]);
+  const variantStock = useMemo(
+    () => selectedVariant?.stock ?? extractStockFromRecord(selectedVariant?.metadata),
+    [selectedVariant?.metadata, selectedVariant?.stock]
+  );
   const availableStock = variantStock ?? product?.stock ?? null;
 
   const detailText = locale === 'vi'
@@ -733,7 +736,14 @@ export default function ProductDetailPage() {
                 <Link href="/" className="font-medium text-brand-600 hover:text-brand-700">
                   {detailText.breadcrumbHome}
                 </Link>{' '}
-                / <span>{prettifyAttributeLabel(product.categoryId, locale)}</span> / <span>{product.title}</span>
+                /{' '}
+                <Link
+                  href={`/search?categoryId=${encodeURIComponent(product.categoryId)}`}
+                  className="font-medium text-brand-600 hover:text-brand-700"
+                >
+                  {prettifyAttributeLabel(product.categoryId, locale)}
+                </Link>{' '}
+                / <span>{product.title}</span>
               </div>
 
               <div className="grid gap-5 lg:grid-cols-[420px_minmax(0,1fr)] lg:gap-6">
@@ -812,7 +822,13 @@ export default function ProductDetailPage() {
                             <button
                               key={variant.sku}
                               type="button"
-                              onClick={() => setSelectedVariantSku(variant.sku)}
+                              onClick={() => {
+                                setSelectedVariantSku(variant.sku);
+                                if (variant.image) {
+                                  setSelectedImage(variant.image);
+                                }
+                                setQuantity(1);
+                              }}
                               className={`rounded-md border px-3 py-2 text-sm transition ${
                                 active
                                   ? 'border-brand-500 bg-brand-50 text-brand-700'

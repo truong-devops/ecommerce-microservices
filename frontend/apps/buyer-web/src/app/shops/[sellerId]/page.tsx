@@ -19,6 +19,8 @@ export default function BuyerShopPage() {
   const [status, setStatus] = useState<ShopPageStatus>('loading');
   const [shop, setShop] = useState<BuyerShopDetail | null>(null);
   const [products, setProducts] = useState<ProductSearchItem[]>([]);
+  const [productCount, setProductCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('products');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function BuyerShopPage() {
       try {
         const [shopResult, productResult] = await Promise.all([
           fetchBuyerShopDetail(sellerId),
-          fetchBuyerProducts({ page: 1, pageSize: 12, sellerId, sortBy: 'createdAt', sortOrder: 'DESC' })
+          fetchBuyerProducts({ page: 1, pageSize: 100, sellerId, sortBy: 'createdAt', sortOrder: 'DESC' })
         ]);
 
         if (!active) {
@@ -46,6 +48,7 @@ export default function BuyerShopPage() {
 
         setShop(shopResult);
         setProducts(productResult.items);
+        setProductCount(productResult.pagination.totalItems);
         setStatus('success');
       } catch (error) {
         if (!active) {
@@ -123,35 +126,65 @@ export default function BuyerShopPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-2 border-b border-slate-200 pb-2">
-                  {shop.navItems.map((item) => (
-                    <span key={item} className="rounded-full bg-white px-3 py-1 text-sm text-slate-700 shadow-sm">
-                      {item}
-                    </span>
-                  ))}
+                <div className="mt-4 flex flex-wrap gap-2 border-b border-slate-200 pb-2" role="tablist" aria-label="Điều hướng shop">
+                  {buildShopTabs(shop.navItems).map((item) => {
+                    const selected = activeTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={selected}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                          selected ? 'text-white shadow-sm' : 'bg-white text-slate-700 shadow-sm hover:bg-slate-50'
+                        }`}
+                        style={selected ? { backgroundColor: normalizeColor(shop.accentColor) } : undefined}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </article>
 
-            <article className="rounded-md bg-white p-4 shadow-card">
-              <h2 className="text-lg font-semibold">{shop.introTitle}</h2>
-              <p className="mt-1 text-sm text-slate-600">{shop.introDescription}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {shop.featuredCategories.map((item) => (
-                  <span key={item} className="rounded-md px-3 py-1 text-xs font-medium text-white" style={{ backgroundColor: normalizeColor(shop.accentColor) }}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </article>
-
-            <article className="rounded-md bg-white p-4 shadow-card">
+            {activeTab === 'info' ? (
+              <article className="rounded-md bg-white p-5 shadow-card" role="tabpanel">
+                <h2 className="text-lg font-semibold">{shop.introTitle || 'Thông tin shop'}</h2>
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
+                  {shop.introDescription || 'Shop chưa cập nhật phần giới thiệu.'}
+                </p>
+                <dl className="mt-5 grid gap-3 rounded-md bg-slate-50 p-4 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="text-slate-500">Mã người bán</dt>
+                    <dd className="mt-1 font-medium text-slate-800">{shop.sellerCode || shop.sellerId}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Cập nhật thông tin gần nhất</dt>
+                    <dd className="mt-1 font-medium text-slate-800">{formatShopDate(shop.updatedAt)}</dd>
+                  </div>
+                </dl>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {shop.featuredCategories.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-md px-3 py-1 text-xs font-medium text-white"
+                      style={{ backgroundColor: normalizeColor(shop.accentColor) }}
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ) : (
+            <article className="rounded-md bg-white p-4 shadow-card" role="tabpanel">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Sản phẩm trong shop</h2>
-                <span className="text-sm text-slate-500">{products.length} sản phẩm hiển thị</span>
+                <h2 className="text-lg font-semibold">{activeTab === 'new' ? 'Sản phẩm mới' : activeTab === 'deals' ? 'Ưu đãi hôm nay' : 'Tất cả sản phẩm'}</h2>
+                <span className="text-sm text-slate-500">{productCount} sản phẩm</span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {products.map((item) => (
+                {filterShopProducts(products, activeTab).map((item) => (
                   <Link key={item.id} href={`/products/${encodeURIComponent(item.id)}`} className="overflow-hidden rounded-md border border-slate-200 bg-white">
                     <img src={item.image} alt={item.title} className="h-40 w-full object-cover" />
                     <div className="space-y-1 p-3">
@@ -161,12 +194,13 @@ export default function BuyerShopPage() {
                   </Link>
                 ))}
               </div>
-              {products.length === 0 ? (
+              {filterShopProducts(products, activeTab).length === 0 ? (
                 <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-600">
-                  Shop này hiện chưa có sản phẩm công khai.
+                  {activeTab === 'deals' ? 'Shop hiện chưa có sản phẩm đang giảm giá.' : 'Shop này hiện chưa có sản phẩm công khai.'}
                 </div>
               ) : null}
             </article>
+            )}
           </section>
         ) : null}
       </main>
@@ -184,4 +218,38 @@ function decodeSellerId(raw: string): string {
 
 function normalizeColor(value: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(value.trim()) ? value.trim() : '#ee4d2d';
+}
+
+function buildShopTabs(navItems: string[]): Array<{ id: string; label: string }> {
+  const tabs = [
+    { id: 'products', label: 'Tất Cả Sản Phẩm' },
+    { id: 'new', label: 'Sản Phẩm Mới' },
+    { id: 'deals', label: 'Ưu Đãi Hôm Nay' },
+    { id: 'info', label: 'Thông Tin Shop' }
+  ];
+
+  for (const label of navItems) {
+    const normalized = label.toLocaleLowerCase('vi-VN');
+    const matchingTab = tabs.find((tab) => normalized.includes(tab.id === 'info' ? 'thông tin' : tab.id === 'new' ? 'mới' : tab.id === 'deals' ? 'ưu đãi' : 'sản phẩm'));
+    if (matchingTab) {
+      matchingTab.label = label;
+    }
+  }
+
+  return tabs;
+}
+
+function filterShopProducts(products: ProductSearchItem[], activeTab: string): ProductSearchItem[] {
+  if (activeTab === 'deals') {
+    return products.filter((product) => product.discountPercent > 0);
+  }
+  if (activeTab === 'new') {
+    return products.slice(0, 12);
+  }
+  return products;
+}
+
+function formatShopDate(value: string): string {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? new Intl.DateTimeFormat('vi-VN').format(new Date(timestamp)) : 'Đang cập nhật';
 }

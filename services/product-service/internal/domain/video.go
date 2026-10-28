@@ -128,26 +128,35 @@ type VideoProductResponse struct {
 }
 
 type ProductVideoResponse struct {
-	VideoID            string                 `json:"videoId"`
-	SellerID           string                 `json:"sellerId"`
-	Title              string                 `json:"title"`
-	Description        *string                `json:"description"`
-	Status             ProductVideoStatus     `json:"status"`
-	MediaObjectKey     *string                `json:"mediaObjectKey"`
-	MediaURL           *string                `json:"mediaUrl"`
-	ThumbnailObjectKey *string                `json:"thumbnailObjectKey"`
-	ThumbnailURL       *string                `json:"thumbnailUrl"`
-	MimeType           *string                `json:"mimeType"`
-	SizeBytes          *int64                 `json:"sizeBytes"`
-	DurationSec        *float64               `json:"durationSec"`
-	Products           []VideoProductResponse `json:"products"`
-	Seller             VideoSellerResponse    `json:"seller"`
-	Metrics            VideoMetricsResponse   `json:"metrics"`
-	PublishedAt        *string                `json:"publishedAt"`
-	HiddenAt           *string                `json:"hiddenAt"`
-	ArchivedAt         *string                `json:"archivedAt"`
-	CreatedAt          string                 `json:"createdAt"`
-	UpdatedAt          string                 `json:"updatedAt"`
+	VideoID            string                  `json:"videoId"`
+	SellerID           string                  `json:"sellerId"`
+	Title              string                  `json:"title"`
+	Description        *string                 `json:"description"`
+	Status             ProductVideoStatus      `json:"status"`
+	MediaObjectKey     *string                 `json:"mediaObjectKey"`
+	MediaURL           *string                 `json:"mediaUrl"`
+	ThumbnailObjectKey *string                 `json:"thumbnailObjectKey"`
+	ThumbnailURL       *string                 `json:"thumbnailUrl"`
+	MimeType           *string                 `json:"mimeType"`
+	SizeBytes          *int64                  `json:"sizeBytes"`
+	DurationSec        *float64                `json:"durationSec"`
+	Products           []VideoProductResponse  `json:"products"`
+	Seller             VideoSellerResponse     `json:"seller"`
+	Metrics            VideoMetricsResponse    `json:"metrics"`
+	Moderation         VideoModerationResponse `json:"moderation"`
+	PublishedAt        *string                 `json:"publishedAt"`
+	HiddenAt           *string                 `json:"hiddenAt"`
+	ArchivedAt         *string                 `json:"archivedAt"`
+	CreatedAt          string                  `json:"createdAt"`
+	UpdatedAt          string                  `json:"updatedAt"`
+}
+
+type VideoModerationResponse struct {
+	SubmittedAt     *string  `json:"submittedAt"`
+	ReviewedAt      *string  `json:"reviewedAt"`
+	ReviewedBy      *string  `json:"reviewedBy"`
+	RejectionReason *string  `json:"rejectionReason"`
+	PolicyFlags     []string `json:"policyFlags"`
 }
 
 type VideoSellerResponse struct {

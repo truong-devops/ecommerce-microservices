@@ -5,6 +5,27 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ModeratorTopbar } from '@/components/layout/moderator-topbar';
+import { ModeratorSidebar } from '@/components/layout/moderator-sidebar';
+import { StatCard } from '@/components/ui/stat-card';
+import { StatusBadge } from '@/components/ui/status-badge';
+import {
+  WalletIcon,
+  SearchIcon,
+  RefreshCwIcon,
+  CheckCircle2Icon,
+  AlertTriangleIcon,
+  CopyIcon,
+  Building2Icon,
+  CreditCardIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  LockIcon,
+  UnlockIcon,
+  QrCodeIcon,
+  ClockIcon,
+  SparklesIcon,
+  ChevronRightIcon as ArrowRightIcon
+} from '@/components/ui/icons';
 import { ModeratorApiClientError } from '@/lib/api/client';
 import type {
   AdminPayout,
@@ -45,6 +66,7 @@ export default function WalletAdministrationPage() {
   const router = useRouter();
   const { ready, user, accessToken, logout } = useAuth();
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [wallets, setWallets] = useState<AdminWallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<AdminWallet | null>(null);
@@ -67,9 +89,16 @@ export default function WalletAdministrationPage() {
   const [payoutReason, setPayoutReason] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const activePayoutId = payoutTransfer?.payoutId ?? '';
   const hasProcessingPayouts = payouts.some((payout) => payout.status === 'PROCESSING');
+
+  const copyToClipboard = (text: string, key: string) => {
+    void navigator.clipboard?.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
   const loadOverview = useCallback(async () => {
     if (!accessToken || !isAdmin) return;
@@ -78,7 +107,15 @@ export default function WalletAdministrationPage() {
     try {
       const [nextSummary, list] = await Promise.all([
         getWalletSummary(accessToken),
-        listAdminWallets({ accessToken, page, pageSize: 20, search, state: stateFilter, bankStatus: bankFilter, ownerType: ownerTypeFilter })
+        listAdminWallets({
+          accessToken,
+          page,
+          pageSize: 20,
+          search,
+          state: stateFilter,
+          bankStatus: bankFilter,
+          ownerType: ownerTypeFilter
+        })
       ]);
       setSummary(nextSummary);
       setWallets(list.items);
@@ -143,7 +180,7 @@ export default function WalletAdministrationPage() {
         if (!activePayoutId) return;
         const current = page.items.find((item) => item.id === activePayoutId);
         if (current?.status === 'SUCCEEDED') {
-          setNotice('SePay đã xác nhận giao dịch tiền ra. Yêu cầu rút đã hoàn tất tự động.');
+          setNotice('SePay đã xác nhận giao dịch tiền ra thành công. Yêu cầu rút tiền đã được hoàn tất tự động.');
           setPayoutTransfer(null);
           setBankReference('');
           setPayoutReason('');
@@ -240,7 +277,7 @@ export default function WalletAdministrationPage() {
       setError('');
       try {
         await completeManualPayout(accessToken, payoutTransfer.payoutId, { action, providerReference, reason });
-        setNotice(action === 'CONFIRM' ? 'Đã xác nhận chuyển khoản.' : 'Đã từ chối yêu cầu và hoàn tiền về số dư khả dụng.');
+        setNotice(action === 'CONFIRM' ? 'Đã xác nhận chuyển khoản thành công.' : 'Đã từ chối yêu cầu và hoàn tiền về số dư khả dụng.');
         setPayoutTransfer(null);
         setBankReference('');
         setPayoutReason('');
@@ -267,223 +304,393 @@ export default function WalletAdministrationPage() {
     router.push('/login');
   }, [logout, router]);
 
-  if (!ready) return <main className="flex min-h-screen items-center justify-center text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
+  if (!ready) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
+        <div className="flex items-center gap-2">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+          <span>Đang kiểm tra phiên đăng nhập...</span>
+        </div>
+      </main>
+    );
+  }
+
   if (!user || !accessToken) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50/70 text-slate-900">
       <ModeratorTopbar email={user.email} role={user.role} onLogout={handleLogout} />
-      <div className="mx-auto grid w-full max-w-[1760px] gap-4 px-3 py-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-4">
-        <aside className="hidden h-fit rounded-xl border border-slate-200 bg-white p-3 shadow-sm lg:block">
-          <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Workspace</p>
-          <nav className="space-y-1">
-            <SidebarLink href="/" label="Product Queue" />
-            <SidebarLink href="/videos/review" label="Video Review Queue" />
-            <SidebarLink href="/chat/violations" label="Chat Violations" />
-            <SidebarLink href="/wallets" label="Wallet Operations" active />
-          </nav>
-          <div className="mt-4 rounded-lg border border-orange-100 bg-orange-50 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-700">Cần xử lý</p>
-            <p className="mt-1 text-3xl font-semibold text-slate-950">{bankStatusCounts.attention}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-600">Tài khoản ngân hàng cần xử lý hoặc payout đang chờ chuyển.</p>
+
+      <div className="mx-auto w-full max-w-[1760px] px-3 py-5 sm:px-5 lg:px-6">
+        <div className="grid gap-5 lg:grid-cols-[256px_minmax(0,1fr)]">
+          {/* Sidebar */}
+          <div className="hidden lg:block">
+            <ModeratorSidebar
+              role={user.role}
+              walletAttentionCount={bankStatusCounts.attention}
+            />
           </div>
-        </aside>
 
-        <main className="min-w-0 space-y-4">
-          {!isAdmin ? (
-            <section className="rounded-xl border border-rose-200 bg-white p-8 text-center shadow-sm">
-              <h1 className="text-xl font-semibold">Không có quyền quản lý ví</h1>
-              <p className="mt-2 text-sm text-slate-600">Chức năng này chỉ dành cho ADMIN và SUPER_ADMIN.</p>
-              <Link href="/" className="mt-5 inline-flex rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
-                Quay lại Dashboard
-              </Link>
-            </section>
-          ) : (
-            <>
-              <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Financial operations</p>
-                    <h1 className="mt-1 text-2xl font-semibold text-slate-950">Quản lý ví eMall</h1>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Quản lý ví Seller và ví hoàn tiền khách hàng, xác minh tài khoản nhận tiền và đối soát chuyển khoản.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void loadOverview()}
-                    disabled={loading}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    {loading ? 'Đang tải...' : 'Làm mới dữ liệu'}
-                  </button>
+          <main className="min-w-0 space-y-4">
+            {!isAdmin ? (
+              <section className="rounded-2xl border border-rose-200 bg-white p-12 text-center shadow-card">
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-50 text-rose-600">
+                  <LockIcon size={28} />
                 </div>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                  <MetricCard label="Tổng ví" value={String(summary.totalWallets)} hint={`${bankStatusCounts.operational} đang hoạt động`} />
-                  <MetricCard label="Đang tạm giữ" value={formatMoney(summary.heldAmount)} hint="Chờ đơn đủ điều kiện" />
-                  <MetricCard label="Có thể rút" value={formatMoney(summary.availableAmount)} hint="Tổng số dư khả dụng" />
-                  <MetricCard label="Đang rút" value={formatMoney(summary.payoutPendingAmount)} hint={`${summary.pendingPayouts} yêu cầu`} />
-                  <MetricCard label="Đã chi trả" value={formatMoney(summary.totalPaidOut)} hint={`${summary.frozenWallets} ví đóng băng`} />
-                </div>
+                <h1 className="mt-4 text-lg font-bold text-slate-950">Không có quyền truy cập</h1>
+                <p className="mt-1 text-sm text-slate-500">
+                  Chức năng quản lý ví và tài chính chỉ dành riêng cho tài khoản quản trị ADMIN và SUPER_ADMIN.
+                </p>
+                <Link
+                  href="/"
+                  className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-subtle hover:bg-slate-800"
+                >
+                  Quay lại Dashboard
+                </Link>
               </section>
+            ) : (
+              <>
+                {/* Header & Overview */}
+                <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
+                          Financial Operations
+                        </span>
+                        <span className="text-xs text-slate-400">·</span>
+                        <span className="text-xs font-semibold text-slate-500">
+                          Đối soát chuyển tiền &amp; Quản trị rủi ro số dư
+                        </span>
+                      </div>
+                      <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                        Quản lý ví eMall
+                      </h1>
+                      <p className="mt-1 text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        Theo dõi tài khoản ví Seller và khách hàng hoàn tiền, duyệt xác minh tài khoản ngân hàng và đối soát VietQR / SePay.
+                      </p>
+                    </div>
 
-              {notice ? <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div> : null}
-              {error ? <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-
-              <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-200 p-4">
-                  <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_160px_180px_210px_auto]">
-                    <input
-                      value={searchInput}
-                      onChange={(event) => setSearchInput(event.target.value)}
-                      placeholder="Owner ID, chủ tài khoản hoặc 4 số cuối"
-                      className="h-10 rounded-md border border-slate-300 px-3 text-sm"
-                    />
-                    <select
-                      value={ownerTypeFilter}
-                      onChange={(event) => {
-                        setOwnerTypeFilter(event.target.value as typeof ownerTypeFilter);
-                        setPage(1);
-                      }}
-                      className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                    >
-                      <option value="">Mọi loại ví</option>
-                      <option value="SELLER">Ví Seller</option>
-                      <option value="CUSTOMER">Ví khách hàng</option>
-                    </select>
-                    <select
-                      value={stateFilter}
-                      onChange={(event) => {
-                        setStateFilter(event.target.value as typeof stateFilter);
-                        setPage(1);
-                      }}
-                      className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                    >
-                      <option value="">Tất cả trạng thái ví</option>
-                      <option value="ACTIVE">Đang hoạt động</option>
-                      <option value="FROZEN">Đã đóng băng</option>
-                    </select>
-                    <select
-                      value={bankFilter}
-                      onChange={(event) => {
-                        setBankFilter(event.target.value as typeof bankFilter);
-                        setPage(1);
-                      }}
-                      className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                    >
-                      <option value="">Tất cả tài khoản</option>
-                      <option value="UNVERIFIED">Chờ xác minh</option>
-                      <option value="ALLOWLISTED">Đã xác minh</option>
-                      <option value="DISABLED">Đã khóa</option>
-                      <option value="MISSING">Chưa thiết lập</option>
-                    </select>
                     <button
                       type="button"
-                      onClick={() => {
-                        setSearch(searchInput.trim());
-                        setPage(1);
-                      }}
-                      className="h-10 rounded-md bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700"
+                      onClick={() => void loadOverview()}
+                      disabled={loading}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-subtle transition hover:bg-slate-800 active:scale-95 disabled:opacity-60"
                     >
-                      Áp dụng
+                      <RefreshCwIcon size={13} className={loading ? 'animate-spin' : ''} />
+                      <span>{loading ? 'Đang tải...' : 'Làm mới dữ liệu'}</span>
                     </button>
                   </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                      <tr>
-                        <th className="px-4 py-3">Chủ ví / Loại</th>
-                        <th className="px-4 py-3">Số dư</th>
-                        <th className="px-4 py-3">Tài khoản nhận tiền</th>
-                        <th className="px-4 py-3">Trạng thái</th>
-                        <th className="px-4 py-3 text-right">Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {wallets.map((wallet) => (
-                        <tr key={wallet.id} className={selectedWallet?.id === wallet.id ? 'bg-orange-50/60' : 'hover:bg-slate-50'}>
-                          <td className="px-4 py-3">
-                            <p className="font-semibold text-slate-900">{shortId(wallet.ownerId)}</p>
-                            <p className="mt-1 text-[11px] font-semibold text-brand-700">
-                              {wallet.ownerType === 'CUSTOMER' ? 'KHÁCH HÀNG' : 'SELLER'}
-                            </p>
-                            <p className="mt-1 font-mono text-[11px] text-slate-500">{wallet.id}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="font-semibold text-emerald-700">{formatMoney(wallet.availableAmount)}</p>
-                            <p className="mt-1 text-xs text-slate-500">Giữ: {formatMoney(wallet.heldAmount)}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            {wallet.bankAccount ? (
-                              <>
-                                <p className="font-medium">
-                                  {wallet.bankAccount.bankCode} · {wallet.bankAccount.maskedAccountNumber}
-                                </p>
-                                <p className="mt-1 text-xs text-slate-500">{wallet.bankAccount.accountHolderName}</p>
-                              </>
-                            ) : (
-                              <span className="text-slate-400">Chưa thiết lập</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-1.5">
-                              <StatusBadge value={wallet.isFrozen ? 'FROZEN' : 'ACTIVE'} />
-                              <StatusBadge value={wallet.bankAccount?.status ?? 'MISSING'} />
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedWallet(wallet)}
-                              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold hover:border-brand-300 hover:text-brand-700"
-                            >
-                              Chi tiết
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {!loading && wallets.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
-                            Không tìm thấy ví phù hợp.
-                          </td>
-                        </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm">
-                  <span className="text-slate-500">
-                    {totalItems} ví · Trang {page}/{totalPages}
-                  </span>
-                  <div className="flex gap-2">
-                    <PageButton disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>
-                      Trước
-                    </PageButton>
-                    <PageButton disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>
-                      Sau
-                    </PageButton>
-                  </div>
-                </div>
-              </section>
 
-              {selectedWallet ? (
-                <WalletDetail
-                  wallet={selectedWallet}
-                  transactions={transactions}
-                  payouts={payouts}
-                  auditLogs={auditLogs}
-                  loading={detailLoading}
-                  actionLoading={actionLoading}
-                  onAction={runWalletAction}
-                  onOpenPayout={openManualPayout}
-                />
-              ) : null}
-            </>
-          )}
-        </main>
+                  {/* 5 High-Impact Stat Cards */}
+                  <div className="mt-5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-5">
+                    <StatCard
+                      label="Tổng số ví"
+                      value={String(summary.totalWallets)}
+                      hint={`${bankStatusCounts.operational} ví đang hoạt động`}
+                      icon={<WalletIcon size={18} />}
+                      tone="default"
+                    />
+                    <StatCard
+                      label="Đang tạm giữ"
+                      value={formatMoney(summary.heldAmount)}
+                      hint="Chờ đơn hàng hoàn tất"
+                      icon={<ClockIcon size={18} />}
+                      tone="amber"
+                    />
+                    <StatCard
+                      label="Có thể rút"
+                      value={formatMoney(summary.availableAmount)}
+                      hint="Tổng số dư khả dụng"
+                      icon={<CheckCircle2Icon size={18} />}
+                      tone="emerald"
+                    />
+                    <StatCard
+                      label="Đang rút (Payout)"
+                      value={formatMoney(summary.payoutPendingAmount)}
+                      hint={`${summary.pendingPayouts} yêu cầu đang chờ`}
+                      icon={<CreditCardIcon size={18} />}
+                      tone="indigo"
+                    />
+                    <StatCard
+                      label="Đã chi trả"
+                      value={formatMoney(summary.totalPaidOut)}
+                      hint={`${summary.frozenWallets} ví bị đóng băng`}
+                      icon={<SparklesIcon size={18} />}
+                      tone="rose"
+                    />
+                  </div>
+                </section>
+
+                {/* Notifications */}
+                {notice ? (
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-2xs">
+                    <CheckCircle2Icon size={16} className="text-emerald-600 shrink-0" />
+                    <span>{notice}</span>
+                  </div>
+                ) : null}
+
+                {error ? (
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-xs font-semibold text-rose-800 shadow-2xs">
+                    <span className="grid h-5 w-5 place-items-center rounded-full bg-rose-200 text-rose-700 shrink-0 font-bold">
+                      !
+                    </span>
+                    <span>{error}</span>
+                  </div>
+                ) : null}
+
+                {/* Wallets List Section */}
+                <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+                  {/* Filter Toolbar */}
+                  <div className="border-b border-slate-100 bg-slate-50/60 p-4">
+                    <div className="grid gap-2.5 md:grid-cols-[minmax(240px,1.2fr)_150px_160px_170px_auto]">
+                      <div className="relative">
+                        <SearchIcon
+                          size={15}
+                          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <input
+                          value={searchInput}
+                          onChange={(event) => setSearchInput(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              setSearch(searchInput.trim());
+                              setPage(1);
+                            }
+                          }}
+                          placeholder="Owner ID, tên chủ tài khoản hoặc 4 số cuối..."
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-xs font-medium text-slate-900 shadow-2xs outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                        />
+                      </div>
+
+                      <select
+                        value={ownerTypeFilter}
+                        onChange={(event) => {
+                          setOwnerTypeFilter(event.target.value as typeof ownerTypeFilter);
+                          setPage(1);
+                        }}
+                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none transition hover:border-slate-300 focus:border-brand-500"
+                      >
+                        <option value="">Tất cả loại ví</option>
+                        <option value="SELLER">Ví Người bán</option>
+                        <option value="CUSTOMER">Ví Khách hàng</option>
+                      </select>
+
+                      <select
+                        value={stateFilter}
+                        onChange={(event) => {
+                          setStateFilter(event.target.value as typeof stateFilter);
+                          setPage(1);
+                        }}
+                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none transition hover:border-slate-300 focus:border-brand-500"
+                      >
+                        <option value="">Trạng thái ví</option>
+                        <option value="ACTIVE">Đang hoạt động</option>
+                        <option value="FROZEN">Đã đóng băng</option>
+                      </select>
+
+                      <select
+                        value={bankFilter}
+                        onChange={(event) => {
+                          setBankFilter(event.target.value as typeof bankFilter);
+                          setPage(1);
+                        }}
+                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs outline-none transition hover:border-slate-300 focus:border-brand-500"
+                      >
+                        <option value="">Trạng thái ngân hàng</option>
+                        <option value="UNVERIFIED">Chờ xác minh</option>
+                        <option value="ALLOWLISTED">Đã xác minh</option>
+                        <option value="DISABLED">Đã khóa</option>
+                        <option value="MISSING">Chưa thiết lập</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearch(searchInput.trim());
+                          setPage(1);
+                        }}
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-brand-600 px-4 text-xs font-bold text-white shadow-subtle transition hover:bg-brand-700 active:scale-95"
+                      >
+                        Áp dụng
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+                      <thead className="bg-slate-50/75 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3.5">Chủ ví / Loại</th>
+                          <th className="px-4 py-3.5">Số dư khả dụng</th>
+                          <th className="px-4 py-3.5">Tài khoản nhận tiền</th>
+                          <th className="px-4 py-3.5">Trạng thái</th>
+                          <th className="px-4 py-3.5 text-right">Chi tiết</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {wallets.map((wallet) => {
+                          const isSelected = selectedWallet?.id === wallet.id;
+                          return (
+                            <tr
+                              key={wallet.id}
+                              onClick={() => setSelectedWallet(wallet)}
+                              className={`group cursor-pointer transition-colors duration-150 ${
+                                isSelected ? 'bg-orange-50/50' : 'hover:bg-slate-50/70'
+                              }`}
+                            >
+                              <td className="px-4 py-3.5 max-w-[280px]">
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copyToClipboard(wallet.ownerId, `owner-${wallet.id}`);
+                                    }}
+                                    className="font-mono text-xs font-bold text-slate-900 hover:text-brand-600 flex items-center gap-1"
+                                    title="Sao chép Owner ID"
+                                  >
+                                    <span>{shortId(wallet.ownerId)}</span>
+                                    {copiedKey === `owner-${wallet.id}` ? (
+                                      <CheckCircle2Icon size={12} className="text-emerald-600" />
+                                    ) : (
+                                      <CopyIcon size={11} className="text-slate-400 group-hover:text-slate-600" />
+                                    )}
+                                  </button>
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${
+                                      wallet.ownerType === 'CUSTOMER'
+                                        ? 'bg-sky-50 text-sky-700 border border-sky-200/60'
+                                        : 'bg-indigo-50 text-indigo-700 border border-indigo-200/60'
+                                    }`}
+                                  >
+                                    {wallet.ownerType === 'CUSTOMER' ? 'Khách hàng' : 'Seller'}
+                                  </span>
+                                </div>
+                                <p className="mt-1 font-mono text-[11px] text-slate-400 truncate">
+                                  {wallet.id}
+                                </p>
+                              </td>
+
+                              <td className="px-4 py-3.5 whitespace-nowrap">
+                                <p className="font-extrabold text-emerald-700">
+                                  {formatMoney(wallet.availableAmount)}
+                                </p>
+                                <p className="mt-0.5 text-xs text-slate-500 font-medium">
+                                  Tạm giữ: {formatMoney(wallet.heldAmount)}
+                                </p>
+                              </td>
+
+                              <td className="px-4 py-3.5 whitespace-nowrap">
+                                {wallet.bankAccount ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="grid h-7 w-7 place-items-center rounded-lg bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                      {wallet.bankAccount.bankCode.slice(0, 3)}
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-bold text-slate-900">
+                                        {wallet.bankAccount.bankCode} · {wallet.bankAccount.maskedAccountNumber}
+                                      </p>
+                                      <p className="text-[11px] text-slate-500 font-medium uppercase">
+                                        {wallet.bankAccount.accountHolderName}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-slate-400 italic">Chưa liên kết</span>
+                                )}
+                              </td>
+
+                              <td className="px-4 py-3.5 whitespace-nowrap">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <StatusBadge status={wallet.isFrozen ? 'FROZEN' : 'ACTIVE'} size="sm" />
+                                  <StatusBadge status={wallet.bankAccount?.status ?? 'MISSING'} size="sm" />
+                                </div>
+                              </td>
+
+                              <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedWallet(wallet);
+                                  }}
+                                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-bold transition shadow-2xs ${
+                                    isSelected
+                                      ? 'bg-brand-600 text-white shadow-subtle'
+                                      : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span>Chi tiết</span>
+                                  <ArrowRightIcon size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+
+                        {!loading && wallets.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-12 text-center text-slate-500">
+                              <WalletIcon size={32} className="mx-auto text-slate-300 mb-2" />
+                              Không tìm thấy ví nào phù hợp với bộ lọc hiện tại.
+                            </td>
+                          </tr>
+                        ) : null}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-4 py-3 text-xs text-slate-500">
+                    <span>
+                      Tổng cộng <strong className="text-slate-800">{totalItems}</strong> ví · Trang{' '}
+                      <strong className="text-slate-800">{page}</strong>/{totalPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={page <= 1}
+                        onClick={() => setPage((v) => v - 1)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeftIcon size={13} />
+                        <span>Trước</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={page >= totalPages}
+                        onClick={() => setPage((v) => v + 1)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <span>Sau</span>
+                        <ChevronRightIcon size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Selected Wallet Details */}
+                {selectedWallet ? (
+                  <WalletDetail
+                    wallet={selectedWallet}
+                    transactions={transactions}
+                    payouts={payouts}
+                    auditLogs={auditLogs}
+                    loading={detailLoading}
+                    actionLoading={actionLoading}
+                    onAction={runWalletAction}
+                    onOpenPayout={openManualPayout}
+                  />
+                ) : null}
+              </>
+            )}
+          </main>
+        </div>
       </div>
+
+      {/* Manual Payout Modal */}
       {payoutTransfer ? (
         <ManualPayoutDialog
           transfer={payoutTransfer}
@@ -524,109 +731,218 @@ function WalletDetail({
   onOpenPayout: (payout: AdminPayout) => Promise<void>;
 }) {
   const bank = wallet.bankAccount;
+
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
+    <section className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
+      {/* Top Header of Detail */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">Chi tiết ví · {wallet.ownerType}</p>
-          <h2 className="mt-1 text-lg font-semibold">
-            {wallet.ownerType === 'CUSTOMER' ? 'Khách hàng' : 'Seller'} {shortId(wallet.ownerId)}
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+              Chi tiết tài khoản ví
+            </span>
+            <span className="text-xs text-slate-400">·</span>
+            <span className="text-xs font-semibold text-slate-600">
+              {wallet.ownerType === 'CUSTOMER' ? 'Khách hàng hoàn tiền' : 'Người bán (Seller)'}
+            </span>
+          </div>
+          <h2 className="mt-1 text-xl font-black text-slate-950 flex items-center gap-2">
+            <span>{shortId(wallet.ownerId)}</span>
+            <span className="text-xs font-normal text-slate-400">({wallet.id})</span>
           </h2>
-          <p className="mt-1 break-all font-mono text-xs text-slate-500">{wallet.id}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ActionButton
+
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
             disabled={Boolean(actionLoading)}
-            tone={wallet.isFrozen ? 'neutral' : 'danger'}
             onClick={() => void onAction(wallet.isFrozen ? 'unfreeze' : 'freeze')}
+            className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition shadow-subtle ${
+              wallet.isFrozen
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+            }`}
           >
-            {wallet.isFrozen ? 'Mở khóa ví' : 'Đóng băng ví'}
-          </ActionButton>
-          {bank && bank.status !== 'ALLOWLISTED' ? (
-            <ActionButton disabled={Boolean(actionLoading)} tone="success" onClick={() => void onAction('ALLOWLISTED')}>
-              Xác minh ngân hàng
-            </ActionButton>
-          ) : null}
-          {bank && bank.status !== 'DISABLED' ? (
-            <ActionButton disabled={Boolean(actionLoading)} tone="danger" onClick={() => void onAction('DISABLED')}>
-              Khóa ngân hàng
-            </ActionButton>
-          ) : null}
-          {bank && bank.status === 'ALLOWLISTED' ? (
-            <ActionButton disabled={Boolean(actionLoading)} tone="neutral" onClick={() => void onAction('UNVERIFIED')}>
-              Yêu cầu xác minh lại
-            </ActionButton>
-          ) : null}
-        </div>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Tạm giữ" value={formatMoney(wallet.heldAmount)} />
-        <MetricCard label="Khả dụng" value={formatMoney(wallet.availableAmount)} />
-        <MetricCard label="Đang payout" value={formatMoney(wallet.payoutPendingAmount)} />
-        <MetricCard label="Đã payout" value={formatMoney(wallet.totalPaidOut)} />
-      </div>
-      <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.2fr)]">
-        <div className="rounded-lg border border-slate-200 p-4">
-          <h3 className="font-semibold">Tài khoản nhận tiền</h3>
-          {bank ? (
-            <div className="mt-3 space-y-2 text-sm">
-              <InfoRow label="Ngân hàng" value={bank.bankCode} />
-              <InfoRow label="Số tài khoản" value={bank.maskedAccountNumber} />
-              <InfoRow label="Chủ tài khoản" value={bank.accountHolderName} />
-              <InfoRow label="Trạng thái" value={<StatusBadge value={bank.status} />} />
-              <InfoRow label="Cập nhật" value={formatDate(bank.updatedAt)} />
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-slate-500">Chủ ví chưa thiết lập tài khoản ngân hàng.</p>
+            {wallet.isFrozen ? <UnlockIcon size={14} /> : <LockIcon size={14} />}
+            <span>{wallet.isFrozen ? 'Mở khóa ví' : 'Đóng băng ví'}</span>
+          </button>
+
+          {bank && bank.status !== 'ALLOWLISTED' && (
+            <button
+              type="button"
+              disabled={Boolean(actionLoading)}
+              onClick={() => void onAction('ALLOWLISTED')}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-subtle hover:bg-emerald-700"
+            >
+              <CheckCircle2Icon size={14} />
+              <span>Xác minh ngân hàng</span>
+            </button>
+          )}
+
+          {bank && bank.status !== 'DISABLED' && (
+            <button
+              type="button"
+              disabled={Boolean(actionLoading)}
+              onClick={() => void onAction('DISABLED')}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 shadow-2xs"
+            >
+              <AlertTriangleIcon size={14} />
+              <span>Khóa tài khoản nhận</span>
+            </button>
+          )}
+
+          {bank && bank.status === 'ALLOWLISTED' && (
+            <button
+              type="button"
+              disabled={Boolean(actionLoading)}
+              onClick={() => void onAction('UNVERIFIED')}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs"
+            >
+              <span>Yêu cầu xác minh lại</span>
+            </button>
           )}
         </div>
+      </div>
+
+      {/* Balance Metrics */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-b from-amber-50/40 to-white p-4 shadow-2xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Tạm giữ</p>
+          <p className="mt-1 text-xl font-black text-slate-950">{formatMoney(wallet.heldAmount)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Chờ hoàn tất đơn hàng</p>
+        </div>
+        <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-b from-emerald-50/40 to-white p-4 shadow-2xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Khả dụng</p>
+          <p className="mt-1 text-xl font-black text-emerald-700">{formatMoney(wallet.availableAmount)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Số dư sẵn sàng rút</p>
+        </div>
+        <div className="rounded-2xl border border-indigo-200/70 bg-gradient-to-b from-indigo-50/40 to-white p-4 shadow-2xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Đang payout</p>
+          <p className="mt-1 text-xl font-black text-slate-950">{formatMoney(wallet.payoutPendingAmount)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Lệnh rút đang xử lý</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-2xs">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Đã chi trả</p>
+          <p className="mt-1 text-xl font-black text-slate-950">{formatMoney(wallet.totalPaidOut)}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Tổng tiền đã hoàn tất</p>
+        </div>
+      </div>
+
+      {/* Bank Account & Payouts Grid */}
+      <div className="grid gap-4 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
+        {/* Bank Account Card */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-card">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+            <Building2Icon size={16} className="text-slate-500" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Tài khoản ngân hàng thụ hưởng
+            </h3>
+          </div>
+
+          {bank ? (
+            <div className="mt-3 space-y-3 text-xs">
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-400">Ngân hàng</span>
+                <span className="font-bold text-slate-900">{bank.bankCode}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-400">Số tài khoản</span>
+                <span className="font-mono font-bold text-slate-900">{bank.maskedAccountNumber}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-400">Chủ tài khoản</span>
+                <span className="font-bold uppercase text-slate-900">{bank.accountHolderName}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-2">
+                <span className="text-slate-400">Trạng thái xác minh</span>
+                <StatusBadge status={bank.status} size="sm" />
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Cập nhật lần cuối</span>
+                <span className="text-slate-600">{formatDate(bank.updatedAt)}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 text-center text-xs text-slate-400">
+              Chủ ví chưa liên kết tài khoản ngân hàng nào.
+            </div>
+          )}
+        </div>
+
+        {/* Payouts Table */}
         <DataTable
-          title={wallet.ownerType === 'CUSTOMER' ? 'Yêu cầu hoàn về ngân hàng' : 'Yêu cầu rút tiền'}
-          empty="Chưa có payout."
+          title={wallet.ownerType === 'CUSTOMER' ? 'Yêu cầu hoàn tiền ngân hàng' : 'Yêu cầu rút tiền (Payout)'}
+          empty="Chưa có yêu cầu rút tiền nào."
           loading={loading}
-          headers={['Thời gian', 'Loại', 'Số tiền', 'Ngân hàng', 'Trạng thái', 'Thao tác']}
+          headers={['Thời gian', 'Loại', 'Số tiền', 'Ngân hàng', 'Trạng thái', 'Hành động']}
           rows={payouts.map((item) => [
             formatDate(item.requestedAt),
             item.payoutType === 'CUSTOMER_REFUND' ? 'Hoàn khách' : 'Rút Seller',
-            formatMoney(item.amount),
+            <strong key={item.id} className="text-slate-950 font-bold">
+              {formatMoney(item.amount)}
+            </strong>,
             `${item.bankCode} ${item.maskedAccountNumber}`,
-            <StatusBadge key={item.id} value={item.status} />,
+            <StatusBadge key={`badge-${item.id}`} status={item.status} size="sm" />,
             item.status === 'REQUESTED' || item.status === 'PROCESSING' ? (
               <button
-                key={`action-${item.id}`}
+                key={`btn-${item.id}`}
                 type="button"
                 disabled={Boolean(actionLoading)}
                 onClick={() => void onOpenPayout(item)}
-                className="whitespace-nowrap rounded-md bg-brand-600 px-2.5 py-1.5 font-semibold text-white disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-xl bg-brand-600 px-3 py-1 text-xs font-bold text-white shadow-2xs hover:bg-brand-700 disabled:opacity-50"
               >
-                {actionLoading === `prepare:${item.id}` ? 'Đang mở...' : 'Chuyển tiền'}
+                <QrCodeIcon size={12} />
+                <span>{actionLoading === `prepare:${item.id}` ? 'Đang mở...' : 'Chuyển tiền'}</span>
               </button>
             ) : (
-              <span key={`done-${item.id}`} className="text-slate-400">
+              <span key={`done-${item.id}`} className="text-xs text-slate-400 font-medium">
                 Hoàn tất
               </span>
             )
           ])}
         />
       </div>
+
+      {/* Transactions & Audit Logs */}
       <div className="grid gap-4 xl:grid-cols-2">
         <DataTable
-          title="Giao dịch ví"
-          empty="Chưa có giao dịch."
+          title="Lịch sử giao dịch ví"
+          empty="Chưa có giao dịch biến động số dư."
           loading={loading}
-          headers={['Thời gian', 'Loại', 'Tham chiếu', 'Số tiền']}
-          rows={transactions.map((item) => [formatDate(item.occurredAt), item.type, shortId(item.referenceId), formatSignedMoney(item.amount)])}
+          headers={['Thời gian', 'Loại giao dịch', 'Mã tham chiếu', 'Số tiền']}
+          rows={transactions.map((item) => [
+            formatDate(item.occurredAt),
+            <span key={item.id} className="font-semibold text-slate-800">
+              {item.type}
+            </span>,
+            <span key={`ref-${item.id}`} className="font-mono text-slate-500">
+              {shortId(item.referenceId)}
+            </span>,
+            <span
+              key={`amt-${item.id}`}
+              className={`font-bold ${item.amount >= 0 ? 'text-emerald-700' : 'text-slate-900'}`}
+            >
+              {formatSignedMoney(item.amount)}
+            </span>
+          ])}
         />
+
         <DataTable
-          title="Nhật ký quản trị"
-          empty="Chưa có thao tác quản trị."
+          title="Nhật ký quản trị (Audit Trail)"
+          empty="Chưa có thao tác quản trị nào."
           loading={loading}
-          headers={['Thời gian', 'Thao tác', 'Admin', 'Lý do']}
+          headers={['Thời gian', 'Hành động', 'Quản trị viên', 'Lý do']}
           rows={auditLogs.map((item) => [
             formatDate(item.createdAt),
-            `${item.action}${item.newStatus ? ` → ${item.newStatus}` : ''}`,
+            <span key={item.id} className="font-semibold text-slate-900">
+              {item.action}
+              {item.newStatus ? ` → ${item.newStatus}` : ''}
+            </span>,
             item.actorEmail,
-            item.reason
+            <span key={`r-${item.id}`} className="italic text-slate-600">
+              {item.reason}
+            </span>
           ])}
         />
       </div>
@@ -655,114 +971,167 @@ function ManualPayoutDialog({
   onClose: () => void;
   onComplete: (action: 'CONFIRM' | 'REJECT') => Promise<void>;
 }) {
-  const copyValue = (value: string) => void navigator.clipboard?.writeText(value);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyValue = (value: string, key: string) => {
+    void navigator.clipboard?.writeText(value);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="manual-payout-title"
     >
-      <div className="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
+      <div className="max-h-[95vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-dialog border border-slate-200">
+        {/* Header */}
+        <div className="flex items-start justify-between border-b border-slate-100 p-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">VietQR payout · SePay reconciliation</p>
-            <h2 id="manual-payout-title" className="mt-1 text-xl font-semibold">
-              {transfer.payoutType === 'CUSTOMER_REFUND' ? 'Hoàn tiền cho khách hàng' : 'Chuyển tiền cho Seller'}
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
+                VietQR Payout · SePay Reconciliation
+              </span>
+            </div>
+            <h2 className="mt-1 text-xl font-black text-slate-950">
+              {transfer.payoutType === 'CUSTOMER_REFUND'
+                ? 'Hoàn tiền cho khách hàng'
+                : 'Chuyển tiền rút cho Seller'}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">Sau khi ngân hàng báo thành công, SePay sẽ tự đối soát và hoàn tất yêu cầu.</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Quét mã VietQR bằng app ngân hàng quản trị. Sau khi giao dịch hoàn tất, SePay sẽ tự động đối soát và xác nhận.
+            </p>
           </div>
           <button
             type="button"
             disabled={loading}
             onClick={onClose}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
           >
             Đóng
           </button>
         </div>
-        <div className="grid gap-5 p-5 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-            {/* VietQR Quick Link generates this image from the payout's immutable bank-account snapshot. */}
+
+        {/* Content */}
+        <div className="grid gap-6 p-6 md:grid-cols-[minmax(300px,0.9fr)_minmax(0,1.1fr)]">
+          {/* VietQR Card */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-5 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={transfer.qrCodeUrl}
-              alt={`VietQR chuyển ${formatMoney(transfer.amount)} đến ${transfer.accountHolderName}`}
-              className="mx-auto w-full max-w-[360px] rounded-lg bg-white"
+              alt={`VietQR chuyển ${formatMoney(transfer.amount)}`}
+              className="mx-auto w-full max-w-[320px] rounded-2xl bg-white p-2 shadow-card"
             />
-            <p className="mt-3 text-xs leading-5 text-slate-500">
-              Dùng ứng dụng ngân hàng của tài khoản Admin để quét QR. Hãy đối chiếu tên người nhận trước khi xác nhận.
+            <p className="mt-3 text-xs leading-relaxed text-slate-500">
+              Sử dụng ứng dụng ngân hàng quét mã QR trên để chuyển khoản tự động kèm nội dung chính xác.
             </p>
           </div>
+
+          {/* Details & Manual fallback */}
           <div className="space-y-4">
-            {error ? <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
-            <div className="rounded-xl border border-slate-200 p-4 text-sm">
-              <h3 className="font-semibold text-slate-900">Thông tin chuyển khoản</h3>
-              <div className="mt-3 space-y-3">
-                <TransferRow label="Ngân hàng" value={transfer.bankCode} />
+            {error ? (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                {error}
+              </div>
+            ) : null}
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+                Thông tin chuyển khoản ngân hàng
+              </h3>
+              <div className="space-y-2.5 text-xs">
+                <TransferRow label="Ngân hàng thụ hưởng" value={transfer.bankCode} />
                 <TransferRow label="Chủ tài khoản" value={transfer.accountHolderName} />
-                <TransferRow label="Số tài khoản" value={transfer.accountNumber} onCopy={() => copyValue(transfer.accountNumber)} />
-                <TransferRow label="Số tiền" value={formatMoney(transfer.amount)} onCopy={() => copyValue(String(transfer.amount))} emphasize />
-                <TransferRow label="Nội dung" value={transfer.transferContent} onCopy={() => copyValue(transfer.transferContent)} />
+                <TransferRow
+                  label="Số tài khoản"
+                  value={transfer.accountNumber}
+                  onCopy={() => copyValue(transfer.accountNumber, 'acc')}
+                  isCopied={copiedKey === 'acc'}
+                />
+                <TransferRow
+                  label="Số tiền"
+                  value={formatMoney(transfer.amount)}
+                  emphasize
+                  onCopy={() => copyValue(String(transfer.amount), 'amount')}
+                  isCopied={copiedKey === 'amount'}
+                />
+                <TransferRow
+                  label="Nội dung chuyển tiền"
+                  value={transfer.transferContent}
+                  onCopy={() => copyValue(transfer.transferContent, 'content')}
+                  isCopied={copiedKey === 'content'}
+                />
               </div>
             </div>
-            <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-3 text-sm leading-6 text-sky-800">
-              <p className="font-semibold">Đang chờ SePay xác nhận giao dịch tiền ra</p>
-              <p>Giữ nguyên số tiền và nội dung chuyển khoản. Trang này tự kiểm tra mỗi 4 giây; Admin không cần bấm xác nhận lần hai.</p>
-            </div>
-            <details className="rounded-md border border-slate-200 bg-slate-50 p-3">
-              <summary className="cursor-pointer text-sm font-semibold text-slate-700">Xác nhận thủ công dự phòng</summary>
-              <div className="mt-3 space-y-3">
-                <p className="text-xs leading-5 text-amber-800">
-                  Chỉ dùng khi ứng dụng ngân hàng đã báo thành công nhưng SePay không gửi trạng thái sau vài phút.
+
+            {/* Live SePay status */}
+            <div className="flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/80 p-3.5 text-xs text-sky-900">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-sky-500" />
+              </span>
+              <div>
+                <p className="font-bold">Đang chờ SePay đối soát giao dịch tiền ra</p>
+                <p className="text-slate-600 mt-0.5">
+                  Hệ thống tự động kiểm tra mỗi 4 giây. Bạn không cần xác nhận thủ công nếu SePay đã nhận webhook.
                 </p>
-                <label className="block text-sm font-medium text-slate-700">
-                  Mã giao dịch ngân hàng
+              </div>
+            </div>
+
+            {/* Fallback Accordion */}
+            <details className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs">
+              <summary className="cursor-pointer font-bold text-slate-700 select-none">
+                Xác nhận thủ công dự phòng (Khi SePay quá tải)
+              </summary>
+              <div className="mt-3 space-y-3 pt-2 border-t border-slate-200">
+                <label className="block">
+                  <span className="font-semibold text-slate-700">Mã giao dịch ngân hàng</span>
                   <input
                     value={bankReference}
-                    onChange={(event) => onBankReferenceChange(event.target.value)}
+                    onChange={(e) => onBankReferenceChange(e.target.value)}
                     placeholder="Ví dụ: FT26300123456789"
-                    maxLength={128}
-                    className="mt-1.5 h-11 w-full rounded-md border border-slate-300 bg-white px-3 font-mono text-sm"
+                    className="mt-1 h-9 w-full rounded-xl border border-slate-300 bg-white px-3 font-mono text-xs"
                   />
                 </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Ghi chú xử lý
+                <label className="block">
+                  <span className="font-semibold text-slate-700">Ghi chú xác thực</span>
                   <textarea
                     value={reason}
-                    onChange={(event) => onReasonChange(event.target.value)}
-                    placeholder="Ví dụ: Đã kiểm tra giao dịch thành công trên ứng dụng ngân hàng"
-                    maxLength={500}
-                    rows={3}
-                    className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+                    onChange={(e) => onReasonChange(e.target.value)}
+                    placeholder="Đã đối chiếu sao kê ngân hàng thành công..."
+                    rows={2}
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"
                   />
                 </label>
                 <button
                   type="button"
                   disabled={loading}
                   onClick={() => void onComplete('CONFIRM')}
-                  className="w-full rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="w-full rounded-xl bg-amber-600 py-2 text-xs font-bold text-white shadow-subtle hover:bg-amber-700 disabled:opacity-50"
                 >
-                  {loading ? 'Đang cập nhật...' : 'Xác nhận thủ công'}
+                  {loading ? 'Đang cập nhật...' : 'Xác nhận chuyển tiền thủ công'}
                 </button>
               </div>
             </details>
-            <div className="flex flex-wrap justify-end gap-2">
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => void onComplete('REJECT')}
-                className="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
               >
-                Từ chối & hoàn số dư
+                Từ chối &amp; Hoàn số dư
               </button>
               <button
                 type="button"
                 disabled={loading}
                 onClick={onClose}
-                className="rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
               >
-                Đóng & theo dõi danh sách
+                Đóng
               </button>
             </div>
           </div>
@@ -772,113 +1141,41 @@ function ManualPayoutDialog({
   );
 }
 
-function TransferRow({ label, value, onCopy, emphasize = false }: { label: string; value: string; onCopy?: () => void; emphasize?: boolean }) {
+function TransferRow({
+  label,
+  value,
+  onCopy,
+  isCopied = false,
+  emphasize = false
+}: {
+  label: string;
+  value: string;
+  onCopy?: () => void;
+  isCopied?: boolean;
+  emphasize?: boolean;
+}) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2">
+    <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
       <span className="text-slate-500">{label}</span>
-      <span className="flex items-center gap-2 text-right">
-        <strong className={emphasize ? 'text-lg text-brand-700' : 'font-semibold text-slate-900'}>{value}</strong>
+      <div className="flex items-center gap-1.5 text-right">
+        <strong className={emphasize ? 'text-base font-black text-brand-700' : 'font-bold text-slate-950'}>
+          {value}
+        </strong>
         {onCopy ? (
-          <button type="button" onClick={onCopy} className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-600">
-            Sao chép
+          <button
+            type="button"
+            onClick={onCopy}
+            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100"
+          >
+            {isCopied ? <CheckCircle2Icon size={11} className="text-emerald-600" /> : <CopyIcon size={10} />}
+            <span>{isCopied ? 'Đã chép' : 'Chép'}</span>
           </button>
         ) : null}
-      </span>
+      </div>
     </div>
   );
 }
 
-function SidebarLink({ href, label, active = false }: { href: string; label: string; active?: boolean }) {
-  return (
-    <Link
-      href={href}
-      className={`block rounded-md px-2.5 py-2 text-sm ${active ? 'border-l-2 border-brand-600 bg-brand-50 font-semibold text-brand-700' : 'text-slate-700 hover:bg-slate-50'}`}
-    >
-      {label}
-    </Link>
-  );
-}
-function MetricCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-2 text-xl font-semibold text-slate-950">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
-    </div>
-  );
-}
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-right font-medium">{value}</span>
-    </div>
-  );
-}
-function PageButton({ children, disabled, onClick }: { children: ReactNode; disabled: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="rounded-md border border-slate-300 px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      {children}
-    </button>
-  );
-}
-function ActionButton({
-  children,
-  disabled,
-  tone,
-  onClick
-}: {
-  children: ReactNode;
-  disabled: boolean;
-  tone: 'success' | 'danger' | 'neutral';
-  onClick: () => void;
-}) {
-  const style =
-    tone === 'success'
-      ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-      : tone === 'danger'
-        ? 'border-rose-300 bg-rose-50 text-rose-700'
-        : 'border-slate-300 bg-white text-slate-700';
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={`rounded-md border px-3 py-2 text-sm font-semibold disabled:opacity-50 ${style}`}
-    >
-      {children}
-    </button>
-  );
-}
-function StatusBadge({ value }: { value: string }) {
-  const success = ['ACTIVE', 'ALLOWLISTED', 'SUCCEEDED'].includes(value);
-  const danger = ['FROZEN', 'DISABLED', 'FAILED', 'CANCELLED'].includes(value);
-  const label: Record<string, string> = {
-    ACTIVE: 'Hoạt động',
-    FROZEN: 'Đóng băng',
-    ALLOWLISTED: 'Đã xác minh',
-    UNVERIFIED: 'Chờ xác minh',
-    DISABLED: 'Đã khóa',
-    MISSING: 'Chưa thiết lập',
-    REQUESTED: 'Đã yêu cầu',
-    PROCESSING: 'Đang xử lý',
-    SUCCEEDED: 'Thành công',
-    FAILED: 'Thất bại',
-    CANCELLED: 'Đã hủy'
-  };
-  return (
-    <span
-      className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${success ? 'bg-emerald-100 text-emerald-700' : danger ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}
-    >
-      {label[value] ?? value}
-    </span>
-  );
-}
 function DataTable({
   title,
   headers,
@@ -893,26 +1190,26 @@ function DataTable({
   loading: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200">
-      <div className="border-b border-slate-200 px-4 py-3">
-        <h3 className="font-semibold">{title}</h3>
+    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+      <div className="border-b border-slate-100 bg-slate-50/50 px-4 py-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">{title}</h3>
       </div>
       <div className="max-h-[340px] overflow-auto">
-        <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-          <thead className="sticky top-0 bg-slate-50 text-slate-500">
+        <table className="min-w-full divide-y divide-slate-100 text-left text-xs">
+          <thead className="sticky top-0 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 shadow-2xs">
             <tr>
               {headers.map((header) => (
-                <th key={header} className="px-3 py-2 font-semibold">
+                <th key={header} className="px-3.5 py-2.5 font-bold">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 text-slate-700">
             {rows.map((row, index) => (
-              <tr key={index}>
+              <tr key={index} className="hover:bg-slate-50/60 transition-colors">
                 {row.map((cell, cellIndex) => (
-                  <td key={cellIndex} className="max-w-[220px] px-3 py-2 align-top text-slate-700">
+                  <td key={cellIndex} className="max-w-[220px] px-3.5 py-2.5 align-middle">
                     {cell}
                   </td>
                 ))}
@@ -920,7 +1217,7 @@ function DataTable({
             ))}
             {!loading && rows.length === 0 ? (
               <tr>
-                <td colSpan={headers.length} className="px-3 py-8 text-center text-slate-500">
+                <td colSpan={headers.length} className="px-3 py-8 text-center text-slate-400">
                   {empty}
                 </td>
               </tr>
@@ -928,7 +1225,10 @@ function DataTable({
             {loading ? (
               <tr>
                 <td colSpan={headers.length} className="px-3 py-8 text-center text-slate-500">
-                  Đang tải...
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+                    <span>Đang tải...</span>
+                  </div>
                 </td>
               </tr>
             ) : null}
@@ -938,18 +1238,25 @@ function DataTable({
     </div>
   );
 }
+
 function formatMoney(value: number) {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
+    value
+  );
 }
+
 function formatSignedMoney(value: number) {
   return `${value > 0 ? '+' : ''}${formatMoney(value)}`;
 }
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 }
+
 function shortId(value: string) {
-  return value.length > 16 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
+  return value.length > 16 ? `${value.slice(0, 8)}...${value.slice(-6)}` : value;
 }
+
 function toMessage(error: unknown, fallback: string) {
   return error instanceof ModeratorApiClientError ? error.message : fallback;
 }

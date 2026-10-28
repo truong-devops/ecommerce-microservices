@@ -4,6 +4,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ModeratorTopbar } from '@/components/layout/moderator-topbar';
+import { ModeratorSidebar } from '@/components/layout/moderator-sidebar';
+import { StatCard } from '@/components/ui/stat-card';
+import {
+  VideoIcon,
+  PackageIcon,
+  RefreshCwIcon,
+  CheckCircle2Icon,
+  XCircleIcon,
+  CheckIcon,
+  TagIcon,
+  EyeIcon
+} from '@/components/ui/icons';
 import { ModeratorApiClientError } from '@/lib/api/client';
 import { approveModerationVideo, listModerationVideos, rejectModerationVideo } from '@/lib/api/moderation';
 import type { ModerationVideo } from '@/lib/api/types';
@@ -50,7 +62,11 @@ export default function VideoReviewPage() {
     router.push('/login');
   }, [logout, router]);
 
-  const selectedVideo = useMemo(() => items.find((item) => item.videoId === selectedVideoId) ?? items[0] ?? null, [items, selectedVideoId]);
+  const selectedVideo = useMemo(
+    () => items.find((item) => item.videoId === selectedVideoId) ?? items[0] ?? null,
+    [items, selectedVideoId]
+  );
+
   const queueStats = useMemo(() => {
     const productCount = items.reduce((sum, item) => sum + item.products.length, 0);
     const missingMediaCount = items.filter((item) => !item.mediaUrl).length;
@@ -65,7 +81,7 @@ export default function VideoReviewPage() {
       setActionLoadingId(videoId);
       try {
         await approveModerationVideo(accessToken, videoId);
-        setNotice('Đã approve video. Video sẽ được publish cho buyer nếu backend xử lý thành công.');
+        setNotice('Đã duyệt video thành công. Video sẽ được xuất bản đến người mua.');
         await loadVideos();
       } catch (approveError) {
         setError(approveError instanceof ModeratorApiClientError ? approveError.message : 'Approve video thất bại.');
@@ -80,7 +96,7 @@ export default function VideoReviewPage() {
     if (!accessToken || !rejectingVideoId) return;
     const reason = rejectReason.trim();
     if (!reason) {
-      setError('Cần nhập lý do reject để seller biết cần sửa gì.');
+      setError('Cần nhập lý do từ chối để người bán biết điểm cần sửa.');
       return;
     }
 
@@ -89,7 +105,7 @@ export default function VideoReviewPage() {
     setActionLoadingId(rejectingVideoId);
     try {
       await rejectModerationVideo(accessToken, rejectingVideoId, reason);
-      setNotice('Đã reject video và lưu lý do kiểm duyệt.');
+      setNotice('Đã từ chối video và lưu lý do kiểm duyệt.');
       setRejectingVideoId(null);
       setRejectReason('');
       await loadVideos();
@@ -100,306 +116,383 @@ export default function VideoReviewPage() {
     }
   }, [accessToken, loadVideos, rejectingVideoId, rejectReason]);
 
-  if (!ready)
-    return <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
+  if (!ready) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
+        <div className="flex items-center gap-2">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+          <span>Đang kiểm tra phiên đăng nhập...</span>
+        </div>
+      </main>
+    );
+  }
+
   if (!user || !accessToken) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50/70 text-slate-900">
       <ModeratorTopbar email={user.email} role={user.role} onLogout={handleLogout} />
 
-      <main className="mx-auto grid w-full max-w-[1680px] gap-4 px-4 py-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-          <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Workspace</p>
-          <nav className="space-y-1">
-            <Link href="/" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              Product Queue
-            </Link>
-            <Link
-              href="/videos/review"
-              className="block rounded-md border-l-2 border-brand-600 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700"
-            >
-              Video Review Queue
-            </Link>
-            <Link href="/chat/violations" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-              Chat Violations
-            </Link>
-            {user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? (
-              <Link href="/wallets" className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                Wallet Operations
-              </Link>
+      <div className="mx-auto w-full max-w-[1760px] px-3 py-5 sm:px-5 lg:px-6">
+        <div className="grid gap-5 lg:grid-cols-[256px_minmax(0,1fr)]">
+          {/* Sidebar */}
+          <div className="hidden lg:block">
+            <ModeratorSidebar role={user.role} pendingVideoCount={queueStats.open} />
+          </div>
+
+          <main className="min-w-0 space-y-4">
+            {/* Header */}
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-card">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
+                      Shoppable Media
+                    </span>
+                    <span className="text-xs text-slate-400">·</span>
+                    <span className="text-xs font-semibold text-slate-500">
+                      {queueStats.open} video đang chờ duyệt
+                    </span>
+                  </div>
+                  <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                    Kiểm duyệt Video (Shoppable Video)
+                  </h1>
+                  <p className="mt-1 text-sm text-slate-500 max-w-2xl leading-relaxed">
+                    Kiểm tra nội dung video, sản phẩm gắn kèm và bản quyền âm thanh trước khi xuất bản lên luồng khám phá cho người mua.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
+                  >
+                    <PackageIcon size={14} className="text-brand-600" />
+                    <span>Product Queue</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => void loadVideos()}
+                    disabled={loading}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white shadow-subtle transition hover:bg-slate-800 active:scale-95 disabled:opacity-60"
+                  >
+                    <RefreshCwIcon size={13} className={loading ? 'animate-spin' : ''} />
+                    <span>{loading ? 'Đang tải...' : 'Làm mới'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Stat Cards */}
+              <div className="mt-5 grid gap-3.5 sm:grid-cols-3">
+                <StatCard
+                  label="Chờ duyệt"
+                  value={queueStats.open}
+                  hint="Video đang chờ kiểm duyệt"
+                  icon={<VideoIcon size={18} />}
+                  tone="amber"
+                />
+                <StatCard
+                  label="Sản phẩm gắn kèm"
+                  value={queueStats.productCount}
+                  hint="Tổng sản phẩm liên kết"
+                  icon={<PackageIcon size={18} />}
+                  tone="indigo"
+                />
+                <StatCard
+                  label="Lỗi tải media"
+                  value={queueStats.missingMediaCount}
+                  hint={queueStats.missingMediaCount === 0 ? 'Tất cả video hợp lệ' : 'Cần kiểm tra URL'}
+                  icon={<XCircleIcon size={18} />}
+                  tone={queueStats.missingMediaCount > 0 ? 'rose' : 'emerald'}
+                />
+              </div>
+            </section>
+
+            {/* Alert */}
+            {(notice || error) && (
+              <div
+                className={`flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-xs font-semibold shadow-2xs ${
+                  error
+                    ? 'border-rose-200 bg-rose-50/80 text-rose-800'
+                    : 'border-emerald-200 bg-emerald-50/80 text-emerald-800'
+                }`}
+              >
+                {error ? <XCircleIcon size={16} /> : <CheckCircle2Icon size={16} />}
+                <span>{error || notice}</span>
+              </div>
+            )}
+
+            {/* Loading */}
+            {loading && (
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-12 text-center text-xs text-slate-500 shadow-card">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+                  <span>Đang tải danh sách video chờ duyệt...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!loading && items.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-card">
+                <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <CheckCircle2Icon size={28} />
+                </div>
+                <h3 className="mt-4 text-base font-bold text-slate-900">Hàng đợi video đã trống!</h3>
+                <p className="mt-1 text-sm text-slate-500 max-w-sm mx-auto">
+                  Hiện tại không có video nào ở trạng thái chờ duyệt. Video mới do Seller đăng tải sẽ tự động xuất hiện tại đây.
+                </p>
+              </div>
             ) : null}
-          </nav>
 
-          <div className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-700">Pending videos</p>
-            <p className="mt-1 text-3xl font-semibold text-slate-950">{queueStats.open}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-600">Video cần duyệt trước khi xuất hiện ở buyer feed.</p>
-          </div>
-        </aside>
+            {/* Video Review Studio */}
+            {!loading && items.length > 0 && selectedVideo ? (
+              <div className="grid gap-5 xl:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
+                {/* Queue list */}
+                <aside className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-4 py-3">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Danh sách chờ ({items.length})
+                    </h2>
+                  </div>
+                  <div className="max-h-[740px] divide-y divide-slate-100 overflow-y-auto">
+                    {items.map((video) => {
+                      const isSelected = selectedVideoId === video.videoId;
+                      return (
+                        <button
+                          key={video.videoId}
+                          type="button"
+                          onClick={() => setSelectedVideoId(video.videoId)}
+                          className={`flex w-full gap-3 p-3.5 text-left transition ${
+                            isSelected ? 'bg-orange-50/60' : 'hover:bg-slate-50/70'
+                          }`}
+                        >
+                          <VideoThumb video={video} className="h-20 w-14 shrink-0 rounded-xl" />
+                          <div className="min-w-0 flex-1">
+                            <p className="line-clamp-2 text-xs font-bold text-slate-900 leading-snug">
+                              {video.title}
+                            </p>
+                            <p className="mt-1 text-[11px] font-semibold text-slate-600 truncate">
+                              {getVideoSellerName(video)}
+                            </p>
+                            <div className="mt-2 flex items-center justify-between text-[10px]">
+                              <span className="font-mono text-slate-400">
+                                {video.seller?.sellerCode ?? shortId(video.sellerId)}
+                              </span>
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 font-bold uppercase text-amber-700 border border-amber-200/60">
+                                Chờ duyệt
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </aside>
 
-        <section className="min-w-0 space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Video Moderation</p>
-                <h1 className="mt-1 text-2xl font-semibold text-slate-950">Shoppable Video Review</h1>
-                <p className="mt-1 text-sm text-slate-500">Review media, linked products, and policy readiness before publishing to buyer feed.</p>
+                {/* Review Detail Panel */}
+                <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+                  <div className="border-b border-slate-100 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-brand-700">
+                          {getVideoSellerName(selectedVideo)}
+                        </span>
+                        <h2 className="mt-1 text-lg font-black text-slate-950 line-clamp-2">
+                          {selectedVideo.title}
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-400 font-mono">
+                          Seller ID: {selectedVideo.seller?.sellerCode ?? selectedVideo.sellerId} · Video ID: {selectedVideo.videoId}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold uppercase text-amber-700 border border-amber-200/60">
+                        {selectedVideo.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-0 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+                    {/* Video Player */}
+                    <div className="border-r border-slate-100 bg-slate-950 p-4">
+                      <div className="mx-auto aspect-[9/16] max-h-[620px] overflow-hidden rounded-2xl bg-black shadow-inner">
+                        {selectedVideo.mediaUrl ? (
+                          <video
+                            src={selectedVideo.mediaUrl}
+                            poster={selectedVideo.thumbnailUrl ?? undefined}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center p-6 text-center text-xs text-white/70">
+                            Video chưa tải được media. Không đủ điều kiện duyệt.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Details & Checklist */}
+                    <div className="flex flex-col p-5 space-y-5">
+                      {/* Checklist */}
+                      <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4">
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+                          Tiêu chí đánh giá chất lượng
+                        </h3>
+                        <ul className="grid gap-2 text-xs sm:grid-cols-2">
+                          <CheckItem ok={Boolean(selectedVideo.mediaUrl)} text="Tệp video phát ổn định" />
+                          <CheckItem ok={selectedVideo.products.length > 0} text="Có liên kết sản phẩm" />
+                          <CheckItem ok={selectedVideo.status === 'review_pending'} text="Trạng thái chờ duyệt" />
+                          <CheckItem ok={Boolean(selectedVideo.title.trim())} text="Tiêu đề video rõ nghĩa" />
+                        </ul>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Mô tả video
+                        </h3>
+                        <p className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs leading-relaxed text-slate-700">
+                          {selectedVideo.description || 'Người bán chưa điền mô tả cho video này.'}
+                        </p>
+                      </div>
+
+                      {/* Linked Products */}
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                          Sản phẩm gắn kèm ({selectedVideo.products.length})
+                        </h3>
+                        <div className="grid gap-2.5 sm:grid-cols-2">
+                          {selectedVideo.products.length > 0 ? (
+                            selectedVideo.products.map((prod) => (
+                              <div
+                                key={prod.productId}
+                                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={prod.image ?? '/icon.svg'}
+                                  alt={prod.name}
+                                  className="h-12 w-12 rounded-lg object-cover shrink-0 border border-slate-100"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="line-clamp-1 text-xs font-bold text-slate-900">{prod.name}</p>
+                                  <p className="text-[10px] font-mono text-slate-400">{prod.productId}</p>
+                                  <p className="text-xs font-extrabold text-brand-700 mt-0.5">
+                                    {formatMoney(prod.price, prod.currency)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="col-span-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">
+                              Video này chưa gắn sản phẩm nào.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="mt-auto flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setError('');
+                            setRejectingVideoId(selectedVideo.videoId);
+                            setRejectReason('');
+                          }}
+                          className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 shadow-2xs"
+                          disabled={actionLoadingId === selectedVideo.videoId}
+                        >
+                          Từ chối (Reject)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(selectedVideo.videoId)}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-subtle hover:bg-emerald-700 disabled:opacity-50"
+                          disabled={
+                            actionLoadingId === selectedVideo.videoId ||
+                            !selectedVideo.mediaUrl ||
+                            selectedVideo.products.length === 0
+                          }
+                        >
+                          <CheckIcon size={14} />
+                          <span>{actionLoadingId === selectedVideo.videoId ? 'Đang xử lý...' : 'Duyệt & Xuất bản'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/" className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  Product queue
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => void loadVideos()}
-                  className="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
-                  disabled={loading}
-                >
-                  {loading ? 'Đang tải...' : 'Refresh'}
-                </button>
-              </div>
-            </div>
+            ) : null}
+          </main>
+        </div>
+      </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              <MetricCard label="Pending videos" value={queueStats.open} tone="brand" />
-              <MetricCard label="Linked products" value={queueStats.productCount} tone="slate" />
-              <MetricCard label="Missing media" value={queueStats.missingMediaCount} tone={queueStats.missingMediaCount > 0 ? 'rose' : 'emerald'} />
-            </div>
-          </div>
-
-          {(notice || error) && (
-            <div
-              className={`rounded-md border px-4 py-3 text-sm ${error ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}
-            >
-              {error || notice}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
-              Đang tải video review queue...
-            </div>
-          ) : null}
-
-          {!loading && items.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-              <p className="text-base font-semibold text-slate-800">Không có video đang chờ duyệt.</p>
-              <p className="mt-1 text-sm text-slate-500">Khi seller submit video, video sẽ xuất hiện ở đây với trạng thái review_pending.</p>
-            </div>
-          ) : null}
-
-          {!loading && items.length > 0 && selectedVideo ? (
-            <div className="grid gap-4 xl:grid-cols-[minmax(320px,400px)_minmax(0,1fr)]">
-              <VideoQueueList items={items} selectedVideoId={selectedVideo.videoId} onSelect={setSelectedVideoId} />
-              <VideoReviewDetail
-                video={selectedVideo}
-                actionLoadingId={actionLoadingId}
-                onApprove={handleApprove}
-                onRejectStart={(videoId) => {
-                  setError('');
-                  setRejectingVideoId(videoId);
-                  setRejectReason('');
-                }}
-              />
-            </div>
-          ) : null}
-        </section>
-      </main>
-
-      {rejectingVideoId ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4">
-          <div className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-950">Reject video</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Nhập lý do rõ ràng để seller biết cần chỉnh nội dung, sản phẩm gắn kèm, hoặc chất lượng media.
+      {/* Reject Modal */}
+      {rejectingVideoId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-dialog">
+            <h2 className="text-base font-bold text-slate-950">Từ chối video kiểm duyệt</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Nhập lý do cụ thể để thông báo đến người bán chỉnh sửa nội dung hoặc hình ảnh đạt chuẩn.
             </p>
+
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {[
+                'Video bị mờ, không thấy rõ sản phẩm',
+                'Nội dung không khớp với sản phẩm gắn kèm',
+                'Video vi phạm bản quyền hình ảnh hoặc âm nhạc',
+                'Nội dung chứa thông tin liên hệ ngoài sàn'
+              ].map((reason) => (
+                <button
+                  key={reason}
+                  type="button"
+                  onClick={() => setRejectReason(reason)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+
             <textarea
               value={rejectReason}
-              onChange={(event) => setRejectReason(event.target.value)}
-              rows={5}
-              placeholder="Ví dụ: Video bị mờ, không thấy sản phẩm; nội dung không liên quan đến sản phẩm; thiếu quyền sử dụng nhạc..."
-              className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={4}
+              placeholder="Nhập ghi chú chi tiết..."
+              className="mt-3 w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
             />
-            <div className="mt-4 flex justify-end gap-2">
+
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setRejectingVideoId(null)}
-                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
               >
-                Cancel
+                Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={() => void handleReject()}
-                className="rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+                className="rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-subtle hover:bg-rose-700 disabled:opacity-50"
                 disabled={actionLoadingId === rejectingVideoId}
               >
-                {actionLoadingId === rejectingVideoId ? 'Rejecting...' : 'Confirm reject'}
+                {actionLoadingId === rejectingVideoId ? 'Đang lưu...' : 'Xác nhận từ chối'}
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
-  );
-}
-
-function VideoQueueList({
-  items,
-  selectedVideoId,
-  onSelect
-}: {
-  items: ModerationVideo[];
-  selectedVideoId: string;
-  onSelect: (videoId: string) => void;
-}) {
-  return (
-    <aside className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-950">Review queue</h2>
-        <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">{items.length} pending</span>
-      </div>
-      <div className="max-h-[720px] divide-y divide-slate-100 overflow-y-auto">
-        {items.map((video) => (
-          <button
-            key={video.videoId}
-            type="button"
-            onClick={() => onSelect(video.videoId)}
-            className={[
-              'flex w-full gap-3 px-4 py-3 text-left transition',
-              selectedVideoId === video.videoId ? 'bg-brand-50' : 'bg-white hover:bg-slate-50'
-            ].join(' ')}
-          >
-            <VideoThumb video={video} className="h-20 w-14 shrink-0" />
-            <span className="min-w-0 flex-1">
-              <span className="line-clamp-2 text-sm font-semibold text-slate-950">{video.title}</span>
-              <span className="mt-1 block text-xs font-medium text-slate-600">{getVideoSellerName(video)}</span>
-              <span className="mt-0.5 block text-[11px] text-slate-400">{video.seller?.sellerCode ?? shortId(video.sellerId)}</span>
-              <span className="mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase text-amber-700">
-                {video.status}
-              </span>
-            </span>
-          </button>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-function VideoReviewDetail({
-  video,
-  actionLoadingId,
-  onApprove,
-  onRejectStart
-}: {
-  video: ModerationVideo;
-  actionLoadingId: string | null;
-  onApprove: (videoId: string) => void;
-  onRejectStart: (videoId: string) => void;
-}) {
-  return (
-    <article className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-5 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">{getVideoSellerName(video)}</p>
-            <h2 className="mt-1 line-clamp-2 text-xl font-semibold text-slate-950">{video.title}</h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Seller: {video.seller?.sellerCode ?? video.sellerId} · Video ID: {video.videoId}
-            </p>
-          </div>
-          <StatusPill status={video.status} />
-        </div>
-      </div>
-
-      <div className="grid gap-0 lg:grid-cols-[minmax(300px,400px)_minmax(0,1fr)]">
-        <div className="border-r border-slate-200 bg-slate-950 p-4">
-          <div className="mx-auto aspect-[9/16] max-h-[680px] overflow-hidden rounded-lg bg-black">
-            {video.mediaUrl ? (
-              <video
-                src={video.mediaUrl}
-                poster={video.thumbnailUrl ?? undefined}
-                controls
-                playsInline
-                preload="metadata"
-                className="h-full w-full object-contain"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-white">
-                Video chưa có media, nên không đủ điều kiện approve.
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex min-w-0 flex-col p-5">
-          <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 className="text-sm font-semibold text-slate-950">Review checklist</h3>
-            <ul className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
-              <ChecklistItem ok={Boolean(video.mediaUrl)} text="Video media playable" />
-              <ChecklistItem ok={video.products.length > 0} text="Linked product exists" />
-              <ChecklistItem ok={video.status === 'review_pending'} text="Status is review_pending" />
-              <ChecklistItem ok={Boolean(video.title.trim())} text="Title is readable" />
-            </ul>
-          </section>
-
-          <section className="mt-5">
-            <h3 className="text-sm font-semibold text-slate-950">Description</h3>
-            <p className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-600">
-              {video.description || 'Seller chưa thêm mô tả.'}
-            </p>
-          </section>
-
-          <section className="mt-5">
-            <h3 className="text-sm font-semibold text-slate-950">Linked products</h3>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              {video.products.length > 0 ? (
-                video.products.map((product) => (
-                  <div key={product.productId} className="flex gap-3 rounded-md border border-slate-200 bg-white p-3">
-                    <img src={product.image ?? '/icon.svg'} alt={product.name} className="h-14 w-14 rounded-md object-cover" />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-semibold text-slate-950">{product.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">{product.productId}</p>
-                      <p className="mt-1 text-sm font-semibold text-brand-700">{formatMoney(product.price, product.currency)}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="rounded-md border border-dashed border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700">
-                  Video chưa gắn sản phẩm.
-                </p>
-              )}
-            </div>
-          </section>
-
-          <div className="mt-auto flex flex-wrap justify-end gap-2 pt-6">
-            <button
-              type="button"
-              onClick={() => onRejectStart(video.videoId)}
-              className="rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
-              disabled={actionLoadingId === video.videoId}
-            >
-              Reject
-            </button>
-            <button
-              type="button"
-              onClick={() => onApprove(video.videoId)}
-              className="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-              disabled={actionLoadingId === video.videoId || !video.mediaUrl || video.products.length === 0}
-            >
-              {actionLoadingId === video.videoId ? 'Processing...' : 'Approve & Publish'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </article>
   );
 }
 
 function VideoThumb({ video, className }: { video: ModerationVideo; className: string }) {
   return (
-    <span className={`relative overflow-hidden rounded-md bg-slate-900 ${className}`}>
+    <div className={`relative overflow-hidden bg-slate-900 border border-slate-200/80 ${className}`}>
       {video.mediaUrl ? (
         <video
           src={video.mediaUrl}
@@ -410,41 +503,26 @@ function VideoThumb({ video, className }: { video: ModerationVideo; className: s
           className="h-full w-full object-cover"
         />
       ) : video.thumbnailUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img src={video.thumbnailUrl} alt={video.title} className="h-full w-full object-cover" />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-white/70">No media</span>
+        <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white/50">
+          No media
+        </span>
       )}
-    </span>
+    </div>
   );
 }
 
-function ChecklistItem({ ok, text }: { ok: boolean; text: string }) {
+function CheckItem({ ok, text }: { ok: boolean; text: string }) {
   return (
     <li className="flex items-center gap-2">
-      <span className={`h-2.5 w-2.5 rounded-full ${ok ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-      <span>{text}</span>
+      <span className={`grid h-4 w-4 place-items-center rounded-full ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+        {ok ? <CheckIcon size={10} /> : <span className="text-[10px] font-bold">×</span>}
+      </span>
+      <span className={ok ? 'text-slate-800' : 'text-slate-500 line-through'}>{text}</span>
     </li>
   );
-}
-
-function MetricCard({ label, value, tone }: { label: string; value: number; tone: 'brand' | 'slate' | 'rose' | 'emerald' }) {
-  const toneClass = {
-    brand: 'border-brand-200 bg-brand-50 text-brand-700',
-    slate: 'border-slate-200 bg-white text-slate-700',
-    rose: 'border-rose-200 bg-rose-50 text-rose-700',
-    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700'
-  }[tone];
-
-  return (
-    <article className={`rounded-lg border px-4 py-3 ${toneClass}`}>
-      <p className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</p>
-      <p className="mt-1 text-2xl font-semibold">{value}</p>
-    </article>
-  );
-}
-
-function StatusPill({ status }: { status: string }) {
-  return <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase text-amber-700">{status}</span>;
 }
 
 function formatMoney(value: number, currency: string): string {

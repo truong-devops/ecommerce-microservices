@@ -576,77 +576,99 @@ export default function AccountPage() {
     <div className="min-h-screen bg-[#f5f5f5] text-slate-900">
       <Header keywords={trendingKeywords} />
 
-      <main className="mx-auto w-full max-w-[1200px] px-3 pb-10 pt-5 md:px-4 md:pb-12 md:pt-6">
+      <main className="mx-auto w-full max-w-[1200px] px-3 pb-10 pt-4 md:px-4 md:pt-5">
         <section className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="rounded-2xl bg-white p-4 shadow-card lg:rounded-sm lg:bg-transparent lg:p-0 lg:shadow-none">
-            <div className="flex items-center gap-3 border-b border-slate-200 pb-4 lg:pb-5">
+          <aside className="rounded-sm bg-white p-4 shadow-xs lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
               <AvatarPreview src={avatarPreviewUrl} letter={avatarLetter} className="h-12 w-12 text-lg" />
-              <div>
-                <p className="max-w-[150px] truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                <p className="text-sm text-slate-500">{accountLabels.editProfile}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">{displayName}</p>
+                <button type="button" className="text-xs text-slate-400 hover:text-[#ee4d2d] flex items-center gap-1 transition">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  {accountLabels.editProfile}
+                </button>
               </div>
             </div>
 
-            <nav className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Account shortcuts">
-              <span className="shrink-0 rounded-full bg-brand-500 px-3 py-1.5 text-sm font-semibold text-white">{accountLabels.profile}</span>
-              <Link href="/orders" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
+            <nav className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Account shortcuts">
+              <span className="shrink-0 rounded-xs bg-[#ee4d2d] px-3 py-1.5 text-xs font-semibold text-white">{accountLabels.profile}</span>
+              <Link href="/orders" className="shrink-0 rounded-xs border border-slate-200 px-3 py-1.5 text-xs font-normal text-slate-700">
                 {accountLabels.order}
               </Link>
-              <button type="button" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
+              <button type="button" className="shrink-0 rounded-xs border border-slate-200 px-3 py-1.5 text-xs font-normal text-slate-700">
                 {accountLabels.voucher}
               </button>
-              <button type="button" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700">
+              <button type="button" className="shrink-0 rounded-xs border border-slate-200 px-3 py-1.5 text-xs font-normal text-slate-700">
                 {accountLabels.xu}
               </button>
             </nav>
 
-            <nav className="hidden space-y-5 py-5 text-[15px] lg:block">
-              <div className="space-y-2">
-                <button type="button" className="block text-left font-medium text-slate-900">
-                  {accountLabels.notification}
-                </button>
-                <button type="button" className="block text-left font-medium text-slate-900">
+            <nav className="hidden space-y-4 py-4 text-sm lg:block">
+              <div>
+                <button type="button" className="flex items-center gap-2 font-medium text-slate-800 hover:text-[#ee4d2d] transition">
+                  <svg className="w-4 h-4 text-[#ee4d2d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                   {accountLabels.account}
                 </button>
-                <div className="space-y-1 pl-4 text-[14px] text-slate-600">
-                  <p className="font-semibold text-brand-500">{accountLabels.profile}</p>
-                  <p>{accountLabels.bank}</p>
-                  <p>{accountLabels.addressBook}</p>
-                  <p>{accountLabels.changePassword}</p>
-                  <p>{accountLabels.notificationSettings}</p>
-                  <p>{accountLabels.privacySettings}</p>
+                <div className="mt-2 space-y-2 pl-6 text-[13px] text-slate-600">
+                  <p className="font-semibold text-[#ee4d2d] cursor-pointer">{accountLabels.profile}</p>
+                  <p className="hover:text-[#ee4d2d] cursor-pointer transition">{accountLabels.bank}</p>
+                  <p className="hover:text-[#ee4d2d] cursor-pointer transition">{accountLabels.addressBook}</p>
+                  <p className="hover:text-[#ee4d2d] cursor-pointer transition">{accountLabels.changePassword}</p>
+                  <p className="hover:text-[#ee4d2d] cursor-pointer transition">{accountLabels.notificationSettings}</p>
+                  <p className="hover:text-[#ee4d2d] cursor-pointer transition">{accountLabels.privacySettings}</p>
                 </div>
               </div>
-              <div className="space-y-2 font-medium text-slate-900">
-                <Link href="/orders" className="block text-left">
+              <div className="space-y-3 font-medium text-slate-800">
+                <Link href="/orders" className="flex items-center gap-2 hover:text-[#ee4d2d] transition">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
                   {accountLabels.order}
                 </Link>
-                <button type="button" className="block text-left">
+                <button type="button" className="flex items-center gap-2 hover:text-[#ee4d2d] transition">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  {accountLabels.notification}
+                </button>
+                <button type="button" className="flex items-center gap-2 hover:text-[#ee4d2d] transition">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
                   {accountLabels.voucher}
                 </button>
-                <button type="button" className="block text-left">
+                <button type="button" className="flex items-center gap-2 hover:text-[#ee4d2d] transition">
+                  <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                   {accountLabels.xu}
                 </button>
               </div>
             </nav>
           </aside>
 
-          <article className="rounded-2xl border border-slate-200 bg-white px-4 py-5 shadow-sm md:px-8 md:py-6 lg:rounded-sm lg:shadow-none">
-            <h1 className="text-3xl font-semibold text-slate-900 md:text-[30px]">{accountLabels.profileTitle}</h1>
-            <p className="mt-1 text-sm text-slate-600">{accountLabels.profileSubtitle}</p>
-            <div className="mt-5 border-t border-slate-200 pt-5" />
+          <article className="rounded-xs border border-slate-200/80 bg-white px-5 py-6 shadow-xs md:px-8">
+            <div className="border-b border-slate-200 pb-4">
+              <h1 className="text-lg font-bold text-slate-900">{accountLabels.profileTitle}</h1>
+              <p className="mt-1 text-xs text-slate-500">{accountLabels.profileSubtitle}</p>
+            </div>
 
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <form onSubmit={handleSubmit} className="space-y-5 border-slate-200 lg:border-r lg:pr-8">
-                <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-                  <p className="text-sm text-slate-500">{accountLabels.username}</p>
-                  <p className="text-sm">{username}</p>
+            <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <form onSubmit={handleSubmit} className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <p className="text-sm text-slate-500 sm:text-right">{accountLabels.username}</p>
+                  <p className="text-sm font-medium text-slate-800">{username}</p>
                 </div>
 
-                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <span className="pt-2 text-sm text-slate-500">{accountLabels.fullName}</span>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor="profile-name" className="text-sm text-slate-500 sm:text-right">{accountLabels.fullName}</label>
                   <div>
                     <input
+                      id="profile-name"
                       type="text"
                       value={formValues.name}
                       onChange={(event) => {
@@ -655,25 +677,26 @@ export default function AccountPage() {
                         setErrors((previous) => ({ ...previous, name: undefined }));
                         setNotice(null);
                       }}
-                      className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                      className="h-10 w-full rounded-xs border border-slate-300 px-3 text-sm outline-none transition focus:border-[#ee4d2d]"
                       maxLength={MAX_FULL_NAME_LENGTH}
                       required
                     />
-                    {errors.name ? <p className="mt-1 text-xs text-red-600">{errors.name}</p> : null}
+                    {errors.name ? <p className="mt-1 text-xs text-[#ee4d2d]">{errors.name}</p> : null}
                   </div>
-                </label>
+                </div>
 
-                <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-                  <p className="text-sm text-slate-500">{accountLabels.email}</p>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <p className="text-sm text-slate-500 sm:text-right">{accountLabels.email}</p>
                   <p className="text-sm text-slate-700">
-                    {maskEmail(user.email)} <span className="font-medium text-slate-400">({accountLabels.emailReadonly})</span>
+                    {maskEmail(user.email)} <span className="text-xs text-slate-400">({accountLabels.emailReadonly})</span>
                   </p>
                 </div>
 
-                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <span className="pt-2 text-sm text-slate-500">{accountLabels.phone}</span>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor="profile-phone" className="text-sm text-slate-500 sm:text-right">{accountLabels.phone}</label>
                   <div>
                     <input
+                      id="profile-phone"
                       type="tel"
                       value={formValues.phone}
                       onChange={(event) => {
@@ -682,18 +705,19 @@ export default function AccountPage() {
                         setErrors((previous) => ({ ...previous, phone: undefined }));
                         setNotice(null);
                       }}
-                      className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                      className="h-10 w-full rounded-xs border border-slate-300 px-3 text-sm outline-none transition focus:border-[#ee4d2d]"
                       required
                     />
-                    {errors.phone ? <p className="mt-1 text-xs text-red-600">{errors.phone}</p> : null}
+                    {errors.phone ? <p className="mt-1 text-xs text-[#ee4d2d]">{errors.phone}</p> : null}
                   </div>
-                </label>
+                </div>
 
-                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <span className="pt-2 text-sm text-slate-500">{accountLabels.address}</span>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor="profile-address" className="text-sm text-slate-500 sm:text-right">{accountLabels.address}</label>
                   <div>
-                    <textarea
-                      rows={3}
+                    <input
+                      id="profile-address"
+                      type="text"
                       value={formValues.address}
                       onChange={(event) => {
                         const value = event.target.value;
@@ -701,17 +725,19 @@ export default function AccountPage() {
                         setErrors((previous) => ({ ...previous, address: undefined }));
                         setNotice(null);
                       }}
-                      className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                      placeholder="Số nhà, tên đường..."
+                      className="h-10 w-full rounded-xs border border-slate-300 px-3 text-sm outline-none transition focus:border-[#ee4d2d]"
                       maxLength={MAX_ADDRESS_LENGTH}
                     />
-                    {errors.address ? <p className="mt-1 text-xs text-red-600">{errors.address}</p> : null}
+                    {errors.address ? <p className="mt-1 text-xs text-[#ee4d2d]">{errors.address}</p> : null}
                   </div>
-                </label>
+                </div>
 
-                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <span className="pt-2 text-sm text-slate-500">{accountLabels.addressProvince}</span>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor="profile-province" className="text-sm text-slate-500 sm:text-right">{accountLabels.addressProvince}</label>
                   <div>
                     <select
+                      id="profile-province"
                       value={formValues.addressProvinceCode}
                       disabled={isLoadingProvinces}
                       onChange={(event) => {
@@ -727,7 +753,7 @@ export default function AccountPage() {
                         setErrors((previous) => ({ ...previous, addressProvince: undefined, addressWard: undefined }));
                         setNotice(null);
                       }}
-                      className="h-11 w-full rounded-sm border border-slate-300 bg-white px-3 text-sm focus:border-brand-500 focus:outline-none disabled:bg-slate-100"
+                      className="h-10 w-full rounded-xs border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#ee4d2d] disabled:bg-slate-100"
                     >
                       <option value="">{isLoadingProvinces ? accountLabels.loadingLocations : accountLabels.selectProvince}</option>
                       {provinces.map((province) => (
@@ -736,14 +762,15 @@ export default function AccountPage() {
                         </option>
                       ))}
                     </select>
-                    {errors.addressProvince ? <p className="mt-1 text-xs text-red-600">{errors.addressProvince}</p> : null}
+                    {errors.addressProvince ? <p className="mt-1 text-xs text-[#ee4d2d]">{errors.addressProvince}</p> : null}
                   </div>
-                </label>
+                </div>
 
-                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <span className="pt-2 text-sm text-slate-500">{accountLabels.addressWard}</span>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor="profile-ward" className="text-sm text-slate-500 sm:text-right">{accountLabels.addressWard}</label>
                   <div>
                     <select
+                      id="profile-ward"
                       value={formValues.addressWardCode}
                       disabled={!formValues.addressProvinceCode || isLoadingWards}
                       onChange={(event) => {
@@ -757,7 +784,7 @@ export default function AccountPage() {
                         setErrors((previous) => ({ ...previous, addressWard: undefined }));
                         setNotice(null);
                       }}
-                      className="h-11 w-full rounded-sm border border-slate-300 bg-white px-3 text-sm focus:border-brand-500 focus:outline-none disabled:bg-slate-100"
+                      className="h-10 w-full rounded-xs border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#ee4d2d] disabled:bg-slate-100"
                     >
                       <option value="">{isLoadingWards ? accountLabels.loadingLocations : accountLabels.selectWard}</option>
                       {wards.map((ward) => (
@@ -766,84 +793,67 @@ export default function AccountPage() {
                         </option>
                       ))}
                     </select>
-                    {errors.addressWard ? <p className="mt-1 text-xs text-red-600">{errors.addressWard}</p> : null}
-                    {locationError ? <p className="mt-1 text-xs text-red-600">{locationError}</p> : null}
+                    {errors.addressWard ? <p className="mt-1 text-xs text-[#ee4d2d]">{errors.addressWard}</p> : null}
+                    {locationError ? <p className="mt-1 text-xs text-[#ee4d2d]">{locationError}</p> : null}
                   </div>
-                </label>
+                </div>
 
-                <fieldset className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <legend className="pt-2 text-sm text-slate-500">{accountLabels.gender}</legend>
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
-                      <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="male"
-                          checked={formValues.gender === 'male'}
-                          onChange={() => {
-                            setFormValues((previous) => ({ ...previous, gender: 'male' }));
-                            setErrors((previous) => ({ ...previous, gender: undefined }));
-                            setNotice(null);
-                          }}
-                          className="h-4 w-4 border-slate-300 text-brand-500 focus:ring-brand-500"
-                        />
-                        {accountLabels.genderMale}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="female"
-                          checked={formValues.gender === 'female'}
-                          onChange={() => {
-                            setFormValues((previous) => ({ ...previous, gender: 'female' }));
-                            setErrors((previous) => ({ ...previous, gender: undefined }));
-                            setNotice(null);
-                          }}
-                          className="h-4 w-4 border-slate-300 text-brand-500 focus:ring-brand-500"
-                        />
-                        {accountLabels.genderFemale}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="other"
-                          checked={formValues.gender === 'other'}
-                          onChange={() => {
-                            setFormValues((previous) => ({ ...previous, gender: 'other' }));
-                            setErrors((previous) => ({ ...previous, gender: undefined }));
-                            setNotice(null);
-                          }}
-                          className="h-4 w-4 border-slate-300 text-brand-500 focus:ring-brand-500"
-                        />
-                        {accountLabels.genderOther}
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="unspecified"
-                          checked={formValues.gender === 'unspecified'}
-                          onChange={() => {
-                            setFormValues((previous) => ({ ...previous, gender: 'unspecified' }));
-                            setErrors((previous) => ({ ...previous, gender: undefined }));
-                            setNotice(null);
-                          }}
-                          className="h-4 w-4 border-slate-300 text-brand-500 focus:ring-brand-500"
-                        />
-                        {accountLabels.genderUnspecified}
-                      </label>
-                    </div>
-                    {errors.gender ? <p className="mt-1 text-xs text-red-600">{errors.gender}</p> : null}
+                <fieldset className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <legend className="text-sm text-slate-500 sm:text-right">{accountLabels.gender}</legend>
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="male"
+                        checked={formValues.gender === 'male'}
+                        onChange={() => {
+                          setFormValues((previous) => ({ ...previous, gender: 'male' }));
+                          setErrors((previous) => ({ ...previous, gender: undefined }));
+                          setNotice(null);
+                        }}
+                        className="h-4 w-4 accent-[#ee4d2d]"
+                      />
+                      {accountLabels.genderMale}
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="female"
+                        checked={formValues.gender === 'female'}
+                        onChange={() => {
+                          setFormValues((previous) => ({ ...previous, gender: 'female' }));
+                          setErrors((previous) => ({ ...previous, gender: undefined }));
+                          setNotice(null);
+                        }}
+                        className="h-4 w-4 accent-[#ee4d2d]"
+                      />
+                      {accountLabels.genderFemale}
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="other"
+                        checked={formValues.gender === 'other'}
+                        onChange={() => {
+                          setFormValues((previous) => ({ ...previous, gender: 'other' }));
+                          setErrors((previous) => ({ ...previous, gender: undefined }));
+                          setNotice(null);
+                        }}
+                        className="h-4 w-4 accent-[#ee4d2d]"
+                      />
+                      {accountLabels.genderOther}
+                    </label>
                   </div>
                 </fieldset>
 
-                <label className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-start">
-                  <span className="pt-2 text-sm text-slate-500">{accountLabels.dateOfBirth}</span>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <label htmlFor="profile-dob" className="text-sm text-slate-500 sm:text-right">{accountLabels.dateOfBirth}</label>
                   <div>
                     <input
+                      id="profile-dob"
                       type="date"
                       value={formValues.dateOfBirth}
                       max={today}
@@ -853,50 +863,50 @@ export default function AccountPage() {
                         setErrors((previous) => ({ ...previous, dateOfBirth: undefined }));
                         setNotice(null);
                       }}
-                      className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                      className="h-10 w-full rounded-xs border border-slate-300 px-3 text-sm outline-none transition focus:border-[#ee4d2d]"
                     />
-                    {errors.dateOfBirth ? <p className="mt-1 text-xs text-red-600">{errors.dateOfBirth}</p> : null}
+                    {errors.dateOfBirth ? <p className="mt-1 text-xs text-[#ee4d2d]">{errors.dateOfBirth}</p> : null}
                   </div>
-                </label>
+                </div>
 
-                <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center">
-                  <p className="text-sm text-slate-500">{accountLabels.memberSince}</p>
+                <div className="grid gap-2 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                  <p className="text-sm text-slate-500 sm:text-right">{accountLabels.memberSince}</p>
                   <p className="text-sm text-slate-700">{formatMemberDate(user.createdAt, locale)}</p>
                 </div>
 
                 {notice ? (
-                  <p
-                    className={`rounded-sm px-3 py-2 text-sm ${notice.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
-                  >
-                    {notice.message}
-                  </p>
+                  <div className="sm:ml-[130px]">
+                    <p
+                      className={`rounded-xs px-3 py-2 text-sm ${notice.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-[#ee4d2d] border border-red-200'}`}
+                    >
+                      {notice.message}
+                    </p>
+                  </div>
                 ) : null}
 
-                <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex flex-wrap items-center gap-3 pt-2 sm:ml-[130px]">
                   <button
                     type="submit"
                     disabled={isSaveDisabled}
-                    className={`h-11 min-w-[110px] rounded-sm px-6 text-sm font-semibold text-white transition ${
-                      isSaveDisabled ? 'cursor-not-allowed bg-slate-300' : 'bg-brand-500 hover:bg-brand-600'
-                    }`}
+                    className="h-10 min-w-[110px] rounded-xs bg-[#ee4d2d] px-6 text-sm font-medium text-white shadow-xs transition hover:bg-[#d73211] disabled:cursor-not-allowed disabled:bg-[#f5f5f5] disabled:text-[#999999] disabled:border disabled:border-[#e8e8e8]"
                   >
                     {isSaving ? accountLabels.saving : accountLabels.save}
                   </button>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="h-11 rounded-sm border border-slate-300 px-4 text-sm font-medium text-slate-700 transition hover:border-brand-500 hover:text-brand-500"
+                    className="h-10 rounded-xs border border-slate-300 px-5 text-sm font-normal text-slate-700 transition hover:bg-slate-50"
                   >
                     {text.account.logout}
                   </button>
                 </div>
               </form>
 
-              <div className="flex flex-col items-center border-t border-slate-200 pt-6 lg:border-t-0 lg:pt-2">
-                <AvatarPreview src={avatarPreviewUrl} letter={avatarLetter} className="h-24 w-24 text-3xl" />
+              <div className="flex flex-col items-center pt-6 lg:pt-4">
+                <AvatarPreview src={avatarPreviewUrl} letter={avatarLetter} className="h-28 w-28 text-4xl border-2 border-slate-100 shadow-sm" />
 
-                <label className="mt-4 w-full text-sm text-slate-700">
-                  <span className="mb-2 block text-center text-slate-500">{accountLabels.avatarUrl}</span>
+                <label className="mt-5 w-full text-sm text-slate-700">
+                  <span className="mb-2 block text-center text-xs font-medium text-slate-600">{accountLabels.avatarUrl}</span>
                   <input
                     type="url"
                     value={formValues.avatarUrl}
@@ -907,10 +917,12 @@ export default function AccountPage() {
                       setNotice(null);
                     }}
                     placeholder="https://..."
-                    className="h-11 w-full rounded-sm border border-slate-300 px-3 text-sm focus:border-brand-500 focus:outline-none"
+                    className="h-9 w-full rounded-xs border border-slate-300 px-3 text-xs outline-none focus:border-[#ee4d2d]"
                   />
-                  <span className="mt-2 block text-center text-xs text-slate-400">{accountLabels.avatarHint}</span>
-                  {errors.avatarUrl ? <p className="mt-1 text-xs text-red-600">{errors.avatarUrl}</p> : null}
+                  <span className="mt-2 block text-center text-[11px] leading-relaxed text-slate-400">
+                    Dung lượng file tối đa 1 MB<br />Định dạng: .JPEG, .PNG, .WEBP
+                  </span>
+                  {errors.avatarUrl ? <p className="mt-1 text-center text-xs text-[#ee4d2d]">{errors.avatarUrl}</p> : null}
                 </label>
                 {formValues.avatarUrl ? (
                   <button
@@ -920,7 +932,7 @@ export default function AccountPage() {
                       setErrors((previous) => ({ ...previous, avatarUrl: undefined }));
                       setNotice(null);
                     }}
-                    className="mt-3 h-9 rounded-sm border border-slate-300 px-3 text-sm text-slate-600 hover:border-brand-500 hover:text-brand-500"
+                    className="mt-2.5 h-8 rounded-xs border border-slate-300 px-3 text-xs text-slate-600 hover:bg-slate-50 transition"
                   >
                     {accountLabels.avatarClear}
                   </button>

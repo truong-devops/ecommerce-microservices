@@ -366,10 +366,10 @@ function BuyerChatPageContent() {
 
       <main className="mx-auto w-full max-w-[1300px] px-3 py-5 md:px-4 md:py-6">
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <Link href="/" className="hover:text-brand-600">Home</Link>
+          <Link href="/" className="hover:text-[#ee4d2d]">Home</Link>
           <span>›</span>
           <span className="font-medium text-slate-700">Chat</span>
-          <span className={`ml-1 rounded px-2 py-0.5 text-xs ${wsConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+          <span className={`ml-1 rounded px-2 py-0.5 text-xs ${wsConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
             {wsConnected ? 'Realtime connected' : 'Polling fallback'}
           </span>
         </div>
@@ -377,7 +377,7 @@ function BuyerChatPageContent() {
         {!user ? (
           <section className="rounded-md border border-slate-200 bg-white p-6">
             <p className="text-sm text-slate-700">{text.auth.loginTitle}</p>
-            <Link href="/login" className="mt-3 inline-flex rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white">
+            <Link href="/login" className="mt-3 inline-flex rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d73211]">
               {text.auth.submitLogin}
             </Link>
           </section>
@@ -430,7 +430,7 @@ function BuyerChatPageContent() {
                       type="button"
                       onClick={() => void handleSendMessage()}
                       disabled={!selectedConversationId || sendingMessage || messageInput.trim().length === 0 || !chatSafety.allowed}
-                      className="h-11 rounded-md bg-[#ee4d2d] px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#f3b4a7]"
+                      className="h-11 rounded-md bg-[#ee4d2d] px-5 text-sm font-semibold text-white transition hover:bg-[#d73211] disabled:cursor-not-allowed disabled:bg-[#f5f5f5] disabled:text-[#999999] disabled:border disabled:border-[#e8e8e8]"
                     >
                       Gửi
                     </button>

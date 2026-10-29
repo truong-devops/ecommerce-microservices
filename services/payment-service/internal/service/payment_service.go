@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sort"
 	"strings"
@@ -66,6 +67,17 @@ type CreatePaymentGroupIntentRequest struct {
 type CreateRefundRequest struct {
 	Amount float64 `json:"amount"`
 	Reason *string `json:"reason,omitempty"`
+}
+
+// OrderReturnRefundApprovedEvent contains the order-owned facts Payment Service
+// must verify before moving money for a completed return.
+type OrderReturnRefundApprovedEvent struct {
+	ReturnRequestID string
+	OrderID         string
+	CustomerID      string
+	SellerID        string
+	RefundAmount    float64
+	Currency        string
 }
 
 type PaymentWebhookRequest struct {
@@ -1914,7 +1926,7 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 	offset int64,
 ) error {
 	return s.handleOrderRefundEvent(ctx, orderID, requestID, eventID, topic, partition, offset,
-		"order.cancelled", "Order cancelled; refund credited to customer wallet")
+		"order.cancelled", "Order cancelled; refund credited to customer wallet", nil)
 }
 
 // HandleOrderReturnRefundApprovedEvent completes an approved return by moving
@@ -1922,12 +1934,13 @@ func (s *PaymentService) HandleOrderCancelledEvent(
 // consumes the resulting payment.refunded event and applies the ledger reversal.
 func (s *PaymentService) HandleOrderReturnRefundApprovedEvent(
 	ctx context.Context,
-	orderID, requestID, eventID, topic string,
+	event OrderReturnRefundApprovedEvent,
+	requestID, eventID, topic string,
 	partition int,
 	offset int64,
 ) error {
-	return s.handleOrderRefundEvent(ctx, orderID, requestID, eventID, topic, partition, offset,
-		"order.return-refund-approved", "Returned order approved; refund credited to customer wallet")
+	return s.handleOrderRefundEvent(ctx, event.OrderID, requestID, eventID, topic, partition, offset,
+		"order.return-refund-approved", "Returned order approved; refund credited to customer wallet", &event)
 }
 
 func (s *PaymentService) handleOrderRefundEvent(
@@ -1936,6 +1949,7 @@ func (s *PaymentService) handleOrderRefundEvent(
 	partition int,
 	offset int64,
 	eventType, refundReason string,
+	returnEvent *OrderReturnRefundApprovedEvent,
 ) error {
 	if strings.TrimSpace(orderID) == "" {
 		return nil
@@ -1962,7 +1976,15 @@ func (s *PaymentService) handleOrderRefundEvent(
 		return err
 	}
 	if payment == nil {
+		if returnEvent != nil {
+			return fmt.Errorf("cannot refund return %s: payment for order %s was not found", returnEvent.ReturnRequestID, orderID)
+		}
 		return tx.Commit(ctx)
+	}
+	if returnEvent != nil {
+		if err := validateOrderReturnRefundApprovedEvent(*payment, *returnEvent); err != nil {
+			return err
+		}
 	}
 	systemActor := domain.UserContext{UserID: systemActorID, Email: "system@payment.local", Role: domain.RoleSupport}
 
@@ -1970,6 +1992,9 @@ func (s *PaymentService) handleOrderRefundEvent(
 	case domain.PaymentStatusCaptured, domain.PaymentStatusPartiallyRefunded:
 		remaining := roundMoney(payment.Amount - payment.RefundedAmount)
 		if remaining <= 0 {
+			if returnEvent != nil {
+				return fmt.Errorf("cannot refund return %s: payment %s has no refundable balance", returnEvent.ReturnRequestID, payment.ID)
+			}
 			return tx.Commit(ctx)
 		}
 		providerRefundID := "wallet-refund:" + payment.ID + ":" + eventID
@@ -2017,6 +2042,9 @@ func (s *PaymentService) handleOrderRefundEvent(
 			return err
 		}
 	case domain.PaymentStatusPending, domain.PaymentStatusRequiresAction, domain.PaymentStatusAuthorized:
+		if returnEvent != nil {
+			return fmt.Errorf("cannot refund return %s: payment %s is not captured (status %s)", returnEvent.ReturnRequestID, payment.ID, payment.Status)
+		}
 		previous := payment.Status
 		payment.Status = domain.PaymentStatusCancelled
 		updated, err := s.repo.SavePayment(ctx, tx, *payment)
@@ -2042,8 +2070,34 @@ func (s *PaymentService) handleOrderRefundEvent(
 				return err
 			}
 		}
+	default:
+		if returnEvent != nil {
+			return fmt.Errorf("cannot refund return %s: payment %s has non-refundable status %s", returnEvent.ReturnRequestID, payment.ID, payment.Status)
+		}
 	}
 	return tx.Commit(ctx)
+}
+
+func validateOrderReturnRefundApprovedEvent(payment domain.Payment, event OrderReturnRefundApprovedEvent) error {
+	if strings.TrimSpace(event.ReturnRequestID) == "" {
+		return fmt.Errorf("return refund event is missing returnRequestId")
+	}
+	if strings.TrimSpace(event.OrderID) == "" || event.OrderID != payment.OrderID {
+		return fmt.Errorf("return %s order does not match payment %s", event.ReturnRequestID, payment.ID)
+	}
+	if strings.TrimSpace(event.CustomerID) == "" || event.CustomerID != payment.UserID {
+		return fmt.Errorf("return %s customer does not match payment %s", event.ReturnRequestID, payment.ID)
+	}
+	if payment.SellerID == nil || strings.TrimSpace(event.SellerID) == "" || event.SellerID != strings.TrimSpace(*payment.SellerID) {
+		return fmt.Errorf("return %s seller does not match payment %s", event.ReturnRequestID, payment.ID)
+	}
+	if strings.ToUpper(strings.TrimSpace(event.Currency)) != strings.ToUpper(strings.TrimSpace(payment.Currency)) {
+		return fmt.Errorf("return %s currency does not match payment %s", event.ReturnRequestID, payment.ID)
+	}
+	if event.RefundAmount <= 0 || roundMoney(event.RefundAmount) != roundMoney(payment.Amount) {
+		return fmt.Errorf("return %s amount does not match payment %s", event.ReturnRequestID, payment.ID)
+	}
+	return nil
 }
 
 func (s *PaymentService) resolvePaymentForWebhook(

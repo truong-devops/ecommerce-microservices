@@ -679,224 +679,263 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-[#f5f5f5] text-slate-900">
       <Header keywords={[]} />
 
-      <main className="mx-auto w-full max-w-[1200px] px-3 pb-8 pt-5 md:px-4 md:pb-10 md:pt-6">
-        <section className="rounded-sm bg-white p-4 shadow-card md:p-6">
-          <h1 className="text-2xl font-semibold text-slate-900 md:text-3xl">{text.orders.title}</h1>
-          <p className="mt-3 text-base text-slate-600">{text.orders.subtitle}</p>
-
-          <div className="mt-5 overflow-x-auto border-b border-slate-200">
-            <div className="flex min-w-max items-center gap-8">
-              {tabs.map((tab) => {
-                const active = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`border-b-2 px-1 pb-3 pt-1 text-base transition md:text-lg ${
-                      active ? 'border-brand-500 font-semibold text-brand-600' : 'border-transparent text-slate-700 hover:text-brand-600'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+      <main className="mx-auto w-full max-w-[1200px] px-3 pb-12 pt-4 md:px-4 md:pt-5">
+        <section className="overflow-hidden rounded-t-sm border border-slate-200/80 bg-white shadow-xs">
+          <div className="flex items-center overflow-x-auto border-b border-slate-200">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 min-w-max border-b-2 px-4 py-3 text-center text-sm md:text-[15px] transition ${
+                    active ? 'border-[#ee4d2d] font-semibold text-[#ee4d2d]' : 'border-transparent text-slate-600 hover:text-[#ee4d2d]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="mt-4 rounded-sm bg-slate-100 p-2">
-            <input
-              type="search"
-              value={searchValue}
-              onChange={(event) => setSearchValue(event.target.value)}
-              placeholder={text.orders.searchPlaceholder}
-              className="h-12 w-full rounded-sm border border-transparent bg-white px-4 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none md:text-base"
-            />
-          </div>
-
-          {notice ? <p className="mt-4 rounded-sm bg-slate-100 px-3 py-2 text-sm text-slate-700">{notice}</p> : null}
-
-          {fetchStatus === 'loading' ? <p className="py-8 text-center text-sm text-slate-600">{text.orders.loading}</p> : null}
-
-          {fetchStatus === 'error' ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-red-600">{errorMessage || text.product.loadError}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  void loadOrders();
-                }}
-                className="mt-3 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
-              >
-                {text.orders.retry}
-              </button>
+          <div className="p-3 bg-white">
+            <div className="flex items-center gap-2 rounded-xs bg-[#eaeaea] px-3 py-2 text-slate-500">
+              <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="search"
+                value={searchValue}
+                onChange={(event) => setSearchValue(event.target.value)}
+                placeholder="Bạn có thể tìm kiếm theo Tên Shop, ID đơn hàng hoặc Tên Sản phẩm"
+                className="w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+              />
             </div>
-          ) : null}
+          </div>
+        </section>
 
-          {fetchStatus === 'success' && visibleOrders.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-600">{text.orders.empty}</p>
-          ) : null}
+        {notice ? <p className="mt-3 rounded-xs bg-white border border-slate-200 px-4 py-2.5 text-sm text-slate-700 shadow-xs">{notice}</p> : null}
 
-          {fetchStatus === 'success' && visibleOrders.length > 0 ? (
-            <div className="mt-4 space-y-4">
-              {visibleOrders.map((order) => {
-                const payment = paymentsByOrderId[order.id];
-                const shipment = shipmentsByOrderId[order.id];
-                const displayedStatus = effectiveOrderStatus(order.status, shipment);
-                const canCancel = order.status === 'PENDING' && shipment === null;
-                const canConfirmReceived = displayedStatus === 'SHIPPED';
-                const canBuyAgain = displayedStatus === 'DELIVERED';
-                const canContinuePayment = canContinueOnlinePayment(order, payment);
-                const paymentLabel =
-                  order.paymentMethod === 'COD'
-                    ? text.checkout.paymentCod
-                    : payment === undefined && isPaymentLoading
-                    ? '...'
-                    : payment
-                      ? paymentStatusLabel(payment.status, text)
-                      : text.orders.paymentMissing;
-                const shipmentLabel =
-                  shipment === undefined && isShipmentLoading
-                    ? '...'
-                    : shipment
-                      ? shipmentStatusLabel(shipment.status, text)
-                      : text.orders.shipmentMissing;
-                const shipmentCode = shipment?.trackingNumber?.trim() || shipment?.awb?.trim() || '';
+        {fetchStatus === 'loading' ? (
+          <div className="my-6 rounded-xs bg-white border border-slate-200 py-16 text-center shadow-xs">
+            <p className="text-sm text-slate-500">{text.orders.loading}</p>
+          </div>
+        ) : null}
 
-                return (
-                  <article key={order.id} className="overflow-hidden rounded-sm border border-slate-200 bg-white">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 text-sm md:px-5">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex rounded bg-brand-500 px-2 py-1 text-xs font-semibold text-white">Mall</span>
-                        <span className="text-base font-semibold text-slate-800">{FALLBACK_SHOP_NAME}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-right">
-                        <span className="text-slate-500">
-                          {text.orders.orderCode}: <span className="font-medium text-slate-700">{formatOrderCode(order.orderNumber, order.id)}</span>
-                        </span>
-                        <span className="text-slate-500">
-                          {text.orders.paymentLabel}: <span className="font-medium text-slate-700">{paymentLabel}</span>
-                        </span>
-                        <span className="text-slate-500">
-                          {text.orders.shipmentLabel}: <span className="font-medium text-slate-700">{shipmentLabel}</span>
-                        </span>
-                        <span className="font-semibold text-brand-600">{displayStatusLabel(order, displayedStatus, payment, text)}</span>
-                      </div>
+        {fetchStatus === 'error' ? (
+          <div className="my-6 rounded-xs bg-white border border-slate-200 py-16 text-center shadow-xs">
+            <p className="text-sm text-rose-600">{errorMessage || text.product.loadError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                void loadOrders();
+              }}
+              className="mt-3 rounded-xs bg-[#ee4d2d] px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-[#d73211]"
+            >
+              {text.orders.retry}
+            </button>
+          </div>
+        ) : null}
+
+        {fetchStatus === 'success' && visibleOrders.length === 0 ? (
+          <div className="my-6 rounded-xs bg-white border border-slate-200 py-20 text-center shadow-xs">
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-[#fef6f5] text-[#ee4d2d]">
+              <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-slate-600">{text.orders.empty}</p>
+          </div>
+        ) : null}
+
+        {fetchStatus === 'success' && visibleOrders.length > 0 ? (
+          <div className="mt-3 space-y-3">
+            {visibleOrders.map((order) => {
+              const payment = paymentsByOrderId[order.id];
+              const shipment = shipmentsByOrderId[order.id];
+              const displayedStatus = effectiveOrderStatus(order.status, shipment);
+              const canCancel = order.status === 'PENDING' && shipment === null;
+              const canConfirmReceived = displayedStatus === 'SHIPPED';
+              const canBuyAgain = displayedStatus === 'DELIVERED';
+              const canContinuePayment = canContinueOnlinePayment(order, payment);
+              const shipmentCode = shipment?.trackingNumber?.trim() || shipment?.awb?.trim() || '';
+
+              return (
+                <article key={order.id} className="overflow-hidden rounded-xs border border-slate-200/80 bg-white shadow-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 text-sm md:px-5">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex rounded-xs bg-[#ee4d2d] px-1.5 py-0.5 text-[11px] font-bold text-white">Mall</span>
+                      <span className="text-sm font-bold text-slate-800">{FALLBACK_SHOP_NAME}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent('buyer-chat:open', {
+                              detail: { sellerId: order.sellerId, sellerName: FALLBACK_SHOP_NAME }
+                            })
+                          );
+                        }}
+                        className="ml-2 inline-flex items-center gap-1 rounded-xs border border-slate-200 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        <svg className="h-3.5 w-3.5 text-[#ee4d2d]" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+                        </svg>
+                        Chat
+                      </button>
+                      <Link
+                        href={`/shops/${encodeURIComponent(order.sellerId)}`}
+                        className="inline-flex items-center gap-1 rounded-xs border border-slate-200 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        Xem Shop
+                      </Link>
                     </div>
 
-                    <div className="px-4 py-2 md:px-5">
-                      {order.items.length === 0 ? <p className="text-sm text-slate-500">{text.orders.noItem}</p> : null}
+                    <div className="flex items-center gap-2 text-right">
+                      {displayedStatus === 'DELIVERED' ? (
+                        <span className="flex items-center gap-1 text-xs text-[#26aa99] font-normal">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Giao hàng thành công
+                        </span>
+                      ) : displayedStatus === 'SHIPPED' ? (
+                        <span className="flex items-center gap-1 text-xs text-[#26aa99] font-normal">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                          </svg>
+                          Đang vận chuyển
+                        </span>
+                      ) : null}
+                      {displayedStatus === 'DELIVERED' || displayedStatus === 'SHIPPED' ? (
+                        <span className="text-slate-300">|</span>
+                      ) : null}
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#ee4d2d]">
+                        {displayStatusLabel(order, displayedStatus, payment, text)}
+                      </span>
+                    </div>
+                  </div>
 
-                      {order.items.map((item) => (
-                        <div key={item.id} className="grid gap-3 border-b border-dashed border-slate-200 py-3 last:border-b-0 md:grid-cols-[80px_minmax(0,1fr)_160px] md:items-center">
-                          <OrderItemImage src={productImagesById[item.productId]} alt={item.productName} />
+                  <div className="divide-y divide-slate-100 px-4 md:px-5">
+                    {order.items.length === 0 ? <p className="py-4 text-sm text-slate-500">{text.orders.noItem}</p> : null}
 
-                          <div>
-                            <p className="line-clamp-2 text-base font-medium text-slate-800">{item.productName}</p>
-                            <p className="mt-2 text-sm text-slate-500">SKU: {item.sku}</p>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {text.orders.quantity}: x{item.quantity}
-                            </p>
-                          </div>
+                    {order.items.map((item) => (
+                      <div key={item.id} className="flex items-start gap-3 py-3 md:py-4">
+                        <OrderItemImage src={productImagesById[item.productId]} alt={item.productName} />
 
-                          <div className="text-right text-sm md:text-base">
-                            <p className="text-slate-500 line-through">{formatPrice(item.unitPrice * 1.1, order.currency)}</p>
-                            <p className="mt-1 font-semibold text-brand-600">{formatPrice(item.totalPrice, order.currency)}</p>
-                          </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-normal text-slate-900 leading-snug">{item.productName}</p>
+                          <p className="mt-1 text-xs text-slate-400">Phân loại hàng: {item.sku}</p>
+                          <p className="mt-0.5 text-xs text-slate-700">x{item.quantity}</p>
+                          <span className="mt-1.5 inline-block rounded-xs border border-[#ee4d2d] px-1 py-0.5 text-[10px] text-[#ee4d2d]">
+                            Trả hàng miễn phí 15 ngày
+                          </span>
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="space-y-4 bg-slate-50 px-4 py-4 md:px-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-                        <p>
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs text-slate-400 line-through">{formatPrice(item.unitPrice * 1.1, order.currency)}</p>
+                          <p className="mt-0.5 text-sm font-medium text-[#ee4d2d]">{formatPrice(item.totalPrice, order.currency)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-slate-100 bg-[#fffefb] px-4 py-4 md:px-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-dashed border-slate-200 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span>
+                          {text.orders.orderCode}: <strong className="font-semibold text-slate-700">{formatOrderCode(order.orderNumber, order.id)}</strong>
+                        </span>
+                        <span>·</span>
+                        <span>
                           {text.orders.orderedAt}: {formatOrderDate(order.createdAt, locale)}
-                        </p>
-                        <p className="text-lg font-semibold text-slate-800">
-                          {text.orders.total}: <span className="text-brand-600">{formatPrice(order.totalAmount, order.currency)}</span>
-                        </p>
+                        </span>
+                        {shipmentCode ? (
+                          <>
+                            <span>·</span>
+                            <span>{shipment?.provider ? `${shipment.provider}: ` : ''}{shipmentCode}</span>
+                          </>
+                        ) : null}
                       </div>
 
-                      {shipmentCode ? (
-                        <p className="text-xs text-slate-500">
-                          {shipment?.provider ? `${shipment.provider} - ` : ''}
-                          {shipmentCode}
-                        </p>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-slate-600">{text.orders.total}:</span>
+                        <span className="text-2xl font-normal text-[#ee4d2d]">{formatPrice(order.totalAmount, order.currency)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3">
+                      <Link
+                        href={`/orders/${encodeURIComponent(order.id)}`}
+                        className="inline-flex h-9 min-w-[110px] items-center justify-center rounded-xs border border-slate-300 px-4 text-xs font-normal text-slate-700 hover:bg-slate-50 transition"
+                      >
+                        {text.orders.actionDetail}
+                      </Link>
+
+                      {payment && payment.status === 'REQUIRES_ACTION' && payment.requiresActionUrl ? (
+                        <a
+                          href={payment.requiresActionUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-9 min-w-[130px] items-center justify-center rounded-xs bg-[#ee4d2d] px-5 text-xs font-medium text-white shadow-xs hover:bg-[#d73211] transition"
+                        >
+                          {text.orders.paymentAction}
+                        </a>
                       ) : null}
 
-                      <div className="flex flex-wrap justify-end gap-3">
+                      {canContinuePayment ? (
                         <Link
-                          href={`/orders/${encodeURIComponent(order.id)}`}
-                          className="inline-flex h-10 items-center rounded-sm border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                          href={`/checkout/payment/${encodeURIComponent(order.id)}`}
+                          className="inline-flex h-9 min-w-[130px] items-center justify-center rounded-xs bg-[#ee4d2d] px-5 text-xs font-medium text-white shadow-xs hover:bg-[#d73211] transition"
                         >
-                          {text.orders.actionDetail}
+                          {text.orders.paymentAction}
                         </Link>
+                      ) : null}
 
-                        {payment && payment.status === 'REQUIRES_ACTION' && payment.requiresActionUrl ? (
-                          <a
-                            href={payment.requiresActionUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex h-10 items-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
-                          >
-                            {text.orders.paymentAction}
-                          </a>
-                        ) : null}
+                      {canCancel ? (
+                        <button
+                          type="button"
+                          disabled={actingOrderId === order.id}
+                          onClick={() => {
+                            void handleCancelOrder(order.id);
+                          }}
+                          className="h-9 min-w-[100px] rounded-xs border border-slate-300 px-4 text-xs font-normal text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+                        >
+                          {text.orders.actionCancel}
+                        </button>
+                      ) : null}
 
-                        {canContinuePayment ? (
-                          <Link
-                            href={`/checkout/payment/${encodeURIComponent(order.id)}`}
-                            className="inline-flex h-10 items-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
-                          >
-                            {text.orders.paymentAction}
-                          </Link>
-                        ) : null}
+                      {canConfirmReceived ? (
+                        <button
+                          type="button"
+                          disabled={actingOrderId === order.id}
+                          onClick={() => {
+                            void handleConfirmReceived(order.id);
+                          }}
+                          className="h-9 min-w-[130px] rounded-xs bg-[#ee4d2d] px-5 text-xs font-medium text-white shadow-xs hover:bg-[#d73211] transition disabled:opacity-50"
+                        >
+                          {text.orders.actionConfirmReceived}
+                        </button>
+                      ) : null}
 
-                        {canCancel ? (
-                          <button
-                            type="button"
-                            disabled={actingOrderId === order.id}
-                            onClick={() => {
-                              void handleCancelOrder(order.id);
-                            }}
-                            className="h-10 rounded-sm border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:text-slate-400"
-                          >
-                            {text.orders.actionCancel}
-                          </button>
-                        ) : null}
-
-                        {canConfirmReceived ? (
-                          <button
-                            type="button"
-                            disabled={actingOrderId === order.id}
-                            onClick={() => {
-                              void handleConfirmReceived(order.id);
-                            }}
-                            className="h-10 rounded-sm bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-slate-300"
-                          >
-                            {text.orders.actionConfirmReceived}
-                          </button>
-                        ) : null}
-
-                        {canBuyAgain ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleBuyAgain(order);
-                            }}
-                            className="h-10 rounded-sm bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600"
-                          >
-                            {text.orders.actionBuyAgain}
-                          </button>
-                        ) : null}
-                      </div>
+                      {canBuyAgain ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleBuyAgain(order);
+                          }}
+                          className="h-9 min-w-[130px] rounded-xs bg-[#ee4d2d] px-5 text-xs font-medium text-white shadow-xs hover:bg-[#d73211] transition"
+                        >
+                          {text.orders.actionBuyAgain}
+                        </button>
+                      ) : null}
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-          ) : null}
-        </section>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
       </main>
     </div>
   );

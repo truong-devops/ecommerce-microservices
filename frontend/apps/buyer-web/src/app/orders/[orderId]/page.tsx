@@ -88,18 +88,9 @@ function displayOrderStatusLabel(order: Order, payment: Payment | null, text: Re
 
 function orderStatusTone(order: Order, payment: Payment | null): string {
   if (order.status === 'FAILED' || order.status === 'CANCELLED') {
-    return 'bg-red-50 text-red-700 ring-red-200';
+    return 'bg-slate-100 text-slate-600 ring-slate-200';
   }
-  if (order.status === 'DELIVERED') {
-    return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
-  }
-  if (order.status === 'PENDING' && order.paymentMethod === 'ONLINE' && payment?.status === 'CAPTURED') {
-    return 'bg-amber-50 text-amber-700 ring-amber-200';
-  }
-  if (order.status === 'CONFIRMED' || order.status === 'PROCESSING' || order.status === 'SHIPPED') {
-    return 'bg-blue-50 text-blue-700 ring-blue-200';
-  }
-  return 'bg-slate-100 text-slate-700 ring-slate-200';
+  return 'bg-[#fef6f5] text-[#ee4d2d] ring-[#fcdcd7]';
 }
 
 function paymentStatusLabel(status: PaymentStatus, text: ReturnType<typeof useLanguage>['text']): string {
@@ -428,7 +419,7 @@ export default function OrderDetailPage() {
               onClick={() => {
                 void loadDetail();
               }}
-              className="mt-4 rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-white"
+              className="mt-4 rounded-md bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#d73211]"
             >
               {text.orders.retry}
             </button>
@@ -509,7 +500,7 @@ export default function OrderDetailPage() {
         <section className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-card">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 md:px-6 md:py-5">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{text.orders.orderCode}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#ee4d2d]">{text.orders.orderCode}</p>
               <h1 className="mt-1 break-all text-2xl font-semibold text-slate-950 md:text-3xl">{orderCode}</h1>
               <p className="mt-2 text-sm text-slate-500">
                 {text.orders.orderedAt}: {formatDateTime(order.createdAt, locale)}
@@ -522,14 +513,14 @@ export default function OrderDetailPage() {
               </span>
               <Link
                 href="/orders"
-                className="inline-flex h-10 items-center rounded-sm border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:border-brand-500 hover:text-brand-600"
+                className="inline-flex h-10 items-center rounded-sm border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
               >
                 {text.orders.backToOrders}
               </Link>
               {order.status === 'DELIVERED' && order.paymentMethod === 'ONLINE' ? (
                 <Link
                   href={`/orders/${encodeURIComponent(order.id)}/return`}
-                  className="inline-flex h-10 items-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+                  className="inline-flex h-10 items-center rounded-sm border border-[#ee4d2d] px-4 text-sm font-semibold text-[#ee4d2d] hover:bg-[#fef6f5]"
                 >
                   Trả hàng / Hoàn tiền
                 </Link>
@@ -538,7 +529,7 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="grid border-b border-slate-200 bg-slate-50 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailStat label={uiText.orderValue} value={formatPrice(order.totalAmount, orderCurrency)} valueClassName="text-brand-600" />
+            <DetailStat label={uiText.orderValue} value={formatPrice(order.totalAmount, orderCurrency)} valueClassName="text-[#ee4d2d]" />
             <DetailStat label={uiText.status} value={currentOrderLabel} />
             <DetailStat label={uiText.productCount} value={`${itemCount} ${text.orders.itemCount.toLowerCase()}`} />
             <DetailStat label={uiText.updatedAt} value={updatedAt} />
@@ -605,7 +596,7 @@ export default function OrderDetailPage() {
                     label={text.orders.total}
                     value={formatPrice(order.totalAmount, orderCurrency)}
                     strong
-                    valueClassName="text-brand-600"
+                    valueClassName="text-[#ee4d2d]"
                   />
                 </div>
               </div>
@@ -631,7 +622,7 @@ export default function OrderDetailPage() {
               {canContinuePayment ? (
                 <Link
                   href={`/checkout/payment/${encodeURIComponent(order.id)}`}
-                  className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-sm bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600"
+                  className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-sm bg-[#ee4d2d] px-4 text-sm font-semibold text-white hover:bg-[#d73211]"
                 >
                   {text.orders.paymentAction}
                 </Link>
@@ -642,7 +633,7 @@ export default function OrderDetailPage() {
                   href={payment.requiresActionUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-sm border border-brand-500 px-4 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+                  className="mt-3 inline-flex h-10 w-full items-center justify-center rounded-sm border border-[#ee4d2d] px-4 text-sm font-semibold text-[#ee4d2d] hover:bg-[#fef6f5]"
                 >
                   {text.orders.paymentAction}
                 </a>
@@ -676,7 +667,7 @@ export default function OrderDetailPage() {
               <ol className="mt-4 space-y-4">
                 {histories.map((history) => (
                   <li key={history.id} className="relative border-l border-slate-200 pl-4 text-sm">
-                    <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-brand-500 ring-4 ring-brand-50" />
+                    <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#ee4d2d] ring-4 ring-[#fcdcd7]" />
                     <p className="font-semibold text-slate-900">{orderStatusLabel(history.toStatus, text)}</p>
                     <p className="mt-1 text-xs text-slate-500">{formatDateTime(history.createdAt, locale)}</p>
                     {history.reason ? <p className="mt-2 leading-6 text-slate-600">{history.reason}</p> : null}
@@ -743,9 +734,9 @@ function ProgressTrack({
       <div className="relative grid gap-3 sm:grid-cols-5">
         {items.map((item, index) => {
           const markerClassName = item.done
-            ? 'border-brand-500 bg-brand-500 text-white'
+            ? 'border-[#ee4d2d] bg-[#ee4d2d] text-white'
             : item.current
-              ? 'border-brand-500 bg-white text-brand-600 ring-4 ring-brand-50'
+              ? 'border-[#ee4d2d] bg-white text-[#ee4d2d] ring-4 ring-[#fcdcd7]'
               : 'border-slate-300 bg-white text-slate-400';
 
           return (

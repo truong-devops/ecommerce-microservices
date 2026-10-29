@@ -178,12 +178,20 @@ export function Header({ keywords }: HeaderProps) {
                 {text.header.searchButton}
               </button>
             </form>
-            <div className="mt-1 hidden flex-wrap gap-3 text-xs text-white/90 md:flex" aria-label="Trending keywords">
-              {uniqueKeywords.map((keyword) => (
-                <Link key={keyword} href={buildSearchHref(keyword)} className="rounded-sm hover:text-white focus-visible:outline-white">
-                  {keyword}
-                </Link>
-              ))}
+            <div className="mt-1.5 hidden h-5 items-center gap-3 overflow-hidden text-xs text-white/80 whitespace-nowrap md:flex" aria-label="Trending keywords">
+              {uniqueKeywords.slice(0, 7).map((keyword) => {
+                const shortKeyword = keyword.length > 25 ? `${keyword.slice(0, 24)}...` : keyword;
+                return (
+                  <Link
+                    key={keyword}
+                    href={buildSearchHref(keyword)}
+                    title={keyword}
+                    className="truncate max-w-[160px] hover:text-white transition"
+                  >
+                    {shortKeyword}
+                  </Link>
+                );
+              })}
             </div>
           </div>
 

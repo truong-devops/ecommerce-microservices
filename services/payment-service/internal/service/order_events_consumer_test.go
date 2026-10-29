@@ -18,6 +18,7 @@ type fakeOrderEventHandler struct {
 	sellerID          string
 	totalAmount       float64
 	eventID           string
+	returnRefundEvent OrderReturnRefundApprovedEvent
 }
 
 func (f *fakeOrderEventHandler) HandleOrderCreatedEvent(
@@ -56,13 +57,17 @@ func (f *fakeOrderEventHandler) HandleOrderCancelledEvent(
 
 func (f *fakeOrderEventHandler) HandleOrderReturnRefundApprovedEvent(
 	_ context.Context,
-	orderID, _ string, eventID, _ string,
+	event OrderReturnRefundApprovedEvent,
+	_ string,
+	eventID string,
+	_ string,
 	_ int,
 	_ int64,
 ) error {
 	f.returnRefundCalls++
-	f.orderID = orderID
+	f.orderID = event.OrderID
 	f.eventID = eventID
+	f.returnRefundEvent = event
 	return nil
 }
 
@@ -113,13 +118,41 @@ func TestOrderReturnRefundApprovedEventIsForwarded(t *testing.T) {
 	consumer := &OrderEventsConsumer{topic: "order.events", logger: zap.NewNop(), service: handler}
 	message := kafka.Message{Topic: "order.events", Value: mustMarshalOrderEvent(t, KafkaEnvelope{
 		EventID: "evt-return-refund-1", EventType: "order.return-refund-approved",
-		Payload: map[string]any{"orderId": "11111111-1111-4111-8111-111111111111"},
+		Payload: map[string]any{
+			"returnRequestId": "44444444-4444-4444-8444-444444444444",
+			"orderId":         "11111111-1111-4111-8111-111111111111",
+			"customerId":      "22222222-2222-4222-8222-222222222222",
+			"sellerId":        "33333333-3333-4333-8333-333333333333",
+			"refundAmount":    109000,
+			"currency":        "vnd",
+		},
 	})}
 	if err := consumer.handleMessage(context.Background(), message); err != nil {
 		t.Fatalf("handle return refund: %v", err)
 	}
 	if handler.returnRefundCalls != 1 || handler.cancelledCalls != 0 || handler.createdCalls != 0 {
 		t.Fatalf("unexpected handler calls: %+v", handler)
+	}
+	if handler.returnRefundEvent.ReturnRequestID == "" || handler.returnRefundEvent.CustomerID == "" ||
+		handler.returnRefundEvent.SellerID == "" || handler.returnRefundEvent.RefundAmount != 109000 ||
+		handler.returnRefundEvent.Currency != "VND" {
+		t.Fatalf("return refund fields were not forwarded: %+v", handler.returnRefundEvent)
+	}
+}
+
+func TestOrderReturnRefundApprovedEventWithoutAmountIsSkipped(t *testing.T) {
+	handler := &fakeOrderEventHandler{}
+	consumer := &OrderEventsConsumer{topic: "order.events", logger: zap.NewNop(), service: handler}
+	message := kafka.Message{Topic: "order.events", Value: mustMarshalOrderEvent(t, KafkaEnvelope{
+		EventID: "evt-return-refund-invalid", EventType: "order.return-refund-approved",
+		Payload: map[string]any{"orderId": "11111111-1111-4111-8111-111111111111"},
+	})}
+
+	if err := consumer.handleMessage(context.Background(), message); err != nil {
+		t.Fatalf("handle invalid return refund: %v", err)
+	}
+	if handler.returnRefundCalls != 0 {
+		t.Fatalf("invalid financial event reached handler: %+v", handler)
 	}
 }
 

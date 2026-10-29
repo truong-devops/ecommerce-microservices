@@ -22,7 +22,7 @@ type KafkaEnvelope struct {
 type orderEventHandler interface {
 	HandleOrderCreatedEvent(context.Context, string, string, string, float64, string, *string, string, string, string, string, int, int64) error
 	HandleOrderCancelledEvent(context.Context, string, string, string, string, int, int64) error
-	HandleOrderReturnRefundApprovedEvent(context.Context, string, string, string, string, int, int64) error
+	HandleOrderReturnRefundApprovedEvent(context.Context, OrderReturnRefundApprovedEvent, string, string, string, int, int64) error
 }
 
 type OrderEventsConsumer struct {
@@ -141,7 +141,32 @@ func (c *OrderEventsConsumer) handleMessage(ctx context.Context, msg kafka.Messa
 		return c.service.HandleOrderCancelledEvent(ctx, orderID, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
 	}
 	if eventType == "order.return-refund-approved" {
-		return c.service.HandleOrderReturnRefundApprovedEvent(ctx, orderID, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
+		refundAmount, ok := asNumber(payload["refundAmount"])
+		if !ok {
+			c.logger.Warn("skip invalid return refund event amount",
+				zap.String("eventId", strings.TrimSpace(envelope.EventID)),
+				zap.String("orderId", orderID),
+			)
+			return nil
+		}
+		event := OrderReturnRefundApprovedEvent{
+			ReturnRequestID: asString(payload["returnRequestId"]),
+			OrderID:         orderID,
+			CustomerID:      asString(payload["customerId"]),
+			SellerID:        asString(payload["sellerId"]),
+			RefundAmount:    refundAmount,
+			Currency:        strings.ToUpper(asString(payload["currency"])),
+		}
+		if event.ReturnRequestID == "" || event.OrderID == "" || event.CustomerID == "" ||
+			event.SellerID == "" || event.RefundAmount <= 0 || event.Currency == "" {
+			c.logger.Warn("skip incomplete return refund event",
+				zap.String("eventId", strings.TrimSpace(envelope.EventID)),
+				zap.String("orderId", orderID),
+				zap.String("returnRequestId", event.ReturnRequestID),
+			)
+			return nil
+		}
+		return c.service.HandleOrderReturnRefundApprovedEvent(ctx, event, requestID, strings.TrimSpace(envelope.EventID), topic, msg.Partition, msg.Offset)
 	}
 
 	userID := asString(payload["userId"])

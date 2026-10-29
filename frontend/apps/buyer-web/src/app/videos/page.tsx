@@ -78,7 +78,14 @@ export default function VideosPage() {
   }, [user?.id, user?.name]);
 
   const currentVideo = videos[currentIndex] ?? null;
-  const keywords = useMemo(() => videos.flatMap((video) => video.products.map((product) => product.name)).slice(0, 8), [videos]);
+  const keywords = useMemo(() => [
+    'Shopee Video',
+    'Deal Hot',
+    'Xu Hướng',
+    'Review Sản Phẩm',
+    'Đồ Công Nghệ',
+    'Thời Trang'
+  ], []);
   const currentVideoId = currentVideo?.videoId ?? '';
   const currentVideoLiked = Boolean(accessToken && currentVideoId && likedVideoIds.has(currentVideoId));
   const chatEmojis = ['🔥', '❤️', '👍', '😍'];

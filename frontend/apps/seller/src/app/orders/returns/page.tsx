@@ -27,36 +27,51 @@ const STATUS_FILTERS: Array<{ value: StatusFilter; label: string }> = [
 const STATUS_META: Record<SellerReturnStatus, { label: string; className: string; description: string }> = {
   REQUESTED: {
     label: 'Chờ phản hồi',
-    className: 'border-amber-200 bg-amber-50 text-amber-700',
+    className: 'border-[#fcdcd7] bg-[#fef6f5] text-[#ee4d2d]',
     description: 'Người mua đang chờ shop duyệt yêu cầu.'
   },
   APPROVED: {
     label: 'Chờ khách gửi',
-    className: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+    className: 'border-[#fed7aa] bg-[#fffaf5] text-[#c2410c]',
     description: 'Shop đã duyệt. Đang chờ người mua gửi kiện hàng hoàn.'
   },
   RETURNING: {
     label: 'Đang hoàn hàng',
-    className: 'border-blue-200 bg-blue-50 text-blue-700',
+    className: 'border-[#fed7aa] bg-[#fffaf5] text-[#ea580c]',
     description: 'Người mua đã gửi hàng, đang chờ shop nhận và kiểm tra.'
   },
   REFUND_PENDING: {
     label: 'Đang hoàn tiền',
-    className: 'border-violet-200 bg-violet-50 text-violet-700',
+    className: 'border-[#e5e7eb] bg-[#f9fafb] text-[#374151]',
     description: 'Hệ thống đang xử lý hoàn tiền vào ví người mua.'
   },
   REFUNDED: {
     label: 'Đã hoàn tiền',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    className: 'border-[#e5e7eb] bg-[#f9fafb] text-[#111827]',
     description: 'Tiền đã được hoàn vào ví eMall của người mua.'
   },
-  REJECTED: { label: 'Đã từ chối', className: 'border-rose-200 bg-rose-50 text-rose-700', description: 'Shop đã từ chối yêu cầu và ghi nhận lý do.' },
+  REJECTED: {
+    label: 'Đã từ chối',
+    className: 'border-[#f3f4f6] bg-[#f9fafb] text-[#6b7280]',
+    description: 'Shop đã từ chối yêu cầu và ghi nhận lý do.'
+  },
   CANCELLED: {
     label: 'Đã hủy',
-    className: 'border-slate-200 bg-slate-50 text-slate-600',
+    className: 'border-[#f3f4f6] bg-[#f9fafb] text-[#9ca3af]',
     description: 'Người mua đã hủy yêu cầu trước khi shop xử lý.'
   }
 };
+
+function getStatusMeta(status?: string | null) {
+  if (status && status in STATUS_META) {
+    return STATUS_META[status as SellerReturnStatus];
+  }
+  return {
+    label: status || 'Chờ xử lý',
+    className: 'border-[#e5e7eb] bg-[#f9fafb] text-[#555555]',
+    description: 'Yêu cầu đang được xử lý trong hệ thống.'
+  };
+}
 
 const REASON_LABELS: Record<string, string> = {
   DAMAGED: 'Sản phẩm bị hư hỏng',
@@ -88,8 +103,9 @@ export default function ReturnsPage() {
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         search: search || undefined
       });
-      setReturns(result.items);
-      setSelected((current) => (current ? (result.items.find((item) => item.id === current.id) ?? null) : null));
+      const items = Array.isArray(result) ? result : Array.isArray(result?.items) ? result.items : [];
+      setReturns(items);
+      setSelected((current) => (current ? (items.find((item) => item.id === current.id) ?? null) : null));
     } catch (loadError) {
       setError(toErrorMessage(loadError, 'Không tải được danh sách trả hàng/hoàn tiền.'));
     } finally {
@@ -101,16 +117,16 @@ export default function ReturnsPage() {
     if (ready && accessToken) void loadReturns();
   }, [accessToken, loadReturns, ready]);
 
-  const summary = useMemo(
-    () => ({
-      total: returns.length,
-      awaiting: returns.filter((item) => item.status === 'REQUESTED').length,
-      returning: returns.filter((item) => item.status === 'RETURNING').length,
-      refunding: returns.filter((item) => item.status === 'REFUND_PENDING').length,
-      refunded: returns.filter((item) => item.status === 'REFUNDED').reduce((sum, item) => sum + item.refundAmount, 0)
-    }),
-    [returns]
-  );
+  const summary = useMemo(() => {
+    const list = Array.isArray(returns) ? returns : [];
+    return {
+      total: list.length,
+      awaiting: list.filter((item) => item?.status === 'REQUESTED').length,
+      returning: list.filter((item) => item?.status === 'RETURNING').length,
+      refunding: list.filter((item) => item?.status === 'REFUND_PENDING').length,
+      refunded: list.filter((item) => item?.status === 'REFUNDED').reduce((sum, item) => sum + (item?.refundAmount || 0), 0)
+    };
+  }, [returns]);
 
   const handleLogout = useCallback(async () => {
     await logout();
@@ -206,10 +222,10 @@ export default function ReturnsPage() {
 
             <section className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <SummaryCard label="Tổng yêu cầu" value={String(summary.total)} note="Theo bộ lọc hiện tại" />
-              <SummaryCard label="Chờ phản hồi" value={String(summary.awaiting)} note="Cần shop xử lý" accent="amber" />
-              <SummaryCard label="Đang hoàn hàng" value={String(summary.returning)} note="Chờ nhận lại hàng" accent="blue" />
-              <SummaryCard label="Đang hoàn tiền" value={String(summary.refunding)} note="Hệ thống đang xử lý" accent="violet" />
-              <SummaryCard label="Đã hoàn" value={formatCurrency(summary.refunded, 'VND')} note="Tổng tiền theo bộ lọc" accent="emerald" />
+              <SummaryCard label="Chờ phản hồi" value={String(summary.awaiting)} note="Cần shop xử lý" highlight={summary.awaiting > 0} />
+              <SummaryCard label="Đang hoàn hàng" value={String(summary.returning)} note="Chờ nhận lại hàng" />
+              <SummaryCard label="Đang hoàn tiền" value={String(summary.refunding)} note="Hệ thống đang xử lý" />
+              <SummaryCard label="Đã hoàn" value={formatCurrency(summary.refunded, 'VND')} note="Tổng tiền theo bộ lọc" />
             </section>
 
             <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -266,7 +282,7 @@ export default function ReturnsPage() {
                       returns.map((request) => (
                         <tr key={request.id} className="align-top hover:bg-slate-50/70">
                           <td className="px-5 py-4">
-                            <button type="button" onClick={() => setSelected(request)} className="font-semibold text-blue-700 hover:underline">
+                            <button type="button" onClick={() => setSelected(request)} className="font-semibold text-slate-900 hover:text-[#ee4d2d] hover:underline">
                               {request.returnNumber}
                             </button>
                             <p className="mt-1 text-xs text-slate-500">{formatOrderCode(request.orderNumber, request.orderId)}</p>
@@ -274,7 +290,7 @@ export default function ReturnsPage() {
                           </td>
                           <td className="max-w-[280px] px-5 py-4">
                             <p className="font-medium text-slate-800">{productSummary(request)}</p>
-                            <p className="mt-1 text-xs text-slate-500">{request.items.reduce((sum, item) => sum + item.quantity, 0)} sản phẩm</p>
+                            <p className="mt-1 text-xs text-slate-500">{(request.items || []).reduce((sum, item) => sum + (item?.quantity ?? 1), 0)} sản phẩm</p>
                           </td>
                           <td className="max-w-[280px] px-5 py-4">
                             <p className="font-medium">{REASON_LABELS[request.reasonCode] ?? request.reasonCode}</p>
@@ -322,25 +338,24 @@ function SummaryCard({
   label,
   value,
   note,
-  accent = 'slate'
+  highlight = false
 }: {
   label: string;
   value: string;
   note: string;
-  accent?: 'slate' | 'amber' | 'blue' | 'violet' | 'emerald';
+  highlight?: boolean;
 }) {
-  const accents = { slate: 'text-slate-900', amber: 'text-amber-700', blue: 'text-blue-700', violet: 'text-violet-700', emerald: 'text-emerald-700' };
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <article className={`rounded-xl border p-4 shadow-sm transition-all ${highlight ? 'border-[#fcdcd7] bg-[#fef6f5]' : 'border-slate-200 bg-white'}`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className={`mt-2 text-2xl font-bold ${accents[accent]}`}>{value}</p>
+      <p className={`mt-2 text-2xl font-bold ${highlight ? 'text-[#ee4d2d]' : 'text-slate-900'}`}>{value}</p>
       <p className="mt-1 text-xs text-slate-500">{note}</p>
     </article>
   );
 }
 
-function StatusBadge({ status }: { status: SellerReturnStatus }) {
-  const meta = STATUS_META[status];
+function StatusBadge({ status }: { status?: SellerReturnStatus | string | null }) {
+  const meta = getStatusMeta(status);
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${meta.className}`}>{meta.label}</span>;
 }
 
@@ -367,7 +382,7 @@ function RowActions({
         <button
           type="button"
           onClick={() => onView(request)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
         >
           Chi tiết
         </button>
@@ -378,7 +393,7 @@ function RowActions({
             type="button"
             disabled={disabled}
             onClick={() => onReject(request)}
-            className="rounded-md border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             Từ chối
           </button>
@@ -386,7 +401,7 @@ function RowActions({
             type="button"
             disabled={disabled}
             onClick={() => onApprove(request)}
-            className="rounded-md bg-[#ee4d2d] px-3 py-2 text-xs font-semibold text-white hover:bg-[#d94325] disabled:opacity-50"
+            className="rounded-md bg-[#ee4d2d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#d73211] disabled:opacity-50"
           >
             Duyệt
           </button>
@@ -397,7 +412,7 @@ function RowActions({
           type="button"
           disabled={disabled}
           onClick={() => onComplete(request)}
-          className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="rounded-md bg-[#ee4d2d] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#d73211] disabled:opacity-50"
         >
           Đã nhận hàng
         </button>
@@ -421,7 +436,10 @@ function ReturnDetail({
   onReject: (request: SellerReturnRequest) => void;
   onComplete: (request: SellerReturnRequest) => void;
 }) {
-  const meta = STATUS_META[request.status];
+  const meta = getStatusMeta(request?.status);
+  const items = Array.isArray(request?.items) ? request.items : [];
+  const evidenceUrls = Array.isArray(request?.evidenceUrls) ? request.evidenceUrls : [];
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/40" role="dialog" aria-modal="true" aria-label="Chi tiết yêu cầu trả hàng">
       <button type="button" aria-label="Đóng" className="min-w-0 flex-1" onClick={onClose} />
@@ -432,7 +450,7 @@ function ReturnDetail({
             <h2 className="mt-1 text-2xl font-semibold">{request.returnNumber}</h2>
             <p className="mt-1 text-sm text-slate-500">Đơn {formatOrderCode(request.orderNumber, request.orderId)}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold">
+          <button type="button" onClick={onClose} className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold hover:bg-slate-50">
             Đóng
           </button>
         </div>
@@ -446,15 +464,15 @@ function ReturnDetail({
             <Info label="Ngày yêu cầu" value={formatDateTime(request.requestedAt)} />
           </section>
           {request.returnTrackingNumber || request.returnAwb ? (
-            <section className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Vận đơn hoàn Nexus</p>
-              <p className="mt-1 font-semibold text-blue-950">{request.returnTrackingNumber ?? request.returnAwb}</p>
+            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Vận đơn hoàn Nexus</p>
+              <p className="mt-1 font-semibold text-slate-900">{request.returnTrackingNumber ?? request.returnAwb}</p>
               {request.returnTrackingUrl ? (
                 <a
                   href={request.returnTrackingUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-flex text-sm font-semibold text-blue-700 hover:underline"
+                  className="mt-2 inline-flex text-sm font-semibold text-[#ee4d2d] hover:underline"
                 >
                   Theo dõi hành trình →
                 </a>
@@ -463,38 +481,42 @@ function ReturnDetail({
           ) : null}
           <section>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Lý do trả hàng</h3>
-            <p className="mt-2 font-semibold">{REASON_LABELS[request.reasonCode] ?? request.reasonCode}</p>
+            <p className="mt-2 font-semibold text-slate-900">{REASON_LABELS[request.reasonCode] ?? request.reasonCode}</p>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">{request.reasonDetail}</p>
           </section>
           <section>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Sản phẩm</h3>
             <div className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-200">
-              {request.items.map((item) => (
-                <div key={item.id} className="flex items-start justify-between gap-3 p-3 text-sm">
-                  <div>
-                    <p className="font-medium">{item.productName}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      SKU {item.sku} · SL {item.quantity}
-                    </p>
+              {items.length === 0 ? (
+                <p className="p-3 text-sm text-slate-500">Không có thông tin chi tiết sản phẩm.</p>
+              ) : (
+                items.map((item) => (
+                  <div key={item.id || item.sku} className="flex items-start justify-between gap-3 p-3 text-sm">
+                    <div>
+                      <p className="font-medium text-slate-900">{item.productName || 'Sản phẩm'}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        SKU {item.sku || 'N/A'} · SL {item.quantity || 1}
+                      </p>
+                    </div>
+                    <p className="shrink-0 font-semibold text-slate-900">{formatCurrency(item.totalPrice || 0, request.currency || 'VND')}</p>
                   </div>
-                  <p className="shrink-0 font-semibold">{formatCurrency(item.totalPrice, request.currency)}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
           <section>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Bằng chứng người mua</h3>
-            {request.evidenceUrls.length === 0 ? (
+            {evidenceUrls.length === 0 ? (
               <p className="mt-2 text-sm text-slate-500">Không có tệp đính kèm.</p>
             ) : (
               <ul className="mt-2 space-y-2">
-                {request.evidenceUrls.map((url, index) => (
+                {evidenceUrls.map((url, index) => (
                   <li key={url}>
                     <a
                       href={url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block truncate rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50"
+                      className="block truncate rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d]"
                     >
                       Bằng chứng {index + 1} ↗
                     </a>
@@ -544,8 +566,10 @@ function EmptyRow({ message }: { message: string }) {
   );
 }
 function productSummary(request: SellerReturnRequest) {
-  if (request.items.length === 0) return 'Không có thông tin sản phẩm';
-  return request.items.length === 1 ? request.items[0].productName : `${request.items[0].productName} +${request.items.length - 1} sản phẩm`;
+  const items = Array.isArray(request?.items) ? request.items : [];
+  if (items.length === 0) return 'Không có thông tin sản phẩm';
+  const first = items[0]?.productName || 'Sản phẩm';
+  return items.length === 1 ? first : `${first} +${items.length - 1} sản phẩm`;
 }
 function formatDateTime(value: string) {
   const date = new Date(value);

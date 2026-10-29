@@ -944,7 +944,7 @@ function AvatarPreview({ src, letter, className = '' }: { src: string | null; le
 
   return (
     <div
-      className={`grid place-items-center overflow-hidden rounded-full bg-gradient-to-br from-amber-500 to-orange-600 font-semibold text-white ${className}`}
+      className={`grid place-items-center overflow-hidden rounded-full bg-[#ee4d2d] font-semibold text-white shadow-xs ${className}`}
     >
       {imageSrc ? (
         <Image

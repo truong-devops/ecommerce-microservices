@@ -107,68 +107,76 @@ export default function BuyerWalletPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-[#f5f5f5] text-[#222222]">
       <Header keywords={keywords} />
-      <main className="mx-auto w-full max-w-[1200px] space-y-5 px-4 py-8">
+      <main className="mx-auto w-full max-w-[1200px] space-y-4 px-3 py-6 md:px-4">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">Tài chính khách hàng</p>
-          <h1 className="mt-1 text-3xl font-bold">Ví eMall & hoàn tiền</h1>
-          <p className="mt-2 text-slate-600">Tiền của đơn online bị hủy được ghi nhận ở đây trước khi Admin chuyển về ngân hàng của bạn.</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#ee4d2d]">Tài chính khách hàng</p>
+          <h1 className="mt-1 text-2xl font-bold text-[#222222]">Ví eMall &amp; hoàn tiền</h1>
+          <p className="mt-1 text-xs text-[#757575]">Tiền của đơn online bị hủy được ghi nhận ở đây trước khi Admin chuyển về ngân hàng của bạn.</p>
         </div>
-        {notice && <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</div>}
-        {error && <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>}
+        {notice && <div className="rounded border border-[#e8e8e8] bg-white p-3 text-xs font-medium text-[#222222] shadow-xs">{notice}</div>}
+        {error && <div className="rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">{error}</div>}
         {loading ? (
-          <div className="rounded-xl bg-white p-10 text-center text-slate-500">Đang tải ví...</div>
+          <div className="rounded-lg border border-[#e8e8e8] bg-white p-10 text-center text-xs text-[#757575]">Đang tải ví...</div>
         ) : (
           <>
-            <section className="grid gap-4 md:grid-cols-3">
+            <section className="grid gap-3 sm:grid-cols-3">
               <Card label="Có thể yêu cầu hoàn" value={money(wallet?.availableAmount ?? 0)} />
               <Card label="Admin đang chuyển" value={money(wallet?.payoutPendingAmount ?? 0)} />
               <Card label="Đã chuyển về ngân hàng" value={money(wallet?.totalPaidOut ?? 0)} />
             </section>
-            <section className="grid gap-5 lg:grid-cols-2">
-              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="text-lg font-semibold">Tài khoản nhận tiền hoàn</h2>
+            <section className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-lg border border-[#e8e8e8] bg-white p-5 shadow-xs">
+                <h2 className="text-base font-bold text-[#222222]">Tài khoản nhận tiền hoàn</h2>
                 {bank && (
-                  <p className="mt-1 text-sm text-slate-500">
-                    {bank.bankCode} · {bank.maskedAccountNumber} · <b>{bank.status}</b>
+                  <p className="mt-1 text-xs text-[#757575]">
+                    {bank.bankCode} · {bank.maskedAccountNumber} · <b className="text-[#ee4d2d]">{bank.status}</b>
                   </p>
                 )}
                 <div className="mt-4 grid gap-3">
                   <input
-                    className="h-11 rounded-md border px-3"
+                    className="h-10 rounded border border-[#e8e8e8] px-3 text-xs text-[#222222] placeholder:text-[#999999] focus:border-[#ee4d2d] outline-none transition"
                     placeholder="Mã ngân hàng, ví dụ VCB"
                     value={form.bankCode}
                     onChange={(e) => setForm({ ...form, bankCode: e.target.value.toUpperCase() })}
                   />
                   <input
-                    className="h-11 rounded-md border px-3"
+                    className="h-10 rounded border border-[#e8e8e8] px-3 text-xs text-[#222222] placeholder:text-[#999999] focus:border-[#ee4d2d] outline-none transition"
                     placeholder={bank ? 'Nhập số tài khoản mới nếu muốn thay đổi' : 'Số tài khoản'}
                     value={form.accountNumber}
                     onChange={(e) => setForm({ ...form, accountNumber: e.target.value.replace(/\D/g, '') })}
                   />
                   <input
-                    className="h-11 rounded-md border px-3"
+                    className="h-10 rounded border border-[#e8e8e8] px-3 text-xs text-[#222222] placeholder:text-[#999999] focus:border-[#ee4d2d] outline-none transition"
                     placeholder="Tên chủ tài khoản"
                     value={form.accountHolderName}
                     onChange={(e) => setForm({ ...form, accountHolderName: e.target.value.toUpperCase() })}
                   />
                   <button
-                    className="h-11 rounded-md bg-brand-600 font-semibold text-white disabled:opacity-50"
+                    className={`h-10 rounded text-xs font-semibold transition ${
+                      action !== '' || !form.bankCode || !form.accountNumber || !form.accountHolderName
+                        ? 'bg-[#f5f5f5] text-[#999999] border border-[#e8e8e8] cursor-not-allowed'
+                        : 'bg-[#ee4d2d] text-white hover:bg-[#d73211] shadow-xs'
+                    }`}
                     disabled={action !== '' || !form.bankCode || !form.accountNumber || !form.accountHolderName}
                     onClick={() => void saveBank()}
                   >
                     {action === 'bank' ? 'Đang lưu...' : 'Lưu tài khoản'}
                   </button>
                   <button
-                    className="h-11 rounded-md bg-emerald-600 font-semibold text-white disabled:opacity-50"
+                    className={`h-10 rounded text-xs font-semibold transition ${
+                      action !== '' || !bank || bank.status !== 'ALLOWLISTED' || (wallet?.availableAmount ?? 0) <= 0
+                        ? 'bg-[#f5f5f5] text-[#999999] border border-[#e8e8e8] cursor-not-allowed'
+                        : 'border border-[#ee4d2d] bg-[#fef6f5] text-[#ee4d2d] hover:bg-[#ee4d2d] hover:text-white shadow-xs'
+                    }`}
                     disabled={action !== '' || !bank || bank.status !== 'ALLOWLISTED' || (wallet?.availableAmount ?? 0) <= 0}
                     onClick={() => void requestRefund()}
                   >
                     {action === 'payout' ? 'Đang gửi...' : `Yêu cầu chuyển ${money(wallet?.availableAmount ?? 0)}`}
                   </button>
                   {bank?.status !== 'ALLOWLISTED' && (
-                    <p className="text-xs text-amber-700">Tài khoản phải được Admin xác minh trước khi chuyển tiền.</p>
+                    <p className="text-[11px] text-[#757575]">Tài khoản phải được Admin xác minh trước khi chuyển tiền.</p>
                   )}
                 </div>
               </div>
@@ -192,26 +200,27 @@ export default function BuyerWalletPage() {
 
 function Card({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold">{value}</p>
+    <div className="rounded-lg border border-[#e8e8e8] bg-white p-4 shadow-xs">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[#757575]">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-[#222222]">{value}</p>
     </div>
   );
 }
+
 function Table({ title, empty, rows }: { title: string; empty: string; rows: (string | number)[][] }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <h2 className="border-b p-4 text-lg font-semibold">{title}</h2>
+    <section className="overflow-hidden rounded-lg border border-[#e8e8e8] bg-white shadow-xs">
+      <h2 className="border-b border-[#e8e8e8] bg-[#fafafa] px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#333333]">{title}</h2>
       {rows.length === 0 ? (
-        <p className="p-8 text-center text-sm text-slate-500">{empty}</p>
+        <p className="p-8 text-center text-xs text-[#757575]">{empty}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <tbody className="divide-y">
+          <table className="min-w-full text-xs">
+            <tbody className="divide-y divide-[#f0f0f0]">
               {rows.map((row, index) => (
-                <tr key={index}>
+                <tr key={index} className="hover:bg-[#fafafa]">
                   {row.map((cell, cellIndex) => (
-                    <td key={cellIndex} className="px-4 py-3">
+                    <td key={cellIndex} className="px-4 py-2.5 text-[#333333]">
                       {cell}
                     </td>
                   ))}

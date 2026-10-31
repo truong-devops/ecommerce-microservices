@@ -100,10 +100,10 @@ function RevenueContent({ accessToken }: { accessToken: string }) {
           <div className="mt-4 h-40 animate-pulse rounded-lg bg-slate-100" />
         ) : (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <SummaryCard label="Đang tạm giữ" value={wallet?.heldAmount ?? 0} hint="Chờ đủ điều kiện giải ngân" accent="amber" />
-            <SummaryCard label="Sẵn sàng rút" value={wallet?.availableAmount ?? 0} hint="Đang nằm trong số dư khả dụng" accent="emerald" />
-            <SummaryCard label="Đang thanh toán" value={wallet?.payoutPendingAmount ?? 0} hint="Đối tác thanh toán đang xử lý" accent="sky" />
-            <SummaryCard label="Đã thanh toán" value={wallet?.totalPaidOut ?? 0} hint="Tổng tiền đã rút thành công" accent="slate" />
+            <SummaryCard label="Đang tạm giữ" value={wallet?.heldAmount ?? 0} hint="Chờ đủ điều kiện giải ngân" />
+            <SummaryCard label="Sẵn sàng rút" value={wallet?.availableAmount ?? 0} hint="Đang nằm trong số dư khả dụng" />
+            <SummaryCard label="Đang chuyển về ngân hàng" value={wallet?.payoutPendingAmount ?? 0} hint="Yêu cầu đang được xử lý" />
+            <SummaryCard label="Đã chuyển về ngân hàng" value={wallet?.totalPaidOut ?? 0} hint="Tổng tiền đã rút thành công" />
           </div>
         )}
       </article>
@@ -112,10 +112,10 @@ function RevenueContent({ accessToken }: { accessToken: string }) {
         <article className="rounded-md border border-slate-200 bg-white p-4 lg:p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Thanh toán đã nhận</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Tiền đã chuyển về ngân hàng</h2>
               <p className="mt-1 text-xs text-slate-500">Tổng hợp từ các yêu cầu rút tiền thành công.</p>
             </div>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Dữ liệu thực</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">Dữ liệu thực</span>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <PaidMetric label="Tuần này" value={summary?.paidThisWeek ?? 0} />
@@ -147,7 +147,7 @@ function RevenueContent({ accessToken }: { accessToken: string }) {
             <FlowStep number="1" title="Khách thanh toán" text="Doanh thu được ghi nhận vào tiền đang tạm giữ." />
             <FlowStep number="2" title="Đơn được giao" text="Hệ thống bắt đầu tính thời gian giữ tiền." />
             <FlowStep number="3" title="Tiền khả dụng" text="Shop có thể tạo yêu cầu rút về ngân hàng." />
-            <FlowStep number="4" title="Đối tác xử lý" text="Thành công hoặc tự hoàn tiền nếu thất bại." />
+            <FlowStep number="4" title="Chuyển về ngân hàng" text="Hoàn tất giao dịch hoặc tự hoàn số dư nếu thất bại." />
           </ol>
         </article>
       </div>
@@ -185,10 +185,9 @@ function RevenueContent({ accessToken }: { accessToken: string }) {
   );
 }
 
-function SummaryCard({ label, value, hint, accent }: { label: string; value: number; hint: string; accent: 'amber' | 'emerald' | 'sky' | 'slate' }) {
-  const border = { amber: 'border-l-amber-400', emerald: 'border-l-emerald-500', sky: 'border-l-sky-500', slate: 'border-l-slate-500' }[accent];
+function SummaryCard({ label, value, hint }: { label: string; value: number; hint: string }) {
   return (
-    <div className={`rounded-md border border-slate-200 border-l-4 ${border} p-4`}>
+    <div className="rounded-md border border-slate-200 border-t-2 border-t-[#ee4d2d] p-4">
       <p className="text-sm font-medium text-slate-600">{label}</p>
       <p className={`mt-2 text-2xl font-semibold ${value < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{formatVnd(value)}</p>
       <p className="mt-1 text-xs leading-5 text-slate-400">{hint}</p>

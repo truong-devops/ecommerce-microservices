@@ -97,7 +97,11 @@ function BankAccountContent({ accessToken }: { accessToken: string }) {
       setAccount(updated);
       setForm(emptyForm);
       setDialogOpen(false);
-      setMessage(wasUpdate ? 'Đã cập nhật tài khoản. Tài khoản cần được Admin xác minh lại trước khi rút tiền.' : 'Đã thêm tài khoản. Vui lòng chờ Admin xác minh trước khi rút tiền.');
+      setMessage(
+        wasUpdate
+          ? 'Đã cập nhật tài khoản. Tài khoản cần được Admin xác minh lại trước khi rút tiền.'
+          : 'Đã thêm tài khoản. Vui lòng chờ Admin xác minh trước khi rút tiền.'
+      );
     } catch (saveError) {
       setError(toMessage(saveError, 'Không thể lưu tài khoản ngân hàng.'));
     } finally {
@@ -109,7 +113,7 @@ function BankAccountContent({ accessToken }: { accessToken: string }) {
     <section className="rounded-md border border-slate-200 bg-white p-4 text-sm lg:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">Thiết lập thanh toán</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">Thiết lập nhận tiền</p>
           <h1 className="mt-1 text-2xl font-semibold text-slate-900">Tài khoản ngân hàng</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
             Đây là tài khoản duy nhất nhận tiền rút từ số dư eMall. Số tài khoản được mã hóa và không hiển thị lại đầy đủ.

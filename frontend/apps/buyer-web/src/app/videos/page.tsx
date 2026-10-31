@@ -251,6 +251,22 @@ export default function VideosPage() {
     }
   }, []);
 
+  const handleOpenChatWithShop = useCallback(() => {
+    if (!accessToken) {
+      setLikeStatus('login-required');
+      return;
+    }
+    if (typeof window === 'undefined' || !currentVideo?.seller?.sellerId) return;
+    window.dispatchEvent(
+      new CustomEvent('buyer-chat:open', {
+        detail: {
+          sellerId: currentVideo.seller.sellerId,
+          sellerName: currentVideo.seller.shopName
+        }
+      })
+    );
+  }, [accessToken, currentVideo?.seller?.sellerId, currentVideo?.seller?.shopName]);
+
   const goToVideo = useCallback((nextIndex: number) => {
     setCurrentIndex((current) => {
       const bounded = Math.min(Math.max(nextIndex, 0), videos.length - 1);
@@ -573,12 +589,13 @@ export default function VideosPage() {
                   </Link>
 
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Link
-                      href={`/chat?sellerId=${encodeURIComponent(currentVideo.seller.sellerId)}`}
+                    <button
+                      type="button"
+                      onClick={handleOpenChatWithShop}
                       className="rounded-xs border border-[#e8e8e8] px-2 py-1 text-[11px] font-semibold text-[#555555] hover:border-[#ee4d2d] hover:text-[#ee4d2d] transition"
                     >
                       Chat
-                    </Link>
+                    </button>
                     <Link
                       href={`/shops/${encodeURIComponent(currentVideo.seller.sellerId)}`}
                       className="rounded-xs border border-[#ee4d2d] bg-[#fef6f5] px-2 py-1 text-[11px] font-bold text-[#ee4d2d] hover:bg-[#ee4d2d] hover:text-white transition"

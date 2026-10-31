@@ -6,7 +6,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import { buildLiveWebSocketUrl, getLiveSession, listLiveMessages, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
+import {
+  buildLiveWebSocketUrl,
+  getLiveSession,
+  listLiveMessages,
+  listLiveProducts,
+  trackLiveMediaMetric,
+  trackLiveProductClick
+} from '@/lib/api/live';
 import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail, ProductItem } from '@/lib/api/types';
 import { validateChatText } from '@/lib/chat-safety';
@@ -186,7 +193,14 @@ export default function LiveDetailPage() {
   }, []);
 
   const emitMediaMetric = useCallback(
-    (payload: { metricType: string; valueMs?: number; count?: number; errorCode?: string; playbackProtocol?: string; metadata?: Record<string, unknown> }) => {
+    (payload: {
+      metricType: string;
+      valueMs?: number;
+      count?: number;
+      errorCode?: string;
+      playbackProtocol?: string;
+      metadata?: Record<string, unknown>;
+    }) => {
       if (!sessionId) {
         return;
       }
@@ -621,10 +635,10 @@ export default function LiveDetailPage() {
   const chatEmojis = ['🔥', '❤️', '👍', '😍'];
 
   return (
-    <div className="min-h-screen bg-[#f5f2ec] text-[#171717]">
+    <div className="min-h-screen bg-[#f6f6f6] text-slate-900">
       <Header keywords={keywords.length > 0 ? keywords : ['livestream', 'live sale', 'deal hot']} />
 
-      <main className="mx-auto w-full max-w-[1360px] px-3 py-4 md:px-6 md:py-8">
+      <main className="mx-auto w-full max-w-[1320px] px-3 py-4 md:px-5 md:py-6">
         {status === 'loading' ? <p className="py-16 text-center text-sm font-medium text-slate-500">{text.home.loading}</p> : null}
 
         {status === 'error' ? (
@@ -637,19 +651,23 @@ export default function LiveDetailPage() {
         ) : null}
 
         {status === 'success' && session ? (
-          <section className="grid items-start gap-6 xl:grid-cols-[minmax(0,900px)_380px] xl:justify-center">
+          <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,900px)_380px] xl:justify-center">
             <article className="space-y-4">
-              <div className="rounded-2xl border border-[#ead8ca] bg-white p-4 shadow-[0_16px_45px_rgba(38,31,26,0.08)] md:rounded-3xl md:p-5">
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${isSessionLive ? 'bg-[#E84C3D]' : 'bg-slate-500'}`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${isSessionLive ? 'bg-[#E84C3D]' : 'bg-slate-500'}`}
+                      >
                         {formatSessionStatus(session.status)}
                       </span>
                       <span className="rounded-full border border-[#f2c7b8] bg-[#fff4ea] px-3 py-1 text-xs font-bold text-[#9a3412]">
                         {viewerCount.toLocaleString('vi-VN')} đang xem
                       </span>
-                      <span className="rounded-full border border-[#f4c7b8] bg-[#fff7ed] px-3 py-1 text-xs font-bold text-[#9a3412]">{streamStatusLabel}</span>
+                      <span className="rounded-full border border-[#f4c7b8] bg-[#fff7ed] px-3 py-1 text-xs font-bold text-[#9a3412]">
+                        {streamStatusLabel}
+                      </span>
                     </div>
                     <h1 className="mt-3 text-2xl font-bold leading-tight text-[#111827] md:text-3xl">{session.title}</h1>
                     <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">{session.description || 'Shop đang phát trực tiếp.'}</p>
@@ -664,7 +682,7 @@ export default function LiveDetailPage() {
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white shadow-[0_18px_60px_rgba(38,31,26,0.10)] md:rounded-3xl">
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="relative bg-[#090b10]">
                   {!isSessionLive ? (
                     <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/70">
@@ -743,7 +761,7 @@ export default function LiveDetailPage() {
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ebe3d8] bg-[#fffdfa] px-4 py-3 text-sm text-[#667085]">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
                   <span className="font-semibold text-[#9a3412]">{streamStatusLabel}</span>
                   <button
                     type="button"
@@ -769,9 +787,9 @@ export default function LiveDetailPage() {
               </div>
             </article>
 
-            <aside className="grid gap-5 xl:sticky xl:top-24 xl:self-start">
-              <section className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)] md:rounded-3xl">
-                <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
+            <aside className="grid gap-4 xl:sticky xl:top-4 xl:self-start">
+              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
+                <div className="border-b border-slate-200 bg-slate-50/70 p-4">
                   <p className="text-[11px] font-bold uppercase text-[#b54708]">Live cart</p>
                   <h2 className="mt-1 text-xl font-bold">Sản phẩm đang lên sóng</h2>
                   <p className="mt-1 text-sm text-[#667085]">Chọn sản phẩm để xem chi tiết hoặc mua ngay.</p>
@@ -807,7 +825,9 @@ export default function LiveDetailPage() {
                           </span>
                           <span className="mt-0.5 block text-xs font-medium text-slate-500">Đã bán {formatSoldCount(product)}</span>
                         </span>
-                        <span className="rounded-xl bg-[#E84C3D] px-3 py-2 text-xs font-bold text-white transition group-hover:bg-[#c73428]">Mua</span>
+                        <span className="rounded-xl bg-[#E84C3D] px-3 py-2 text-xs font-bold text-white transition group-hover:bg-[#c73428]">
+                          Mua
+                        </span>
                       </button>
                     ))
                   )}
@@ -815,8 +835,8 @@ export default function LiveDetailPage() {
               </section>
 
               {recommendationLoading || recommendedProducts.length > 0 ? (
-                <section className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)] md:rounded-3xl">
-                  <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
+                <section className="overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
+                  <div className="border-b border-slate-200 bg-slate-50/70 p-4">
                     <p className="text-[11px] font-bold uppercase text-[#b54708]">Gợi ý mua kèm</p>
                     <h2 className="mt-1 text-xl font-bold">Mua kèm phổ biến</h2>
                   </div>
@@ -851,8 +871,8 @@ export default function LiveDetailPage() {
                 </section>
               ) : null}
 
-              <section className="overflow-hidden rounded-2xl border border-[#ead8ca] bg-white text-slate-900 shadow-[0_18px_60px_rgba(38,31,26,0.08)] md:rounded-3xl">
-                <div className="border-b border-[#ebe3d8] bg-[#fffdfa] p-4">
+              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
+                <div className="border-b border-slate-200 bg-slate-50/70 p-4">
                   <h2 className="mt-1 text-xl font-bold">Trò chuyện</h2>
                   <p className="mt-1 text-sm text-[#667085]">
                     {user ? 'Trao đổi trực tiếp với shop và người xem khác.' : 'Đăng nhập để tham gia trò chuyện.'}
@@ -860,14 +880,20 @@ export default function LiveDetailPage() {
                 </div>
                 <div className="flex h-[320px] flex-col sm:h-[360px]">
                   <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-                    {messages.length === 0 ? <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p> : null}
+                    {messages.length === 0 ? (
+                      <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p>
+                    ) : null}
                     {messages.map((message) => (
                       <div key={message.messageId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
-                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getChatAvatarColor(message.senderRole)}`}>
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getChatAvatarColor(message.senderRole)}`}
+                        >
                           {getChatInitial(message, user, chatNameMap)}
                         </span>
                         <span className="min-w-0">
-                          <p className={`text-xs font-bold ${getChatNameColor(message.senderRole)}`}>{formatChatSender(message, user, chatNameMap)}</p>
+                          <p className={`text-xs font-bold ${getChatNameColor(message.senderRole)}`}>
+                            {formatChatSender(message, user, chatNameMap)}
+                          </p>
                           <p className="mt-1 break-words text-sm leading-5 text-slate-900">{message.text}</p>
                         </span>
                       </div>
@@ -922,7 +948,6 @@ export default function LiveDetailPage() {
       </main>
     </div>
   );
-
 }
 
 function MetricPill({ icon, label, value }: { icon: string; label: string; value: number }) {

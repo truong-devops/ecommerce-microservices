@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SellerTopbar } from '@/components/layout/seller-topbar';
 import { SellerApiClientError } from '@/lib/api/client';
 import { getSellerInventoryStock, setSellerInventoryStock } from '@/lib/api/inventory';
@@ -61,9 +61,7 @@ const MAIN_SELLER_CATEGORIES = [
   { id: 'thoi-trang-nu', label: 'Thời trang nữ' }
 ] as const;
 
-const MAIN_SELLER_CATEGORY_MAP: ReadonlyMap<string, string> = new Map(
-  MAIN_SELLER_CATEGORIES.map((category) => [category.id, category.label])
-);
+const MAIN_SELLER_CATEGORY_MAP: ReadonlyMap<string, string> = new Map(MAIN_SELLER_CATEGORIES.map((category) => [category.id, category.label]));
 
 const FORM_TABS: Array<{ id: ProductFormTab; label: string }> = [
   { id: 'basic', label: 'Thông tin cơ bản' },
@@ -123,6 +121,7 @@ export default function NewProductPage() {
   const [loadInventoryError, setLoadInventoryError] = useState('');
   const [isSoftDeleting, setIsSoftDeleting] = useState(false);
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
+  const submitErrorRef = useRef<HTMLElement | null>(null);
 
   const [categoryOptions, setCategoryOptions] = useState<SellerCategoryOption[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -313,9 +312,7 @@ export default function NewProductPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setLoadInventoryError(
-            error instanceof SellerApiClientError ? error.message : 'Không tải được tồn kho hiện tại. Vui lòng tải lại trang.'
-          );
+          setLoadInventoryError(error instanceof SellerApiClientError ? error.message : 'Không tải được tồn kho hiện tại. Vui lòng tải lại trang.');
         }
       } finally {
         if (!cancelled) {
@@ -348,13 +345,22 @@ export default function NewProductPage() {
   const suggestedSkuPrefix = useMemo(() => buildSkuPrefix(form.brand, form.categoryId, form.name), [form.brand, form.categoryId, form.name]);
 
   useEffect(() => {
+    if (isEditMode) {
+      return;
+    }
     const prefix = suggestedSkuPrefix || 'SKU';
     setVariants((previous) => {
       const next = autoAssignSkus(previous, prefix);
       const hasChanged = next.some((item, index) => item.sku !== previous[index]?.sku);
       return hasChanged ? next : previous;
     });
-  }, [suggestedSkuPrefix, variants.length]);
+  }, [isEditMode, suggestedSkuPrefix, variants.length]);
+
+  useEffect(() => {
+    if (submitError) {
+      submitErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [submitError]);
 
   const updateField = useCallback(
     <K extends keyof ProductFormState>(key: K, value: ProductFormState[K]) => {
@@ -371,8 +377,7 @@ export default function NewProductPage() {
         const nextName = String(value);
         setForm((previous) => {
           const generatedFromPrevious = toProductSlug(previous.name);
-          const shouldSyncSlug =
-            !isSlugManuallyEdited || previous.slug.trim() === '' || previous.slug.trim() === generatedFromPrevious;
+          const shouldSyncSlug = !isSlugManuallyEdited || previous.slug.trim() === '' || previous.slug.trim() === generatedFromPrevious;
 
           return {
             ...previous,
@@ -392,29 +397,30 @@ export default function NewProductPage() {
   );
 
   const updateVariant = <K extends keyof VariantFormState>(variantId: string, key: K, value: VariantFormState[K]) => {
-    setVariants((previous) =>
-      previous.map((variant) => (variant.id === variantId ? { ...variant, [key]: value } : variant))
-    );
+    setVariants((previous) => previous.map((variant) => (variant.id === variantId ? { ...variant, [key]: value } : variant)));
   };
 
   const addVariant = useCallback(() => {
-    setVariants((previous) => [
-      ...previous,
-      {
-        id: createLocalId(),
-        sku: '',
-        name: `Phân loại ${previous.length + 1}`,
-        price: '',
-        initialStock: '0',
-        inventoryOnHand: '0',
-        stockSnapshot: null,
-        stockNotFound: isEditMode,
-        compareAtPrice: '',
-        currency: previous[0]?.currency || 'VND',
-        isDefault: false
-      }
-    ]);
-  }, [isEditMode]);
+    setVariants((previous) => {
+      const sku = isEditMode ? nextAvailableLocalSku(previous, suggestedSkuPrefix || 'SKU') : '';
+      return [
+        ...previous,
+        {
+          id: createLocalId(),
+          sku,
+          name: `Phân loại ${previous.length + 1}`,
+          price: '',
+          initialStock: '0',
+          inventoryOnHand: '0',
+          stockSnapshot: null,
+          stockNotFound: isEditMode,
+          compareAtPrice: '',
+          currency: previous[0]?.currency || 'VND',
+          isDefault: false
+        }
+      ];
+    });
+  }, [isEditMode, suggestedSkuPrefix]);
 
   const removeVariant = (variantId: string) => {
     setVariants((previous) => {
@@ -642,7 +648,20 @@ export default function NewProductPage() {
         setIsSubmitting(false);
       }
     },
-    [accessToken, editingProductId, form, isEditMode, isLoadingInventory, loadInventoryError, router, selectedRatio, uploadedImages, user, variants, withoutGtin]
+    [
+      accessToken,
+      editingProductId,
+      form,
+      isEditMode,
+      isLoadingInventory,
+      loadInventoryError,
+      router,
+      selectedRatio,
+      uploadedImages,
+      user,
+      variants,
+      withoutGtin
+    ]
   );
 
   const handleSoftDelete = useCallback(async () => {
@@ -961,9 +980,7 @@ export default function NewProductPage() {
                   ))}
                 </select>
                 <p className="mt-1 text-xs font-normal text-slate-500">
-                  {isLoadingCategories
-                    ? 'Đang tải danh mục từ database...'
-                    : `Hiện tại đang có ${categoryOptions.length} danh mục chính.`}
+                  {isLoadingCategories ? 'Đang tải danh mục từ database...' : `Hiện tại đang có ${categoryOptions.length} danh mục chính.`}
                 </p>
                 {categoryError ? <p className="mt-1 text-xs font-normal text-rose-600">{categoryError}</p> : null}
               </label>
@@ -1025,11 +1042,7 @@ export default function NewProductPage() {
   ]);
 
   if (!ready) {
-    return (
-      <main className="flex min-h-screen items-center justify-center text-sm text-slate-600">
-        Đang kiểm tra phiên đăng nhập...
-      </main>
-    );
+    return <main className="flex min-h-screen items-center justify-center text-sm text-slate-600">Đang kiểm tra phiên đăng nhập...</main>;
   }
 
   if (!user || !accessToken) {
@@ -1095,6 +1108,13 @@ export default function NewProductPage() {
               <section className="rounded-md border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{loadInventoryError}</section>
             ) : null}
 
+            {submitError ? (
+              <section ref={submitErrorRef} role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <p className="font-semibold">Không thể lưu sản phẩm</p>
+                <p className="mt-1">{submitError}</p>
+              </section>
+            ) : null}
+
             <section className="rounded-md border border-slate-200 bg-white px-4 pb-0 pt-3 text-sm">
               <div className="flex flex-wrap items-center gap-5 border-b border-slate-200 pb-2">
                 {FORM_TABS.map((tab) => {
@@ -1134,10 +1154,6 @@ export default function NewProductPage() {
                   {isSoftDeleting ? 'Đang xóa ...' : 'Xóa sản phẩm'}
                 </button>
               </section>
-            ) : null}
-
-            {submitError ? (
-              <section className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError}</section>
             ) : null}
           </main>
 
@@ -1235,9 +1251,7 @@ function toProductSlug(name: string): string {
 }
 
 function buildSkuPrefix(brand: string, categoryId: string, productName: string): string {
-  const candidates = [brand, categoryId, productName]
-    .map((value) => toSkuToken(value))
-    .filter(Boolean);
+  const candidates = [brand, categoryId, productName].map((value) => toSkuToken(value)).filter(Boolean);
 
   if (candidates.length === 0) {
     return 'SKU';
@@ -1270,6 +1284,17 @@ function autoAssignSkus(variants: VariantFormState[], prefix: string): VariantFo
       sku: candidate
     };
   });
+}
+
+function nextAvailableLocalSku(variants: VariantFormState[], prefix: string): string {
+  const used = new Set(variants.map((variant) => variant.sku.trim().toUpperCase()).filter(Boolean));
+  let sequence = 1;
+  let candidate = buildSkuValue(prefix, sequence);
+  while (used.has(candidate)) {
+    sequence += 1;
+    candidate = buildSkuValue(prefix, sequence);
+  }
+  return candidate;
 }
 
 function findDuplicateSkus(values: string[]): string[] {

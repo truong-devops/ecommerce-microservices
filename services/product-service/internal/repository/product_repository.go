@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 
 	"product-service/internal/domain"
@@ -145,7 +146,7 @@ func (r *mongoProductRepository) FindByID(ctx context.Context, id string, includ
 }
 
 func (r *mongoProductRepository) FindBySlug(ctx context.Context, sellerID string, slug string, excludeID string) (*domain.Product, error) {
-	filter := bson.M{"slug": slug, "deletedAt": nil}
+	filter := bson.M{"sellerId": strings.TrimSpace(sellerID), "slug": slug, "deletedAt": nil}
 	if excludeID != "" {
 		if objectID, err := primitive.ObjectIDFromHex(excludeID); err == nil {
 			filter["_id"] = bson.M{"$ne": objectID}
@@ -155,7 +156,7 @@ func (r *mongoProductRepository) FindBySlug(ctx context.Context, sellerID string
 }
 
 func (r *mongoProductRepository) FindFirstBySKUs(ctx context.Context, sellerID string, skus []string, excludeID string) (*domain.Product, error) {
-	filter := bson.M{"deletedAt": nil, "variants.sku": bson.M{"$in": skus}}
+	filter := bson.M{"sellerId": strings.TrimSpace(sellerID), "deletedAt": nil, "variants.sku": bson.M{"$in": skus}}
 	if excludeID != "" {
 		if objectID, err := primitive.ObjectIDFromHex(excludeID); err == nil {
 			filter["_id"] = bson.M{"$ne": objectID}

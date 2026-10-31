@@ -465,7 +465,12 @@ func (s *ProductService) assertSKUsAvailable(ctx context.Context, sellerID strin
 		return err
 	}
 	if existing != nil {
-		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodeProductSKUConflict, "One or more SKUs already exist", nil)
+		conflicts := conflictingSKUs(skus, existing.Variants)
+		message := "Một hoặc nhiều SKU đã tồn tại"
+		if len(conflicts) > 0 {
+			message = "SKU đã tồn tại: " + strings.Join(conflicts, ", ")
+		}
+		return httpx.NewAppError(http.StatusConflict, domain.ErrorCodeProductSKUConflict, message, nil)
 	}
 	return nil
 }
@@ -503,10 +508,7 @@ func (s *ProductService) nextAvailableCreateSKUs(ctx context.Context, sellerID s
 	for i := range variants {
 		baseSKU := variants[i].SKU
 		for attempt := 0; attempt < 1000; attempt++ {
-			candidate := baseSKU
-			if attempt > 0 {
-				candidate = trimSKUForSuffix(baseSKU, attempt+1)
-			}
+			candidate := nextSKUCandidate(baseSKU, attempt)
 			if _, ok := used[candidate]; ok {
 				continue
 			}
@@ -871,12 +873,65 @@ func trimSKUForSuffix(base string, suffix int) string {
 	return value + suffixText
 }
 
+func nextSKUCandidate(base string, attempt int) string {
+	value := strings.ToUpper(strings.TrimSpace(base))
+	if attempt <= 0 {
+		return value
+	}
+
+	match := skuNumericSuffixRegex.FindStringSubmatchIndex(value)
+	if len(match) == 6 {
+		digitsStart, digitsEnd := match[4], match[5]
+		sequence, err := strconv.Atoi(value[digitsStart:digitsEnd])
+		if err == nil {
+			nextDigits := strconv.Itoa(sequence + attempt)
+			width := digitsEnd - digitsStart
+			if len(nextDigits) < width {
+				nextDigits = strings.Repeat("0", width-len(nextDigits)) + nextDigits
+			}
+			prefix := value[:digitsStart]
+			limit := 64 - len(nextDigits)
+			if len(prefix) > limit {
+				prefix = strings.TrimRight(prefix[:limit], "._-")
+			}
+			if prefix == "" {
+				prefix = "SKU-"
+			}
+			return prefix + nextDigits
+		}
+	}
+
+	return trimSKUForSuffix(value, attempt+1)
+}
+
+func conflictingSKUs(requested []string, variants []domain.ProductVariant) []string {
+	existing := make(map[string]struct{}, len(variants))
+	for _, variant := range variants {
+		existing[strings.ToUpper(strings.TrimSpace(variant.SKU))] = struct{}{}
+	}
+	conflicts := make([]string, 0)
+	seen := map[string]struct{}{}
+	for _, rawSKU := range requested {
+		sku := strings.ToUpper(strings.TrimSpace(rawSKU))
+		if _, ok := existing[sku]; !ok {
+			continue
+		}
+		if _, ok := seen[sku]; ok {
+			continue
+		}
+		seen[sku] = struct{}{}
+		conflicts = append(conflicts, sku)
+	}
+	return conflicts
+}
+
 var (
-	slugRegex      = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
-	skuRegex       = regexp.MustCompile(`^[A-Z0-9._-]{1,64}$`)
-	currencyRegex  = regexp.MustCompile(`^[A-Z]{3}$`)
-	objectKeyRegex = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9/_\-.]+$`)
-	uuidValueRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
+	slugRegex             = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+	skuRegex              = regexp.MustCompile(`^[A-Z0-9._-]{1,64}$`)
+	skuNumericSuffixRegex = regexp.MustCompile(`^(.*?)([0-9]+)$`)
+	currencyRegex         = regexp.MustCompile(`^[A-Z]{3}$`)
+	objectKeyRegex        = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9/_\-.]+$`)
+	uuidValueRegex        = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 )
 
 func normalizeImagesForStorage(images []string, mediaPublicBaseURL string) []string {

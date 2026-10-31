@@ -105,6 +105,19 @@ export default function ProductDetailPage() {
     return product.variants.find((variant) => variant.isDefault) ?? product.variants[0];
   }, [product, selectedVariantSku]);
 
+  const galleryImages = useMemo(() => {
+    if (!product) {
+      return [];
+    }
+
+    return Array.from(new Set([
+      selectedVariant?.image,
+      ...product.variants.map((variant) => variant.image),
+      ...product.images,
+      product.image
+    ].filter((image): image is string => Boolean(image))));
+  }, [product, selectedVariant?.image]);
+
   const displayPrice = selectedVariant?.price ?? product?.price ?? 0;
   const displayCurrency = selectedVariant?.currency ?? product?.currency ?? 'VND';
   const displayCompareAtPrice = selectedVariant?.compareAtPrice ?? product?.compareAtPrice ?? null;
@@ -115,6 +128,15 @@ export default function ProductDetailPage() {
     [selectedVariant?.metadata, selectedVariant?.stock]
   );
   const availableStock = variantStock ?? product?.stock ?? null;
+
+  useEffect(() => {
+    if (!product || !selectedVariant) {
+      return;
+    }
+
+    setSelectedImage(selectedVariant.image || product.image);
+    setQuantity(1);
+  }, [product, selectedVariant]);
 
   const detailText = locale === 'vi'
     ? {
@@ -755,7 +777,7 @@ export default function ProductDetailPage() {
                   />
 
                   <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
-                    {product.images.slice(0, 10).map((image, index) => {
+                    {galleryImages.slice(0, 10).map((image, index) => {
                       const selected = (selectedImage || product.image) === image;
                       return (
                         <button
@@ -822,13 +844,9 @@ export default function ProductDetailPage() {
                             <button
                               key={variant.sku}
                               type="button"
-                              onClick={() => {
-                                setSelectedVariantSku(variant.sku);
-                                if (variant.image) {
-                                  setSelectedImage(variant.image);
-                                }
-                                setQuantity(1);
-                              }}
+                              onClick={() => setSelectedVariantSku(variant.sku)}
+                              aria-pressed={active}
+                              aria-label={`${detailText.variant}: ${variant.name}`}
                               className={`rounded-md border px-3 py-2 text-sm transition ${
                                 active
                                   ? 'border-brand-500 bg-brand-50 text-brand-700'
@@ -837,6 +855,7 @@ export default function ProductDetailPage() {
                             >
                               {variant.name}
                               {variant.isDefault ? ` - ${detailText.defaultVariant}` : ''}
+                              <span className="ml-2 text-xs opacity-70">{formatPrice(variant.price, variant.currency)}</span>
                             </button>
                           );
                         })}

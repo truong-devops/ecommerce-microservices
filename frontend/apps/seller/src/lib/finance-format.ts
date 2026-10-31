@@ -38,19 +38,19 @@ export function transactionDescription(type: SellerWalletTransactionType): strin
 
 export function payoutStatus(status: SellerPayoutStatus): { label: string; className: string } {
   const values: Record<SellerPayoutStatus, { label: string; className: string }> = {
-    REQUESTED: { label: 'Đã tiếp nhận', className: 'border-slate-200 bg-slate-50 text-slate-700' },
-    PROCESSING: { label: 'Đang chuyển', className: 'border-slate-300 bg-slate-100 text-slate-700' },
-    SUCCEEDED: { label: 'Thành công', className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    REQUESTED: { label: 'Đã tiếp nhận', className: 'border-[#fcdcd7] bg-[#fef6f5] text-[#ee4d2d]' },
+    PROCESSING: { label: 'Đang chuyển', className: 'border-[#fed7aa] bg-[#fffaf5] text-[#c2410c]' },
+    SUCCEEDED: { label: 'Thành công', className: 'border-slate-200 bg-slate-50 text-slate-800' },
     FAILED: { label: 'Thất bại', className: 'border-rose-200 bg-rose-50 text-rose-700' },
-    CANCELLED: { label: 'Đã hủy', className: 'border-slate-200 bg-slate-50 text-slate-600' }
+    CANCELLED: { label: 'Đã hủy', className: 'border-slate-200 bg-slate-50 text-slate-500' }
   };
-  return values[status];
+  return values[status] ?? { label: status, className: 'border-slate-200 bg-slate-50 text-slate-700' };
 }
 
 export function bankStatus(status: SellerBankAccountStatus): { label: string; className: string } {
-  if (status === 'ALLOWLISTED') return { label: 'Đã xác minh', className: 'bg-emerald-100 text-emerald-700' };
-  if (status === 'DISABLED') return { label: 'Đã vô hiệu hóa', className: 'bg-rose-100 text-rose-700' };
-  return { label: 'Chưa xác minh', className: 'bg-amber-100 text-amber-700' };
+  if (status === 'ALLOWLISTED') return { label: 'Đã xác minh', className: 'border border-[#fcdcd7] bg-[#fef6f5] text-[#ee4d2d]' };
+  if (status === 'DISABLED') return { label: 'Đã vô hiệu hóa', className: 'border border-slate-200 bg-slate-100 text-slate-500' };
+  return { label: 'Chờ xác minh', className: 'border border-[#fed7aa] bg-[#fffaf5] text-[#c2410c]' };
 }
 
 export function bankDisplayName(code: string): string {

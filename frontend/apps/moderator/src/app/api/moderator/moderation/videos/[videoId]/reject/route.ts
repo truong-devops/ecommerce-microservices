@@ -2,6 +2,7 @@ import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/moderator-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
+import { recordGovernanceAction } from '@/lib/server/governance-audit';
 
 const MODERATION_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
 
@@ -20,10 +21,19 @@ export async function POST(request: Request, context: { params: Promise<{ videoI
   }
 
   try {
-    const payload = await requestUpstream<unknown>(`${serviceBaseUrls.product}/moderation/videos/${(await context.params).videoId}/reject`, {
+    const videoId = (await context.params).videoId;
+    const rejection = body && typeof body === 'object' ? (body as { reason?: unknown }) : {};
+    const payload = await requestUpstream<unknown>(`${serviceBaseUrls.product}/moderation/videos/${videoId}/reject`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify(body && typeof body === 'object' ? body : {})
+      body: JSON.stringify(rejection)
+    });
+    await recordGovernanceAction(accessToken, {
+      action: 'VIDEO_REJECTED',
+      resourceType: 'VIDEO',
+      resourceId: videoId,
+      description: 'Từ chối video trong hàng đợi kiểm duyệt',
+      metadata: { reason: typeof rejection.reason === 'string' ? rejection.reason : null }
     });
     return ok(payload);
   } catch (error) {

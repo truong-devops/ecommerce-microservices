@@ -22,13 +22,7 @@ interface ModeratorSidebarProps {
   walletAttentionCount?: number;
 }
 
-export function ModeratorSidebar({
-  role,
-  productCount,
-  pendingVideoCount,
-  chatViolationCount,
-  walletAttentionCount
-}: ModeratorSidebarProps) {
+export function ModeratorSidebar({ role, productCount, pendingVideoCount, chatViolationCount, walletAttentionCount }: ModeratorSidebarProps) {
   const pathname = usePathname();
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
 
@@ -43,9 +37,7 @@ export function ModeratorSidebar({
       <div className="overflow-hidden rounded-lg border border-[#e8e8e8] bg-white p-2.5 shadow-sm">
         {/* Section 1: Core Moderation Queues */}
         <div className="px-2 pt-1 pb-1.5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[#757575]">
-            Hàng đợi kiểm duyệt
-          </p>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-[#757575]">Hàng đợi kiểm duyệt</p>
         </div>
 
         <nav className="space-y-0.5">
@@ -78,9 +70,7 @@ export function ModeratorSidebar({
         {isAdmin && (
           <div className="mt-3 pt-2.5 border-t border-[#f0f0f0]">
             <div className="px-2 pb-1.5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#757575]">
-                Tài chính &amp; Ví
-              </p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#757575]">Tài chính &amp; Ví</p>
             </div>
             <nav className="space-y-0.5">
               <NavItem
@@ -97,46 +87,31 @@ export function ModeratorSidebar({
         {/* Section 3: Governance & Logs */}
         <div className="mt-3 pt-2.5 border-t border-[#f0f0f0]">
           <div className="px-2 pb-1.5">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#757575]">
-              Chính sách &amp; Nhật ký
-            </p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#757575]">Chính sách &amp; Nhật ký</p>
           </div>
           <nav className="space-y-0.5">
             <NavItem
-              href="#reports"
-              active={false}
+              href="/governance/reports"
+              active={isCurrent('/governance/reports')}
               icon={<FileTextIcon size={17} />}
               label="Báo cáo & Thống kê"
-              disabled
             />
             <NavItem
-              href="#policy"
-              active={false}
+              href="/governance/policies"
+              active={isCurrent('/governance/policies')}
               icon={<ShieldCheckIcon size={17} />}
               label="Quy chế & Chính sách"
-              disabled
             />
-            <NavItem
-              href="#audit"
-              active={false}
-              icon={<HistoryIcon size={17} />}
-              label="Nhật ký thao tác"
-              disabled
-            />
-            <NavItem
-              href="#moderators"
-              active={false}
-              icon={<UsersIcon size={17} />}
-              label="Đội ngũ kiểm duyệt"
-              disabled
-            />
-            <NavItem
-              href="#logs"
-              active={false}
-              icon={<ActivityIcon size={17} />}
-              label="Nhật ký hệ thống"
-              disabled
-            />
+            <NavItem href="/governance/audit" active={isCurrent('/governance/audit')} icon={<HistoryIcon size={17} />} label="Nhật ký thao tác" />
+            <NavItem href="/governance/team" active={isCurrent('/governance/team')} icon={<UsersIcon size={17} />} label="Đội ngũ kiểm duyệt" />
+            {isAdmin ? (
+              <NavItem
+                href="/governance/system-logs"
+                active={isCurrent('/governance/system-logs')}
+                icon={<ActivityIcon size={17} />}
+                label="Nhật ký hệ thống"
+              />
+            ) : null}
           </nav>
         </div>
       </div>
@@ -181,13 +156,7 @@ function NavItem({
       }`}
     >
       <div className="flex items-center gap-2.5 min-w-0">
-        <span
-          className={`shrink-0 transition-colors ${
-            active ? 'text-[#ee4d2d]' : 'text-[#757575] group-hover:text-[#ee4d2d]'
-          }`}
-        >
-          {icon}
-        </span>
+        <span className={`shrink-0 transition-colors ${active ? 'text-[#ee4d2d]' : 'text-[#757575] group-hover:text-[#ee4d2d]'}`}>{icon}</span>
         <span className="truncate">{label}</span>
       </div>
 

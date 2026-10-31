@@ -172,6 +172,67 @@ export interface ChatViolationListOutput {
   };
 }
 
+export interface GovernanceSummary {
+  totalPolicies: number;
+  publishedPolicies: number;
+  staffMembers: number;
+  activeStaffMembers: number;
+  actionsToday: number;
+  systemEventsToday: number;
+}
+
+export interface GovernancePolicy {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  scope: 'MARKETPLACE' | 'PRODUCT' | 'VIDEO' | 'CHAT' | 'FINANCE' | 'SECURITY';
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  version: number;
+  content: string;
+  effectiveAt: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GovernanceActionLog {
+  id: string;
+  actorId: string | null;
+  actorEmail: string;
+  actorRole: string;
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  description: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface GovernanceSystemLog {
+  id: string;
+  userId: string | null;
+  userEmail: string | null;
+  action: string;
+  requestId: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface GovernanceTeamMember {
+  id: string;
+  email: string;
+  role: 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+  isActive: boolean;
+  isEmailVerified: boolean;
+  mfaEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type BankAccountStatus = 'UNVERIFIED' | 'ALLOWLISTED' | 'DISABLED';
 export type PayoutStatus = 'REQUESTED' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
 

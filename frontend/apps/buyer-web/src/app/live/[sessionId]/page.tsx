@@ -6,14 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { BuyerApiClientError } from '@/lib/api/client';
-import {
-  buildLiveWebSocketUrl,
-  getLiveSession,
-  listLiveMessages,
-  listLiveProducts,
-  trackLiveMediaMetric,
-  trackLiveProductClick
-} from '@/lib/api/live';
+import { buildLiveWebSocketUrl, getLiveSession, listLiveMessages, listLiveProducts, trackLiveMediaMetric, trackLiveProductClick } from '@/lib/api/live';
 import { loadRecommendedProductItems } from '@/lib/api/recommendation-products';
 import type { LiveMessage, LiveProduct, LiveSession, LiveSessionDetail, ProductItem } from '@/lib/api/types';
 import { validateChatText } from '@/lib/chat-safety';
@@ -193,14 +186,7 @@ export default function LiveDetailPage() {
   }, []);
 
   const emitMediaMetric = useCallback(
-    (payload: {
-      metricType: string;
-      valueMs?: number;
-      count?: number;
-      errorCode?: string;
-      playbackProtocol?: string;
-      metadata?: Record<string, unknown>;
-    }) => {
+    (payload: { metricType: string; valueMs?: number; count?: number; errorCode?: string; playbackProtocol?: string; metadata?: Record<string, unknown> }) => {
       if (!sessionId) {
         return;
       }
@@ -635,54 +621,50 @@ export default function LiveDetailPage() {
   const chatEmojis = ['🔥', '❤️', '👍', '😍'];
 
   return (
-    <div className="min-h-screen bg-[#f6f6f6] text-slate-900">
+    <div className="min-h-screen bg-[#f5f5f5] text-[#222222]">
       <Header keywords={keywords.length > 0 ? keywords : ['livestream', 'live sale', 'deal hot']} />
 
-      <main className="mx-auto w-full max-w-[1320px] px-3 py-4 md:px-5 md:py-6">
-        {status === 'loading' ? <p className="py-16 text-center text-sm font-medium text-slate-500">{text.home.loading}</p> : null}
+      <main className="mx-auto w-full max-w-[1360px] px-3 py-4 md:px-6 md:py-6">
+        {status === 'loading' ? <p className="py-16 text-center text-xs text-[#757575]">{text.home.loading}</p> : null}
 
         {status === 'error' ? (
-          <section className="mx-auto mt-8 max-w-xl rounded-2xl border border-red-100 bg-white p-6 text-center text-slate-900 shadow-sm">
-            <p className="text-sm text-red-600">{error || text.home.loadError}</p>
-            <Link href="/live" className="mt-4 inline-flex rounded-lg bg-[#ee4d2d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#db4729]">
+          <section className="mx-auto mt-8 max-w-xl rounded-xs border border-[#fcdcd7] bg-white p-6 text-center text-[#222222] shadow-xs">
+            <p className="text-sm text-[#ee4d2d] font-semibold">{error || text.home.loadError}</p>
+            <Link href="/live" className="mt-4 inline-flex rounded-xs bg-[#ee4d2d] px-4 py-2 text-xs font-bold text-white hover:bg-[#d73211] transition shadow-xs">
               Về danh sách live
             </Link>
           </section>
         ) : null}
 
         {status === 'success' && session ? (
-          <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,900px)_380px] xl:justify-center">
+          <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:justify-center">
             <article className="space-y-4">
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+              <div className="rounded-xs border border-[#e8e8e8] bg-white p-4 shadow-xs">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-sm ${isSessionLive ? 'bg-[#E84C3D]' : 'bg-slate-500'}`}
-                      >
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold text-white shadow-xs ${isSessionLive ? 'bg-[#ee4d2d]' : 'bg-slate-500'}`}>
                         {formatSessionStatus(session.status)}
                       </span>
-                      <span className="rounded-full border border-[#f2c7b8] bg-[#fff4ea] px-3 py-1 text-xs font-bold text-[#9a3412]">
+                      <span className="rounded-full border border-[#fcdcd7] bg-[#fef6f5] px-3 py-1 text-xs font-bold text-[#ee4d2d]">
                         {viewerCount.toLocaleString('vi-VN')} đang xem
                       </span>
-                      <span className="rounded-full border border-[#f4c7b8] bg-[#fff7ed] px-3 py-1 text-xs font-bold text-[#9a3412]">
-                        {streamStatusLabel}
-                      </span>
+                      <span className="rounded-full border border-[#e8e8e8] bg-[#fafafa] px-3 py-1 text-xs font-semibold text-[#555555]">{streamStatusLabel}</span>
                     </div>
-                    <h1 className="mt-3 text-2xl font-bold leading-tight text-[#111827] md:text-3xl">{session.title}</h1>
-                    <p className="mt-1 max-w-2xl text-sm leading-6 text-[#667085]">{session.description || 'Shop đang phát trực tiếp.'}</p>
+                    <h1 className="mt-2.5 text-xl font-bold leading-tight text-[#222222] md:text-2xl">{session.title}</h1>
+                    <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[#757575]">{session.description || 'Shop đang phát trực tiếp.'}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => void refreshProducts()}
-                    className="w-full rounded-xl border border-[#e2d8cd] bg-white px-4 py-2 text-sm font-bold text-[#9a3412] transition hover:border-[#ee4d2d] hover:bg-[#fff8f3] sm:w-auto"
+                    className="w-full rounded-xs border border-[#e8e8e8] bg-white px-4 py-2 text-xs font-bold text-[#555555] transition hover:border-[#ee4d2d] hover:text-[#ee4d2d] sm:w-auto shadow-2xs"
                   >
                     Làm mới sản phẩm
                   </button>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-hidden rounded-xs border border-[#e8e8e8] bg-white shadow-xs">
                 <div className="relative bg-[#090b10]">
                   {!isSessionLive ? (
                     <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-white/70">
@@ -749,11 +731,11 @@ export default function LiveDetailPage() {
                   )}
                   <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 bg-gradient-to-b from-black/75 via-black/35 to-transparent p-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E84C3D] px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-black/20">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ee4d2d] px-3 py-1 text-xs font-bold text-white shadow-xs">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
                         LIVE
                       </span>
-                      <span className="rounded-full border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur">
+                      <span className="rounded-full border border-white/20 bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-xs">
                         ● {viewerCount.toLocaleString('vi-VN')} đang xem
                       </span>
                     </div>
@@ -761,8 +743,8 @@ export default function LiveDetailPage() {
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
-                  <span className="font-semibold text-[#9a3412]">{streamStatusLabel}</span>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f1f1f1] bg-[#fafafa] px-4 py-2.5 text-xs text-[#555555]">
+                  <span className="font-semibold text-[#ee4d2d]">{streamStatusLabel}</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -773,7 +755,7 @@ export default function LiveDetailPage() {
                       requestRealtimeStream();
                     }}
                     disabled={!isSessionLive || (!usesMediaEnginePlayback && socketStatus !== 'connected')}
-                    className="rounded-lg border border-[#e2d8cd] bg-white px-3 py-1.5 text-xs font-bold text-[#344054] transition hover:border-[#ee4d2d] hover:text-[#c2410c] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-xs border border-[#e8e8e8] bg-white px-3 py-1.5 text-xs font-semibold text-[#555555] transition hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:cursor-not-allowed disabled:opacity-50 shadow-2xs"
                   >
                     Làm mới kết nối
                   </button>
@@ -787,17 +769,17 @@ export default function LiveDetailPage() {
               </div>
             </article>
 
-            <aside className="grid gap-4 xl:sticky xl:top-4 xl:self-start">
-              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
-                <div className="border-b border-slate-200 bg-slate-50/70 p-4">
-                  <p className="text-[11px] font-bold uppercase text-[#b54708]">Live cart</p>
-                  <h2 className="mt-1 text-xl font-bold">Sản phẩm đang lên sóng</h2>
-                  <p className="mt-1 text-sm text-[#667085]">Chọn sản phẩm để xem chi tiết hoặc mua ngay.</p>
+            <aside className="grid gap-4 xl:sticky xl:top-20 xl:self-start">
+              <section className="overflow-hidden rounded-xs border border-[#e8e8e8] bg-white text-[#222222] shadow-xs">
+                <div className="border-b border-[#f1f1f1] bg-[#fafafa] p-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#ee4d2d]">Giỏ hàng trực tiếp</p>
+                  <h2 className="mt-0.5 text-sm font-bold text-[#222222]">Sản phẩm đang lên sóng</h2>
+                  <p className="mt-0.5 text-xs text-[#757575]">Chọn sản phẩm để xem chi tiết hoặc mua ngay.</p>
                 </div>
-                <div className="max-h-[330px] space-y-3 overflow-y-auto p-3">
+                <div className="max-h-[330px] space-y-2.5 overflow-y-auto p-3">
                   {products.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-[#e2d8cd] bg-[#fbf7f1] p-4 text-sm font-medium text-[#667085]">
-                      Seller chưa pin sản phẩm nào.
+                    <p className="rounded-xs border border-dashed border-[#e8e8e8] bg-[#fafafa] p-4 text-xs font-medium text-[#757575] text-center">
+                      Shop chưa ghim sản phẩm nào.
                     </p>
                   ) : (
                     products.map((product) => (
@@ -805,29 +787,27 @@ export default function LiveDetailPage() {
                         key={product.productId}
                         type="button"
                         onClick={() => handleOpenProduct(product.productId)}
-                        className="group relative flex w-full items-center gap-3 rounded-2xl border border-[#e2d8cd] bg-white p-2.5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#E84C3D] hover:bg-[#fff8f3] hover:shadow-md"
+                        className="group relative flex w-full items-center gap-2.5 rounded-xs border border-[#e8e8e8] bg-white p-2 text-left shadow-2xs transition hover:border-[#ee4d2d] hover:bg-[#fffcfb]"
                       >
-                        <span className="absolute -right-1 -top-2 rounded-full bg-[#E84C3D] px-2 py-0.5 text-[11px] font-bold text-white shadow-sm">
+                        <span className="absolute -right-1 -top-1.5 rounded-full bg-[#ee4d2d] px-1.5 py-0.2 text-[9px] font-bold text-white shadow-2xs">
                           {formatLiveDiscount(product)}
                         </span>
                         <Image
                           src={product.imageSnapshot || '/icon.svg'}
                           alt={product.nameSnapshot}
-                          width={56}
-                          height={56}
+                          width={48}
+                          height={48}
                           unoptimized
-                          className="h-16 w-16 rounded-xl object-cover ring-1 ring-[#f1e4d8]"
+                          className="h-12 w-12 rounded-xs object-cover border border-[#f1f1f1]"
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="line-clamp-2 text-sm font-semibold text-slate-900">{product.nameSnapshot}</span>
-                          <span className="mt-1 block text-base font-bold text-[#E84C3D]">
+                          <span className="line-clamp-2 text-xs font-semibold text-[#222222] group-hover:text-[#ee4d2d]">{product.nameSnapshot}</span>
+                          <span className="mt-0.5 block text-xs font-bold text-[#ee4d2d]">
                             {formatPrice(product.priceSnapshot, product.currencySnapshot)}
                           </span>
-                          <span className="mt-0.5 block text-xs font-medium text-slate-500">Đã bán {formatSoldCount(product)}</span>
+                          <span className="mt-0.5 block text-[10px] text-[#757575]">Đã bán {formatSoldCount(product)}</span>
                         </span>
-                        <span className="rounded-xl bg-[#E84C3D] px-3 py-2 text-xs font-bold text-white transition group-hover:bg-[#c73428]">
-                          Mua
-                        </span>
+                        <span className="rounded-xs bg-[#ee4d2d] px-2.5 py-1 text-xs font-bold text-white transition hover:bg-[#d73211] shrink-0">Mua</span>
                       </button>
                     ))
                   )}
@@ -835,35 +815,35 @@ export default function LiveDetailPage() {
               </section>
 
               {recommendationLoading || recommendedProducts.length > 0 ? (
-                <section className="overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
-                  <div className="border-b border-slate-200 bg-slate-50/70 p-4">
-                    <p className="text-[11px] font-bold uppercase text-[#b54708]">Gợi ý mua kèm</p>
-                    <h2 className="mt-1 text-xl font-bold">Mua kèm phổ biến</h2>
+                <section className="overflow-hidden rounded-xs border border-[#e8e8e8] bg-white text-[#222222] shadow-xs">
+                  <div className="border-b border-[#f1f1f1] bg-[#fafafa] p-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#757575]">Gợi ý mua kèm</p>
+                    <h2 className="mt-0.5 text-sm font-bold text-[#222222]">Mua kèm phổ biến</h2>
                   </div>
-                  <div className="space-y-3 p-3">
+                  <div className="space-y-2 p-3">
                     {recommendedProducts.map((product) => (
                       <button
                         key={product.id}
                         type="button"
                         onClick={() => handleOpenProduct(product.id)}
-                        className="group flex w-full items-center gap-3 rounded-2xl border border-[#e2d8cd] bg-white p-2.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#E84C3D] hover:bg-[#fff8f3]"
+                        className="group flex w-full items-center gap-2.5 rounded-xs border border-[#e8e8e8] bg-white p-2 text-left shadow-2xs transition hover:border-[#ee4d2d] hover:bg-[#fffcfb]"
                       >
                         <Image
                           src={product.image || '/icon.svg'}
                           alt={product.title}
-                          width={56}
-                          height={56}
+                          width={48}
+                          height={48}
                           unoptimized
-                          className="h-16 w-16 rounded-xl object-cover ring-1 ring-[#f1e4d8]"
+                          className="h-12 w-12 rounded-xs object-cover border border-[#f1f1f1]"
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="line-clamp-2 text-sm font-semibold text-slate-900">{product.title}</span>
-                          <span className="mt-1 block text-base font-bold text-[#E84C3D]">{formatPrice(product.price)}</span>
+                          <span className="line-clamp-2 text-xs font-semibold text-[#222222] group-hover:text-[#ee4d2d]">{product.title}</span>
+                          <span className="mt-0.5 block text-xs font-bold text-[#ee4d2d]">{formatPrice(product.price)}</span>
                         </span>
                       </button>
                     ))}
                     {recommendationLoading && recommendedProducts.length === 0 ? (
-                      <p className="rounded-2xl border border-dashed border-[#e2d8cd] bg-[#fbf7f1] p-4 text-sm font-medium text-[#667085]">
+                      <p className="rounded-xs border border-dashed border-[#e8e8e8] bg-[#fafafa] p-4 text-xs font-medium text-[#757575] text-center">
                         Đang tải gợi ý...
                       </p>
                     ) : null}
@@ -871,29 +851,23 @@ export default function LiveDetailPage() {
                 </section>
               ) : null}
 
-              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
-                <div className="border-b border-slate-200 bg-slate-50/70 p-4">
-                  <h2 className="mt-1 text-xl font-bold">Trò chuyện</h2>
-                  <p className="mt-1 text-sm text-[#667085]">
+              <section className="overflow-hidden rounded-xs border border-[#e8e8e8] bg-white text-[#222222] shadow-xs">
+                <div className="border-b border-[#f1f1f1] bg-[#fafafa] p-3.5">
+                  <h2 className="text-sm font-bold text-[#222222]">Trò chuyện trực tiếp</h2>
+                  <p className="mt-0.5 text-xs text-[#757575]">
                     {user ? 'Trao đổi trực tiếp với shop và người xem khác.' : 'Đăng nhập để tham gia trò chuyện.'}
                   </p>
                 </div>
                 <div className="flex h-[320px] flex-col sm:h-[360px]">
                   <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-                    {messages.length === 0 ? (
-                      <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p>
-                    ) : null}
+                    {messages.length === 0 ? <p className="rounded-2xl bg-[#f8f6f1] p-4 text-sm font-medium text-[#667085]">Chưa có tin nhắn.</p> : null}
                     {messages.map((message) => (
                       <div key={message.messageId} className="flex gap-2.5 rounded-2xl bg-[#f8f6f1] p-3">
-                        <span
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getChatAvatarColor(message.senderRole)}`}
-                        >
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${getChatAvatarColor(message.senderRole)}`}>
                           {getChatInitial(message, user, chatNameMap)}
                         </span>
                         <span className="min-w-0">
-                          <p className={`text-xs font-bold ${getChatNameColor(message.senderRole)}`}>
-                            {formatChatSender(message, user, chatNameMap)}
-                          </p>
+                          <p className={`text-xs font-bold ${getChatNameColor(message.senderRole)}`}>{formatChatSender(message, user, chatNameMap)}</p>
                           <p className="mt-1 break-words text-sm leading-5 text-slate-900">{message.text}</p>
                         </span>
                       </div>
@@ -948,16 +922,17 @@ export default function LiveDetailPage() {
       </main>
     </div>
   );
+
 }
 
 function MetricPill({ icon, label, value }: { icon: string; label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-[#e2d8cd] bg-white p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-[#E84C3D] hover:shadow-md">
+    <div className="rounded-xs border border-[#e8e8e8] bg-white p-3.5 shadow-xs transition hover:border-[#ee4d2d]">
       <div className="flex items-center gap-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#fff4ea] text-lg">{icon}</span>
-        <p className="text-[11px] font-bold uppercase text-[#98a2b3]">{label}</p>
+        <span className="flex h-8 w-8 items-center justify-center rounded-xs bg-[#fef6f5] text-base border border-[#fcdcd7]">{icon}</span>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[#757575]">{label}</p>
       </div>
-      <p className="mt-3 text-3xl font-bold tabular-nums text-[#111827] transition-all duration-300">{value.toLocaleString('vi-VN')}</p>
+      <p className="mt-2 text-2xl font-bold tabular-nums text-[#222222]">{value.toLocaleString('vi-VN')}</p>
     </div>
   );
 }
@@ -1033,23 +1008,23 @@ function readBuyerProfileNames(): Record<string, string> {
 function getChatAvatarColor(senderRole: string): string {
   const normalizedRole = senderRole.toLowerCase();
   if (normalizedRole.includes('seller')) {
-    return 'bg-[#E84C3D]';
+    return 'bg-[#ee4d2d]';
   }
   if (normalizedRole.includes('admin')) {
     return 'bg-slate-700';
   }
-  return 'bg-[#f59e0b]';
+  return 'bg-slate-600';
 }
 
 function getChatNameColor(senderRole: string): string {
   const normalizedRole = senderRole.toLowerCase();
   if (normalizedRole.includes('seller')) {
-    return 'text-[#E84C3D]';
+    return 'text-[#ee4d2d] font-bold';
   }
   if (normalizedRole.includes('admin')) {
-    return 'text-slate-700';
+    return 'text-slate-800 font-bold';
   }
-  return 'text-[#b45309]';
+  return 'text-[#222222] font-semibold';
 }
 
 function formatViewerStreamStatus(realtimeStatus: 'waiting' | 'connecting' | 'connected' | 'fallback' | 'error', socketStatus: SocketStatus) {

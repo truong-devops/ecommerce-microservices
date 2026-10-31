@@ -58,11 +58,24 @@ function getVideoAction(video: SellerVideo): { action: VideoAction; label: strin
     return { action: 'none', label: 'Đã lưu trữ', disabled: true };
   }
 
-  const hasReadyMedia = Boolean(video.mediaObjectKey && video.mediaUrl && video.mimeType);
+  const hasReadyMedia = hasReadyVideoMedia(video);
   if (!hasReadyMedia) {
     return { action: 'none', label: video.status === 'processing' ? 'Đang upload' : 'Chưa upload', disabled: true };
   }
   return { action: 'submit', label: video.status === 'rejected' ? 'Gửi duyệt lại' : 'Gửi duyệt', disabled: false };
+}
+
+function getVideoStatusLabel(video: SellerVideo): string {
+  if (!hasReadyVideoMedia(video)) {
+    if (video.status === 'processing') return 'Đang tải video lên';
+    if (video.status === 'processing_failed') return 'Tải video thất bại';
+    if (video.status === 'draft') return 'Chưa tải video lên';
+  }
+  return statusLabels[video.status] ?? video.status;
+}
+
+function hasReadyVideoMedia(video: SellerVideo): boolean {
+  return Boolean(video.mediaObjectKey && video.mediaUrl && video.mimeType);
 }
 
 export default function SellerVideosPage() {
@@ -466,7 +479,10 @@ export default function SellerVideosPage() {
                             </td>
                             <td className="px-3 py-2 text-slate-700">{video.products.map((product) => product.name).join(', ')}</td>
                             <td className="px-3 py-2 text-slate-700">
-                              <p>{statusLabels[video.status] ?? video.status}</p>
+                              <p className="font-medium text-slate-800">{getVideoStatusLabel(video)}</p>
+                              {!hasReadyVideoMedia(video) && canRetryVideo(video) ? (
+                                <p className="mt-1 max-w-xs text-xs text-slate-500">Video chưa sẵn sàng. Bạn có thể tải lại file hoặc xóa bản ghi này.</p>
+                              ) : null}
                               {video.status === 'rejected' ? (
                                 <p className="mt-1 max-w-xs text-xs font-medium text-rose-600">
                                   Lý do: {video.moderation?.rejectionReason || 'Moderator chưa cung cấp lý do.'}
@@ -475,29 +491,31 @@ export default function SellerVideosPage() {
                             </td>
                             <td className="px-3 py-2 text-slate-700">{video.metrics?.qualifiedViewCount ?? 0}</td>
                             <td className="px-3 py-2">
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="grid min-w-[220px] grid-cols-2 gap-2">
                                 <button
                                   type="button"
                                   onClick={() => setPreviewVideo(video)}
                                   title="Xem chi tiết video"
-                                  className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50"
+                                  className="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-[#ee4d2d] hover:border-[#ee4d2d] hover:bg-orange-50"
                                 >
                                   Chi tiết
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleTogglePublish(video)}
-                                  disabled={videoAction.disabled || actionLoading || isSubmitting}
-                                  className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-                                >
-                                  {actionLoading ? 'Đang xử lý...' : videoAction.label}
-                                </button>
+                                {videoAction.action !== 'none' ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleTogglePublish(video)}
+                                    disabled={videoAction.disabled || actionLoading || isSubmitting}
+                                    className="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+                                  >
+                                    {actionLoading ? 'Đang xử lý...' : videoAction.label}
+                                  </button>
+                                ) : null}
                                 {canEditVideo(video) ? (
                                   <button
                                     type="button"
                                     onClick={() => openEditor(video)}
                                     disabled={actionLoading || isSubmitting}
-                                    className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:opacity-50"
+                                    className="w-full rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-[#ee4d2d] hover:text-[#ee4d2d] disabled:opacity-50"
                                   >
                                     Sửa
                                   </button>
@@ -510,7 +528,7 @@ export default function SellerVideosPage() {
                                       setRetryFile(null);
                                     }}
                                     disabled={actionLoading || isSubmitting}
-                                    className="rounded-md border border-amber-300 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                                    className="w-full rounded-md border border-[#ee4d2d] px-3 py-1.5 text-xs font-semibold text-[#ee4d2d] hover:bg-orange-50 disabled:opacity-50"
                                   >
                                     Upload lại
                                   </button>
@@ -520,7 +538,7 @@ export default function SellerVideosPage() {
                                     type="button"
                                     onClick={() => void handleDeleteVideo(video)}
                                     disabled={actionLoading || isSubmitting}
-                                    className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                    className="w-full rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                                   >
                                     Xóa
                                   </button>
@@ -635,8 +653,13 @@ export default function SellerVideosPage() {
             </div>
             <div className="space-y-2 px-4 py-3 text-sm text-slate-600">
               <p>
-                Trạng thái: <span className="font-semibold text-slate-900">{statusLabels[previewVideo.status] ?? previewVideo.status}</span>
+                Trạng thái: <span className="font-semibold text-slate-900">{getVideoStatusLabel(previewVideo)}</span>
               </p>
+              {!hasReadyVideoMedia(previewVideo) && canRetryVideo(previewVideo) ? (
+                <p className="rounded-md bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                  File video chưa sẵn sàng. Đóng cửa sổ này rồi chọn “Upload lại” để tiếp tục, hoặc xóa bản ghi nếu không còn sử dụng.
+                </p>
+              ) : null}
               <p>Sản phẩm: {previewVideo.products.map((product) => product.name).join(', ') || 'Chưa gắn sản phẩm'}</p>
               <p>Mô tả: {previewVideo.description || 'Chưa có mô tả'}</p>
               {previewVideo.status === 'rejected' ? (

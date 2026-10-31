@@ -10,6 +10,12 @@ import type { BuyerShopDetail, ProductSearchItem } from '@/lib/api/types';
 import { formatPrice } from '@/lib/price';
 
 type ShopPageStatus = 'loading' | 'success' | 'error';
+type ShopTabId = 'products' | 'new' | 'deals' | 'info';
+
+interface ShopTab {
+  id: ShopTabId;
+  label: string;
+}
 
 export default function BuyerShopPage() {
   const params = useParams<{ sellerId: string }>();
@@ -20,7 +26,7 @@ export default function BuyerShopPage() {
   const [shop, setShop] = useState<BuyerShopDetail | null>(null);
   const [products, setProducts] = useState<ProductSearchItem[]>([]);
   const [productCount, setProductCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState<ShopTabId>('products');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -220,8 +226,8 @@ function normalizeColor(value: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(value.trim()) ? value.trim() : '#ee4d2d';
 }
 
-function buildShopTabs(navItems: string[]): Array<{ id: string; label: string }> {
-  const tabs = [
+function buildShopTabs(navItems: string[]): ShopTab[] {
+  const tabs: ShopTab[] = [
     { id: 'products', label: 'Tất Cả Sản Phẩm' },
     { id: 'new', label: 'Sản Phẩm Mới' },
     { id: 'deals', label: 'Ưu Đãi Hôm Nay' },
@@ -229,17 +235,36 @@ function buildShopTabs(navItems: string[]): Array<{ id: string; label: string }>
   ];
 
   for (const label of navItems) {
-    const normalized = label.toLocaleLowerCase('vi-VN');
-    const matchingTab = tabs.find((tab) => normalized.includes(tab.id === 'info' ? 'thông tin' : tab.id === 'new' ? 'mới' : tab.id === 'deals' ? 'ưu đãi' : 'sản phẩm'));
-    if (matchingTab) {
-      matchingTab.label = label;
+    const tabId = identifyShopTab(label);
+    if (tabId) {
+      const matchingTab = tabs.find((tab) => tab.id === tabId);
+      if (matchingTab) {
+        matchingTab.label = label.trim();
+      }
     }
   }
 
   return tabs;
 }
 
-function filterShopProducts(products: ProductSearchItem[], activeTab: string): ProductSearchItem[] {
+function identifyShopTab(label: string): ShopTabId | null {
+  const normalized = label.trim().toLocaleLowerCase('vi-VN');
+  if (normalized.includes('thông tin') || normalized.includes('giới thiệu')) {
+    return 'info';
+  }
+  if (normalized.includes('ưu đãi') || normalized.includes('khuyến mãi') || normalized.includes('giảm giá')) {
+    return 'deals';
+  }
+  if (normalized.includes('mới')) {
+    return 'new';
+  }
+  if (normalized.includes('tất cả') || normalized === 'sản phẩm' || normalized === 'all products') {
+    return 'products';
+  }
+  return null;
+}
+
+function filterShopProducts(products: ProductSearchItem[], activeTab: ShopTabId): ProductSearchItem[] {
   if (activeTab === 'deals') {
     return products.filter((product) => product.discountPercent > 0);
   }

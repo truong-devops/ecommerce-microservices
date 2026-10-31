@@ -112,8 +112,32 @@ func TestCreateProductAutoSuffixesConflictingSlugAndSKU(t *testing.T) {
 	if result.Slug != "shared-name-2" {
 		t.Fatalf("expected auto-suffixed slug, got %s", result.Slug)
 	}
-	if result.Variants[0].SKU != "SHARED-001-2" {
+	if result.Variants[0].SKU != "SHARED-002" {
 		t.Fatalf("expected auto-suffixed SKU, got %s", result.Variants[0].SKU)
+	}
+}
+
+func TestCreateProductContinuesNumericSKUSequenceAcrossVariants(t *testing.T) {
+	repo := &fakeProductRepo{skuConflicts: map[string]bool{
+		"seller-1/SONY-DIEN-THOAI-001": true,
+		"seller-1/SONY-DIEN-THOAI-002": true,
+	}}
+	service := NewProductService(repo, nil, nil, "http://localhost:12030/ecommerce-media")
+
+	result, err := service.CreateProduct(context.Background(), fakeRequest(), domain.UserContext{UserID: "seller-1", Role: domain.RoleSeller}, CreateProductInput{
+		Name:       "Sony WF-1000XM6",
+		CategoryID: "dien-thoai-phu-kien",
+		Variants: []ProductVariantInput{
+			{SKU: "SONY-DIEN-THOAI-001", Name: "Black", Price: 899000, Currency: "VND"},
+			{SKU: "SONY-DIEN-THOAI-002", Name: "Silver", Price: 899000, Currency: "VND"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("CreateProduct returned error: %v", err)
+	}
+	got := []string{result.Variants[0].SKU, result.Variants[1].SKU}
+	if got[0] != "SONY-DIEN-THOAI-003" || got[1] != "SONY-DIEN-THOAI-004" {
+		t.Fatalf("expected next numeric SKUs, got %v", got)
 	}
 }
 

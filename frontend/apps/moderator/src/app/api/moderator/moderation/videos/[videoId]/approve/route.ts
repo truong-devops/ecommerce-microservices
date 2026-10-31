@@ -2,6 +2,7 @@ import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/moderator-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
+import { recordGovernanceAction } from '@/lib/server/governance-audit';
 
 const MODERATION_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
 
@@ -13,9 +14,16 @@ export async function POST(request: Request, context: { params: Promise<{ videoI
   if (!MODERATION_ROLES.has(claims.role)) return fail(403, 'FORBIDDEN', 'Role is not allowed for video moderation');
 
   try {
-    const payload = await requestUpstream<unknown>(`${serviceBaseUrls.product}/moderation/videos/${(await context.params).videoId}/approve`, {
+    const videoId = (await context.params).videoId;
+    const payload = await requestUpstream<unknown>(`${serviceBaseUrls.product}/moderation/videos/${videoId}/approve`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    await recordGovernanceAction(accessToken, {
+      action: 'VIDEO_APPROVED',
+      resourceType: 'VIDEO',
+      resourceId: videoId,
+      description: 'Duyệt video để hiển thị trên sàn'
     });
     return ok(payload);
   } catch (error) {

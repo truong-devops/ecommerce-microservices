@@ -175,7 +175,7 @@ function BalanceContent({ accessToken }: { accessToken: string }) {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">Tài chính shop</p>
             <h1 className="mt-1 text-2xl font-semibold text-slate-900">Số dư eMall</h1>
-            <p className="mt-1 text-sm text-slate-500">Theo dõi tiền đang giữ, tiền có thể rút và lịch sử thanh toán.</p>
+            <p className="mt-1 text-sm text-slate-500">Theo dõi tiền đang giữ, số dư có thể rút và lịch sử chuyển tiền về ngân hàng.</p>
           </div>
           <button
             type="button"
@@ -241,10 +241,10 @@ function BalanceContent({ accessToken }: { accessToken: string }) {
       </article>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <BalanceCard label="Đang tạm giữ" value={wallet?.heldAmount ?? 0} note="Chờ đơn giao và hết thời gian giữ" tone="amber" />
-        <BalanceCard label="Có thể rút" value={wallet?.availableAmount ?? 0} note="Sẵn sàng tạo yêu cầu rút" tone="green" />
-        <BalanceCard label="Đang chuyển" value={wallet?.payoutPendingAmount ?? 0} note="Admin đang xử lý yêu cầu rút" tone="blue" />
-        <BalanceCard label="Đã thanh toán" value={wallet?.totalPaidOut ?? 0} note="Tổng tiền đã rút thành công" tone="slate" />
+        <BalanceCard label="Đang tạm giữ" value={wallet?.heldAmount ?? 0} note="Chờ đơn giao và hết thời gian giữ" />
+        <BalanceCard label="Có thể rút" value={wallet?.availableAmount ?? 0} note="Sẵn sàng tạo yêu cầu rút" />
+        <BalanceCard label="Đang chuyển về ngân hàng" value={wallet?.payoutPendingAmount ?? 0} note="Yêu cầu đang được xử lý" />
+        <BalanceCard label="Đã chuyển về ngân hàng" value={wallet?.totalPaidOut ?? 0} note="Tổng tiền đã rút thành công" />
       </div>
 
       <article className="rounded-md border border-slate-200 bg-white p-4 lg:p-5">
@@ -396,12 +396,10 @@ function BalanceContent({ accessToken }: { accessToken: string }) {
   );
 }
 
-function BalanceCard({ label, value, note, tone }: { label: string; value: number; note: string; tone: 'amber' | 'green' | 'blue' | 'slate' }) {
-  const dot = { amber: 'bg-amber-400', green: 'bg-emerald-500', blue: 'bg-sky-500', slate: 'bg-slate-500' }[tone];
+function BalanceCard({ label, value, note }: { label: string; value: number; note: string }) {
   return (
-    <article className="rounded-md border border-slate-200 bg-white p-4">
+    <article className="rounded-md border border-slate-200 border-t-2 border-t-[#ee4d2d] bg-white p-4">
       <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
         <p className="text-sm font-medium text-slate-600">{label}</p>
       </div>
       <p className={`mt-3 text-2xl font-semibold ${value < 0 ? 'text-rose-600' : 'text-slate-900'}`}>{formatVnd(value)}</p>
@@ -581,8 +579,9 @@ function PayoutDialog({
               </button>
             ))}
           </div>
-          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-700">
-            Sau khi xác nhận, tiền được chuyển sang trạng thái đang xử lý. Nếu đối tác thanh toán từ chối, hệ thống tự hoàn lại vào số dư khả dụng.
+          <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+            Sau khi xác nhận, yêu cầu sẽ chuyển sang trạng thái đang xử lý. Nếu giao dịch ngân hàng thất bại, hệ thống tự hoàn lại tiền vào số dư khả
+            dụng.
           </p>
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <button

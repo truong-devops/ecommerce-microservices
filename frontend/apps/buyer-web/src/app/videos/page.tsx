@@ -78,14 +78,7 @@ export default function VideosPage() {
   }, [user?.id, user?.name]);
 
   const currentVideo = videos[currentIndex] ?? null;
-  const keywords = useMemo(() => [
-    'Shopee Video',
-    'Deal Hot',
-    'Xu Hướng',
-    'Review Sản Phẩm',
-    'Đồ Công Nghệ',
-    'Thời Trang'
-  ], []);
+  const keywords = useMemo(() => ['Shopee Video', 'Deal Hot', 'Xu Hướng', 'Review Sản Phẩm', 'Đồ Công Nghệ', 'Thời Trang'], []);
   const currentVideoId = currentVideo?.videoId ?? '';
   const currentVideoLiked = Boolean(accessToken && currentVideoId && likedVideoIds.has(currentVideoId));
   const chatEmojis = ['🔥', '❤️', '👍', '😍'];
@@ -110,7 +103,10 @@ export default function VideosPage() {
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
-      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+      videoRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {});
     } else {
       videoRef.current.pause();
       setIsPlaying(false);
@@ -200,24 +196,27 @@ export default function VideosPage() {
     }
   }, [accessToken, commentInput, commentSafety.allowed, commentSafety.message, commentSubmitting, currentVideo]);
 
-  const handleToggleLike = useCallback((videoId: string) => {
-    if (!accessToken) {
-      setLikeStatus('login-required');
-      return;
-    }
-
-    setLikeStatus('idle');
-    setLikedVideoIds((current) => {
-      const next = new Set(current);
-      if (next.has(videoId)) {
-        next.delete(videoId);
-      } else {
-        next.add(videoId);
+  const handleToggleLike = useCallback(
+    (videoId: string) => {
+      if (!accessToken) {
+        setLikeStatus('login-required');
+        return;
       }
-      writeLikedVideoIds(next);
-      return next;
-    });
-  }, [accessToken]);
+
+      setLikeStatus('idle');
+      setLikedVideoIds((current) => {
+        const next = new Set(current);
+        if (next.has(videoId)) {
+          next.delete(videoId);
+        } else {
+          next.add(videoId);
+        }
+        writeLikedVideoIds(next);
+        return next;
+      });
+    },
+    [accessToken]
+  );
 
   const handleShareVideo = useCallback(async (video: BuyerVideo) => {
     const shareUrl = buildVideoShareUrl(video.videoId);
@@ -239,12 +238,15 @@ export default function VideosPage() {
     }
   }, []);
 
-  const goToVideo = useCallback((nextIndex: number) => {
-    setCurrentIndex((current) => {
-      const bounded = Math.min(Math.max(nextIndex, 0), videos.length - 1);
-      return bounded === current ? current : bounded;
-    });
-  }, [videos.length]);
+  const goToVideo = useCallback(
+    (nextIndex: number) => {
+      setCurrentIndex((current) => {
+        const bounded = Math.min(Math.max(nextIndex, 0), videos.length - 1);
+        return bounded === current ? current : bounded;
+      });
+    },
+    [videos.length]
+  );
 
   const goPrevious = useCallback(() => {
     goToVideo(currentIndex - 1);
@@ -326,10 +328,10 @@ export default function VideosPage() {
   }, [shareStatus]);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] text-[#222]">
+    <div className="min-h-screen bg-[#f6f6f6] text-slate-900">
       <Header keywords={keywords} />
 
-      <main className="mx-auto w-full max-w-[1240px] px-3 py-4 md:px-4 md:py-6">
+      <main className="mx-auto w-full max-w-[1320px] px-3 py-4 md:px-5 md:py-6">
         {status === 'loading' ? (
           <div className="py-24 text-center">
             <span className="inline-block h-8 w-8 animate-spin rounded-full border-3 border-[#ee4d2d] border-t-transparent" />
@@ -354,10 +356,7 @@ export default function VideosPage() {
           <div className="mx-auto flex min-h-[460px] max-w-md flex-col items-center justify-center rounded-sm bg-white p-6 text-center shadow-sm">
             <p className="text-base font-bold text-[#222]">Chưa có video nào được đăng tải.</p>
             <p className="mt-2 text-xs text-[#757575]">Hãy đăng tải video từ Kênh Người Bán để xem feed video tại đây.</p>
-            <Link
-              href="/"
-              className="mt-5 rounded-sm border border-[#ee4d2d] bg-white px-5 py-2 text-xs font-bold text-[#ee4d2d] hover:bg-[#fef6f5]"
-            >
+            <Link href="/" className="mt-5 rounded-sm border border-[#ee4d2d] bg-white px-5 py-2 text-xs font-bold text-[#ee4d2d] hover:bg-[#fef6f5]">
               Về trang chủ
             </Link>
           </div>
@@ -365,25 +364,31 @@ export default function VideosPage() {
 
         {status === 'success' && currentVideo ? (
           <section aria-label="Shoppable video viewer">
-            <div className="grid items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm md:px-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ee4d2d]">eMall Video</p>
+                <h1 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 md:text-2xl">Khám phá sản phẩm qua video</h1>
+                <p className="mt-1 text-sm text-slate-500">Dùng phím ↑ ↓ hoặc các nút điều hướng để chuyển video.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                {currentIndex + 1} / {videos.length} video
+              </span>
+            </div>
+            <div className="grid items-start gap-4 xl:grid-cols-[300px_minmax(420px,1fr)_360px]">
               {/* Left Column: Shop & Products */}
-              <aside className="rounded-sm border border-[#e8e8e8] bg-white p-4 shadow-sm space-y-4">
+              <aside className="order-2 space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:order-1 xl:sticky xl:top-4">
                 <Link
                   href={`/shops/${encodeURIComponent(currentVideo.seller.sellerId)}`}
-                  className="flex items-center gap-3 border-b border-[#f1f1f1] pb-3 transition"
+                  className="flex items-center gap-3 border-b border-slate-100 pb-4 transition"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fef6f5] text-sm font-bold text-[#ee4d2d] border border-[#fcdcd7]">
                     {currentVideo.seller.shopName.trim().charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold text-[#222] hover:text-[#ee4d2d]">
-                      {currentVideo.seller.shopName}
-                    </span>
+                    <span className="block truncate text-sm font-bold text-[#222] hover:text-[#ee4d2d]">{currentVideo.seller.shopName}</span>
                     <span className="block text-[11px] text-[#757575] font-mono">{currentVideo.seller.sellerCode}</span>
                   </div>
-                  <span className="shrink-0 rounded-sm border border-[#ee4d2d] px-2 py-0.5 text-[11px] font-semibold text-[#ee4d2d]">
-                    Xem Shop
-                  </span>
+                  <span className="shrink-0 rounded-lg border border-[#ee4d2d] px-2.5 py-1 text-[11px] font-semibold text-[#ee4d2d]">Xem shop</span>
                 </Link>
 
                 {/* Description */}
@@ -406,7 +411,7 @@ export default function VideosPage() {
                           key={product.productId}
                           href={`/products/${encodeURIComponent(product.productId)}`}
                           onClick={() => handleProductClick(currentVideo, product.productId)}
-                          className="flex items-center gap-2.5 rounded-sm border border-[#e8e8e8] p-2 transition hover:border-[#ee4d2d]"
+                          className="flex items-center gap-2.5 rounded-lg border border-slate-200 p-2.5 transition hover:border-[#ee4d2d] hover:shadow-sm"
                         >
                           <Image
                             src={product.image ?? '/icon.svg'}
@@ -420,8 +425,8 @@ export default function VideosPage() {
                             <p className="line-clamp-1 text-xs font-semibold text-[#222]">{product.name}</p>
                             <p className="text-xs font-bold text-[#ee4d2d] mt-0.5">{formatPrice(product.price)}</p>
                           </div>
-                          <span className="rounded-sm bg-[#ee4d2d] px-2.5 py-1 text-[11px] font-bold text-white shrink-0 hover:bg-[#d73211]">
-                            Mua
+                          <span className="shrink-0 rounded-lg bg-[#ee4d2d] px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-[#d73211]">
+                            Xem
                           </span>
                         </Link>
                       ))}
@@ -457,12 +462,13 @@ export default function VideosPage() {
                     </div>
                   </div>
                 )}
+                {recommendationLoading ? <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">Đang tải gợi ý mua kèm...</p> : null}
               </aside>
 
               {/* Center Column: Video Player */}
-              <article className="rounded-sm border border-[#e8e8e8] bg-white p-3 shadow-sm">
+              <article className="order-1 rounded-xl border border-slate-200 bg-white p-3 shadow-sm xl:order-2 xl:sticky xl:top-4">
                 <div className="mb-3 flex items-center justify-between gap-3 px-1 border-b border-[#f1f1f1] pb-2.5">
-                  <h1 className="min-w-0 truncate text-base font-bold text-[#222]">{currentVideo.title}</h1>
+                  <h2 className="min-w-0 truncate text-base font-bold text-[#222]">{currentVideo.title}</h2>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button
                       type="button"
@@ -487,12 +493,10 @@ export default function VideosPage() {
                   </div>
                 </div>
 
-                {likeStatus === 'login-required' && (
-                  <p className="mb-2 text-xs font-medium text-[#ee4d2d]">Vui lòng đăng nhập để thích video.</p>
-                )}
+                {likeStatus === 'login-required' && <p className="mb-2 text-xs font-medium text-[#ee4d2d]">Vui lòng đăng nhập để thích video.</p>}
 
                 {/* Main Video Box */}
-                <div className="relative mx-auto aspect-[9/16] max-h-[min(640px,72vh)] overflow-hidden rounded-sm bg-black group select-none">
+                <div className="group relative mx-auto aspect-[9/16] max-h-[min(680px,72vh)] overflow-hidden rounded-xl bg-black select-none">
                   {resolvedMediaUrl && !videoError ? (
                     <>
                       <video
@@ -514,10 +518,7 @@ export default function VideosPage() {
 
                       {/* Play/Pause Overlay Icon when paused */}
                       {!isPlaying && (
-                        <div
-                          onClick={togglePlay}
-                          className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
-                        >
+                        <div onClick={togglePlay} className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer">
                           <div className="grid h-16 w-16 place-items-center rounded-full bg-black/60 text-white text-2xl shadow-lg border border-white/20 transition hover:scale-110">
                             ▶
                           </div>
@@ -529,9 +530,7 @@ export default function VideosPage() {
                         <span className="rounded-full bg-black/60 px-2.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
                           {currentVideo.metrics.qualifiedViewCount} views
                         </span>
-                        <span className="rounded-full bg-[#ee4d2d] px-2.5 py-0.5 text-[10px] font-bold uppercase text-white">
-                          Shopee Video
-                        </span>
+                        <span className="rounded-full bg-[#ee4d2d] px-2.5 py-0.5 text-[10px] font-bold uppercase text-white">eMall Video</span>
                       </div>
 
                       {/* Sound Toggle Button */}
@@ -575,9 +574,7 @@ export default function VideosPage() {
                     <span>▲</span>
                     <span>Video trước</span>
                   </button>
-                  <span className="text-[#757575] text-[11px]">
-                    {currentIndex + 1} / {videos.length} video
-                  </span>
+                  <span className="text-[11px] text-[#757575]">Dùng phím ↑ ↓</span>
                   <button
                     type="button"
                     onClick={goNext}
@@ -591,7 +588,7 @@ export default function VideosPage() {
               </article>
 
               {/* Right Column: Comments */}
-              <aside className="rounded-sm border border-[#e8e8e8] bg-white shadow-sm flex flex-col h-[min(720px,82vh)]">
+              <aside className="order-3 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-4 xl:h-[min(760px,88vh)]">
                 <div className="flex items-center justify-between border-b border-[#f1f1f1] px-4 py-3 bg-[#fafafa]">
                   <div>
                     <h2 className="text-sm font-bold text-[#222]">Bình luận ({currentVideo.metrics.commentCount ?? comments.length})</h2>
@@ -599,73 +596,76 @@ export default function VideosPage() {
                       {accessToken ? 'Trao đổi cùng người bán và người mua.' : 'Đăng nhập để tham gia bình luận.'}
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setCommentsCollapsed((value) => !value)}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 xl:hidden"
+                  >
+                    {commentsCollapsed ? 'Mở' : 'Thu gọn'}
+                  </button>
                 </div>
 
                 {/* Comments List */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-                  {commentsStatus === 'loading' && (
-                    <p className="text-center text-xs text-[#757575] py-4">Đang tải bình luận...</p>
-                  )}
-                  {commentsStatus === 'error' && (
-                    <p className="text-center text-xs text-[#ee4d2d] py-4">{commentError || 'Lỗi tải bình luận.'}</p>
-                  )}
-                  {commentsStatus === 'success' && comments.length === 0 && (
-                    <p className="text-center text-xs text-[#757575] py-8">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
-                  )}
-                  {comments.map((comment) => (
-                    <div key={comment.commentId} className="flex gap-2.5 rounded-sm bg-[#fafafa] p-2.5 border border-[#f1f1f1]">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fef6f5] text-[11px] font-bold text-[#ee4d2d] border border-[#fcdcd7]">
-                        {getCommentInitial(comment, user, commentNameMap)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-[#222]">{formatCommentAuthor(comment, user, commentNameMap)}</p>
-                        <p className="mt-0.5 text-xs text-[#555] break-words">{comment.text}</p>
+                {!commentsCollapsed ? (
+                  <div className="max-h-[420px] flex-1 space-y-2.5 overflow-y-auto p-3 xl:max-h-none">
+                    {commentsStatus === 'loading' && <p className="text-center text-xs text-[#757575] py-4">Đang tải bình luận...</p>}
+                    {commentsStatus === 'error' && <p className="text-center text-xs text-[#ee4d2d] py-4">{commentError || 'Lỗi tải bình luận.'}</p>}
+                    {commentsStatus === 'success' && comments.length === 0 && (
+                      <p className="text-center text-xs text-[#757575] py-8">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+                    )}
+                    {comments.map((comment) => (
+                      <div key={comment.commentId} className="flex gap-2.5 rounded-sm bg-[#fafafa] p-2.5 border border-[#f1f1f1]">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#fef6f5] text-[11px] font-bold text-[#ee4d2d] border border-[#fcdcd7]">
+                          {getCommentInitial(comment, user, commentNameMap)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-[#222]">{formatCommentAuthor(comment, user, commentNameMap)}</p>
+                          <p className="mt-0.5 text-xs text-[#555] break-words">{comment.text}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Comment Input */}
-                <div className="border-t border-[#f1f1f1] p-3 bg-white">
-                  <div className="mb-2 flex gap-1">
-                    {chatEmojis.map((emoji) => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => setCommentInput((c) => `${c}${emoji}`)}
-                        disabled={!accessToken || commentSubmitting}
-                        className="grid h-7 w-7 place-items-center rounded-sm border border-[#e8e8e8] bg-[#fafafa] text-xs hover:border-[#ee4d2d] disabled:opacity-40"
-                      >
-                        {emoji}
-                      </button>
                     ))}
                   </div>
-                  <div className="flex gap-1.5">
-                    <input
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void handleSubmitComment();
-                      }}
-                      placeholder={accessToken ? 'Viết bình luận sản phẩm...' : 'Đăng nhập để gửi bình luận'}
-                      className="min-w-0 flex-1 rounded-sm border border-[#e8e8e8] px-3 py-1.5 text-xs outline-none focus:border-[#ee4d2d]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void handleSubmitComment()}
-                      disabled={!commentInput.trim() || !commentSafety.allowed || commentSubmitting}
-                      className="rounded-sm bg-[#ee4d2d] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#d73211] disabled:opacity-50"
-                    >
-                      Gửi
-                    </button>
+                ) : null}
+
+                {/* Comment Input */}
+                {!commentsCollapsed ? (
+                  <div className="border-t border-[#f1f1f1] bg-white p-3">
+                    <div className="mb-2 flex gap-1">
+                      {chatEmojis.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setCommentInput((c) => `${c}${emoji}`)}
+                          disabled={!accessToken || commentSubmitting}
+                          className="grid h-7 w-7 place-items-center rounded-sm border border-[#e8e8e8] bg-[#fafafa] text-xs hover:border-[#ee4d2d] disabled:opacity-40"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input
+                        value={commentInput}
+                        onChange={(e) => setCommentInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void handleSubmitComment();
+                        }}
+                        placeholder={accessToken ? 'Viết bình luận sản phẩm...' : 'Đăng nhập để gửi bình luận'}
+                        className="min-w-0 flex-1 rounded-sm border border-[#e8e8e8] px-3 py-1.5 text-xs outline-none focus:border-[#ee4d2d]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleSubmitComment()}
+                        disabled={!commentInput.trim() || !commentSafety.allowed || commentSubmitting}
+                        className="rounded-sm bg-[#ee4d2d] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#d73211] disabled:opacity-50"
+                      >
+                        Gửi
+                      </button>
+                    </div>
+                    {!commentSafety.allowed && commentInput.trim() && <p className="mt-1 text-[11px] text-[#ee4d2d]">{commentSafety.message}</p>}
+                    {commentError && commentsStatus !== 'error' && <p className="mt-1 text-[11px] text-[#ee4d2d]">{commentError}</p>}
                   </div>
-                  {!commentSafety.allowed && commentInput.trim() && (
-                    <p className="mt-1 text-[11px] text-[#ee4d2d]">{commentSafety.message}</p>
-                  )}
-                  {commentError && commentsStatus !== 'error' && (
-                    <p className="mt-1 text-[11px] text-[#ee4d2d]">{commentError}</p>
-                  )}
-                </div>
+                ) : null}
               </aside>
             </div>
           </section>
@@ -700,11 +700,7 @@ function formatCommentAuthor(
   return 'Quản trị viên';
 }
 
-function getCommentInitial(
-  comment: BuyerVideoComment,
-  currentUser: { id: string; name: string } | null,
-  knownNames: Record<string, string>
-): string {
+function getCommentInitial(comment: BuyerVideoComment, currentUser: { id: string; name: string } | null, knownNames: Record<string, string>): string {
   const author = formatCommentAuthor(comment, currentUser, knownNames);
   return (author.trim().charAt(0) || 'U').toUpperCase();
 }

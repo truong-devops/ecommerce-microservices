@@ -200,6 +200,18 @@ func TestNexusOutboundOnlyForMappedSeller(t *testing.T) {
 	}
 }
 
+func TestNexusOutboundForAllSellersMapping(t *testing.T) {
+	svc := NewShippingService(nil, nil, "dev-shipping-webhook-signing-secret", 1440, NexusIntegration{
+		Enabled: true,
+		Mappings: map[string]nexus.MerchantMapping{
+			nexus.AllSellersMappingKey: {ShopID: nexus.AllSellersMappingKey, Active: true},
+		},
+	})
+	if !svc.nexusOutboundEnabledForSeller("9f8a2776-a0d3-4013-ac02-6784166eadd6") {
+		t.Fatal("expected platform-wide mapping to enable Nexus outbound")
+	}
+}
+
 func TestNexusExternalOrderCodeUsesBuyerFacingCode(t *testing.T) {
 	if got := nexusExternalOrderCode(map[string]any{"orderCode": "EMX9000004", "orderNumber": "ORD-20260527-000004"}); got != "EMX9000004" {
 		t.Fatalf("expected buyer-facing order code, got %q", got)

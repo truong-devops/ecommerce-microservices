@@ -100,6 +100,7 @@ func main() {
 		zap.Bool("outboundEnabled", cfg.NexusEnabled),
 		zap.Bool("webhookEnabled", cfg.NexusWebhookEnabled),
 		zap.Bool("autoCreatePickup", cfg.NexusAutoCreatePickup),
+		zap.Bool("allSellersMapped", hasAllSellersMapping(nexusIntegration.Mappings)),
 		zap.Int("mappedSellers", len(nexusIntegration.Mappings)),
 	)
 	shippingService := service.NewShippingService(repo, orderClient, cfg.WebhookSigningSecret, cfg.WebhookIdempotencyTTLMinutes, nexusIntegration)
@@ -156,6 +157,11 @@ func main() {
 	}
 
 	logger.Info("server stopped")
+}
+
+func hasAllSellersMapping(mappings map[string]nexus.MerchantMapping) bool {
+	_, ok := mappings[nexus.AllSellersMappingKey]
+	return ok
 }
 
 func runMigration(ctx context.Context, pool *pgxpool.Pool, migrationFile string) error {

@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const AllSellersMappingKey = "*"
+
 type MerchantMapping struct {
 	ShopID              string            `json:"shopId"`
 	ShopName            string            `json:"shopName"`
@@ -49,9 +51,11 @@ func LoadMerchantMappings(path string) (map[string]MerchantMapping, error) {
 		if !entry.Active {
 			continue
 		}
-		if _, err := uuid.Parse(entry.ShopID); err != nil || entry.MerchantID == "" || strings.TrimSpace(entry.ShopName) == "" {
+		parsedShopID, err := uuid.Parse(entry.ShopID)
+		if err != nil || entry.MerchantID == "" || strings.TrimSpace(entry.ShopName) == "" {
 			return nil, fmt.Errorf("active Nexus merchant mapping for shop %q is incomplete", entry.ShopID)
 		}
+		entry.ShopID = parsedShopID.String()
 		entry.ProvinceHubMappings = normalizeHubMappings(entry.ProvinceHubMappings)
 		mappings[entry.ShopID] = entry
 	}
@@ -76,9 +80,22 @@ func loadPlatformMerchantMapping(data []byte) (map[string]MerchantMapping, error
 	mappings := make(map[string]MerchantMapping, len(entry.ActiveSellerIDs))
 	for _, rawSellerID := range entry.ActiveSellerIDs {
 		sellerID := strings.TrimSpace(rawSellerID)
-		if _, err := uuid.Parse(sellerID); err != nil {
+		if sellerID == AllSellersMappingKey {
+			mappings[AllSellersMappingKey] = MerchantMapping{
+				ShopID:              AllSellersMappingKey,
+				ShopName:            entry.ShopName,
+				MerchantID:          entry.MerchantID,
+				Sender:              entry.Sender,
+				ProvinceHubMappings: hubMappings,
+				Active:              true,
+			}
+			continue
+		}
+		parsedSellerID, err := uuid.Parse(sellerID)
+		if err != nil {
 			return nil, fmt.Errorf("active Nexus platform merchant mapping has invalid seller %q", sellerID)
 		}
+		sellerID = parsedSellerID.String()
 		mappings[sellerID] = MerchantMapping{
 			ShopID:              sellerID,
 			ShopName:            entry.ShopName,
@@ -89,6 +106,24 @@ func loadPlatformMerchantMapping(data []byte) (map[string]MerchantMapping, error
 		}
 	}
 	return mappings, nil
+}
+
+// ResolveMerchantMapping returns an exact seller mapping first, then the
+// platform-wide mapping configured with activeSellerIds: ["*"].
+func ResolveMerchantMapping(mappings map[string]MerchantMapping, sellerID string) (MerchantMapping, bool) {
+	trimmedSellerID := strings.TrimSpace(sellerID)
+	if parsedSellerID, err := uuid.Parse(trimmedSellerID); err == nil {
+		trimmedSellerID = parsedSellerID.String()
+	}
+	if mapping, ok := mappings[trimmedSellerID]; ok {
+		return mapping, true
+	}
+	mapping, ok := mappings[AllSellersMappingKey]
+	if !ok {
+		return MerchantMapping{}, false
+	}
+	mapping.ShopID = trimmedSellerID
+	return mapping, true
 }
 
 func normalizeHubMappings(input map[string]string) map[string]string {

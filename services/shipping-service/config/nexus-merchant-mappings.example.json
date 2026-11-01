@@ -2,7 +2,7 @@
   "shopName": "DT Commerce Marketplace",
   "merchantId": "41100000",
   "activeSellerIds": [
-    "<sellerId UUID duoc phep gui Nexus>"
+    "*"
   ],
   "active": true
 }

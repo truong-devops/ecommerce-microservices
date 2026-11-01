@@ -19,6 +19,7 @@ import (
 
 	"shipping-service/internal/domain"
 	"shipping-service/internal/httpx"
+	"shipping-service/internal/nexus"
 	"shipping-service/internal/repository"
 
 	"github.com/google/uuid"
@@ -927,7 +928,7 @@ func (s *ShippingService) nexusOutboundEnabledForSeller(sellerID string) bool {
 	if !s.nexus.Enabled {
 		return false
 	}
-	_, mapped := s.nexus.Mappings[strings.TrimSpace(sellerID)]
+	_, mapped := nexus.ResolveMerchantMapping(s.nexus.Mappings, sellerID)
 	return mapped
 }
 

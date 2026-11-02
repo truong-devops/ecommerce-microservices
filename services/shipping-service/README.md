@@ -22,7 +22,8 @@ docker compose -f docker-compose.dev.yml up -d --build
 - Exposes `/api/v1/*` routes
 - Consumes `order.events` when Kafka is enabled; publishes `shipping.events` via outbox dispatcher
 - Nexus Express outbound is disabled by default. Set `NEXUS_WEBHOOK_ENABLED=true` with the production partner code/webhook secret to verify ping while `NEXUS_ENABLED=false`; enable outbound only after health, ping, mapping and controlled-test approval pass.
-- With outbound enabled, only sellers listed in `NEXUS_MERCHANT_MAPPING_FILE` are sent to Nexus.
+- With outbound enabled, `NEXUS_MERCHANT_MAPPING_FILE` can allow specific
+  seller UUIDs or all marketplace sellers with `"activeSellerIds": ["*"]`.
 - Nexus webhook endpoint: `POST /api/v1/shipments/webhooks/nexus`.
 - Legacy NestJS reference may exist in git history; **current runtime is Go**
 
@@ -43,8 +44,10 @@ The root Compose stack injects Nexus credentials from the repository-level
 `/run/config/nexus-merchants.json`. Never commit either the real credentials or
 `services/shipping-service/config/nexus-merchant-mappings.json`.
 
-1. Copy the tracked mapping example to the ignored runtime file and replace the
-   seller IDs with only the shops approved by Nexus:
+1. Copy the tracked mapping example to the ignored runtime file. Keep
+   `"activeSellerIds": ["*"]` when Nexus has approved the shared marketplace
+   merchant for every shop. For a controlled rollout, replace `"*"` with only
+   the approved seller UUIDs:
 
    ```bash
    cp services/shipping-service/config/nexus-merchant-mappings.example.json \
@@ -85,3 +88,9 @@ The root Compose stack injects Nexus credentials from the repository-level
    `NEXUS_AUTO_CREATE_PICKUP=false` for the first controlled order. Only new
    `CONFIRMED` order events create Nexus requests; existing internal shipments
    are not backfilled automatically.
+
+Each seller still uses its own pickup contact/address from `user-service`; the
+wildcard only shares the configured Nexus `merchantId`. Nexus must also permit
+arbitrary marketplace `external.shopId` values for that merchant. If Nexus
+requires shop registration, continue using explicit UUIDs and register every
+seller with Nexus before enabling it.

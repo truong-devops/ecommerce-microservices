@@ -2,6 +2,7 @@ import { decodeAccessToken, readBearerToken } from '@/lib/server/access-token';
 import { fail, ok } from '@/lib/server/moderator-api-response';
 import { toErrorResponse } from '@/lib/server/route-error';
 import { requestUpstream, serviceBaseUrls } from '@/lib/server/upstream-client';
+import { recordGovernanceAction } from '@/lib/server/governance-audit';
 import type { ModerationProductStatus } from '@/lib/api/types';
 
 const MODERATION_ROLES = new Set(['MODERATOR', 'ADMIN', 'SUPER_ADMIN']);
@@ -58,6 +59,14 @@ export async function PATCH(request: Request, context: { params: Promise<{ produ
         status,
         reason: reason || undefined
       })
+    });
+
+    await recordGovernanceAction(accessToken, {
+      action: 'PRODUCT_STATUS_UPDATED',
+      resourceType: 'PRODUCT',
+      resourceId: productId,
+      description: `Chuyển trạng thái sản phẩm sang ${status}`,
+      metadata: { status, reason: reason || null }
     });
 
     return ok(updated);

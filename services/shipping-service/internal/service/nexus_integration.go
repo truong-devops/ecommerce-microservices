@@ -49,7 +49,7 @@ func (s *ShippingService) enqueueNexusCreateOrder(ctx context.Context, tx pgx.Tx
 	if s.nexus.Client == nil {
 		return fmt.Errorf("Nexus client is not configured")
 	}
-	mapping, ok := s.nexus.Mappings[shipment.SellerID]
+	mapping, ok := nexus.ResolveMerchantMapping(s.nexus.Mappings, shipment.SellerID)
 	if !ok {
 		return fmt.Errorf("Nexus merchant mapping is missing for seller %s", shipment.SellerID)
 	}
@@ -129,7 +129,7 @@ func (s *ShippingService) enqueueNexusCreateReturnOrder(ctx context.Context, tx 
 	if s.nexus.Client == nil {
 		return fmt.Errorf("Nexus client is not configured")
 	}
-	mapping, ok := s.nexus.Mappings[shipment.SellerID]
+	mapping, ok := nexus.ResolveMerchantMapping(s.nexus.Mappings, shipment.SellerID)
 	if !ok {
 		return fmt.Errorf("Nexus merchant mapping is missing for seller %s", shipment.SellerID)
 	}

@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './controllers/auth.controller';
+import { GovernanceController } from './controllers/governance.controller';
 import { AuditLogEntity } from './entities/audit-log.entity';
 import { EmailVerificationTokenEntity } from './entities/email-verification-token.entity';
 import { PasswordResetTokenEntity } from './entities/password-reset-token.entity';
@@ -10,6 +11,8 @@ import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import { SessionEntity } from './entities/session.entity';
 import { UserEntity } from './entities/user.entity';
 import { OauthAccountEntity } from './entities/oauth-account.entity';
+import { GovernanceActionLogEntity } from './entities/governance-action-log.entity';
+import { GovernancePolicyEntity } from './entities/governance-policy.entity';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { AuditLogRepository } from './repositories/audit-log.repository';
@@ -27,6 +30,7 @@ import { PasswordService } from './services/password.service';
 import { RateLimiterService } from './services/rate-limiter.service';
 import { SessionService } from './services/session.service';
 import { TokenService } from './services/token.service';
+import { GovernanceService } from './services/governance.service';
 
 @Module({
   imports: [
@@ -37,12 +41,14 @@ import { TokenService } from './services/token.service';
       EmailVerificationTokenEntity,
       PasswordResetTokenEntity,
       AuditLogEntity,
-      OauthAccountEntity
+      OauthAccountEntity,
+      GovernanceActionLogEntity,
+      GovernancePolicyEntity
     ]),
     PassportModule.register({ defaultStrategy: 'jwt-access' }),
     JwtModule.register({})
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, GovernanceController],
   providers: [
     AuthService,
     PasswordService,
@@ -60,7 +66,8 @@ import { TokenService } from './services/token.service';
     AuditLogRepository,
     OauthAccountRepository,
     AccessTokenStrategy,
-    RefreshTokenStrategy
+    RefreshTokenStrategy,
+    GovernanceService
   ],
   exports: [AuthService]
 })
